@@ -1,0 +1,89 @@
+
+Não quero usar nenhum agente, pode me informar se é preciso?
+Preciso criar um app para android e ios para ter controle de checkin no wellhurb e total pass do aluno, sou dono de uma academia onde tem também a arena de esportes na areia, temos aulas de beach tennis, vôlei de praia e futevôlei, nessa arena o aluno vai se comprometer a partir do primeiro chekin a fazer 8 chekins para ter uma aula semanal e 12 ckeckins para duas aulas semanais.
+Preciso fazer esse app para o professor responsavel pela modalidade me informar o controle do aluno, já que não quero usar minha secretaria com isso. O relatório precisa conter nome completo do aluno, a opção de 8 ckekins e 12 checkin (tipo um plano de fidelidade), a data de início para controlar os checkins dentro de um plano de 30 dias, seria mais ou menos isso.
+O aluno não precisa passar pela catraca para ir para a arena, consegue entender a finalidade?
+O aluno faz o check-in sozinho (sem passar na catraca, direto pelo app, estando na arena). 
+Pensa comigo, quero um app para controle do professor com a academia, pode ser externo, o aluno faz checkin no app oficial e abre outro app (esse que vamos criar) para mandar para o professor o ok do checkin da aula para controle de ambas as partes. pode ser? 
+se o aluno conseguisse fazer login nas plataformas externas e validando o checkin eu tivesse acesso a essa resposta, ai sim seria o ideal, mas se precisa pedir alguma autorização ou ajuste com o totalpass ou o wellhurb, eu prefiro que o aluno faça o checkin na plataforma externa e valide para mim na nossa plataforma que estamos criando.
+Pode fazer uma aplicação web responsiva antes de desenvolver o app, na verdade eu pensei em app por causa do formato que fica na tela, tipo um atalho. 
+Teria que ser validação local porque as plataformas só validam checkin perto da região da arena, pode ser perto da arena como o gympass, hellhurb e total pass. Eu como gestor coloco o endereço da arena (localização) na aba do gestor e isso replica no professor e no aluno.
+Na parte do aluno ele escolhe o plano ativo exemplo: ele decide fazer 1 vez por semana a aula aí ele tem que fazer 8 check-ins, isso tem que ficar claro pra ele. depois que ele decidiu fazer 1x por semana só o professor pode corrigir no app se o plano é 8 checkin ou 12, entendeu?
+No progresso do check-in do aluno precisa aparecer quando e horário que ele fez os outros tbm, tipo um histórico pra ele, ele pode colocar uma foto dele? eu queria muito, ah, na parte do aluno era bom ele dar um aceite no compromisso do numero de aulas. na parte do professor ele loga como professor e a modalidade dele somente, ele nao vê as outras modalidades e outros alunos, ele tbm precisa ver o historico de chekin dos alunos com data e hora, o progresso está ok, precisa ter acesso para caso o aluno mude de plano só ele consiga alterar a pedido do aluno, como gestor o numero de clicos completos pelos alunos pode fica na aba do aluno, só preciso desse relatório para conferencia com o professor e pagamento do mesmo. seria bom tbm as datas dos check-ins que os alunos realizaram para conferir com as plataformas externas, uma pergunta.. esse sistema feito não tem interação com plataforma externa correto?
+Eu crio a senha do professor e passo pra ele, como gestor tenho que cadastrar e liberar o acesso do professor, o professor pode fazer o checkin do aluno para organização da planilha colocando no dia e atualizando os checkin, pois já temos alunos que estão fazendo as aulas e assim conseguimos que todos tenham seus ckeck-ins validados para o relatório final.
+O aluno cria a própria senha e entra colocando o nome e cpf, ele também escolhe a modalidade que vai frequentar, a princípio ele pode fazer o primeiro checkin sem problemas, mas vou conferir com o professor se é aluno mesmo e antes do segundo checkin eu como gestor tenho que liberar em um botão no painel do gestor para que ele tenha o acesso a novos check-ins, não precisa aparecer nada para o aluno, só para  o gestor, Eu como gestor tenho minha senha e meu nome como gerente, o gestor tem acesso para colocar e tirar quem ele quiser. só ele pode tirar. caso o aluno desista ou o professor mude, ambos têm que notificar o gerente gestor para controle no app. Quero que o aplicativo tenha uma segurança e não seja copiado por outra arena, tem como? 
+
+1. Estrutura do App
+O app precisaria ter três perfis principais de usuário:
+1.	Aluno
+o	Faz check-in direto pelo app na arena, sem catraca.
+o	Vê progresso do plano de 8 ou 12 check-ins (1 ou 2 aulas por semana).
+o	Consulta status da mensalidade e dias restantes no ciclo.
+2.	Professor
+o	Recebe notificação quando aluno faz check-in.
+o	Vê lista dos alunos de sua modalidade, planos, últimos check-ins e progresso.
+o	Atualiza manualmente check-ins caso necessário.
+
+3.	Gestor / Admin
+o	Acesso a todas as modalidades e professores.
+o	Gera relatórios consolidados (PDF/Excel) com todos os dados: alunos, planos, check-ins, status de mensalidade, última presença.
+o	Configura planos, ciclos e modalidades.
+________________________________________
+2. Funcionalidades Principais
+Para o Aluno
+•	Login via CPF/email + senha (opção futura de integração com Wellhub/TotalPass, via OAuth se a API permitir).
+•	Botão de Check-in.
+•	Barra de progresso: quantidade de check-ins realizados no ciclo.
+•	Visualização de plano ativo, status da mensalidade e dias restantes do ciclo.
+Para o Professor
+•	Lista de alunos de sua modalidade:
+o	Nome completo
+o	Plano (8x ou 12x)
+o	Check-in ✅/❌
+o	Último check-in (data/hora) e progresso do chekin
+•	Notificação automática quando aluno realiza check-in.
+•	Botão para atualizar lista ou corrigir check-ins ou concluir o ciclo ( deixar no app todos os ciclos para conferencia futura
+
+Para o Gestor
+•	Filtros por modalidade, professor, data.
+•	Relatórios detalhados:
+o	Nome do aluno
+o	Modalidade
+o	Plano (8/12)
+o	Check-ins realizados
+o	Status da mensalidade
+o	Último check-in
+o	Ciclos concluídos ou alunos pendentes
+•	Exportação PDF / Excel.
+•	Gerenciamento de contas de professores e alunos.
+________________________________________
+3. Regras do Plano de Fidelidade
+•	Ciclo de 30 dias:
+o	Plano 8x → 1x/semana
+o	Plano 12x → 2x/semana
+•	Contagem de check-ins reinicia ao final do ciclo ou ao término do plano, mas fica icone de ciclo concluído ou aluno pendente.
+•	Permite ajuste manual pelo professor (em casos de falhas ou erros).
+________________________________________
+4. Integração com Wellhub / TotalPass
+•	Ideal: se ambas plataformas possuem API, você pode:
+o	Usar login único (SSO): aluno entra com credenciais do Wellhub ou TotalPass.
+o	Ler check-ins automaticamente e replicar no app Arena MUV.
+•	Caso não tenha API: o aluno faria check-in manualmente no app Arena MUV, enquanto o professor confirma o controle.
+________________________________________
+5. Tecnologias Recomendadas
+•	Frontend (App): Flutter ou React Native → funciona em Android e iOS com uma única base de código.
+•	Backend / Banco de Dados:
+o	Node.js + Express / Django / Laravel
+o	Banco: PostgreSQL ou Firebase (mais rápido para MVP)
+•	Notificações: Firebase Cloud Messaging
+•	Relatórios PDF/Excel: bibliotecas no backend (ex: jsPDF, Pandas/Excel).
+•	Autenticação: JWT para API, OAuth para integração futura com Wellhub/TotalPass.
+________________________________________
+6. Fluxo de Uso (Protótipo Funcional)
+1.	Aluno
+o	Abre app → faz login → clica em “FAZER CHECK-IN” → barra de progresso atualizada → notificação enviada ao professor.
+2.	Professor
+o	Abre app → visualiza lista de alunos → vê check-ins atualizados → recebe notificação automática → corrige manualmente se necessário.
+3.	Gestor/Admin
+o	Abre app → acessa relatório → filtra por modalidade/professor/datas → exporta PDF ou Excel.
+
