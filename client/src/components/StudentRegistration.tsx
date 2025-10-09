@@ -145,13 +145,22 @@ export default function StudentRegistration({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="8">
-                  8 Check-ins (1x por semana)
+                  <div className="flex flex-col">
+                    <span className="font-medium">8 Check-ins - 1x por semana</span>
+                    <span className="text-xs text-muted-foreground">Ciclo de 30 dias</span>
+                  </div>
                 </SelectItem>
                 <SelectItem value="12">
-                  12 Check-ins (2x por semana)
+                  <div className="flex flex-col">
+                    <span className="font-medium">12 Check-ins - 2x por semana</span>
+                    <span className="text-xs text-muted-foreground">Ciclo de 30 dias</span>
+                  </div>
                 </SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Escolha a frequência que melhor se adapta à sua rotina
+            </p>
           </div>
 
           <div className="flex items-start space-x-2 rounded-md border p-4">

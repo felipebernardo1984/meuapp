@@ -8,11 +8,14 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, Edit, History } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, Clock, Edit, History, CalendarClock } from "lucide-react";
 
 interface Aluno {
   id: string;
@@ -28,7 +31,7 @@ interface TeacherDashboardProps {
   teacherName: string;
   modalidade: string;
   alunos: Aluno[];
-  onCheckinManual: (alunoId: string) => void;
+  onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onAlterarPlano: (alunoId: string, novoPlano: 8 | 12) => void;
 }
 
@@ -40,6 +43,30 @@ export default function TeacherDashboard({
   onAlterarPlano,
 }: TeacherDashboardProps) {
   const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
+  const [dialogRetroativo, setDialogRetroativo] = useState(false);
+  const [alunoRetroativo, setAlunoRetroativo] = useState<Aluno | null>(null);
+  const [dataRetroativa, setDataRetroativa] = useState("");
+  const [horaRetroativa, setHoraRetroativa] = useState("");
+
+  const handleCheckinRetroativo = () => {
+    if (alunoRetroativo && dataRetroativa && horaRetroativa) {
+      onCheckinManual(alunoRetroativo.id, dataRetroativa, horaRetroativa);
+      setDialogRetroativo(false);
+      setDataRetroativa("");
+      setHoraRetroativa("");
+      setAlunoRetroativo(null);
+    }
+  };
+
+  const openRetroativoDialog = (aluno: Aluno) => {
+    setAlunoRetroativo(aluno);
+    setDialogRetroativo(true);
+    // Set default to today
+    const hoje = new Date().toISOString().split('T')[0];
+    const horaAtual = new Date().toTimeString().slice(0, 5);
+    setDataRetroativa(hoje);
+    setHoraRetroativa(horaAtual);
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
@@ -104,53 +131,66 @@ export default function TeacherDashboard({
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => setSelectedAluno(aluno)}
-                        data-testid={`button-view-history-${aluno.id}`}
-                      >
-                        <History className="h-4 w-4 mr-1" />
-                        Histórico
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{aluno.nome}</DialogTitle>
-                        <DialogDescription>
-                          Histórico de check-ins
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {aluno.historico.map((item, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between py-2 border-b last:border-0"
-                          >
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-secondary" />
-                              <span className="text-sm">{item.data}</span>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => setSelectedAluno(aluno)}
+                          data-testid={`button-view-history-${aluno.id}`}
+                        >
+                          <History className="h-4 w-4 mr-1" />
+                          Histórico
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{aluno.nome}</DialogTitle>
+                          <DialogDescription>
+                            Histórico de check-ins
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                          {aluno.historico.map((item, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between py-2 border-b last:border-0"
+                            >
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-secondary" />
+                                <span className="text-sm">{item.data}</span>
+                              </div>
+                              <span className="text-sm text-muted-foreground">
+                                {item.hora}
+                              </span>
                             </div>
-                            <span className="text-sm text-muted-foreground">
-                              {item.hora}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                          ))}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Button
+                      size="sm"
+                      onClick={() => onCheckinManual(aluno.id)}
+                      data-testid={`button-manual-checkin-${aluno.id}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Check-in
+                    </Button>
+                  </div>
 
                   <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => onCheckinManual(aluno.id)}
-                    data-testid={`button-manual-checkin-${aluno.id}`}
+                    className="w-full"
+                    onClick={() => openRetroativoDialog(aluno)}
+                    data-testid={`button-retroactive-checkin-${aluno.id}`}
                   >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Check-in
+                    <CalendarClock className="h-4 w-4 mr-1" />
+                    Check-in Retroativo
                   </Button>
                 </div>
 
@@ -200,6 +240,55 @@ export default function TeacherDashboard({
           );
         })}
       </div>
+
+      <Dialog open={dialogRetroativo} onOpenChange={setDialogRetroativo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Check-in Retroativo</DialogTitle>
+            <DialogDescription>
+              Registre um check-in para {alunoRetroativo?.nome} em data anterior
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="data-retroativa">Data</Label>
+              <Input
+                id="data-retroativa"
+                type="date"
+                value={dataRetroativa}
+                onChange={(e) => setDataRetroativa(e.target.value)}
+                data-testid="input-retroactive-date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hora-retroativa">Hora</Label>
+              <Input
+                id="hora-retroativa"
+                type="time"
+                value={horaRetroativa}
+                onChange={(e) => setHoraRetroativa(e.target.value)}
+                data-testid="input-retroactive-time"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDialogRetroativo(false)}
+              data-testid="button-cancel-retroactive"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCheckinRetroativo}
+              disabled={!dataRetroativa || !horaRetroativa}
+              data-testid="button-confirm-retroactive"
+            >
+              Confirmar Check-in
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {alunos.length === 0 && (
         <Card>
