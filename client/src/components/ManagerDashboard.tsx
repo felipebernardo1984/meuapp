@@ -17,7 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, CheckCircle, XCircle, UserCheck } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Download, CheckCircle, XCircle, UserCheck, UserPlus } from "lucide-react";
 
 interface AlunoGestor {
   id: string;
@@ -41,6 +52,7 @@ interface ManagerDashboardProps {
   alunos: AlunoGestor[];
   professores: ProfessorGestor[];
   onAprovarAluno: (alunoId: string) => void;
+  onCadastrarProfessor: (nome: string, modalidade: string) => void;
   onExportarPDF: () => void;
   onExportarExcel: () => void;
 }
@@ -49,11 +61,14 @@ export default function ManagerDashboard({
   alunos,
   professores,
   onAprovarAluno,
+  onCadastrarProfessor,
   onExportarPDF,
   onExportarExcel,
 }: ManagerDashboardProps) {
   const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
   const [filtroProfessor, setFiltroProfessor] = useState<string>("todos");
+  const [dialogAberto, setDialogAberto] = useState(false);
+  const [novoProfessor, setNovoProfessor] = useState({ nome: "", modalidade: "" });
 
   const alunosFiltrados = alunos.filter((aluno) => {
     const matchModalidade =
@@ -64,6 +79,14 @@ export default function ManagerDashboard({
 
   const alunosPendentes = alunos.filter((a) => !a.aprovado);
   const modalidades = Array.from(new Set(alunos.map((a) => a.modalidade)));
+
+  const handleCadastrarProfessor = () => {
+    if (novoProfessor.nome && novoProfessor.modalidade) {
+      onCadastrarProfessor(novoProfessor.nome, novoProfessor.modalidade);
+      setNovoProfessor({ nome: "", modalidade: "" });
+      setDialogAberto(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
@@ -114,6 +137,98 @@ export default function ManagerDashboard({
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Professores
+            </CardTitle>
+            <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-teacher">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Cadastrar Professor
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Cadastrar Novo Professor</DialogTitle>
+                  <DialogDescription>
+                    O professor receberá senha padrão "admin" que poderá ser alterada após o primeiro acesso.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome-professor">Nome Completo</Label>
+                    <Input
+                      id="nome-professor"
+                      placeholder="Digite o nome completo"
+                      value={novoProfessor.nome}
+                      onChange={(e) =>
+                        setNovoProfessor({ ...novoProfessor, nome: e.target.value })
+                      }
+                      data-testid="input-teacher-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="modalidade-professor">Modalidade</Label>
+                    <Select
+                      value={novoProfessor.modalidade}
+                      onValueChange={(value) =>
+                        setNovoProfessor({ ...novoProfessor, modalidade: value })
+                      }
+                    >
+                      <SelectTrigger id="modalidade-professor" data-testid="select-teacher-modality">
+                        <SelectValue placeholder="Selecione a modalidade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Beach Tennis">Beach Tennis</SelectItem>
+                        <SelectItem value="Vôlei de Praia">Vôlei de Praia</SelectItem>
+                        <SelectItem value="Futevôlei">Futevôlei</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={handleCadastrarProfessor}
+                    disabled={!novoProfessor.nome || !novoProfessor.modalidade}
+                    data-testid="button-confirm-add-teacher"
+                  >
+                    Cadastrar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {professores.length > 0 ? (
+            <div className="space-y-2">
+              {professores.map((professor) => (
+                <div
+                  key={professor.id}
+                  className="flex items-center justify-between p-3 bg-muted rounded-md"
+                  data-testid={`teacher-${professor.id}`}
+                >
+                  <div>
+                    <p className="font-medium">{professor.nome}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {professor.modalidade}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhum professor cadastrado
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {alunosPendentes.length > 0 && (
         <Card className="mb-6 border-orange-200 dark:border-orange-900">
