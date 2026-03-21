@@ -183,7 +183,7 @@ export default function StudentDashboard({
               data-testid="button-student-retroactive"
             >
               <CalendarClock className="h-4 w-4 mr-1" />
-              Registrar Aula Anterior
+              Registrar Aula
             </Button>
           </div>
         </CardHeader>
@@ -268,23 +268,25 @@ export default function StudentDashboard({
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="data-retro-aluno">Data da aula</Label>
+              <Label htmlFor="data-retro-aluno">Data</Label>
               <Input
                 id="data-retro-aluno"
                 type="date"
                 value={dataRetroativa}
                 max={new Date().toISOString().split("T")[0]}
                 onChange={(e) => setDataRetroativa(e.target.value)}
+                className="[&::-webkit-calendar-picker-indicator]:hidden"
                 data-testid="input-student-retroactive-date"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="hora-retro-aluno">Horário da aula</Label>
+              <Label htmlFor="hora-retro-aluno">Hora</Label>
               <Input
                 id="hora-retro-aluno"
                 type="time"
                 value={horaRetroativa}
                 onChange={(e) => setHoraRetroativa(e.target.value)}
+                className="[&::-webkit-calendar-picker-indicator]:hidden"
                 data-testid="input-student-retroactive-time"
               />
             </div>
