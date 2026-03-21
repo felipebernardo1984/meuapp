@@ -3,30 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn } from "lucide-react";
 
 interface LoginPageProps {
-  onLogin: (tipo: "aluno" | "professor" | "gestor", credentials: any) => void;
-  onCreateAccount?: () => void;
+  onLogin: (login: string, senha: string) => void;
 }
 
-export default function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) {
+export default function LoginPage({ onLogin }: LoginPageProps) {
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
 
   const handleLogin = () => {
-    // Detecção automática baseada nas credenciais hardcoded
-    const usuario = loginData.usuario;
-    const senha = loginData.senha;
-    
-    if (usuario === "111" && senha === "111") {
-      onLogin("aluno", { cpf: usuario, senha });
-    } else if (usuario === "222" && senha === "222") {
-      onLogin("professor", { nome: usuario, senha });
-    } else if (usuario === "333" && senha === "333") {
-      onLogin("gestor", { nome: usuario, senha });
-    } else {
-      alert("Usuário ou senha incorretos");
-    }
+    onLogin(loginData.usuario, loginData.senha);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -49,10 +36,10 @@ export default function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) 
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="usuario">CPF ou Nome Completo</Label>
+              <Label htmlFor="usuario">Login</Label>
               <Input
                 id="usuario"
-                placeholder="Digite seu CPF ou nome"
+                placeholder="Digite seu login"
                 value={loginData.usuario}
                 onChange={(e) =>
                   setLoginData({ ...loginData, usuario: e.target.value })
@@ -89,17 +76,9 @@ export default function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) 
               Entrar
             </Button>
 
-            <div className="pt-2 space-y-3">
-              <Button
-                variant="outline"
-                className="w-full h-11"
-                onClick={onCreateAccount}
-                data-testid="button-create-account"
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Criar minha conta
-              </Button>
-            </div>
+            <p className="text-xs text-center text-muted-foreground pt-1">
+              Receba seu login e senha com seu professor ou na recepção
+            </p>
           </CardContent>
         </Card>
 

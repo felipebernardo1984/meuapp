@@ -15,7 +15,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Clock, Edit, History, CalendarClock } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CheckCircle2, Clock, Edit, History, CalendarClock, UserPlus } from "lucide-react";
 
 interface Aluno {
   id: string;
@@ -27,12 +34,21 @@ interface Aluno {
   photoUrl?: string;
 }
 
+interface NovoAlunoDados {
+  nome: string;
+  login: string;
+  senha: string;
+  cpf: string;
+  plano: 8 | 12;
+}
+
 interface TeacherDashboardProps {
   teacherName: string;
   modalidade: string;
   alunos: Aluno[];
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onAlterarPlano: (alunoId: string, novoPlano: 8 | 12) => void;
+  onCadastrarAluno: (dados: NovoAlunoDados) => void;
 }
 
 export default function TeacherDashboard({
@@ -41,12 +57,32 @@ export default function TeacherDashboard({
   alunos,
   onCheckinManual,
   onAlterarPlano,
+  onCadastrarAluno,
 }: TeacherDashboardProps) {
   const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
   const [dialogRetroativo, setDialogRetroativo] = useState(false);
   const [alunoRetroativo, setAlunoRetroativo] = useState<Aluno | null>(null);
   const [dataRetroativa, setDataRetroativa] = useState("");
   const [horaRetroativa, setHoraRetroativa] = useState("");
+  const [dialogNovoAluno, setDialogNovoAluno] = useState(false);
+  const [novoAluno, setNovoAluno] = useState<NovoAlunoDados>({
+    nome: "",
+    login: "",
+    senha: "",
+    cpf: "",
+    plano: 8,
+  });
+
+  const handleCadastrarAluno = () => {
+    if (novoAluno.nome && novoAluno.login && novoAluno.senha && novoAluno.cpf) {
+      onCadastrarAluno(novoAluno);
+      alert(
+        `Aluno cadastrado com sucesso!\n\nLogin: ${novoAluno.login}\nSenha: ${novoAluno.senha}\n\nEntregue estas credenciais ao aluno.`
+      );
+      setNovoAluno({ nome: "", login: "", senha: "", cpf: "", plano: 8 });
+      setDialogNovoAluno(false);
+    }
+  };
 
   const handleCheckinRetroativo = () => {
     if (alunoRetroativo && dataRetroativa && horaRetroativa) {
@@ -70,11 +106,98 @@ export default function TeacherDashboard({
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-1" data-testid="text-teacher-name">
-          Professor {teacherName}
-        </h1>
-        <p className="text-muted-foreground">{modalidade}</p>
+      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold mb-1" data-testid="text-teacher-name">
+            Professor {teacherName}
+          </h1>
+          <p className="text-muted-foreground">{modalidade}</p>
+        </div>
+
+        <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
+          <DialogTrigger asChild>
+            <Button data-testid="button-add-student">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Cadastrar Aluno
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
+              <DialogDescription>
+                Modalidade: <strong>{modalidade}</strong>. Defina login e senha — entregue ao aluno após o cadastro.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="space-y-1">
+                <Label>Nome Completo</Label>
+                <Input
+                  placeholder="Nome do aluno"
+                  value={novoAluno.nome}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, nome: e.target.value })}
+                  data-testid="input-new-student-name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>CPF</Label>
+                <Input
+                  placeholder="000.000.000-00"
+                  value={novoAluno.cpf}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value })}
+                  data-testid="input-new-student-cpf"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login</Label>
+                <Input
+                  placeholder="Ex: joao.silva ou CPF"
+                  value={novoAluno.login}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
+                  data-testid="input-new-student-login"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Senha</Label>
+                <Input
+                  placeholder="Crie uma senha para o aluno"
+                  value={novoAluno.senha}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
+                  data-testid="input-new-student-password"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Plano</Label>
+                <Select
+                  value={String(novoAluno.plano)}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, plano: Number(v) as 8 | 12 })}
+                >
+                  <SelectTrigger data-testid="select-new-student-plan">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="8">8 Check-ins — 1x por semana (30 dias)</SelectItem>
+                    <SelectItem value="12">12 Check-ins — 2x por semana (30 dias)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDialogNovoAluno(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCadastrarAluno}
+                disabled={!novoAluno.nome || !novoAluno.login || !novoAluno.senha || !novoAluno.cpf}
+                data-testid="button-confirm-new-student"
+              >
+                Cadastrar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
