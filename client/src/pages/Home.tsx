@@ -186,8 +186,37 @@ export default function Home() {
   const handleCheckinAluno = (alunoLogin: string) => {
     const aluno = alunos.find((a) => a.login === alunoLogin);
     if (aluno) {
-      handleCheckinManual(aluno.id);
-      setSessao({ tipo: "aluno", aluno: { ...aluno, checkinsRealizados: aluno.checkinsRealizados + 1 } });
+      const agora = new Date();
+      const novoHistorico = [
+        ...aluno.historico,
+        {
+          data: agora.toLocaleDateString("pt-BR"),
+          hora: agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        },
+      ];
+      const alunoAtualizado = {
+        ...aluno,
+        checkinsRealizados: aluno.checkinsRealizados + 1,
+        historico: novoHistorico,
+        ultimoCheckin: agora.toLocaleDateString("pt-BR"),
+      };
+      setAlunos((prev) => prev.map((a) => (a.login === alunoLogin ? alunoAtualizado : a)));
+      setSessao({ tipo: "aluno", aluno: alunoAtualizado });
+    }
+  };
+
+  const handleRemoverCheckin = (alunoLogin: string, index: number) => {
+    const aluno = alunos.find((a) => a.login === alunoLogin);
+    if (aluno) {
+      const novoHistorico = aluno.historico.filter((_, i) => i !== index);
+      const alunoAtualizado = {
+        ...aluno,
+        checkinsRealizados: Math.max(0, aluno.checkinsRealizados - 1),
+        historico: novoHistorico,
+        ultimoCheckin: novoHistorico.length > 0 ? novoHistorico[novoHistorico.length - 1].data : undefined,
+      };
+      setAlunos((prev) => prev.map((a) => (a.login === alunoLogin ? alunoAtualizado : a)));
+      setSessao({ tipo: "aluno", aluno: alunoAtualizado });
     }
   };
 
@@ -239,6 +268,7 @@ export default function Home() {
           statusMensalidade={sessao.aluno.statusMensalidade}
           historico={sessao.aluno.historico}
           onCheckin={() => handleCheckinAluno(sessao.aluno.login)}
+          onRemoverCheckin={(index) => handleRemoverCheckin(sessao.aluno.login, index)}
         />
       )}
 

@@ -1,9 +1,20 @@
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, Calendar, User } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { CheckCircle2, Clock, Calendar, Trash2 } from "lucide-react";
 
 interface StudentDashboardProps {
   studentName: string;
@@ -16,6 +27,7 @@ interface StudentDashboardProps {
   statusMensalidade: "Em dia" | "Pendente";
   historico: Array<{ data: string; hora: string }>;
   onCheckin: () => void;
+  onRemoverCheckin: (index: number) => void;
 }
 
 export default function StudentDashboard({
@@ -29,7 +41,10 @@ export default function StudentDashboard({
   statusMensalidade,
   historico,
   onCheckin,
+  onRemoverCheckin,
 }: StudentDashboardProps) {
+  const [confirmarIndex, setConfirmarIndex] = useState<number | null>(null);
+
   const progresso = (checkinsRealizados / plano) * 100;
   const initials = studentName
     .split(" ")
@@ -37,6 +52,13 @@ export default function StudentDashboard({
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  const handleConfirmarRemover = () => {
+    if (confirmarIndex !== null) {
+      onRemoverCheckin(confirmarIndex);
+      setConfirmarIndex(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
@@ -130,7 +152,7 @@ export default function StudentDashboard({
               Nenhum check-in realizado ainda
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {historico.map((item, index) => (
                 <div
                   key={index}
@@ -139,15 +161,61 @@ export default function StudentDashboard({
                 >
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-secondary" />
-                    <span className="text-sm">{item.data}</span>
+                    <span className="text-sm font-medium">{item.data}</span>
+                    {item.hora && (
+                      <span className="text-xs text-muted-foreground">às {item.hora}</span>
+                    )}
                   </div>
-                  <span className="text-sm text-muted-foreground">{item.hora}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => setConfirmarIndex(index)}
+                    data-testid={`button-delete-checkin-${index}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={confirmarIndex !== null}
+        onOpenChange={(open) => { if (!open) setConfirmarIndex(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover Check-in?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmarIndex !== null && historico[confirmarIndex] && (
+                <>
+                  Tem certeza que deseja remover o check-in do dia{" "}
+                  <strong>{historico[confirmarIndex].data}</strong>
+                  {historico[confirmarIndex].hora && (
+                    <> às <strong>{historico[confirmarIndex].hora}</strong></>
+                  )}
+                  ? O progresso na barra será atualizado.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmarRemover}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              Sim, remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
