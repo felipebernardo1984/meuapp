@@ -367,31 +367,37 @@ export default function TeacherDashboard({
       <Dialog open={dialogRetroativo} onOpenChange={setDialogRetroativo}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Check-in Retroativo</DialogTitle>
-            <DialogDescription>
-              Registre um check-in para {alunoRetroativo?.nome} em data anterior
+            <DialogTitle className="sr-only">Check-in Retroativo</DialogTitle>
+            <DialogDescription asChild>
+              <p className="font-bold text-foreground text-sm">
+                Selecione a data e hora da aula de {alunoRetroativo?.nome} que ainda não foi registrada.
+              </p>
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="data-retroativa">Data</Label>
-              <Input
-                id="data-retroativa"
-                type="date"
-                value={dataRetroativa}
-                onChange={(e) => setDataRetroativa(e.target.value)}
-                data-testid="input-retroactive-date"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hora-retroativa">Hora</Label>
-              <Input
-                id="hora-retroativa"
-                type="time"
-                value={horaRetroativa}
-                onChange={(e) => setHoraRetroativa(e.target.value)}
-                data-testid="input-retroactive-time"
-              />
+          <div className="py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="data-retroativa">Data</Label>
+                <Input
+                  id="data-retroativa"
+                  type="date"
+                  value={dataRetroativa}
+                  onChange={(e) => setDataRetroativa(e.target.value)}
+                  className="[&::-webkit-calendar-picker-indicator]:hidden"
+                  data-testid="input-retroactive-date"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hora-retroativa">Hora</Label>
+                <Input
+                  id="hora-retroativa"
+                  type="time"
+                  value={horaRetroativa}
+                  onChange={(e) => setHoraRetroativa(e.target.value)}
+                  className="[&::-webkit-calendar-picker-indicator]:hidden"
+                  data-testid="input-retroactive-time"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
