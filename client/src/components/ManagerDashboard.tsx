@@ -121,111 +121,11 @@ export default function ManagerDashboard({
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold mb-1" data-testid="text-manager-title">
-            Painel do Gestor
-          </h1>
-          <p className="text-muted-foreground">Seven Sports - Controle Total</p>
-        </div>
-
-        <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-student-manager">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Cadastrar Aluno
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
-              <DialogDescription>
-                Defina login e senha para o aluno. Entregue as credenciais após o cadastro.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
-              <div className="space-y-1">
-                <Label>Nome Completo</Label>
-                <Input
-                  placeholder="Nome do aluno"
-                  value={novoAluno.nome}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, nome: e.target.value })}
-                  data-testid="input-manager-student-name"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>CPF</Label>
-                <Input
-                  placeholder="000.000.000-00"
-                  value={novoAluno.cpf}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value })}
-                  data-testid="input-manager-student-cpf"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Modalidade</Label>
-                <Select
-                  value={novoAluno.modalidade}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, modalidade: v })}
-                >
-                  <SelectTrigger data-testid="select-manager-student-modality">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Beach Tennis">Beach Tennis</SelectItem>
-                    <SelectItem value="Vôlei de Praia">Vôlei de Praia</SelectItem>
-                    <SelectItem value="Futevôlei">Futevôlei</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Login</Label>
-                <Input
-                  placeholder="Ex: joao.silva ou CPF"
-                  value={novoAluno.login}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
-                  data-testid="input-manager-student-login"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Senha</Label>
-                <Input
-                  placeholder="Crie uma senha para o aluno"
-                  value={novoAluno.senha}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
-                  data-testid="input-manager-student-password"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Plano</Label>
-                <Select
-                  value={String(novoAluno.plano)}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, plano: Number(v) as 8 | 12 })}
-                >
-                  <SelectTrigger data-testid="select-manager-student-plan">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="8">8 Check-ins — 1x por semana (30 dias)</SelectItem>
-                    <SelectItem value="12">12 Check-ins — 2x por semana (30 dias)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleCadastrarAluno}
-                disabled={!novoAluno.nome || !novoAluno.login || !novoAluno.senha || !novoAluno.cpf || !novoAluno.modalidade}
-                data-testid="button-confirm-manager-student"
-              >
-                Cadastrar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-1" data-testid="text-manager-title">
+          Painel do Gestor
+        </h1>
+        <p className="text-muted-foreground">Seven Sports - Controle Total</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 mb-6">
@@ -271,17 +171,32 @@ export default function ManagerDashboard({
 
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
-              Professores
-            </CardTitle>
+          <CardTitle className="text-lg">Professores</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {professores.map((professor) => (
+              <div
+                key={professor.id}
+                className="flex items-center justify-between p-3 bg-muted rounded-md"
+                data-testid={`teacher-${professor.id}`}
+              >
+                <div>
+                  <p className="font-medium">{professor.nome}</p>
+                  <p className="text-sm text-muted-foreground">{professor.modalidade}</p>
+                </div>
+              </div>
+            ))}
+
             <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
               <DialogTrigger asChild>
-                <Button data-testid="button-add-teacher">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Cadastrar Professor
-                </Button>
+                <button
+                  className="w-full flex items-center gap-2 p-3 rounded-md text-sm text-muted-foreground hover-elevate border border-dashed border-border"
+                  data-testid="button-add-teacher"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Cadastrar professor
+                </button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -334,30 +249,6 @@ export default function ManagerDashboard({
               </DialogContent>
             </Dialog>
           </div>
-        </CardHeader>
-        <CardContent>
-          {professores.length > 0 ? (
-            <div className="space-y-2">
-              {professores.map((professor) => (
-                <div
-                  key={professor.id}
-                  className="flex items-center justify-between p-3 bg-muted rounded-md"
-                  data-testid={`teacher-${professor.id}`}
-                >
-                  <div>
-                    <p className="font-medium">{professor.nome}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {professor.modalidade}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Nenhum professor cadastrado
-            </p>
-          )}
         </CardContent>
       </Card>
 
@@ -399,8 +290,106 @@ export default function ManagerDashboard({
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle className="text-lg">Relatório de Alunos</CardTitle>
+            <CardTitle className="text-lg">Alunos</CardTitle>
             <div className="flex flex-wrap gap-2">
+              <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
+                <DialogTrigger asChild>
+                  <Button size="sm" data-testid="button-add-student-manager">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Cadastrar Aluno
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
+                    <DialogDescription>
+                      Defina login e senha para o aluno. Entregue as credenciais após o cadastro.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-2">
+                    <div className="space-y-1">
+                      <Label>Nome Completo</Label>
+                      <Input
+                        placeholder="Nome do aluno"
+                        value={novoAluno.nome}
+                        onChange={(e) => setNovoAluno({ ...novoAluno, nome: e.target.value })}
+                        data-testid="input-manager-student-name"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>CPF</Label>
+                      <Input
+                        placeholder="000.000.000-00"
+                        value={novoAluno.cpf}
+                        onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value })}
+                        data-testid="input-manager-student-cpf"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Modalidade</Label>
+                      <Select
+                        value={novoAluno.modalidade}
+                        onValueChange={(v) => setNovoAluno({ ...novoAluno, modalidade: v })}
+                      >
+                        <SelectTrigger data-testid="select-manager-student-modality">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Beach Tennis">Beach Tennis</SelectItem>
+                          <SelectItem value="Vôlei de Praia">Vôlei de Praia</SelectItem>
+                          <SelectItem value="Futevôlei">Futevôlei</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Login</Label>
+                      <Input
+                        placeholder="Ex: joao.silva ou CPF"
+                        value={novoAluno.login}
+                        onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
+                        data-testid="input-manager-student-login"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Senha</Label>
+                      <Input
+                        placeholder="Crie uma senha para o aluno"
+                        value={novoAluno.senha}
+                        onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
+                        data-testid="input-manager-student-password"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Plano</Label>
+                      <Select
+                        value={String(novoAluno.plano)}
+                        onValueChange={(v) => setNovoAluno({ ...novoAluno, plano: Number(v) as 8 | 12 })}
+                      >
+                        <SelectTrigger data-testid="select-manager-student-plan">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="8">8 Check-ins — 1x por semana (30 dias)</SelectItem>
+                          <SelectItem value="12">12 Check-ins — 2x por semana (30 dias)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleCadastrarAluno}
+                      disabled={!novoAluno.nome || !novoAluno.login || !novoAluno.senha || !novoAluno.cpf || !novoAluno.modalidade}
+                      data-testid="button-confirm-manager-student"
+                    >
+                      Cadastrar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
               <Select value={filtroModalidade} onValueChange={setFiltroModalidade}>
                 <SelectTrigger className="w-40" data-testid="select-modality">
                   <SelectValue placeholder="Modalidade" />

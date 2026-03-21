@@ -107,12 +107,11 @@ export default function StudentDashboard({
             <p className="text-sm text-muted-foreground">{modalidade}</p>
           </div>
         </div>
-        <Badge
-          variant={statusMensalidade === "Em dia" ? "default" : "destructive"}
-          data-testid="badge-payment-status"
-        >
-          {statusMensalidade}
-        </Badge>
+        {statusMensalidade === "Pendente" && (
+          <Badge variant="destructive" data-testid="badge-payment-status">
+            Pendente
+          </Badge>
+        )}
       </div>
 
       <Card className="mb-6">

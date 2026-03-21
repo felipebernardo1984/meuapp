@@ -106,17 +106,18 @@ export default function TeacherDashboard({
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold mb-1" data-testid="text-teacher-name">
-            Professor {teacherName}
-          </h1>
-          <p className="text-muted-foreground">{modalidade}</p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-1" data-testid="text-teacher-name">
+          Professor {teacherName}
+        </h1>
+        <p className="text-muted-foreground">{modalidade}</p>
+      </div>
 
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <h2 className="font-semibold text-base">Alunos</h2>
         <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
           <DialogTrigger asChild>
-            <Button data-testid="button-add-student">
+            <Button size="sm" data-testid="button-add-student">
               <UserPlus className="h-4 w-4 mr-2" />
               Cadastrar Aluno
             </Button>
