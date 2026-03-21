@@ -7,6 +7,12 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 
+export interface Plano {
+  id: string;
+  titulo: string;
+  checkins: number;
+}
+
 interface Aluno {
   id: string;
   nome: string;
@@ -14,7 +20,9 @@ interface Aluno {
   senha: string;
   cpf: string;
   modalidade: string;
-  plano: 8 | 12;
+  planoId: string;
+  planoTitulo: string;
+  plano: number;
   checkinsRealizados: number;
   historico: Array<{ data: string; hora: string }>;
   statusMensalidade: "Em dia" | "Pendente";
@@ -34,6 +42,12 @@ interface Professor {
 const GESTOR_LOGIN = "333";
 const GESTOR_SENHA = "333";
 
+const planosIniciais: Plano[] = [
+  { id: "pl1", titulo: "1x por semana", checkins: 8 },
+  { id: "pl2", titulo: "2x por semana", checkins: 12 },
+  { id: "pl3", titulo: "Mensalista", checkins: 4 },
+];
+
 const professoresIniciais: Professor[] = [
   { id: "p1", nome: "Carlos Mendes", login: "222", senha: "222", modalidade: "Beach Tennis" },
   { id: "p2", nome: "Fernanda Lima", login: "fernanda", senha: "admin", modalidade: "Vôlei de Praia" },
@@ -48,6 +62,8 @@ const alunosIniciais: Aluno[] = [
     senha: "111",
     cpf: "987.654.321-00",
     modalidade: "Beach Tennis",
+    planoId: "pl2",
+    planoTitulo: "2x por semana",
     plano: 12,
     checkinsRealizados: 9,
     historico: [
@@ -72,6 +88,8 @@ const alunosIniciais: Aluno[] = [
     senha: "admin",
     cpf: "456.789.123-00",
     modalidade: "Vôlei de Praia",
+    planoId: "pl1",
+    planoTitulo: "1x por semana",
     plano: 8,
     checkinsRealizados: 3,
     historico: [
@@ -95,6 +113,7 @@ export default function Home() {
   const [sessao, setSessao] = useState<SessaoAtiva>(null);
   const [alunos, setAlunos] = useState<Aluno[]>(alunosIniciais);
   const [professores, setProfessores] = useState<Professor[]>(professoresIniciais);
+  const [planos, setPlanos] = useState<Plano[]>(planosIniciais);
 
   const handleLogin = (login: string, senha: string) => {
     if (login === GESTOR_LOGIN && senha === GESTOR_SENHA) {
@@ -123,14 +142,38 @@ export default function Home() {
 
   const handleLogout = () => setSessao(null);
 
+  const handleCriarPlano = (titulo: string, checkins: number) => {
+    const novo: Plano = { id: `pl${Date.now()}`, titulo, checkins };
+    setPlanos((prev) => [...prev, novo]);
+  };
+
+  const handleEditarPlano = (id: string, titulo: string, checkins: number) => {
+    setPlanos((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, titulo, checkins } : p))
+    );
+    setAlunos((prev) =>
+      prev.map((a) =>
+        a.planoId === id
+          ? { ...a, planoTitulo: titulo, plano: checkins }
+          : a
+      )
+    );
+  };
+
+  const handleExcluirPlano = (id: string) => {
+    setPlanos((prev) => prev.filter((p) => p.id !== id));
+  };
+
   const handleCadastrarAluno = (dados: {
     nome: string;
     login: string;
     senha: string;
     cpf: string;
     modalidade: string;
-    plano: 8 | 12;
+    planoId: string;
   }) => {
+    const planoSelecionado = planos.find((p) => p.id === dados.planoId);
+    if (!planoSelecionado) return;
     const novoAluno: Aluno = {
       id: `a${Date.now()}`,
       nome: dados.nome,
@@ -138,7 +181,9 @@ export default function Home() {
       senha: dados.senha,
       cpf: dados.cpf,
       modalidade: dados.modalidade,
-      plano: dados.plano,
+      planoId: planoSelecionado.id,
+      planoTitulo: planoSelecionado.titulo,
+      plano: planoSelecionado.checkins,
       checkinsRealizados: 0,
       historico: [],
       statusMensalidade: "Em dia",
@@ -241,10 +286,17 @@ export default function Home() {
     }
   };
 
-  const handleAlterarPlano = (alunoId: string, novoPlano: 8 | 12) => {
-    setAlunos((prev) =>
-      prev.map((a) => (a.id === alunoId ? { ...a, plano: novoPlano } : a))
-    );
+  const handleAlterarPlano = (alunoId: string, planoId: string) => {
+    const plano = planos.find((p) => p.id === planoId);
+    if (plano) {
+      setAlunos((prev) =>
+        prev.map((a) =>
+          a.id === alunoId
+            ? { ...a, planoId: plano.id, planoTitulo: plano.titulo, plano: plano.checkins }
+            : a
+        )
+      );
+    }
   };
 
   const handleAprovarAluno = (alunoId: string) => {
@@ -285,6 +337,7 @@ export default function Home() {
             studentName={alunoAtual.nome}
             modalidade={alunoAtual.modalidade}
             plano={alunoAtual.plano}
+            planoTitulo={alunoAtual.planoTitulo}
             checkinsRealizados={alunoAtual.checkinsRealizados}
             cicloInicio="15/12/2024"
             diasRestantes={12}
@@ -301,12 +354,15 @@ export default function Home() {
         <TeacherDashboard
           teacherName={sessao.professor.nome}
           modalidade={sessao.professor.modalidade}
+          planos={planos}
           alunos={alunos
             .filter((a) => a.modalidade === sessao.professor.modalidade)
             .map((a) => ({
               id: a.id,
               nome: a.nome,
               plano: a.plano,
+              planoTitulo: a.planoTitulo,
+              planoId: a.planoId,
               checkinsRealizados: a.checkinsRealizados,
               ultimoCheckin: a.ultimoCheckin
                 ? { data: a.ultimoCheckin, hora: "" }
@@ -327,12 +383,14 @@ export default function Home() {
 
       {sessao.tipo === "gestor" && (
         <ManagerDashboard
+          planos={planos}
           alunos={alunos.map((a) => ({
             id: a.id,
             nome: a.nome,
             cpf: a.cpf,
             modalidade: a.modalidade,
             plano: a.plano,
+            planoTitulo: a.planoTitulo,
             checkinsRealizados: a.checkinsRealizados,
             statusMensalidade: a.statusMensalidade,
             ultimoCheckin: a.ultimoCheckin,
@@ -346,6 +404,9 @@ export default function Home() {
           onAprovarAluno={handleAprovarAluno}
           onCadastrarProfessor={handleCadastrarProfessor}
           onCadastrarAluno={handleCadastrarAluno}
+          onCriarPlano={handleCriarPlano}
+          onEditarPlano={handleEditarPlano}
+          onExcluirPlano={handleExcluirPlano}
           onExportarPDF={() => alert("Exportar PDF em breve")}
           onExportarExcel={() => alert("Exportar Excel em breve")}
         />

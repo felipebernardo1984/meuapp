@@ -30,7 +30,8 @@ interface StudentDashboardProps {
   studentName: string;
   photoUrl?: string;
   modalidade: string;
-  plano: 8 | 12;
+  plano: number;
+  planoTitulo: string;
   checkinsRealizados: number;
   cicloInicio: string;
   diasRestantes: number;
@@ -46,6 +47,7 @@ export default function StudentDashboard({
   photoUrl,
   modalidade,
   plano,
+  planoTitulo,
   checkinsRealizados,
   cicloInicio,
   diasRestantes,
@@ -139,7 +141,7 @@ export default function StudentDashboard({
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Plano: {plano === 8 ? "1x por semana" : "2x por semana"}
+                Plano: {planoTitulo}
               </span>
               <span className="font-medium" data-testid="text-checkins-count">
                 {checkinsRealizados}/{plano}

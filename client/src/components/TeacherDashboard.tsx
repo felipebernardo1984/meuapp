@@ -22,12 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, Clock, Edit, History, CalendarClock, UserPlus } from "lucide-react";
+import { CheckCircle2, Clock, History, CalendarClock, UserPlus } from "lucide-react";
+import type { Plano } from "@/pages/Home";
 
 interface Aluno {
   id: string;
   nome: string;
-  plano: 8 | 12;
+  plano: number;
+  planoTitulo: string;
+  planoId: string;
   checkinsRealizados: number;
   ultimoCheckin?: { data: string; hora: string };
   historico: Array<{ data: string; hora: string }>;
@@ -39,27 +42,28 @@ interface NovoAlunoDados {
   login: string;
   senha: string;
   cpf: string;
-  plano: 8 | 12;
+  planoId: string;
 }
 
 interface TeacherDashboardProps {
   teacherName: string;
   modalidade: string;
+  planos: Plano[];
   alunos: Aluno[];
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
-  onAlterarPlano: (alunoId: string, novoPlano: 8 | 12) => void;
+  onAlterarPlano: (alunoId: string, planoId: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
 }
 
 export default function TeacherDashboard({
   teacherName,
   modalidade,
+  planos,
   alunos,
   onCheckinManual,
   onAlterarPlano,
   onCadastrarAluno,
 }: TeacherDashboardProps) {
-  const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null);
   const [dialogRetroativo, setDialogRetroativo] = useState(false);
   const [alunoRetroativo, setAlunoRetroativo] = useState<Aluno | null>(null);
   const [dataRetroativa, setDataRetroativa] = useState("");
@@ -70,16 +74,17 @@ export default function TeacherDashboard({
     login: "",
     senha: "",
     cpf: "",
-    plano: 8,
+    planoId: planos[0]?.id ?? "",
   });
 
   const handleCadastrarAluno = () => {
-    if (novoAluno.nome && novoAluno.login && novoAluno.senha && novoAluno.cpf) {
+    if (novoAluno.nome && novoAluno.login && novoAluno.senha && novoAluno.cpf && novoAluno.planoId) {
       onCadastrarAluno(novoAluno);
+      const plano = planos.find((p) => p.id === novoAluno.planoId);
       alert(
-        `Aluno cadastrado com sucesso!\n\nLogin: ${novoAluno.login}\nSenha: ${novoAluno.senha}\n\nEntregue estas credenciais ao aluno.`
+        `Aluno cadastrado com sucesso!\n\nLogin: ${novoAluno.login}\nSenha: ${novoAluno.senha}\nPlano: ${plano?.titulo}\n\nEntregue estas credenciais ao aluno.`
       );
-      setNovoAluno({ nome: "", login: "", senha: "", cpf: "", plano: 8 });
+      setNovoAluno({ nome: "", login: "", senha: "", cpf: "", planoId: planos[0]?.id ?? "" });
       setDialogNovoAluno(false);
     }
   };
@@ -97,8 +102,7 @@ export default function TeacherDashboard({
   const openRetroativoDialog = (aluno: Aluno) => {
     setAlunoRetroativo(aluno);
     setDialogRetroativo(true);
-    // Set default to today
-    const hoje = new Date().toISOString().split('T')[0];
+    const hoje = new Date().toISOString().split("T")[0];
     const horaAtual = new Date().toTimeString().slice(0, 5);
     setDataRetroativa(hoje);
     setHoraRetroativa(horaAtual);
@@ -169,15 +173,18 @@ export default function TeacherDashboard({
               <div className="space-y-1">
                 <Label>Plano</Label>
                 <Select
-                  value={String(novoAluno.plano)}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, plano: Number(v) as 8 | 12 })}
+                  value={novoAluno.planoId}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
                 >
                   <SelectTrigger data-testid="select-new-student-plan">
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione o plano" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="8">8 Check-ins — 1x por semana (30 dias)</SelectItem>
-                    <SelectItem value="12">12 Check-ins — 2x por semana (30 dias)</SelectItem>
+                    {planos.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.titulo} — {p.checkins} check-ins
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -191,7 +198,7 @@ export default function TeacherDashboard({
               </Button>
               <Button
                 onClick={handleCadastrarAluno}
-                disabled={!novoAluno.nome || !novoAluno.login || !novoAluno.senha || !novoAluno.cpf}
+                disabled={!novoAluno.nome || !novoAluno.login || !novoAluno.senha || !novoAluno.cpf || !novoAluno.planoId}
                 data-testid="button-confirm-new-student"
               >
                 Cadastrar
@@ -230,13 +237,13 @@ export default function TeacherDashboard({
                       <CardTitle className="text-base truncate">
                         {aluno.nome}
                       </CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        {aluno.plano === 8 ? "1x/semana" : "2x/semana"}
+                      <p className="text-xs text-muted-foreground truncate">
+                        {aluno.planoTitulo}
                       </p>
                     </div>
                   </div>
                   <Badge
-                    variant={progresso === 100 ? "default" : "secondary"}
+                    variant={progresso >= 100 ? "default" : "secondary"}
                     className="text-xs shrink-0"
                   >
                     {aluno.checkinsRealizados}/{aluno.plano}
@@ -244,13 +251,14 @@ export default function TeacherDashboard({
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Progress value={progresso} />
+                <Progress value={Math.min(progresso, 100)} />
 
                 {aluno.ultimoCheckin && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     <span>
-                      {aluno.ultimoCheckin.data} às {aluno.ultimoCheckin.hora}
+                      {aluno.ultimoCheckin.data}
+                      {aluno.ultimoCheckin.hora ? ` às ${aluno.ultimoCheckin.hora}` : ""}
                     </span>
                   </div>
                 )}
@@ -263,7 +271,6 @@ export default function TeacherDashboard({
                           variant="outline"
                           size="sm"
                           className="flex-1"
-                          onClick={() => setSelectedAluno(aluno)}
                           data-testid={`button-view-history-${aluno.id}`}
                         >
                           <History className="h-4 w-4 mr-1" />
@@ -278,20 +285,26 @@ export default function TeacherDashboard({
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-2 max-h-96 overflow-y-auto">
-                          {aluno.historico.map((item, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between py-2 border-b last:border-0"
-                            >
-                              <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-secondary" />
-                                <span className="text-sm">{item.data}</span>
+                          {aluno.historico.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              Nenhum check-in registrado
+                            </p>
+                          ) : (
+                            aluno.historico.map((item, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between py-2 border-b last:border-0"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className="h-4 w-4 text-secondary" />
+                                  <span className="text-sm">{item.data}</span>
+                                </div>
+                                <span className="text-sm text-muted-foreground">
+                                  {item.hora}
+                                </span>
                               </div>
-                              <span className="text-sm text-muted-foreground">
-                                {item.hora}
-                              </span>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -323,39 +336,32 @@ export default function TeacherDashboard({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full"
+                      className="w-full text-muted-foreground"
                       data-testid={`button-edit-plan-${aluno.id}`}
                     >
-                      <Edit className="h-4 w-4 mr-1" />
                       Alterar Plano
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Alterar Plano - {aluno.nome}</DialogTitle>
+                      <DialogTitle>Alterar Plano — {aluno.nome}</DialogTitle>
                       <DialogDescription>
-                        Selecione o novo plano do aluno
+                        Plano atual: <strong>{aluno.planoTitulo}</strong>
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="grid grid-cols-2 gap-4">
-                      <Button
-                        variant={aluno.plano === 8 ? "default" : "outline"}
-                        onClick={() => onAlterarPlano(aluno.id, 8)}
-                        data-testid="button-plan-8"
-                      >
-                        8 Check-ins
-                        <br />
-                        <span className="text-xs">(1x/semana)</span>
-                      </Button>
-                      <Button
-                        variant={aluno.plano === 12 ? "default" : "outline"}
-                        onClick={() => onAlterarPlano(aluno.id, 12)}
-                        data-testid="button-plan-12"
-                      >
-                        12 Check-ins
-                        <br />
-                        <span className="text-xs">(2x/semana)</span>
-                      </Button>
+                    <div className="space-y-2 py-2">
+                      {planos.map((p) => (
+                        <Button
+                          key={p.id}
+                          variant={aluno.planoId === p.id ? "default" : "outline"}
+                          className="w-full justify-between"
+                          onClick={() => onAlterarPlano(aluno.id, p.id)}
+                          data-testid={`button-plan-${p.id}`}
+                        >
+                          <span>{p.titulo}</span>
+                          <span className="text-xs opacity-70">{p.checkins} check-ins</span>
+                        </Button>
+                      ))}
                     </div>
                   </DialogContent>
                 </Dialog>
