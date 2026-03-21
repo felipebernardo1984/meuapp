@@ -61,7 +61,7 @@ export default function StudentRegistration({
         <CardHeader>
           <CardTitle>Cadastro de Aluno</CardTitle>
           <CardDescription>
-            Preencha seus dados para começar a treinar na Arena MUV
+            Preencha seus dados para começar a treinar na Seven Sports
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

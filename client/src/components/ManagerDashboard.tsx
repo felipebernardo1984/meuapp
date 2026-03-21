@@ -94,7 +94,7 @@ export default function ManagerDashboard({
         <h1 className="text-2xl font-bold mb-1" data-testid="text-manager-title">
           Painel do Gestor
         </h1>
-        <p className="text-muted-foreground">Arena MUV - Controle Total</p>
+        <p className="text-muted-foreground">Seven Sports - Controle Total</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 mb-6">

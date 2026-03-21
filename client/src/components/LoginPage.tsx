@@ -41,7 +41,7 @@ export default function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) 
         <Card className="border-primary/20">
           <CardHeader className="text-center space-y-2 pb-6">
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Arena MUV
+              SEVEN SPORTS
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Sistema de Check-ins
@@ -104,7 +104,7 @@ export default function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) 
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          Arena MUV • Versão Beta
+          SEVEN SPORTS • Versão Beta
         </p>
       </div>
     </div>
