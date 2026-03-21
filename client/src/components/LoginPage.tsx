@@ -104,7 +104,7 @@ export default function LoginPage({ onLogin, onCreateAccount }: LoginPageProps) 
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          SEVEN SPORTS • Versão Beta
+          (12) 98237-3299
         </p>
       </div>
     </div>
