@@ -220,6 +220,27 @@ export default function Home() {
     }
   };
 
+  const handleCheckinRetroativoAluno = (alunoLogin: string, data: string, hora: string) => {
+    const aluno = alunos.find((a) => a.login === alunoLogin);
+    if (aluno) {
+      const dataFormatada = new Date(data + "T12:00:00").toLocaleDateString("pt-BR");
+      const novoHistorico = [...aluno.historico, { data: dataFormatada, hora }]
+        .sort((a, b) => {
+          const [da, ma, ya] = a.data.split("/").map(Number);
+          const [db, mb, yb] = b.data.split("/").map(Number);
+          return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
+        });
+      const alunoAtualizado = {
+        ...aluno,
+        checkinsRealizados: aluno.checkinsRealizados + 1,
+        historico: novoHistorico,
+        ultimoCheckin: novoHistorico[novoHistorico.length - 1].data,
+      };
+      setAlunos((prev) => prev.map((a) => (a.login === alunoLogin ? alunoAtualizado : a)));
+      setSessao({ tipo: "aluno", aluno: alunoAtualizado });
+    }
+  };
+
   const handleAlterarPlano = (alunoId: string, novoPlano: 8 | 12) => {
     setAlunos((prev) =>
       prev.map((a) => (a.id === alunoId ? { ...a, plano: novoPlano } : a))
@@ -269,6 +290,7 @@ export default function Home() {
           historico={sessao.aluno.historico}
           onCheckin={() => handleCheckinAluno(sessao.aluno.login)}
           onRemoverCheckin={(index) => handleRemoverCheckin(sessao.aluno.login, index)}
+          onCheckinRetroativo={(data, hora) => handleCheckinRetroativoAluno(sessao.aluno.login, data, hora)}
         />
       )}
 

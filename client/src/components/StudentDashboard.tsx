@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, Clock, Calendar, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CheckCircle2, Clock, Calendar, Trash2, CalendarClock } from "lucide-react";
 
 interface StudentDashboardProps {
   studentName: string;
@@ -28,6 +38,7 @@ interface StudentDashboardProps {
   historico: Array<{ data: string; hora: string }>;
   onCheckin: () => void;
   onRemoverCheckin: (index: number) => void;
+  onCheckinRetroativo: (data: string, hora: string) => void;
 }
 
 export default function StudentDashboard({
@@ -42,8 +53,27 @@ export default function StudentDashboard({
   historico,
   onCheckin,
   onRemoverCheckin,
+  onCheckinRetroativo,
 }: StudentDashboardProps) {
   const [confirmarIndex, setConfirmarIndex] = useState<number | null>(null);
+  const [dialogRetroativo, setDialogRetroativo] = useState(false);
+  const [dataRetroativa, setDataRetroativa] = useState("");
+  const [horaRetroativa, setHoraRetroativa] = useState("");
+
+  const abrirRetroativo = () => {
+    const hoje = new Date().toISOString().split("T")[0];
+    const horaAtual = new Date().toTimeString().slice(0, 5);
+    setDataRetroativa(hoje);
+    setHoraRetroativa(horaAtual);
+    setDialogRetroativo(true);
+  };
+
+  const handleConfirmarRetroativo = () => {
+    if (dataRetroativa && horaRetroativa) {
+      onCheckinRetroativo(dataRetroativa, horaRetroativa);
+      setDialogRetroativo(false);
+    }
+  };
 
   const progresso = (checkinsRealizados / plano) * 100;
   const initials = studentName
@@ -144,7 +174,18 @@ export default function StudentDashboard({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Histórico de Check-ins</CardTitle>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <CardTitle className="text-lg">Histórico de Check-ins</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={abrirRetroativo}
+              data-testid="button-student-retroactive"
+            >
+              <CalendarClock className="h-4 w-4 mr-1" />
+              Registrar Aula Anterior
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {historico.length === 0 ? (
@@ -216,6 +257,57 @@ export default function StudentDashboard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={dialogRetroativo} onOpenChange={setDialogRetroativo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar Aula Anterior</DialogTitle>
+            <DialogDescription>
+              Selecione a data e hora da aula que você frequentou mas esqueceu de registrar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="data-retro-aluno">Data da aula</Label>
+              <Input
+                id="data-retro-aluno"
+                type="date"
+                value={dataRetroativa}
+                max={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setDataRetroativa(e.target.value)}
+                data-testid="input-student-retroactive-date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hora-retro-aluno">Horário da aula</Label>
+              <Input
+                id="hora-retro-aluno"
+                type="time"
+                value={horaRetroativa}
+                onChange={(e) => setHoraRetroativa(e.target.value)}
+                data-testid="input-student-retroactive-time"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDialogRetroativo(false)}
+              data-testid="button-cancel-retroactive-student"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmarRetroativo}
+              disabled={!dataRetroativa || !horaRetroativa}
+              data-testid="button-confirm-retroactive-student"
+            >
+              <CalendarClock className="h-4 w-4 mr-2" />
+              Registrar Check-in
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
