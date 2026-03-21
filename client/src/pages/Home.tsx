@@ -278,21 +278,24 @@ export default function Home() {
         <ThemeToggle />
       </div>
 
-      {sessao.tipo === "aluno" && (
-        <StudentDashboard
-          studentName={sessao.aluno.nome}
-          modalidade={sessao.aluno.modalidade}
-          plano={sessao.aluno.plano}
-          checkinsRealizados={sessao.aluno.checkinsRealizados}
-          cicloInicio="15/12/2024"
-          diasRestantes={12}
-          statusMensalidade={sessao.aluno.statusMensalidade}
-          historico={sessao.aluno.historico}
-          onCheckin={() => handleCheckinAluno(sessao.aluno.login)}
-          onRemoverCheckin={(index) => handleRemoverCheckin(sessao.aluno.login, index)}
-          onCheckinRetroativo={(data, hora) => handleCheckinRetroativoAluno(sessao.aluno.login, data, hora)}
-        />
-      )}
+      {sessao.tipo === "aluno" && (() => {
+        const alunoAtual = alunos.find((a) => a.login === sessao.aluno.login) ?? sessao.aluno;
+        return (
+          <StudentDashboard
+            studentName={alunoAtual.nome}
+            modalidade={alunoAtual.modalidade}
+            plano={alunoAtual.plano}
+            checkinsRealizados={alunoAtual.checkinsRealizados}
+            cicloInicio="15/12/2024"
+            diasRestantes={12}
+            statusMensalidade={alunoAtual.statusMensalidade}
+            historico={alunoAtual.historico}
+            onCheckin={() => handleCheckinAluno(alunoAtual.login)}
+            onRemoverCheckin={(index) => handleRemoverCheckin(alunoAtual.login, index)}
+            onCheckinRetroativo={(data, hora) => handleCheckinRetroativoAluno(alunoAtual.login, data, hora)}
+          />
+        );
+      })()}
 
       {sessao.tipo === "professor" && (
         <TeacherDashboard
