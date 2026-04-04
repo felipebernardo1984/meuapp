@@ -357,14 +357,15 @@ export default function ManagerDashboard({
               </div>
             ))}
 
-            <button
-              className="w-full flex items-center gap-2 p-3 rounded-md text-sm text-muted-foreground hover-elevate border border-dashed border-border"
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg mt-2"
               onClick={() => { setFormPlano({ titulo: "", valor: "" }); setDialogNovoPlano(true); }}
               data-testid="button-add-plan"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="mr-2 h-5 w-5" />
               Criar novo plano
-            </button>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -492,14 +493,15 @@ export default function ManagerDashboard({
               </div>
             ))}
 
-            <button
-              className="w-full flex items-center gap-2 p-3 rounded-md text-sm text-muted-foreground hover-elevate border border-dashed border-border"
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg mt-2"
               onClick={() => { setFormProfessor({ nome: "", modalidade: "" }); setDialogProfessor(true); }}
               data-testid="button-add-teacher"
             >
-              <UserPlus className="h-4 w-4" />
-              Cadastrar professor
-            </button>
+              <UserPlus className="mr-2 h-5 w-5" />
+              Cadastrar Professor
+            </Button>
           </div>
         </CardContent>
       </Card>
