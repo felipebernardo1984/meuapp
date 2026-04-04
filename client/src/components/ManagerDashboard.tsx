@@ -28,14 +28,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download, CheckCircle, XCircle, UserCheck, UserPlus } from "lucide-react";
+import { Download, CheckCircle, XCircle, UserCheck, UserPlus, Pencil, Trash2, Plus } from "lucide-react";
+import type { Plano } from "@/pages/Home";
 
 interface AlunoGestor {
   id: string;
   nome: string;
   cpf: string;
   modalidade: string;
-  plano: 8 | 12;
+  plano: number;
+  planoTitulo: string;
   checkinsRealizados: number;
   statusMensalidade: "Em dia" | "Pendente";
   ultimoCheckin?: string;
@@ -54,32 +56,41 @@ interface NovoAlunoDados {
   senha: string;
   cpf: string;
   modalidade: string;
-  plano: 8 | 12;
+  planoId: string;
 }
 
 interface ManagerDashboardProps {
+  planos: Plano[];
   alunos: AlunoGestor[];
   professores: ProfessorGestor[];
   onAprovarAluno: (alunoId: string) => void;
   onCadastrarProfessor: (nome: string, modalidade: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
+  onCriarPlano: (titulo: string, checkins: number) => void;
+  onEditarPlano: (id: string, titulo: string, checkins: number) => void;
+  onExcluirPlano: (id: string) => void;
   onExportarPDF: () => void;
   onExportarExcel: () => void;
 }
 
 export default function ManagerDashboard({
+  planos,
   alunos,
   professores,
   onAprovarAluno,
   onCadastrarProfessor,
   onCadastrarAluno,
+  onCriarPlano,
+  onEditarPlano,
+  onExcluirPlano,
   onExportarPDF,
   onExportarExcel,
 }: ManagerDashboardProps) {
   const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
-  const [filtroProfessor, setFiltroProfessor] = useState<string>("todos");
-  const [dialogAberto, setDialogAberto] = useState(false);
+  const [dialogProfessor, setDialogProfessor] = useState(false);
   const [dialogNovoAluno, setDialogNovoAluno] = useState(false);
+  const [dialogNovoPLano, setDialogNovoPlano] = useState(false);
+  const [planoEditando, setPlanoEditando] = useState<Plano | null>(null);
   const [novoProfessor, setNovoProfessor] = useState({ nome: "", modalidade: "" });
   const [novoAluno, setNovoAluno] = useState<NovoAlunoDados>({
     nome: "",
@@ -87,37 +98,53 @@ export default function ManagerDashboard({
     senha: "",
     cpf: "",
     modalidade: "",
-    plano: 8,
+    planoId: planos[0]?.id ?? "",
   });
+  const [formPlano, setFormPlano] = useState({ titulo: "", checkins: "" });
 
   const handleCadastrarAluno = () => {
-    if (novoAluno.nome && novoAluno.login && novoAluno.senha && novoAluno.cpf && novoAluno.modalidade) {
+    if (novoAluno.nome && novoAluno.login && novoAluno.senha && novoAluno.cpf && novoAluno.modalidade && novoAluno.planoId) {
       onCadastrarAluno(novoAluno);
+      const plano = planos.find((p) => p.id === novoAluno.planoId);
       alert(
-        `Aluno cadastrado com sucesso!\n\nLogin: ${novoAluno.login}\nSenha: ${novoAluno.senha}\n\nEntregue estas credenciais ao aluno.`
+        `Aluno cadastrado!\n\nLogin: ${novoAluno.login}\nSenha: ${novoAluno.senha}\nPlano: ${plano?.titulo}\n\nEntregue as credenciais ao aluno.`
       );
-      setNovoAluno({ nome: "", login: "", senha: "", cpf: "", modalidade: "", plano: 8 });
+      setNovoAluno({ nome: "", login: "", senha: "", cpf: "", modalidade: "", planoId: planos[0]?.id ?? "" });
       setDialogNovoAluno(false);
     }
   };
-
-  const alunosFiltrados = alunos.filter((aluno) => {
-    const matchModalidade =
-      filtroModalidade === "todas" || aluno.modalidade === filtroModalidade;
-    const matchProfessor = filtroProfessor === "todos";
-    return matchModalidade && matchProfessor;
-  });
-
-  const alunosPendentes = alunos.filter((a) => !a.aprovado);
-  const modalidades = Array.from(new Set(alunos.map((a) => a.modalidade)));
 
   const handleCadastrarProfessor = () => {
     if (novoProfessor.nome && novoProfessor.modalidade) {
       onCadastrarProfessor(novoProfessor.nome, novoProfessor.modalidade);
       setNovoProfessor({ nome: "", modalidade: "" });
-      setDialogAberto(false);
+      setDialogProfessor(false);
     }
   };
+
+  const abrirEditarPlano = (plano: Plano) => {
+    setPlanoEditando(plano);
+    setFormPlano({ titulo: plano.titulo, checkins: String(plano.checkins) });
+  };
+
+  const handleSalvarPlano = () => {
+    const checkins = parseInt(formPlano.checkins);
+    if (!formPlano.titulo || !checkins || checkins < 1) return;
+    if (planoEditando) {
+      onEditarPlano(planoEditando.id, formPlano.titulo, checkins);
+      setPlanoEditando(null);
+    } else {
+      onCriarPlano(formPlano.titulo, checkins);
+      setDialogNovoPlano(false);
+    }
+    setFormPlano({ titulo: "", checkins: "" });
+  };
+
+  const alunosFiltrados = alunos.filter((aluno) =>
+    filtroModalidade === "todas" || aluno.modalidade === filtroModalidade
+  );
+  const alunosPendentes = alunos.filter((a) => !a.aprovado);
+  const modalidades = Array.from(new Set(alunos.map((a) => a.modalidade)));
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
@@ -128,25 +155,19 @@ export default function ManagerDashboard({
         <p className="text-muted-foreground">Seven Sports - Controle Total</p>
       </div>
 
+      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Alunos
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Alunos</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold" data-testid="text-total-students">
-              {alunos.length}
-            </p>
+            <p className="text-3xl font-bold" data-testid="text-total-students">{alunos.length}</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Alunos Pendentes
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Alunos Pendentes</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-orange-600" data-testid="text-pending-students">
@@ -154,21 +175,155 @@ export default function ManagerDashboard({
             </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Professores Ativos
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Professores Ativos</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold" data-testid="text-total-teachers">
-              {professores.length}
-            </p>
+            <p className="text-3xl font-bold" data-testid="text-total-teachers">{professores.length}</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Planos */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-lg">Planos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {planos.map((plano) => (
+              <div
+                key={plano.id}
+                className="flex items-center justify-between p-3 bg-muted rounded-md"
+                data-testid={`plan-${plano.id}`}
+              >
+                <div>
+                  <p className="font-medium">{plano.titulo}</p>
+                  <p className="text-sm text-muted-foreground">{plano.checkins} check-ins por ciclo</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => abrirEditarPlano(plano)}
+                    data-testid={`button-edit-plan-${plano.id}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => onExcluirPlano(plano.id)}
+                    data-testid={`button-delete-plan-${plano.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            <Dialog open={dialogNovoPLano} onOpenChange={setDialogNovoPlano}>
+              <DialogTrigger asChild>
+                <button
+                  className="w-full flex items-center gap-2 p-3 rounded-md text-sm text-muted-foreground hover-elevate border border-dashed border-border"
+                  data-testid="button-add-plan"
+                >
+                  <Plus className="h-4 w-4" />
+                  Criar novo plano
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Plano</DialogTitle>
+                  <DialogDescription>
+                    Defina o título e quantos check-ins o aluno deve realizar no ciclo.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-2">
+                  <div className="space-y-1">
+                    <Label>Título do plano</Label>
+                    <Input
+                      placeholder="Ex: 3x por semana, Intensivo..."
+                      value={formPlano.titulo}
+                      onChange={(e) => setFormPlano({ ...formPlano, titulo: e.target.value })}
+                      data-testid="input-plan-title"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Quantidade de check-ins</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="Ex: 8, 12, 16..."
+                      value={formPlano.checkins}
+                      onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
+                      data-testid="input-plan-checkins"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDialogNovoPlano(false)}>Cancelar</Button>
+                  <Button
+                    onClick={handleSalvarPlano}
+                    disabled={!formPlano.titulo || !formPlano.checkins || parseInt(formPlano.checkins) < 1}
+                    data-testid="button-confirm-plan"
+                  >
+                    Criar Plano
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Dialog editar plano */}
+            <Dialog open={!!planoEditando} onOpenChange={(open) => { if (!open) setPlanoEditando(null); }}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Editar Plano</DialogTitle>
+                  <DialogDescription>
+                    Alterações serão aplicadas a todos os alunos neste plano.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-2">
+                  <div className="space-y-1">
+                    <Label>Título do plano</Label>
+                    <Input
+                      placeholder="Ex: 1x por semana"
+                      value={formPlano.titulo}
+                      onChange={(e) => setFormPlano({ ...formPlano, titulo: e.target.value })}
+                      data-testid="input-edit-plan-title"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Quantidade de check-ins</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="Ex: 8"
+                      value={formPlano.checkins}
+                      onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
+                      data-testid="input-edit-plan-checkins"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPlanoEditando(null)}>Cancelar</Button>
+                  <Button
+                    onClick={handleSalvarPlano}
+                    disabled={!formPlano.titulo || !formPlano.checkins || parseInt(formPlano.checkins) < 1}
+                    data-testid="button-confirm-edit-plan"
+                  >
+                    Salvar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Professores */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">Professores</CardTitle>
@@ -188,7 +343,7 @@ export default function ManagerDashboard({
               </div>
             ))}
 
-            <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+            <Dialog open={dialogProfessor} onOpenChange={setDialogProfessor}>
               <DialogTrigger asChild>
                 <button
                   className="w-full flex items-center gap-2 p-3 rounded-md text-sm text-muted-foreground hover-elevate border border-dashed border-border"
@@ -207,26 +362,21 @@ export default function ManagerDashboard({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nome-professor">Nome Completo</Label>
+                    <Label>Nome Completo</Label>
                     <Input
-                      id="nome-professor"
                       placeholder="Digite o nome completo"
                       value={novoProfessor.nome}
-                      onChange={(e) =>
-                        setNovoProfessor({ ...novoProfessor, nome: e.target.value })
-                      }
+                      onChange={(e) => setNovoProfessor({ ...novoProfessor, nome: e.target.value })}
                       data-testid="input-teacher-name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="modalidade-professor">Modalidade</Label>
+                    <Label>Modalidade</Label>
                     <Select
                       value={novoProfessor.modalidade}
-                      onValueChange={(value) =>
-                        setNovoProfessor({ ...novoProfessor, modalidade: value })
-                      }
+                      onValueChange={(value) => setNovoProfessor({ ...novoProfessor, modalidade: value })}
                     >
-                      <SelectTrigger id="modalidade-professor" data-testid="select-teacher-modality">
+                      <SelectTrigger data-testid="select-teacher-modality">
                         <SelectValue placeholder="Selecione a modalidade" />
                       </SelectTrigger>
                       <SelectContent>
@@ -238,6 +388,7 @@ export default function ManagerDashboard({
                   </div>
                 </div>
                 <DialogFooter>
+                  <Button variant="outline" onClick={() => setDialogProfessor(false)}>Cancelar</Button>
                   <Button
                     onClick={handleCadastrarProfessor}
                     disabled={!novoProfessor.nome || !novoProfessor.modalidade}
@@ -252,6 +403,7 @@ export default function ManagerDashboard({
         </CardContent>
       </Card>
 
+      {/* Aprovações pendentes */}
       {alunosPendentes.length > 0 && (
         <Card className="mb-6 border-orange-200 dark:border-orange-900">
           <CardHeader>
@@ -271,13 +423,10 @@ export default function ManagerDashboard({
                   <div>
                     <p className="font-medium">{aluno.nome}</p>
                     <p className="text-sm text-muted-foreground">
-                      {aluno.modalidade} - {aluno.cpf}
+                      {aluno.modalidade} — {aluno.cpf}
                     </p>
                   </div>
-                  <Button
-                    onClick={() => onAprovarAluno(aluno.id)}
-                    data-testid={`button-approve-${aluno.id}`}
-                  >
+                  <Button onClick={() => onAprovarAluno(aluno.id)} data-testid={`button-approve-${aluno.id}`}>
                     Aprovar
                   </Button>
                 </div>
@@ -287,6 +436,7 @@ export default function ManagerDashboard({
         </Card>
       )}
 
+      {/* Tabela de alunos */}
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -362,26 +512,27 @@ export default function ManagerDashboard({
                     <div className="space-y-1">
                       <Label>Plano</Label>
                       <Select
-                        value={String(novoAluno.plano)}
-                        onValueChange={(v) => setNovoAluno({ ...novoAluno, plano: Number(v) as 8 | 12 })}
+                        value={novoAluno.planoId}
+                        onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
                       >
                         <SelectTrigger data-testid="select-manager-student-plan">
-                          <SelectValue />
+                          <SelectValue placeholder="Selecione o plano" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="8">8 Check-ins — 1x por semana (30 dias)</SelectItem>
-                          <SelectItem value="12">12 Check-ins — 2x por semana (30 dias)</SelectItem>
+                          {planos.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.titulo} — {p.checkins} check-ins
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>
-                      Cancelar
-                    </Button>
+                    <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>Cancelar</Button>
                     <Button
                       onClick={handleCadastrarAluno}
-                      disabled={!novoAluno.nome || !novoAluno.login || !novoAluno.senha || !novoAluno.cpf || !novoAluno.modalidade}
+                      disabled={!novoAluno.nome || !novoAluno.login || !novoAluno.senha || !novoAluno.cpf || !novoAluno.modalidade || !novoAluno.planoId}
                       data-testid="button-confirm-manager-student"
                     >
                       Cadastrar
@@ -397,26 +548,16 @@ export default function ManagerDashboard({
                 <SelectContent>
                   <SelectItem value="todas">Todas</SelectItem>
                   {modalidades.map((mod) => (
-                    <SelectItem key={mod} value={mod}>
-                      {mod}
-                    </SelectItem>
+                    <SelectItem key={mod} value={mod}>{mod}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Button
-                variant="outline"
-                onClick={onExportarPDF}
-                data-testid="button-export-pdf"
-              >
+              <Button variant="outline" onClick={onExportarPDF} data-testid="button-export-pdf">
                 <Download className="h-4 w-4 mr-2" />
                 PDF
               </Button>
-              <Button
-                variant="outline"
-                onClick={onExportarExcel}
-                data-testid="button-export-excel"
-              >
+              <Button variant="outline" onClick={onExportarExcel} data-testid="button-export-excel">
                 <Download className="h-4 w-4 mr-2" />
                 Excel
               </Button>
@@ -442,20 +583,10 @@ export default function ManagerDashboard({
                   <TableRow key={aluno.id} data-testid={`row-student-${aluno.id}`}>
                     <TableCell className="font-medium">{aluno.nome}</TableCell>
                     <TableCell>{aluno.modalidade}</TableCell>
+                    <TableCell>{aluno.planoTitulo}</TableCell>
+                    <TableCell>{aluno.checkinsRealizados}/{aluno.plano}</TableCell>
                     <TableCell>
-                      {aluno.plano === 8 ? "1x/semana" : "2x/semana"}
-                    </TableCell>
-                    <TableCell>
-                      {aluno.checkinsRealizados}/{aluno.plano}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          aluno.statusMensalidade === "Em dia"
-                            ? "default"
-                            : "destructive"
-                        }
-                      >
+                      <Badge variant={aluno.statusMensalidade === "Em dia" ? "default" : "destructive"}>
                         {aluno.statusMensalidade}
                       </Badge>
                     </TableCell>
