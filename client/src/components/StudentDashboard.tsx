@@ -32,6 +32,7 @@ interface StudentDashboardProps {
   modalidade: string;
   plano: number;
   planoTitulo: string;
+  planoValorTexto?: string;
   checkinsRealizados: number;
   cicloInicio: string;
   diasRestantes: number;
@@ -48,6 +49,7 @@ export default function StudentDashboard({
   modalidade,
   plano,
   planoTitulo,
+  planoValorTexto,
   checkinsRealizados,
   cicloInicio,
   diasRestantes,
@@ -77,7 +79,8 @@ export default function StudentDashboard({
     }
   };
 
-  const progresso = (checkinsRealizados / plano) * 100;
+  const temCheckins = plano > 0;
+  const progresso = temCheckins ? (checkinsRealizados / plano) * 100 : 0;
   const initials = studentName
     .split(" ")
     .map((n) => n[0])
@@ -140,14 +143,18 @@ export default function StudentDashboard({
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Plano: {planoTitulo}
-              </span>
-              <span className="font-medium" data-testid="text-checkins-count">
-                {checkinsRealizados}/{plano}
-              </span>
+              <span className="text-muted-foreground">Plano: {planoTitulo}</span>
+              {temCheckins ? (
+                <span className="font-medium" data-testid="text-checkins-count">
+                  {checkinsRealizados}/{plano}
+                </span>
+              ) : (
+                <span className="font-medium text-secondary" data-testid="text-plan-value">
+                  {planoValorTexto ?? "Mensalista"}
+                </span>
+              )}
             </div>
-            <Progress value={progresso} data-testid="progress-checkins" />
+            {temCheckins && <Progress value={progresso} data-testid="progress-checkins" />}
           </div>
 
           <div className="grid grid-cols-2 gap-4 pt-2">

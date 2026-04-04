@@ -10,7 +10,8 @@ import { LogOut } from "lucide-react";
 export interface Plano {
   id: string;
   titulo: string;
-  checkins: number;
+  checkins: number;       // 0 = plano monetário (sem contagem de check-ins)
+  valorTexto?: string;    // exibido quando checkins = 0, ex: "R$ 140,00"
 }
 
 interface Aluno {
@@ -23,6 +24,7 @@ interface Aluno {
   planoId: string;
   planoTitulo: string;
   plano: number;
+  planoValorTexto?: string;
   checkinsRealizados: number;
   historico: Array<{ data: string; hora: string }>;
   statusMensalidade: "Em dia" | "Pendente";
@@ -45,7 +47,7 @@ const GESTOR_SENHA = "333";
 const planosIniciais: Plano[] = [
   { id: "pl1", titulo: "1x por semana", checkins: 8 },
   { id: "pl2", titulo: "2x por semana", checkins: 12 },
-  { id: "pl3", titulo: "Mensalista", checkins: 4 },
+  { id: "pl3", titulo: "Mensalista", checkins: 0, valorTexto: "R$ 140,00" },
 ];
 
 const professoresIniciais: Professor[] = [
@@ -109,6 +111,14 @@ type SessaoAtiva =
   | { tipo: "gestor" }
   | null;
 
+function gerarLogin(nome: string): string {
+  return nome
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, ".");
+}
+
 export default function Home() {
   const [sessao, setSessao] = useState<SessaoAtiva>(null);
   const [alunos, setAlunos] = useState<Aluno[]>(alunosIniciais);
@@ -120,41 +130,26 @@ export default function Home() {
       setSessao({ tipo: "gestor" });
       return;
     }
-
-    const professor = professores.find(
-      (p) => p.login === login && p.senha === senha
-    );
-    if (professor) {
-      setSessao({ tipo: "professor", professor });
-      return;
-    }
-
-    const aluno = alunos.find(
-      (a) => a.login === login && a.senha === senha && a.aprovado
-    );
-    if (aluno) {
-      setSessao({ tipo: "aluno", aluno });
-      return;
-    }
-
+    const professor = professores.find((p) => p.login === login && p.senha === senha);
+    if (professor) { setSessao({ tipo: "professor", professor }); return; }
+    const aluno = alunos.find((a) => a.login === login && a.senha === senha && a.aprovado);
+    if (aluno) { setSessao({ tipo: "aluno", aluno }); return; }
     alert("Usuário ou senha incorretos");
   };
 
   const handleLogout = () => setSessao(null);
 
-  const handleCriarPlano = (titulo: string, checkins: number) => {
-    const novo: Plano = { id: `pl${Date.now()}`, titulo, checkins };
-    setPlanos((prev) => [...prev, novo]);
+  // ── Planos ──────────────────────────────────────────────────────────────
+  const handleCriarPlano = (titulo: string, checkins: number, valorTexto?: string) => {
+    setPlanos((prev) => [...prev, { id: `pl${Date.now()}`, titulo, checkins, valorTexto }]);
   };
 
-  const handleEditarPlano = (id: string, titulo: string, checkins: number) => {
-    setPlanos((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, titulo, checkins } : p))
-    );
+  const handleEditarPlano = (id: string, titulo: string, checkins: number, valorTexto?: string) => {
+    setPlanos((prev) => prev.map((p) => p.id === id ? { ...p, titulo, checkins, valorTexto } : p));
     setAlunos((prev) =>
       prev.map((a) =>
         a.planoId === id
-          ? { ...a, planoTitulo: titulo, plano: checkins }
+          ? { ...a, planoTitulo: titulo, plano: checkins, planoValorTexto: valorTexto }
           : a
       )
     );
@@ -164,26 +159,43 @@ export default function Home() {
     setPlanos((prev) => prev.filter((p) => p.id !== id));
   };
 
+  // ── Professores ──────────────────────────────────────────────────────────
+  const handleCadastrarProfessor = (nome: string, modalidade: string) => {
+    const login = gerarLogin(nome);
+    const novoProfessor: Professor = { id: `p${Date.now()}`, nome, login, senha: "admin", modalidade };
+    setProfessores((prev) => [...prev, novoProfessor]);
+    alert(`Professor cadastrado!\nLogin: ${login}\nSenha: admin\n\nEntregue estas credenciais ao professor.`);
+  };
+
+  const handleEditarProfessor = (id: string, nome: string, modalidade: string) => {
+    setProfessores((prev) => prev.map((p) => p.id === id ? { ...p, nome, modalidade } : p));
+  };
+
+  const handleExcluirProfessor = (id: string) => {
+    setProfessores((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // ── Alunos ───────────────────────────────────────────────────────────────
   const handleCadastrarAluno = (dados: {
     nome: string;
-    login: string;
-    senha: string;
     cpf: string;
     modalidade: string;
     planoId: string;
   }) => {
-    const planoSelecionado = planos.find((p) => p.id === dados.planoId);
-    if (!planoSelecionado) return;
+    const plano = planos.find((p) => p.id === dados.planoId);
+    if (!plano) return;
+    const login = gerarLogin(dados.nome);
     const novoAluno: Aluno = {
       id: `a${Date.now()}`,
       nome: dados.nome,
-      login: dados.login,
-      senha: dados.senha,
+      login,
+      senha: dados.cpf,
       cpf: dados.cpf,
       modalidade: dados.modalidade,
-      planoId: planoSelecionado.id,
-      planoTitulo: planoSelecionado.titulo,
-      plano: planoSelecionado.checkins,
+      planoId: plano.id,
+      planoTitulo: plano.titulo,
+      plano: plano.checkins,
+      planoValorTexto: plano.valorTexto,
       checkinsRealizados: 0,
       historico: [],
       statusMensalidade: "Em dia",
@@ -191,20 +203,7 @@ export default function Home() {
       ultimoCheckin: undefined,
     };
     setAlunos((prev) => [...prev, novoAluno]);
-  };
-
-  const handleCadastrarProfessor = (nome: string, modalidade: string) => {
-    const novoProfessor: Professor = {
-      id: `p${Date.now()}`,
-      nome,
-      login: nome.toLowerCase().replace(/\s+/g, "."),
-      senha: "admin",
-      modalidade,
-    };
-    setProfessores((prev) => [...prev, novoProfessor]);
-    alert(
-      `Professor cadastrado!\nLogin: ${novoProfessor.login}\nSenha: admin\n\nEntregue estas credenciais ao professor.`
-    );
+    alert(`Aluno cadastrado!\n\nLogin: ${login}\nSenha: ${dados.cpf}\n\nEntregue estas credenciais ao aluno.`);
   };
 
   const handleCheckinManual = (alunoId: string, data?: string, hora?: string) => {
@@ -213,16 +212,10 @@ export default function Home() {
       ? new Date(data + "T12:00:00").toLocaleDateString("pt-BR")
       : agora.toLocaleDateString("pt-BR");
     const horaFormatada = hora || agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
     setAlunos((prev) =>
       prev.map((a) =>
         a.id === alunoId
-          ? {
-              ...a,
-              checkinsRealizados: a.checkinsRealizados + 1,
-              historico: [...a.historico, { data: dataFormatada, hora: horaFormatada }],
-              ultimoCheckin: dataFormatada,
-            }
+          ? { ...a, checkinsRealizados: a.checkinsRealizados + 1, historico: [...a.historico, { data: dataFormatada, hora: horaFormatada }], ultimoCheckin: dataFormatada }
           : a
       )
     );
@@ -232,19 +225,8 @@ export default function Home() {
     const aluno = alunos.find((a) => a.login === alunoLogin);
     if (aluno) {
       const agora = new Date();
-      const novoHistorico = [
-        ...aluno.historico,
-        {
-          data: agora.toLocaleDateString("pt-BR"),
-          hora: agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-        },
-      ];
-      const alunoAtualizado = {
-        ...aluno,
-        checkinsRealizados: aluno.checkinsRealizados + 1,
-        historico: novoHistorico,
-        ultimoCheckin: agora.toLocaleDateString("pt-BR"),
-      };
+      const novoHistorico = [...aluno.historico, { data: agora.toLocaleDateString("pt-BR"), hora: agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) }];
+      const alunoAtualizado = { ...aluno, checkinsRealizados: aluno.checkinsRealizados + 1, historico: novoHistorico, ultimoCheckin: agora.toLocaleDateString("pt-BR") };
       setAlunos((prev) => prev.map((a) => (a.login === alunoLogin ? alunoAtualizado : a)));
       setSessao({ tipo: "aluno", aluno: alunoAtualizado });
     }
@@ -254,12 +236,7 @@ export default function Home() {
     const aluno = alunos.find((a) => a.login === alunoLogin);
     if (aluno) {
       const novoHistorico = aluno.historico.filter((_, i) => i !== index);
-      const alunoAtualizado = {
-        ...aluno,
-        checkinsRealizados: Math.max(0, aluno.checkinsRealizados - 1),
-        historico: novoHistorico,
-        ultimoCheckin: novoHistorico.length > 0 ? novoHistorico[novoHistorico.length - 1].data : undefined,
-      };
+      const alunoAtualizado = { ...aluno, checkinsRealizados: Math.max(0, aluno.checkinsRealizados - 1), historico: novoHistorico, ultimoCheckin: novoHistorico.length > 0 ? novoHistorico[novoHistorico.length - 1].data : undefined };
       setAlunos((prev) => prev.map((a) => (a.login === alunoLogin ? alunoAtualizado : a)));
       setSessao({ tipo: "aluno", aluno: alunoAtualizado });
     }
@@ -269,18 +246,12 @@ export default function Home() {
     const aluno = alunos.find((a) => a.login === alunoLogin);
     if (aluno) {
       const dataFormatada = new Date(data + "T12:00:00").toLocaleDateString("pt-BR");
-      const novoHistorico = [...aluno.historico, { data: dataFormatada, hora }]
-        .sort((a, b) => {
-          const [da, ma, ya] = a.data.split("/").map(Number);
-          const [db, mb, yb] = b.data.split("/").map(Number);
-          return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
-        });
-      const alunoAtualizado = {
-        ...aluno,
-        checkinsRealizados: aluno.checkinsRealizados + 1,
-        historico: novoHistorico,
-        ultimoCheckin: novoHistorico[novoHistorico.length - 1].data,
-      };
+      const novoHistorico = [...aluno.historico, { data: dataFormatada, hora }].sort((a, b) => {
+        const [da, ma, ya] = a.data.split("/").map(Number);
+        const [db, mb, yb] = b.data.split("/").map(Number);
+        return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
+      });
+      const alunoAtualizado = { ...aluno, checkinsRealizados: aluno.checkinsRealizados + 1, historico: novoHistorico, ultimoCheckin: novoHistorico[novoHistorico.length - 1].data };
       setAlunos((prev) => prev.map((a) => (a.login === alunoLogin ? alunoAtualizado : a)));
       setSessao({ tipo: "aluno", aluno: alunoAtualizado });
     }
@@ -292,7 +263,7 @@ export default function Home() {
       setAlunos((prev) =>
         prev.map((a) =>
           a.id === alunoId
-            ? { ...a, planoId: plano.id, planoTitulo: plano.titulo, plano: plano.checkins }
+            ? { ...a, planoId: plano.id, planoTitulo: plano.titulo, plano: plano.checkins, planoValorTexto: plano.valorTexto }
             : a
         )
       );
@@ -300,17 +271,13 @@ export default function Home() {
   };
 
   const handleAprovarAluno = (alunoId: string) => {
-    setAlunos((prev) =>
-      prev.map((a) => (a.id === alunoId ? { ...a, aprovado: true } : a))
-    );
+    setAlunos((prev) => prev.map((a) => (a.id === alunoId ? { ...a, aprovado: true } : a)));
   };
 
   if (!sessao) {
     return (
       <>
-        <div className="fixed top-4 right-4 z-50">
-          <ThemeToggle />
-        </div>
+        <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
         <LoginPage onLogin={handleLogin} />
       </>
     );
@@ -319,12 +286,7 @@ export default function Home() {
   return (
     <>
       <div className="fixed top-4 right-4 z-50 flex gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleLogout}
-          data-testid="button-logout"
-        >
+        <Button variant="outline" size="icon" onClick={handleLogout} data-testid="button-logout">
           <LogOut className="h-5 w-5" />
         </Button>
         <ThemeToggle />
@@ -338,6 +300,7 @@ export default function Home() {
             modalidade={alunoAtual.modalidade}
             plano={alunoAtual.plano}
             planoTitulo={alunoAtual.planoTitulo}
+            planoValorTexto={alunoAtual.planoValorTexto}
             checkinsRealizados={alunoAtual.checkinsRealizados}
             cicloInicio="15/12/2024"
             diasRestantes={12}
@@ -363,21 +326,15 @@ export default function Home() {
               plano: a.plano,
               planoTitulo: a.planoTitulo,
               planoId: a.planoId,
+              planoValorTexto: a.planoValorTexto,
               checkinsRealizados: a.checkinsRealizados,
-              ultimoCheckin: a.ultimoCheckin
-                ? { data: a.ultimoCheckin, hora: "" }
-                : undefined,
+              ultimoCheckin: a.ultimoCheckin ? { data: a.ultimoCheckin, hora: "" } : undefined,
               historico: a.historico,
               photoUrl: a.photoUrl,
             }))}
           onCheckinManual={handleCheckinManual}
           onAlterarPlano={handleAlterarPlano}
-          onCadastrarAluno={(dados) =>
-            handleCadastrarAluno({
-              ...dados,
-              modalidade: sessao.professor.modalidade,
-            })
-          }
+          onCadastrarAluno={(dados) => handleCadastrarAluno({ ...dados, modalidade: sessao.professor.modalidade })}
         />
       )}
 
@@ -391,18 +348,17 @@ export default function Home() {
             modalidade: a.modalidade,
             plano: a.plano,
             planoTitulo: a.planoTitulo,
+            planoValorTexto: a.planoValorTexto,
             checkinsRealizados: a.checkinsRealizados,
             statusMensalidade: a.statusMensalidade,
             ultimoCheckin: a.ultimoCheckin,
             aprovado: a.aprovado,
           }))}
-          professores={professores.map((p) => ({
-            id: p.id,
-            nome: p.nome,
-            modalidade: p.modalidade,
-          }))}
+          professores={professores.map((p) => ({ id: p.id, nome: p.nome, modalidade: p.modalidade }))}
           onAprovarAluno={handleAprovarAluno}
           onCadastrarProfessor={handleCadastrarProfessor}
+          onEditarProfessor={handleEditarProfessor}
+          onExcluirProfessor={handleExcluirProfessor}
           onCadastrarAluno={handleCadastrarAluno}
           onCriarPlano={handleCriarPlano}
           onEditarPlano={handleEditarPlano}
