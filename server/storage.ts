@@ -1,38 +1,217 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { eq, and } from "drizzle-orm";
+import { db } from "./db";
+import {
+  users, arenas, plans, teachers, students, checkinHistory,
+  type User, type InsertUser,
+  type Arena, type InsertArena,
+  type Plan, type InsertPlan,
+  type Teacher, type InsertTeacher,
+  type Student, type InsertStudent,
+  type CheckinEntry, type InsertCheckin,
+} from "@shared/schema";
 
 export interface IStorage {
+  // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+
+  // Arenas
+  listArenas(): Promise<Arena[]>;
+  getArena(id: string): Promise<Arena | undefined>;
+  getArenaByGestorLogin(login: string): Promise<Arena | undefined>;
+  createArena(arena: InsertArena): Promise<Arena>;
+  updateArena(id: string, data: Partial<InsertArena>): Promise<Arena>;
+  deleteArena(id: string): Promise<void>;
+
+  // Plans
+  listPlans(arenaId: string): Promise<Plan[]>;
+  getPlan(id: string): Promise<Plan | undefined>;
+  createPlan(plan: InsertPlan): Promise<Plan>;
+  updatePlan(id: string, data: Partial<InsertPlan>): Promise<Plan>;
+  deletePlan(id: string): Promise<void>;
+
+  // Teachers
+  listTeachers(arenaId: string): Promise<Teacher[]>;
+  getTeacher(id: string): Promise<Teacher | undefined>;
+  getTeacherByLogin(arenaId: string, login: string): Promise<Teacher | undefined>;
+  createTeacher(teacher: InsertTeacher): Promise<Teacher>;
+  updateTeacher(id: string, data: Partial<InsertTeacher>): Promise<Teacher>;
+  deleteTeacher(id: string): Promise<void>;
+
+  // Students
+  listStudents(arenaId: string): Promise<Student[]>;
+  getStudent(id: string): Promise<Student | undefined>;
+  getStudentByLogin(arenaId: string, login: string): Promise<Student | undefined>;
+  createStudent(student: InsertStudent): Promise<Student>;
+  updateStudent(id: string, data: Partial<InsertStudent>): Promise<Student>;
+  deleteStudent(id: string): Promise<void>;
+
+  // Checkin History
+  listCheckins(studentId: string): Promise<CheckinEntry[]>;
+  addCheckin(checkin: InsertCheckin): Promise<CheckinEntry>;
+  removeCheckin(id: string): Promise<void>;
+  removeCheckinByIndex(studentId: string, index: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
+  // ── Users ─────────────────────────────────────────────────────────────────
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  // ── Arenas ────────────────────────────────────────────────────────────────
+  async listArenas(): Promise<Arena[]> {
+    return db.select().from(arenas).orderBy(arenas.createdAt);
+  }
+
+  async getArena(id: string): Promise<Arena | undefined> {
+    const [arena] = await db.select().from(arenas).where(eq(arenas.id, id));
+    return arena;
+  }
+
+  async getArenaByGestorLogin(login: string): Promise<Arena | undefined> {
+    const [arena] = await db.select().from(arenas).where(eq(arenas.gestorLogin, login));
+    return arena;
+  }
+
+  async createArena(data: InsertArena): Promise<Arena> {
+    const [arena] = await db.insert(arenas).values(data).returning();
+    return arena;
+  }
+
+  async updateArena(id: string, data: Partial<InsertArena>): Promise<Arena> {
+    const [arena] = await db
+      .update(arenas)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(arenas.id, id))
+      .returning();
+    return arena;
+  }
+
+  async deleteArena(id: string): Promise<void> {
+    await db.delete(arenas).where(eq(arenas.id, id));
+  }
+
+  // ── Plans ─────────────────────────────────────────────────────────────────
+  async listPlans(arenaId: string): Promise<Plan[]> {
+    return db.select().from(plans).where(eq(plans.arenaId, arenaId));
+  }
+
+  async getPlan(id: string): Promise<Plan | undefined> {
+    const [plan] = await db.select().from(plans).where(eq(plans.id, id));
+    return plan;
+  }
+
+  async createPlan(data: InsertPlan): Promise<Plan> {
+    const [plan] = await db.insert(plans).values(data).returning();
+    return plan;
+  }
+
+  async updatePlan(id: string, data: Partial<InsertPlan>): Promise<Plan> {
+    const [plan] = await db.update(plans).set(data).where(eq(plans.id, id)).returning();
+    return plan;
+  }
+
+  async deletePlan(id: string): Promise<void> {
+    await db.delete(plans).where(eq(plans.id, id));
+  }
+
+  // ── Teachers ──────────────────────────────────────────────────────────────
+  async listTeachers(arenaId: string): Promise<Teacher[]> {
+    return db.select().from(teachers).where(eq(teachers.arenaId, arenaId));
+  }
+
+  async getTeacher(id: string): Promise<Teacher | undefined> {
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id));
+    return teacher;
+  }
+
+  async getTeacherByLogin(arenaId: string, login: string): Promise<Teacher | undefined> {
+    const [teacher] = await db
+      .select()
+      .from(teachers)
+      .where(and(eq(teachers.arenaId, arenaId), eq(teachers.login, login)));
+    return teacher;
+  }
+
+  async createTeacher(data: InsertTeacher): Promise<Teacher> {
+    const [teacher] = await db.insert(teachers).values(data).returning();
+    return teacher;
+  }
+
+  async updateTeacher(id: string, data: Partial<InsertTeacher>): Promise<Teacher> {
+    const [teacher] = await db.update(teachers).set(data).where(eq(teachers.id, id)).returning();
+    return teacher;
+  }
+
+  async deleteTeacher(id: string): Promise<void> {
+    await db.delete(teachers).where(eq(teachers.id, id));
+  }
+
+  // ── Students ──────────────────────────────────────────────────────────────
+  async listStudents(arenaId: string): Promise<Student[]> {
+    return db.select().from(students).where(eq(students.arenaId, arenaId));
+  }
+
+  async getStudent(id: string): Promise<Student | undefined> {
+    const [student] = await db.select().from(students).where(eq(students.id, id));
+    return student;
+  }
+
+  async getStudentByLogin(arenaId: string, login: string): Promise<Student | undefined> {
+    const [student] = await db
+      .select()
+      .from(students)
+      .where(and(eq(students.arenaId, arenaId), eq(students.login, login)));
+    return student;
+  }
+
+  async createStudent(data: InsertStudent): Promise<Student> {
+    const [student] = await db.insert(students).values(data).returning();
+    return student;
+  }
+
+  async updateStudent(id: string, data: Partial<InsertStudent>): Promise<Student> {
+    const [student] = await db.update(students).set(data).where(eq(students.id, id)).returning();
+    return student;
+  }
+
+  async deleteStudent(id: string): Promise<void> {
+    await db.delete(students).where(eq(students.id, id));
+  }
+
+  // ── Checkin History ───────────────────────────────────────────────────────
+  async listCheckins(studentId: string): Promise<CheckinEntry[]> {
+    return db.select().from(checkinHistory).where(eq(checkinHistory.studentId, studentId));
+  }
+
+  async addCheckin(data: InsertCheckin): Promise<CheckinEntry> {
+    const [entry] = await db.insert(checkinHistory).values(data).returning();
+    return entry;
+  }
+
+  async removeCheckin(id: string): Promise<void> {
+    await db.delete(checkinHistory).where(eq(checkinHistory.id, id));
+  }
+
+  async removeCheckinByIndex(studentId: string, index: number): Promise<void> {
+    const all = await this.listCheckins(studentId);
+    if (index >= 0 && index < all.length) {
+      await this.removeCheckin(all[index].id);
+    }
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

@@ -1,0 +1,40 @@
+Estou transformando meu projeto atual em uma plataforma multi-tenant SaaS para arenas esportivas. Preciso que você faça todas as alterações de forma **segura**, sem quebrar nada já existente. Aqui estão as instruções detalhadas:
+
+1️⃣ Criar entidade Arena:
+- Tabela/coleção `arenas` com campos: `id`, `name`, `subscription_plan`, `created_at`, `updated_at`.
+- Todas as outras entidades (students, teachers, courts, plans, checkins, schedules) devem ter um campo `arena_id` como **foreign key**, vinculando cada registro a uma arena.
+
+2️⃣ Backend e ORM:
+- Atualizar todos os modelos e relacionamentos para incluir `arena_id`.
+- Todas as queries devem ser filtradas por `arena_id`.
+- Incluir fallback seguro para dados existentes usando uma **arena padrão**, evitando quebra de dados atuais.
+
+3️⃣ Admin Panel:
+- Criar painel de administração para gerenciar arenas e assinaturas.
+- Permitir criar/editar/excluir arenas.
+- Visualizar métricas de cada arena sem misturar dados.
+
+4️⃣ Migração gradual:
+- Criar campo `arena_id` permitindo nulo inicialmente.
+- Migrar dados existentes para uma **arena default**.
+- Atualizar backend para filtrar por `arena_id` de forma segura.
+- Testar CRUD completo antes de exigir que todos os registros tenham `arena_id`.
+
+5️⃣ Segurança:
+- Filtrar todos os dados pelo `arena_id` do usuário autenticado ou token JWT.
+- Garantir isolamento total de dados entre arenas.
+- Não alterar ou deletar dados existentes sem confirmação.
+
+6️⃣ Testes:
+- Criar duas arenas fictícias e dados para cada uma.
+- Validar que cada arena só veja seus próprios dados.
+- Testar todas as funcionalidades CRUD e o painel de administração.
+
+🔹 Me entregue:
+- Scripts de banco de dados (para criar a tabela `arenas` e adicionar `arena_id` nas demais tabelas).
+- Atualizações de models/ORM.
+- Trechos de backend atualizados (Node.js/Express/Prisma ou Sequelize).
+- Sugestão de estrutura segura de admin panel.
+- Passo a passo de migração segura, sem quebrar o que já existe.
+
+⚠️ Lembre-se: **nenhum dado atual deve ser perdido** e todas as operações devem ser reversíveis.

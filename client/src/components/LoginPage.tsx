@@ -7,9 +7,10 @@ import { LogIn } from "lucide-react";
 
 interface LoginPageProps {
   onLogin: (login: string, senha: string) => void;
+  error?: string;
 }
 
-export default function LoginPage({ onLogin }: LoginPageProps) {
+export default function LoginPage({ onLogin, error }: LoginPageProps) {
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
 
   const handleLogin = () => {
@@ -65,6 +66,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 className="h-11"
               />
             </div>
+
+            {error && (
+              <p className="text-sm text-destructive text-center" data-testid="text-login-error">{error}</p>
+            )}
 
             <Button
               className="w-full h-11"
