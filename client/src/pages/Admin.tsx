@@ -25,6 +25,7 @@ import {
   LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye,
   CheckCircle, XCircle, ArrowLeft, ClipboardList,
 } from "lucide-react";
+import { Link } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 
 interface ArenaCard {
@@ -199,7 +200,14 @@ export default function Admin() {
             >
               Entrar como Super Admin
             </Button>
-            <p className="text-xs text-center text-muted-foreground">Login: 444 · Senha: 444</p>
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-xs text-muted-foreground">Login: 444 · Senha: 444</p>
+              <Link href="/">
+                <span className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-back-to-app">
+                  ← Voltar ao app
+                </span>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

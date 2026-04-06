@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn } from "lucide-react";
+import { LogIn, Shield } from "lucide-react";
 
 interface LoginPageProps {
   onLogin: (login: string, senha: string) => void;
@@ -87,9 +88,17 @@ export default function LoginPage({ onLogin, error }: LoginPageProps) {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground">
-          (12) 98237-3299
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            (12) 98237-3299
+          </p>
+          <Link href="/admin">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-admin">
+              <Shield className="h-3 w-3" />
+              Painel Admin
+            </span>
+          </Link>
+        </div>
       </div>
     </div>
   );
