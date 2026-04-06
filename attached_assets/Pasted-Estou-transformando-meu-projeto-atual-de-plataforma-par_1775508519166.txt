@@ -1,0 +1,47 @@
+Estou transformando meu projeto atual de plataforma para arenas esportivas em **uma plataforma multi-tenant SaaS** e preciso que você crie **um Painel de Super Admin completo** dentro do projeto existente. Faça tudo de forma segura, sem quebrar nada já implementado.
+
+Requisitos:
+
+1️⃣ Backend (Node.js + Express, com ORM Prisma ou equivalente):
+- Criar rota `/admin` com autenticação de super admin (login: 444, senha: 444; posso alterar depois).
+- Middleware para validar super admin.
+- CRUD de arenas:
+  - GET `/admin/arenas` → lista todas as arenas.
+  - POST `/admin/arenas` → cria nova arena (nome, plano, usuário do gestor, senha do gestor).
+  - GET `/admin/arenas/:id` → mostra detalhes de uma arena (alunos, professores, courts, planos, check-ins, horários).
+  - PUT `/admin/arenas/:id` → editar arena.
+  - DELETE `/admin/arenas/:id` → excluir arena.
+- Cada arena deve ter isolamento de dados garantido (`arena_id` em todas as tabelas relacionadas).
+
+2️⃣ Frontend (pode ser HTML + JS ou React):
+- Tela funcional para:
+  - Criar novas arenas
+  - Listar todas as arenas
+  - Visualizar detalhes de cada arena
+  - Editar e excluir arenas
+- Atualização dinâmica da lista após operações
+- Mensagens de sucesso ou erro
+- Usar credenciais de super admin para todas as chamadas à API
+
+3️⃣ Banco de dados:
+- Tabela/coleção `arenas` com campos:
+  - id, name, subscription_plan, manager_username, manager_password
+- As tabelas existentes (`students`, `teachers`, `courts`, `plans`, `checkins`, `schedules`) devem ter `arena_id` como foreign key.
+
+4️⃣ Segurança:
+- Super admin vê todas as arenas e seus dados.
+- Gestores continuam vendo apenas dados da própria arena.
+- Nenhum dado existente pode ser perdido ou misturado.
+
+5️⃣ Testes:
+- Criar 2 arenas fictícias para testar CRUD completo.
+- Validar que cada gestor só vê os dados da própria arena.
+
+⚠️ Entregue **código pronto para colar e executar no Replit**, incluindo:
+- Backend completo com rotas `/admin`
+- Middleware de autenticação super admin
+- Frontend funcional para gerenciar arenas
+- Scripts de banco de dados (Prisma ou equivalente)
+- Isolamento completo de dados por `arena_id`
+
+Lembre-se: **todo o código deve ser integrado ao projeto existente sem quebrar nada**, e os dados atuais devem permanecer intactos.
