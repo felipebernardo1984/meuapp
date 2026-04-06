@@ -23,9 +23,9 @@ import {
 } from "@/components/ui/table";
 import {
   LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye,
-  CheckCircle, XCircle, ArrowLeft, ClipboardList,
+  CheckCircle, XCircle, ArrowLeft, ClipboardList, ExternalLink, LogIn as LogInIcon,
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
 
 interface ArenaCard {
@@ -57,6 +57,7 @@ const PLAN_BADGE: Record<string, "secondary" | "default" | "destructive"> = {
 export default function Admin() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [loginData, setLoginData] = useState({ login: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [arenaForm, setArenaForm] = useState({ name: "", subscriptionPlan: "basic", gestorLogin: "", gestorSenha: "" });
@@ -87,6 +88,17 @@ export default function Admin() {
       qc.invalidateQueries({ queryKey: ["/api/admin/session"] });
       setDetailId(null);
     },
+  });
+
+  const impersonate = useMutation({
+    mutationFn: (arenaId: string) =>
+      apiRequest("POST", `/api/admin/impersonate/${arenaId}`).then((r) => r.json()),
+    onSuccess: (data) => {
+      qc.clear();
+      toast({ title: `Entrando como gestor`, description: `Acessando "${data.arenaName}"...` });
+      setLocation("/");
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível acessar como gestor.", variant: "destructive" }),
   });
 
   // ── Arenas list ───────────────────────────────────────────────────────────
@@ -161,11 +173,13 @@ export default function Admin() {
         <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
         <Card className="w-full max-w-md border-primary/20">
           <CardHeader className="text-center space-y-2 pb-6">
-            <div className="flex items-center justify-center gap-2">
-              <Shield className="h-6 w-6 text-primary" />
-              <CardTitle className="text-2xl font-bold">Painel Super Admin</CardTitle>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              SEVEN SPORTS
+            </CardTitle>
+            <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
+              <Shield className="h-4 w-4" />
+              <p className="text-sm">Painel Super Admin</p>
             </div>
-            <p className="text-sm text-muted-foreground">Gestão multi-tenant de arenas esportivas</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -226,10 +240,15 @@ export default function Admin() {
         </div>
 
         <div className="max-w-6xl mx-auto p-6 pt-16">
-          <Button variant="ghost" className="mb-6" onClick={() => setDetailId(null)} data-testid="button-back">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar às arenas
-          </Button>
+          <div className="flex items-center justify-between mb-6">
+            <Button variant="ghost" onClick={() => setDetailId(null)} data-testid="button-back">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar às arenas
+            </Button>
+            <span className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              SEVEN SPORTS
+            </span>
+          </div>
 
           {detailLoading || !arenaDetail ? (
             <div className="text-center py-12 text-muted-foreground">Carregando dados da arena...</div>
@@ -411,11 +430,13 @@ export default function Admin() {
       <div className="max-w-6xl mx-auto p-6 pt-16">
         <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Shield className="h-7 w-7 text-primary" />
-              Super Admin
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              SEVEN SPORTS
             </h1>
-            <p className="text-muted-foreground mt-1">Plataforma multi-tenant de arenas esportivas</p>
+            <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
+              <Shield className="h-4 w-4" />
+              <p className="text-sm">Painel Super Admin · Gestão de Arenas</p>
+            </div>
           </div>
           <Button onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
             <Plus className="h-4 w-4 mr-2" />
@@ -497,19 +518,39 @@ export default function Admin() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex gap-2 mt-auto">
-                    <Button variant="outline" size="sm" className="flex-1"
-                      onClick={() => setDetailId(arena.id)} data-testid={`button-view-arena-${arena.id}`}>
-                      <Eye className="h-3.5 w-3.5 mr-1.5" />Ver detalhes
+                  <div className="space-y-2 mt-auto">
+                    {/* Arena login panel link */}
+                    <Link href={`/arena/${arena.id}`}>
+                      <Button variant="secondary" size="sm" className="w-full" data-testid={`button-panel-arena-${arena.id}`}>
+                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                        Abrir Painel da Arena
+                      </Button>
+                    </Link>
+                    {/* Impersonate as gestor */}
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => impersonate.mutate(arena.id)}
+                      disabled={impersonate.isPending}
+                      data-testid={`button-impersonate-arena-${arena.id}`}
+                    >
+                      <LogInIcon className="h-3.5 w-3.5 mr-1.5" />
+                      Entrar como Gestor
                     </Button>
-                    <Button variant="outline" size="icon" className="shrink-0"
-                      onClick={() => openEdit(arena)} data-testid={`button-edit-arena-${arena.id}`}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="outline" size="icon" className="shrink-0 text-destructive hover:text-destructive"
-                      onClick={() => setDeletingArena(arena)} data-testid={`button-delete-arena-${arena.id}`}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1"
+                        onClick={() => setDetailId(arena.id)} data-testid={`button-view-arena-${arena.id}`}>
+                        <Eye className="h-3.5 w-3.5 mr-1.5" />Ver dados
+                      </Button>
+                      <Button variant="outline" size="icon" className="shrink-0"
+                        onClick={() => openEdit(arena)} data-testid={`button-edit-arena-${arena.id}`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="outline" size="icon" className="shrink-0 text-destructive hover:text-destructive"
+                        onClick={() => setDeletingArena(arena)} data-testid={`button-delete-arena-${arena.id}`}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

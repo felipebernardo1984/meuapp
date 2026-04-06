@@ -466,6 +466,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true });
   });
 
+  // Impersonate gestor (admin enters arena as gestor)
+  app.post("/api/admin/impersonate/:arenaId", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const arena = await storage.getArena(req.params.arenaId);
+    if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
+    req.session.arenaId = arena.id;
+    req.session.userType = "gestor";
+    req.session.userId = arena.id;
+    res.json({ ok: true, arenaId: arena.id, arenaName: arena.name });
+  });
+
+  // Public arena info (for arena-specific login page)
+  app.get("/api/arena/:id", async (req, res) => {
+    const arena = await storage.getArena(req.params.id);
+    if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
+    res.json({ id: arena.id, name: arena.name, subscriptionPlan: arena.subscriptionPlan });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
