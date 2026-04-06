@@ -3,17 +3,15 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Home from "@/pages/Home";
 import Admin from "@/pages/Admin";
-import ArenaLogin from "@/pages/ArenaLogin";
+import ArenaApp from "@/pages/ArenaApp";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/admin" component={Admin} />
-      <Route path="/arena/:id" component={ArenaLogin} />
+      <Route path="/" component={Admin} />
+      <Route path="/arena/:id" component={ArenaApp} />
       <Route component={NotFound} />
     </Switch>
   );

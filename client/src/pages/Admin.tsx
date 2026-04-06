@@ -96,7 +96,7 @@ export default function Admin() {
     onSuccess: (data) => {
       qc.clear();
       toast({ title: `Entrando como gestor`, description: `Acessando "${data.arenaName}"...` });
-      setLocation("/");
+      setLocation(`/arena/${data.arenaId}`);
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível acessar como gestor.", variant: "destructive" }),
   });
@@ -178,14 +178,14 @@ export default function Admin() {
             </CardTitle>
             <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
               <Shield className="h-4 w-4" />
-              <p className="text-sm">Painel Super Admin</p>
+              <p className="text-sm">Painel Admin</p>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Login</Label>
               <Input
-                placeholder="Login de administrador"
+                placeholder="Digite seu login"
                 value={loginData.login}
                 onChange={(e) => setLoginData({ ...loginData, login: e.target.value })}
                 onKeyPress={(e) => e.key === "Enter" && loginAdmin.mutate(loginData)}
@@ -196,7 +196,7 @@ export default function Admin() {
               <Label>Senha</Label>
               <Input
                 type="password"
-                placeholder="Senha"
+                placeholder="Digite sua senha"
                 value={loginData.senha}
                 onChange={(e) => setLoginData({ ...loginData, senha: e.target.value })}
                 onKeyPress={(e) => e.key === "Enter" && loginAdmin.mutate(loginData)}
@@ -212,16 +212,8 @@ export default function Admin() {
               disabled={!loginData.login || !loginData.senha || loginAdmin.isPending}
               data-testid="button-admin-login"
             >
-              Entrar como Super Admin
+              Entrar
             </Button>
-            <div className="flex items-center justify-between pt-1">
-              <p className="text-xs text-muted-foreground">Login: 444 · Senha: 444</p>
-              <Link href="/">
-                <span className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-back-to-app">
-                  ← Voltar ao app
-                </span>
-              </Link>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -435,7 +427,7 @@ export default function Admin() {
             </h1>
             <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
               <Shield className="h-4 w-4" />
-              <p className="text-sm">Painel Super Admin · Gestão de Arenas</p>
+              <p className="text-sm">Painel Admin · Gestão de Arenas</p>
             </div>
           </div>
           <Button onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
