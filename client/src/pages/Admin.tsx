@@ -24,6 +24,7 @@ import {
 import {
   LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye,
   CheckCircle, XCircle, ArrowLeft, ClipboardList, ExternalLink, LogIn as LogInIcon, KeyRound,
+  ChevronDown, ChevronUp, DollarSign, CreditCard, History,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -32,6 +33,10 @@ interface ArenaCard {
   id: string;
   name: string;
   subscriptionPlan: string;
+  subscriptionValue?: string;
+  subscriptionStatus?: string;
+  subscriptionStartDate?: string;
+  nextBillingDate?: string;
   gestorLogin: string;
   gestorNome?: string;
   gestorCpf?: string;
@@ -53,9 +58,29 @@ interface ArenaDetail extends ArenaCard {
   stats: { professores: number; alunos: number; planos: number; alunosAtivos: number; totalCheckins: number };
 }
 
-const PLAN_LABELS: Record<string, string> = { basic: "Básico", premium: "Premium", enterprise: "Enterprise" };
+interface PlatformPlan {
+  planType: string;
+  monthlyValue: string;
+}
+
+interface ArenaSubscriptionPayment {
+  id: string;
+  arenaId: string;
+  arenaName: string;
+  planType: string;
+  amount: string;
+  referenceMonth: string;
+  paymentDate?: string;
+  status: string;
+  createdAt: string;
+}
+
+const PLAN_LABELS: Record<string, string> = { basic: "Plano Básico", premium: "Plano Premium" };
 const PLAN_BADGE: Record<string, "secondary" | "default" | "destructive"> = {
-  basic: "secondary", premium: "default", enterprise: "destructive",
+  basic: "secondary", premium: "default",
+};
+const STATUS_BADGE: Record<string, "default" | "destructive" | "secondary"> = {
+  "Ativo": "default", "Em atraso": "destructive", "Suspenso": "secondary",
 };
 
 export default function Admin() {
@@ -65,7 +90,8 @@ export default function Admin() {
   const [loginData, setLoginData] = useState({ login: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [arenaForm, setArenaForm] = useState({
-    name: "", gestorNome: "", gestorCpf: "", gestorEmail: "", gestorTelefone: "", gestorLogin: "", gestorSenha: "",
+    name: "", subscriptionPlan: "basic",
+    gestorNome: "", gestorCpf: "", gestorEmail: "", gestorTelefone: "", gestorLogin: "", gestorSenha: "",
   });
   const [editingArena, setEditingArena] = useState<ArenaCard | null>(null);
   const [deletingArena, setDeletingArena] = useState<ArenaCard | null>(null);
@@ -73,6 +99,9 @@ export default function Admin() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [showCredentials, setShowCredentials] = useState(false);
   const [credForm, setCredForm] = useState({ login: "", senha: "" });
+  const [minimized, setMinimized] = useState(false);
+  const [planPrices, setPlanPrices] = useState<Record<string, string>>({});
+  const [editingPrices, setEditingPrices] = useState(false);
 
   // ── Admin session ─────────────────────────────────────────────────────────
   const { data: adminSession } = useQuery<{ isAdmin: boolean }>({
@@ -109,16 +138,25 @@ export default function Admin() {
     onError: () => toast({ title: "Erro", description: "Não foi possível acessar como gestor.", variant: "destructive" }),
   });
 
-  // ── Arenas list ───────────────────────────────────────────────────────────
+  // ── Data queries ──────────────────────────────────────────────────────────
   const { data: arenas = [], isLoading } = useQuery<ArenaCard[]>({
     queryKey: ["/api/admin/arenas"],
     enabled: !!adminSession?.isAdmin,
   });
 
-  // ── Arena detail ──────────────────────────────────────────────────────────
   const { data: arenaDetail, isLoading: detailLoading } = useQuery<ArenaDetail>({
     queryKey: ["/api/admin/arenas", detailId],
     enabled: !!detailId && !!adminSession?.isAdmin,
+  });
+
+  const { data: platformPlans = [] } = useQuery<PlatformPlan[]>({
+    queryKey: ["/api/admin/platform-plans"],
+    enabled: !!adminSession?.isAdmin,
+  });
+
+  const { data: subscriptionPayments = [] } = useQuery<ArenaSubscriptionPayment[]>({
+    queryKey: ["/api/admin/subscription-payments"],
+    enabled: !!adminSession?.isAdmin,
   });
 
   // ── CRUD mutations ────────────────────────────────────────────────────────
@@ -167,14 +205,30 @@ export default function Admin() {
     onError: () => toast({ title: "Erro", description: "Não foi possível excluir a arena.", variant: "destructive" }),
   });
 
+  const salvarPrecosPlanos = useMutation({
+    mutationFn: async (prices: Record<string, string>) => {
+      for (const [type, value] of Object.entries(prices)) {
+        await apiRequest("PUT", `/api/admin/platform-plans/${type}`, { monthlyValue: value });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/platform-plans"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/arenas"] });
+      setEditingPrices(false);
+      toast({ title: "Valores salvos!", description: "Os valores dos planos foram atualizados." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível salvar os valores.", variant: "destructive" }),
+  });
+
   function resetForm() {
-    setArenaForm({ name: "", gestorNome: "", gestorCpf: "", gestorEmail: "", gestorTelefone: "", gestorLogin: "", gestorSenha: "" });
+    setArenaForm({ name: "", subscriptionPlan: "basic", gestorNome: "", gestorCpf: "", gestorEmail: "", gestorTelefone: "", gestorLogin: "", gestorSenha: "" });
   }
 
   function openEdit(arena: ArenaCard) {
     setEditingArena(arena);
     setArenaForm({
       name: arena.name,
+      subscriptionPlan: arena.subscriptionPlan || "basic",
       gestorNome: arena.gestorNome ?? "",
       gestorCpf: arena.gestorCpf ?? "",
       gestorEmail: arena.gestorEmail ?? "",
@@ -190,6 +244,15 @@ export default function Admin() {
     } else {
       criarArena.mutate(arenaForm);
     }
+  }
+
+  function openPlanPrices() {
+    const initial: Record<string, string> = {};
+    for (const p of platformPlans) initial[p.planType] = p.monthlyValue;
+    if (!initial.basic) initial.basic = "R$ 99,00";
+    if (!initial.premium) initial.premium = "R$ 199,00";
+    setPlanPrices(initial);
+    setEditingPrices(true);
   }
 
   // ── Login screen ──────────────────────────────────────────────────────────
@@ -276,6 +339,11 @@ export default function Admin() {
                   <Badge variant={PLAN_BADGE[arenaDetail.subscriptionPlan]}>
                     {PLAN_LABELS[arenaDetail.subscriptionPlan] ?? arenaDetail.subscriptionPlan}
                   </Badge>
+                  {arenaDetail.subscriptionStatus && (
+                    <Badge variant={STATUS_BADGE[arenaDetail.subscriptionStatus] ?? "secondary"}>
+                      {arenaDetail.subscriptionStatus}
+                    </Badge>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => openEdit(arenaDetail)}>
                     <Pencil className="h-3.5 w-3.5 mr-1.5" />Editar
                   </Button>
@@ -285,6 +353,35 @@ export default function Admin() {
                   </Button>
                 </div>
               </div>
+
+              {/* Subscription info card */}
+              <Card className="mb-6 border-primary/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />Assinatura do Sistema
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground text-xs mb-0.5">Plano</p>
+                      <p className="font-semibold">{PLAN_LABELS[arenaDetail.subscriptionPlan] ?? arenaDetail.subscriptionPlan}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs mb-0.5">Valor mensal</p>
+                      <p className="font-semibold">{arenaDetail.subscriptionValue ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs mb-0.5">Início</p>
+                      <p className="font-semibold">{arenaDetail.subscriptionStartDate ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs mb-0.5">Próx. cobrança</p>
+                      <p className="font-semibold">{arenaDetail.nextBillingDate ?? "—"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Stats bar */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
@@ -410,7 +507,6 @@ export default function Admin() {
           )}
         </div>
 
-        {/* Edit/Delete dialogs (reused below) */}
         <ArenaFormDialog
           open={showForm || !!editingArena}
           editing={editingArena}
@@ -431,6 +527,9 @@ export default function Admin() {
   }
 
   // ── Main list ─────────────────────────────────────────────────────────────
+  const basicPlan = platformPlans.find((p) => p.planType === "basic");
+  const premiumPlan = platformPlans.find((p) => p.planType === "premium");
+
   return (
     <div className="min-h-screen bg-background">
       <div className="fixed top-4 right-4 z-50 flex gap-2">
@@ -483,19 +582,94 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog definir valores dos planos */}
+      <Dialog open={editingPrices} onOpenChange={setEditingPrices}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5" />Valores dos Planos</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Plano Básico — Valor mensal</Label>
+              <Input
+                placeholder="Ex: R$ 99,00"
+                value={planPrices.basic ?? ""}
+                onChange={(e) => setPlanPrices({ ...planPrices, basic: e.target.value })}
+                data-testid="input-price-basic"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Plano Premium — Valor mensal</Label>
+              <Input
+                placeholder="Ex: R$ 199,00"
+                value={planPrices.premium ?? ""}
+                onChange={(e) => setPlanPrices({ ...planPrices, premium: e.target.value })}
+                data-testid="input-price-premium"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPrices(false)}>Cancelar</Button>
+            <Button
+              onClick={() => salvarPrecosPlanos.mutate(planPrices)}
+              disabled={salvarPrecosPlanos.isPending}
+              data-testid="button-save-prices"
+            >
+              Salvar valores
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="max-w-6xl mx-auto p-6 pt-16">
         <div className="mb-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
             SEVEN SPORTS
           </h1>
-          <Card>
-            <CardContent className="pt-6">
-              <Button size="lg" className="w-full h-14 text-lg" onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
-                <Plus className="h-5 w-5 mr-2" />
-                Nova Arena
-              </Button>
+
+          {/* Plan pricing display */}
+          <Card className="mb-4 border-primary/10">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Plano Básico:</span>
+                    <span className="font-semibold text-sm">{basicPlan?.monthlyValue ?? "—"}/mês</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Plano Premium:</span>
+                    <span className="font-semibold text-sm">{premiumPlan?.monthlyValue ?? "—"}/mês</span>
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" onClick={openPlanPrices} data-testid="button-edit-prices">
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" />Editar valores
+                </Button>
+              </div>
             </CardContent>
           </Card>
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <Card className="flex-1">
+              <CardContent className="pt-4 pb-4">
+                <Button size="lg" className="w-full h-12 text-base" onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Nova Arena
+                </Button>
+              </CardContent>
+            </Card>
+            <Button
+              variant="outline"
+              className="h-auto px-4"
+              onClick={() => setMinimized((m) => !m)}
+              data-testid="button-minimize-arenas"
+            >
+              {minimized ? <ChevronDown className="h-4 w-4 mr-2" /> : <ChevronUp className="h-4 w-4 mr-2" />}
+              {minimized ? "Expandir Arenas" : "Minimizar Arenas"}
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -506,7 +680,54 @@ export default function Admin() {
               Nenhuma arena cadastrada. Clique em "Nova Arena" para começar.
             </CardContent>
           </Card>
+        ) : minimized ? (
+          /* Minimized view */
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome da Arena</TableHead>
+                  <TableHead>Plano</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Próx. cobrança</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {arenas.map((arena) => (
+                  <TableRow key={arena.id} data-testid={`row-arena-minimized-${arena.id}`}>
+                    <TableCell className="font-medium">{arena.name}</TableCell>
+                    <TableCell>
+                      <Badge variant={PLAN_BADGE[arena.subscriptionPlan]}>
+                        {PLAN_LABELS[arena.subscriptionPlan] ?? arena.subscriptionPlan}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={STATUS_BADGE[arena.subscriptionStatus ?? "Ativo"] ?? "secondary"}>
+                        {arena.subscriptionStatus ?? "Ativo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{arena.nextBillingDate ?? "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setDetailId(arena.id)}>
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => openEdit(arena)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeletingArena(arena)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
         ) : (
+          /* Expanded view */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {arenas.map((arena) => (
               <Card key={arena.id} data-testid={`card-arena-${arena.id}`} className="flex flex-col">
@@ -515,12 +736,28 @@ export default function Admin() {
                     <div>
                       <CardTitle className="text-lg" data-testid={`text-arena-name-${arena.id}`}>{arena.name}</CardTitle>
                     </div>
-                    <Badge variant={PLAN_BADGE[arena.subscriptionPlan]}>
-                      {PLAN_LABELS[arena.subscriptionPlan] ?? arena.subscriptionPlan}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={PLAN_BADGE[arena.subscriptionPlan]}>
+                        {PLAN_LABELS[arena.subscriptionPlan] ?? arena.subscriptionPlan}
+                      </Badge>
+                      <Badge variant={STATUS_BADGE[arena.subscriptionStatus ?? "Ativo"] ?? "secondary"} className="text-xs">
+                        {arena.subscriptionStatus ?? "Ativo"}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col gap-4">
+                  {/* Subscription info */}
+                  <div className="bg-muted/30 rounded-md p-2 text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Valor mensal</span>
+                      <span className="font-medium">{arena.subscriptionValue ?? "—"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Próx. cobrança</span>
+                      <span className="font-medium">{arena.nextBillingDate ?? "—"}</span>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     {[
                       { label: "Alunos ativos", value: arena.stats.alunosAtivos },
@@ -535,14 +772,12 @@ export default function Admin() {
                     ))}
                   </div>
                   <div className="space-y-2 mt-auto">
-                    {/* Arena login panel link */}
                     <Link href={`/arena/${arena.id}`}>
                       <Button variant="secondary" size="sm" className="w-full" data-testid={`button-panel-arena-${arena.id}`}>
                         <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                         Abrir Painel da Arena
                       </Button>
                     </Link>
-                    {/* Impersonate as gestor */}
                     <Button
                       size="sm"
                       className="w-full"
@@ -573,6 +808,50 @@ export default function Admin() {
             ))}
           </div>
         )}
+
+        {/* Payment history section */}
+        {subscriptionPayments.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center gap-2 mb-3">
+              <History className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Histórico de Pagamentos de Assinatura</h2>
+            </div>
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Arena</TableHead>
+                    <TableHead>Plano</TableHead>
+                    <TableHead>Valor pago</TableHead>
+                    <TableHead>Referência</TableHead>
+                    <TableHead>Data de pagamento</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscriptionPayments.map((p) => (
+                    <TableRow key={p.id} data-testid={`row-sub-payment-${p.id}`}>
+                      <TableCell className="font-medium">{p.arenaName}</TableCell>
+                      <TableCell>
+                        <Badge variant={PLAN_BADGE[p.planType] ?? "secondary"}>
+                          {PLAN_LABELS[p.planType] ?? p.planType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{p.amount}</TableCell>
+                      <TableCell>{p.referenceMonth}</TableCell>
+                      <TableCell>{p.paymentDate ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={p.status === "paid" ? "default" : "destructive"}>
+                          {p.status === "paid" ? "Pago" : "Pendente"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </div>
+        )}
       </div>
 
       <ArenaFormDialog
@@ -600,7 +879,7 @@ function ArenaFormDialog({
 }: {
   open: boolean;
   editing: ArenaCard | null;
-  form: { name: string; gestorNome: string; gestorCpf: string; gestorEmail: string; gestorTelefone: string; gestorLogin: string; gestorSenha: string };
+  form: { name: string; subscriptionPlan: string; gestorNome: string; gestorCpf: string; gestorEmail: string; gestorTelefone: string; gestorLogin: string; gestorSenha: string };
   setForm: (f: any) => void;
   onClose: () => void;
   onSave: () => void;
@@ -623,7 +902,19 @@ function ArenaFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>Nome</Label>
+            <Label>Plano da Arena <span className="text-destructive">*</span></Label>
+            <Select value={form.subscriptionPlan} onValueChange={(v) => setForm({ ...form, subscriptionPlan: v })}>
+              <SelectTrigger data-testid="select-subscription-plan">
+                <SelectValue placeholder="Selecione o plano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="basic">Plano Básico</SelectItem>
+                <SelectItem value="premium">Plano Premium</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Nome do Gestor</Label>
             <Input
               placeholder="Nome do gestor responsável"
               value={form.gestorNome}

@@ -25,6 +25,10 @@ export const arenas = pgTable("arenas", {
   gestorCpf: text("gestor_cpf"),
   gestorEmail: text("gestor_email"),
   gestorTelefone: text("gestor_telefone"),
+  subscriptionStartDate: text("subscription_start_date"),
+  subscriptionValue: text("subscription_value"),
+  subscriptionStatus: text("subscription_status").notNull().default("Ativo"),
+  nextBillingDate: text("next_billing_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -32,6 +36,33 @@ export const arenas = pgTable("arenas", {
 export const insertArenaSchema = createInsertSchema(arenas).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertArena = z.infer<typeof insertArenaSchema>;
 export type Arena = typeof arenas.$inferSelect;
+
+// ── Platform Plans (prices defined by admin) ─────────────────────────────────
+export const platformPlans = pgTable("platform_plans", {
+  planType: varchar("plan_type").primaryKey(),
+  monthlyValue: text("monthly_value").notNull().default("0"),
+});
+
+export const insertPlatformPlanSchema = createInsertSchema(platformPlans);
+export type InsertPlatformPlan = z.infer<typeof insertPlatformPlanSchema>;
+export type PlatformPlan = typeof platformPlans.$inferSelect;
+
+// ── Arena Subscription Payments ───────────────────────────────────────────────
+export const arenaSubscriptionPayments = pgTable("arena_subscription_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  arenaName: text("arena_name").notNull(),
+  planType: text("plan_type").notNull(),
+  amount: text("amount").notNull(),
+  referenceMonth: text("reference_month").notNull(),
+  paymentDate: text("payment_date"),
+  status: text("status").notNull().default("paid"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertArenaSubscriptionPaymentSchema = createInsertSchema(arenaSubscriptionPayments).omit({ id: true, createdAt: true });
+export type InsertArenaSubscriptionPayment = z.infer<typeof insertArenaSubscriptionPaymentSchema>;
+export type ArenaSubscriptionPayment = typeof arenaSubscriptionPayments.$inferSelect;
 
 // ── Plans (Planos) ───────────────────────────────────────────────────────────
 export const plans = pgTable("plans", {

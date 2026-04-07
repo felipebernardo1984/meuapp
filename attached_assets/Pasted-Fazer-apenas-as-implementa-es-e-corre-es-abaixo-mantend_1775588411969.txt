@@ -1,0 +1,129 @@
+Fazer apenas as implementações e correções abaixo, mantendo a arquitetura SaaS multi-tenant existente.
+
+RESTAURAR ESCOLHA DE PLANO DA ARENA
+
+O campo de escolha do plano da arena desapareceu ou não está funcionando corretamente.
+
+Corrigir para que o campo:
+
+Plano da Arena
+
+tenha as opções:
+
+Plano Básico
+Plano Premium
+
+Esse campo deve funcionar:
+
+na criação de nova arena
+na configuração da arena dentro do painel ADMIN
+
+Atualmente aparecem as opções, mas não está sendo possível criar uma nova arena escolhendo o plano. Corrigir esse comportamento.
+
+DEFINIÇÃO DE VALOR DOS PLANOS
+
+No painel ADMIN (SEVEN SPORTS) criar um local onde seja possível definir o valor de cada plano.
+
+Exemplo:
+
+Plano Básico
+Valor mensal: R$ ___
+
+Plano Premium
+Valor mensal: R$ ___
+
+Esses valores serão utilizados para a cobrança da assinatura das arenas.
+
+COBRANÇA RECORRENTE DAS ARENAS
+
+Quando uma arena for criada e escolher um plano, registrar:
+
+Plano escolhido
+Valor do plano
+Data de início da assinatura
+
+A partir dessa data considerar cobrança mensal recorrente.
+
+Exemplo:
+
+Plano: Premium
+Valor: R$199
+Data início: 10/04/2026
+
+Próxima cobrança: 10/05/2026
+
+ASSINATURA VISÍVEL NO PAINEL DA ARENA
+
+Dentro do painel da arena criar seção:
+
+Assinatura do Sistema
+
+Mostrar:
+
+Plano contratado
+Valor mensal
+Data de início
+Próxima cobrança
+Status da assinatura
+
+Status possíveis:
+
+Ativo
+Em atraso
+Suspenso
+
+PAGAMENTO DA ASSINATURA
+
+Dentro do painel da arena adicionar botão:
+
+Pagar assinatura
+
+Exibir:
+
+Plano atual
+Valor mensal
+
+Formas de pagamento sugeridas:
+
+Pix
+Cartão
+Boleto (opcional)
+
+Após pagamento:
+
+atualizar status da assinatura
+registrar pagamento no histórico
+HISTÓRICO DE PAGAMENTOS (ADMIN)
+
+Criar área no painel ADMIN mostrando:
+
+Nome da Arena
+Plano contratado
+Valor pago
+Data de pagamento
+Status
+
+ORGANIZAÇÃO DAS ARENAS NO PAINEL ADMIN
+
+Ao lado do botão Trocar Login e Senha, adicionar botão:
+
+Minimizar Arenas
+
+Função:
+
+Recolher (colapsar) os cards das arenas quando houver muitas arenas cadastradas.
+
+Quando minimizado mostrar apenas:
+
+Nome da Arena
+Plano contratado
+
+Ao clicar novamente, expandir os detalhes.
+
+SEGURANÇA
+
+Garantir que:
+
+cada arena veja apenas seus próprios dados
+o admin veja todas as arenas
+o sistema continue funcionando em modelo SaaS multi-tenant

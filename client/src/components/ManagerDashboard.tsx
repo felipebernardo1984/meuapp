@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +53,8 @@ import {
   History,
   CalendarClock,
   CheckCircle2,
+  CreditCard,
+  AlertCircle,
 } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
@@ -174,6 +179,29 @@ export default function ManagerDashboard({
   // Excluir aluno state
   const [confirmExcluirAluno, setConfirmExcluirAluno] = useState<AlunoGestor | null>(null);
 
+  // Subscription state
+  const [showPayDialog, setShowPayDialog] = useState(false);
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: subscription } = useQuery<{
+    subscriptionPlan: string;
+    subscriptionStartDate?: string;
+    subscriptionValue?: string;
+    subscriptionStatus?: string;
+    nextBillingDate?: string;
+  }>({ queryKey: ["/api/subscription"] });
+
+  const pagarAssinatura = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/subscription/pay").then((r) => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/subscription"] });
+      setShowPayDialog(false);
+      toast({ title: "Pagamento registrado!", description: "Sua assinatura foi renovada com sucesso." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível registrar o pagamento.", variant: "destructive" }),
+  });
+
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
   const [professorEditando, setProfessorEditando] = useState<ProfessorGestor | null>(null);
@@ -295,6 +323,87 @@ export default function ManagerDashboard({
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Assinatura do Sistema ── */}
+      {subscription && (
+        <Card className="mb-6 border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />Assinatura do Sistema
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-4">
+              <div>
+                <p className="text-muted-foreground text-xs mb-0.5">Plano contratado</p>
+                <p className="font-semibold capitalize">
+                  {subscription.subscriptionPlan === "basic" ? "Plano Básico" : subscription.subscriptionPlan === "premium" ? "Plano Premium" : subscription.subscriptionPlan}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs mb-0.5">Valor mensal</p>
+                <p className="font-semibold">{subscription.subscriptionValue ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs mb-0.5">Status</p>
+                <Badge variant={subscription.subscriptionStatus === "Ativo" ? "default" : subscription.subscriptionStatus === "Em atraso" ? "destructive" : "secondary"} data-testid="badge-subscription-status">
+                  {subscription.subscriptionStatus === "Ativo"
+                    ? <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />{subscription.subscriptionStatus}</span>
+                    : <span className="flex items-center gap-1"><AlertCircle className="h-3 w-3" />{subscription.subscriptionStatus}</span>}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs mb-0.5">Data de início</p>
+                <p className="font-semibold">{subscription.subscriptionStartDate ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-xs mb-0.5">Próxima cobrança</p>
+                <p className="font-semibold">{subscription.nextBillingDate ?? "—"}</p>
+              </div>
+            </div>
+            <Button size="sm" onClick={() => setShowPayDialog(true)} data-testid="button-pay-subscription">
+              <CreditCard className="h-3.5 w-3.5 mr-1.5" />
+              Pagar assinatura
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dialog Pagar Assinatura */}
+      <Dialog open={showPayDialog} onOpenChange={setShowPayDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" />Pagar Assinatura</DialogTitle>
+            <DialogDescription>Confirme o pagamento da sua assinatura do sistema.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="bg-muted/40 rounded-md p-3 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Plano atual</span>
+                <span className="font-medium">
+                  {subscription?.subscriptionPlan === "basic" ? "Plano Básico" : subscription?.subscriptionPlan === "premium" ? "Plano Premium" : (subscription?.subscriptionPlan ?? "—")}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Valor mensal</span>
+                <span className="font-semibold">{subscription?.subscriptionValue ?? "—"}</span>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Formas de pagamento aceitas:</p>
+              <p>• Pix</p>
+              <p>• Cartão de crédito/débito</p>
+              <p>• Boleto bancário</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPayDialog(false)}>Cancelar</Button>
+            <Button onClick={() => pagarAssinatura.mutate()} disabled={pagarAssinatura.isPending} data-testid="button-confirm-pay-subscription">
+              {pagarAssinatura.isPending ? "Processando..." : "Confirmar Pagamento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Cadastrar Aluno — botão grande igual ao Check-in ── */}
       <Card className="mb-6">

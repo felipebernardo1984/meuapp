@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, arenas, plans, teachers, students, checkinHistory,
-  payments, charges, paymentSettings,
+  payments, charges, paymentSettings, platformPlans, arenaSubscriptionPayments,
   type User, type InsertUser,
   type Arena, type InsertArena,
   type Plan, type InsertPlan,
@@ -12,6 +12,8 @@ import {
   type Payment, type InsertPayment,
   type Charge, type InsertCharge,
   type PaymentSettings, type InsertPaymentSettings,
+  type PlatformPlan, type InsertPlatformPlan,
+  type ArenaSubscriptionPayment, type InsertArenaSubscriptionPayment,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -27,6 +29,14 @@ export interface IStorage {
   createArena(arena: InsertArena): Promise<Arena>;
   updateArena(id: string, data: Partial<InsertArena>): Promise<Arena>;
   deleteArena(id: string): Promise<void>;
+
+  // Platform Plans (admin-defined prices)
+  listPlatformPlans(): Promise<PlatformPlan[]>;
+  upsertPlatformPlan(data: InsertPlatformPlan): Promise<PlatformPlan>;
+
+  // Arena Subscription Payments
+  listArenaSubscriptionPayments(): Promise<ArenaSubscriptionPayment[]>;
+  createArenaSubscriptionPayment(data: InsertArenaSubscriptionPayment): Promise<ArenaSubscriptionPayment>;
 
   // Plans
   listPlans(arenaId: string): Promise<Plan[]>;
@@ -124,6 +134,30 @@ export class DatabaseStorage implements IStorage {
 
   async deleteArena(id: string): Promise<void> {
     await db.delete(arenas).where(eq(arenas.id, id));
+  }
+
+  // ── Platform Plans ────────────────────────────────────────────────────────
+  async listPlatformPlans(): Promise<PlatformPlan[]> {
+    return db.select().from(platformPlans);
+  }
+
+  async upsertPlatformPlan(data: InsertPlatformPlan): Promise<PlatformPlan> {
+    const [plan] = await db
+      .insert(platformPlans)
+      .values(data)
+      .onConflictDoUpdate({ target: platformPlans.planType, set: { monthlyValue: data.monthlyValue } })
+      .returning();
+    return plan;
+  }
+
+  // ── Arena Subscription Payments ────────────────────────────────────────────
+  async listArenaSubscriptionPayments(): Promise<ArenaSubscriptionPayment[]> {
+    return db.select().from(arenaSubscriptionPayments).orderBy(arenaSubscriptionPayments.createdAt);
+  }
+
+  async createArenaSubscriptionPayment(data: InsertArenaSubscriptionPayment): Promise<ArenaSubscriptionPayment> {
+    const [payment] = await db.insert(arenaSubscriptionPayments).values(data).returning();
+    return payment;
   }
 
   // ── Plans ─────────────────────────────────────────────────────────────────

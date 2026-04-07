@@ -34,6 +34,13 @@ function requireAdmin(req: Request, res: Response): boolean {
   return true;
 }
 
+function calcNextBillingDate(startDate: string): string {
+  const parts = startDate.split("/");
+  const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+  d.setMonth(d.getMonth() + 1);
+  return d.toLocaleDateString("pt-BR");
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
@@ -50,11 +57,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const existing = await storage.getArenaByGestorLogin("333");
       if (!existing) {
+        const today = new Date().toLocaleDateString("pt-BR");
         const defaultArena = await storage.createArena({
           name: "Arena Padrão",
           subscriptionPlan: "premium",
           gestorLogin: "333",
           gestorSenha: "333",
+          subscriptionStartDate: today,
+          subscriptionValue: "R$ 199,00",
+          subscriptionStatus: "Ativo",
+          nextBillingDate: calcNextBillingDate(today),
         });
         // Seed default plans
         const p1 = await storage.createPlan({ arenaId: defaultArena.id, titulo: "1x por semana", checkins: 8, valorTexto: null });
@@ -90,11 +102,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data: "20/12/2024", hora: "18:00" });
         await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data: "25/12/2024", hora: "19:00" });
         await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data: "30/12/2024", hora: "19:00" });
+
       }
 
     } catch (_e) {
       // ignore seed errors (already seeded)
     }
+
+    // Always ensure platform plan prices exist
+    try {
+      const existingPlans = await storage.listPlatformPlans();
+      if (existingPlans.length === 0) {
+        await storage.upsertPlatformPlan({ planType: "basic", monthlyValue: "R$ 99,00" });
+        await storage.upsertPlatformPlan({ planType: "premium", monthlyValue: "R$ 199,00" });
+      }
+    } catch (_e) {}
+
     next();
   });
 
@@ -103,18 +126,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { login, senha } = req.body as { login: string; senha: string };
     if (!login || !senha) return res.status(400).json({ message: "Credenciais inválidas" });
 
-    // Check all arenas for this login/senha combination
     const allArenas = await storage.listArenas();
 
     for (const arena of allArenas) {
-      // Gestor check
       if (arena.gestorLogin === login && arena.gestorSenha === senha) {
         req.session.arenaId = arena.id;
         req.session.userType = "gestor";
         req.session.userId = arena.id;
         return res.json({ tipo: "gestor", arenaId: arena.id, arenaName: arena.name });
       }
-      // Teacher check
       const teacher = await storage.getTeacherByLogin(arena.id, login);
       if (teacher && teacher.senha === senha) {
         req.session.arenaId = arena.id;
@@ -122,7 +142,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.userId = teacher.id;
         return res.json({ tipo: "professor", professor: { id: teacher.id, nome: teacher.nome, modalidade: teacher.modalidade }, arenaId: arena.id });
       }
-      // Student check
       const student = await storage.getStudentByLogin(arena.id, login);
       if (student && student.senha === senha && student.aprovado) {
         req.session.arenaId = arena.id;
@@ -181,7 +200,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     const { titulo, checkins, valorTexto } = req.body;
     const plan = await storage.updatePlan(req.params.id, { titulo, checkins, valorTexto });
-    // Cascade plan title/checkins to students
     const allStudents = await storage.listStudents(arenaId);
     for (const s of allStudents) {
       if (s.planoId === req.params.id) {
@@ -335,6 +353,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ...updated, historico });
   });
 
+  // ── Arena subscription info (for gestor) ──────────────────────────────────
+  app.get("/api/subscription", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const arena = await storage.getArena(arenaId);
+    if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
+    res.json({
+      subscriptionPlan: arena.subscriptionPlan,
+      subscriptionStartDate: arena.subscriptionStartDate,
+      subscriptionValue: arena.subscriptionValue,
+      subscriptionStatus: arena.subscriptionStatus,
+      nextBillingDate: arena.nextBillingDate,
+    });
+  });
+
+  app.post("/api/subscription/pay", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const arena = await storage.getArena(arenaId);
+    if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
+
+    const today = new Date().toLocaleDateString("pt-BR");
+    const nextBilling = calcNextBillingDate(today);
+    const now = new Date();
+    const referenceMonth = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+
+    await storage.updateArena(arenaId, {
+      subscriptionStatus: "Ativo",
+      nextBillingDate: nextBilling,
+    });
+
+    await storage.createArenaSubscriptionPayment({
+      arenaId,
+      arenaName: arena.name,
+      planType: arena.subscriptionPlan,
+      amount: arena.subscriptionValue ?? "R$ 0,00",
+      referenceMonth,
+      paymentDate: today,
+      status: "paid",
+    });
+
+    res.json({ ok: true, nextBillingDate: nextBilling });
+  });
+
   // ── Admin Panel ───────────────────────────────────────────────────────────
   app.post("/api/admin/login", (req, res) => {
     const { login, senha } = req.body;
@@ -408,10 +470,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/arenas", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const { name, subscriptionPlan, gestorLogin, gestorSenha, gestorNome, gestorCpf, gestorEmail, gestorTelefone } = req.body;
+    if (!name || !gestorLogin || !gestorSenha) {
+      return res.status(400).json({ message: "Nome, login e senha são obrigatórios" });
+    }
+    const planType = subscriptionPlan || "basic";
+    const platformPlanList = await storage.listPlatformPlans();
+    const platformPlan = platformPlanList.find((p) => p.planType === planType);
+    const today = new Date().toLocaleDateString("pt-BR");
     const arena = await storage.createArena({
-      name, subscriptionPlan: subscriptionPlan || "basic", gestorLogin, gestorSenha,
-      gestorNome: gestorNome ?? null, gestorCpf: gestorCpf ?? null,
-      gestorEmail: gestorEmail ?? null, gestorTelefone: gestorTelefone ?? null,
+      name,
+      subscriptionPlan: planType,
+      gestorLogin,
+      gestorSenha,
+      gestorNome: gestorNome ?? null,
+      gestorCpf: gestorCpf ?? null,
+      gestorEmail: gestorEmail ?? null,
+      gestorTelefone: gestorTelefone ?? null,
+      subscriptionStartDate: today,
+      subscriptionValue: platformPlan?.monthlyValue ?? "R$ 0,00",
+      subscriptionStatus: "Ativo",
+      nextBillingDate: calcNextBillingDate(today),
     });
     res.json(arena);
   });
@@ -427,8 +505,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/admin/arenas/:id", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const { name, subscriptionPlan, gestorLogin, gestorSenha } = req.body;
-    const arena = await storage.updateArena(req.params.id, { name, subscriptionPlan, gestorLogin, gestorSenha });
+    const { name, subscriptionPlan, gestorLogin, gestorSenha, gestorNome, gestorCpf, gestorEmail, gestorTelefone } = req.body;
+    const updates: Record<string, any> = {};
+    if (name !== undefined) updates.name = name;
+    if (gestorLogin !== undefined) updates.gestorLogin = gestorLogin;
+    if (gestorSenha) updates.gestorSenha = gestorSenha;
+    if (gestorNome !== undefined) updates.gestorNome = gestorNome;
+    if (gestorCpf !== undefined) updates.gestorCpf = gestorCpf;
+    if (gestorEmail !== undefined) updates.gestorEmail = gestorEmail;
+    if (gestorTelefone !== undefined) updates.gestorTelefone = gestorTelefone;
+    if (subscriptionPlan !== undefined) {
+      updates.subscriptionPlan = subscriptionPlan;
+      const platformPlanList = await storage.listPlatformPlans();
+      const platformPlan = platformPlanList.find((p) => p.planType === subscriptionPlan);
+      if (platformPlan) updates.subscriptionValue = platformPlan.monthlyValue;
+    }
+    const arena = await storage.updateArena(req.params.id, updates);
     res.json(arena);
   });
 
@@ -438,7 +530,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true });
   });
 
-  // Impersonate gestor (admin enters arena as gestor)
   app.post("/api/admin/impersonate/:arenaId", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const arena = await storage.getArena(req.params.arenaId);
@@ -449,9 +540,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true, arenaId: arena.id, arenaName: arena.name });
   });
 
-  // ── Financial Routes ──────────────────────────────────────────────────────
+  // ── Platform Plans (admin sets pricing) ───────────────────────────────────
+  app.get("/api/admin/platform-plans", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const plans = await storage.listPlatformPlans();
+    res.json(plans);
+  });
 
-  // Payments — gestor creates/views all payments for arena
+  app.put("/api/admin/platform-plans/:type", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const { monthlyValue } = req.body;
+    if (!monthlyValue) return res.status(400).json({ message: "Valor mensal é obrigatório" });
+    const plan = await storage.upsertPlatformPlan({ planType: req.params.type, monthlyValue });
+    res.json(plan);
+  });
+
+  // ── Arena Subscription Payment History (admin) ─────────────────────────────
+  app.get("/api/admin/subscription-payments", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const payments = await storage.listArenaSubscriptionPayments();
+    res.json(payments);
+  });
+
+  // ── Financial Routes ──────────────────────────────────────────────────────
   app.get("/api/finance/payments", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -491,7 +602,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true });
   });
 
-  // Student view of own payments
   app.get("/api/finance/student/payments", async (req, res) => {
     if (!req.session.arenaId || !req.session.userId) {
       return res.status(401).json({ message: "Não autenticado" });
@@ -500,7 +610,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(list);
   });
 
-  // Charges — gestor creates/views all charges for arena
   app.get("/api/finance/charges", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -538,7 +647,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true });
   });
 
-  // Student view of own charges
   app.get("/api/finance/student/charges", async (req, res) => {
     if (!req.session.arenaId || !req.session.userId) {
       return res.status(401).json({ message: "Não autenticado" });
@@ -547,7 +655,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(list);
   });
 
-  // Payment Settings (PIX)
   app.get("/api/finance/settings", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -563,7 +670,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(settings);
   });
 
-  // Financial summary for gestor dashboard
   app.get("/api/finance/summary", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -584,7 +690,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(summary);
   });
 
-  // Public arena info (for arena-specific login page)
   app.get("/api/arena/:id", async (req, res) => {
     const arena = await storage.getArena(req.params.id);
     if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
