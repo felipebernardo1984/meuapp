@@ -130,7 +130,7 @@ export default function ManagerDashboard({
 
   // ── Planos ──────────────────────────────────────────────────────────────
   const getPlanoDescricao = (plano: Plano) =>
-    plano.checkins > 0 ? `${plano.checkins} check-ins por ciclo` : (plano.valorTexto ?? "Mensalidade");
+    plano.checkins > 0 ? `${plano.checkins} check-in por ciclo` : (plano.valorTexto ?? "Mensalidade");
 
   const getPlanoValorInput = (plano: Plano) =>
     plano.checkins > 0 ? String(plano.checkins) : (plano.valorTexto?.replace("R$ ", "") ?? "");
@@ -375,7 +375,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Criar Plano</DialogTitle>
             <DialogDescription>
-              No campo valor, escreva um número de check-ins (ex: 8) ou um valor em reais (ex: 140,00).
+              No campo valor, escreva um número de check-in (ex: 8) ou um valor em reais (ex: 140,00).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -389,7 +389,7 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>Check-ins ou valor (R$)</Label>
+              <Label>Check-in ou valor (R$)</Label>
               <Input
                 placeholder="Ex: 12  ou  140,00"
                 value={formPlano.valor}
@@ -417,7 +417,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Editar Plano</DialogTitle>
             <DialogDescription>
-              Alterações serão aplicadas a todos os alunos neste plano. Escreva um número de check-ins ou um valor em R$.
+              Alterações serão aplicadas a todos os alunos neste plano. Escreva um número de check-in ou um valor em R$.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -431,7 +431,7 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>Check-ins ou valor (R$)</Label>
+              <Label>Check-in ou valor (R$)</Label>
               <Input
                 placeholder="Ex: 8  ou  140,00"
                 value={formPlano.valor}
@@ -653,7 +653,7 @@ export default function ManagerDashboard({
                   <TableHead>Nome</TableHead>
                   <TableHead>Modalidade</TableHead>
                   <TableHead>Plano</TableHead>
-                  <TableHead>Check-ins</TableHead>
+                  <TableHead>Check-in</TableHead>
                   <TableHead>Mensalidade</TableHead>
                   <TableHead>Último Check-in</TableHead>
                   <TableHead>Status</TableHead>

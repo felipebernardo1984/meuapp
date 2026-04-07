@@ -283,7 +283,7 @@ export default function TeacherDashboard({
                 <SelectContent>
                   {planos.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.titulo} — {p.checkins > 0 ? `${p.checkins} check-ins` : (p.valorTexto ?? "Mensalidade")}
+                      {p.titulo} — {p.checkins > 0 ? `${p.checkins} check-in` : (p.valorTexto ?? "Mensalidade")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -308,7 +308,7 @@ export default function TeacherDashboard({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{alunoHistorico?.nome}</DialogTitle>
-            <DialogDescription>Histórico de check-ins</DialogDescription>
+            <DialogDescription>Histórico de check-in</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {alunoHistorico?.historico.length === 0 ? (
@@ -351,7 +351,7 @@ export default function TeacherDashboard({
               >
                 <span>{p.titulo}</span>
                 <span className="text-xs opacity-70">
-                  {p.checkins > 0 ? `${p.checkins} check-ins` : (p.valorTexto ?? "Mensalidade")}
+                  {p.checkins > 0 ? `${p.checkins} check-in` : (p.valorTexto ?? "Mensalidade")}
                 </span>
               </Button>
             ))}

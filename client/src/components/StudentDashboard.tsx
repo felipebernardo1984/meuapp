@@ -180,7 +180,7 @@ export default function StudentDashboard({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <CardTitle className="text-lg">Histórico de Check-ins</CardTitle>
+            <CardTitle className="text-lg">Histórico de Check-in</CardTitle>
             <Button
               variant="outline"
               size="sm"

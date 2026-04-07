@@ -268,7 +268,7 @@ export default function Admin() {
                   { label: "Total alunos", value: arenaDetail.stats.alunos, icon: <Users className="h-4 w-4" /> },
                   { label: "Professores", value: arenaDetail.stats.professores, icon: <BookOpen className="h-4 w-4" /> },
                   { label: "Planos", value: arenaDetail.stats.planos, icon: <ClipboardList className="h-4 w-4" /> },
-                  { label: "Check-ins", value: arenaDetail.stats.totalCheckins, icon: <CheckCircle className="h-4 w-4" /> },
+                  { label: "Check-in", value: arenaDetail.stats.totalCheckins, icon: <CheckCircle className="h-4 w-4" /> },
                 ].map((s) => (
                   <Card key={s.label}>
                     <CardContent className="pt-4 pb-3">
@@ -294,7 +294,7 @@ export default function Admin() {
                           <TableHead>Nome</TableHead>
                           <TableHead>Modalidade</TableHead>
                           <TableHead>Plano</TableHead>
-                          <TableHead>Check-ins</TableHead>
+                          <TableHead>Check-in</TableHead>
                           <TableHead>Mensalidade</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Último Check-in</TableHead>
@@ -363,7 +363,7 @@ export default function Admin() {
                         <TableRow>
                           <TableHead>Título</TableHead>
                           <TableHead>Tipo</TableHead>
-                          <TableHead>Limite de Check-ins</TableHead>
+                          <TableHead>Limite de Check-in</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -372,8 +372,8 @@ export default function Admin() {
                         ) : arenaDetail.planos.map((p) => (
                           <TableRow key={p.id} data-testid={`row-plano-${p.id}`}>
                             <TableCell className="font-medium">{p.titulo}</TableCell>
-                            <TableCell>{p.valorTexto ? "Monetário" : "Por check-ins"}</TableCell>
-                            <TableCell>{p.checkins > 0 ? `${p.checkins} check-ins` : p.valorTexto ?? "Ilimitado"}</TableCell>
+                            <TableCell>{p.valorTexto ? "Monetário" : "Por check-in"}</TableCell>
+                            <TableCell>{p.checkins > 0 ? `${p.checkins} check-in` : p.valorTexto ?? "Ilimitado"}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -655,7 +655,7 @@ function DeleteDialog({
           <AlertDialogTitle>Excluir Arena</AlertDialogTitle>
           <AlertDialogDescription>
             Tem certeza que deseja excluir a arena <strong>{arena?.name}</strong>?
-            Todos os dados — alunos, professores, planos e check-ins — serão <strong>permanentemente removidos</strong>.
+            Todos os dados — alunos, professores, planos e check-in — serão <strong>permanentemente removidos</strong>.
             Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>

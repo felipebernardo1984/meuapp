@@ -146,13 +146,13 @@ export default function StudentRegistration({
               <SelectContent>
                 <SelectItem value="8">
                   <div className="flex flex-col">
-                    <span className="font-medium">8 Check-ins - 1x por semana</span>
+                    <span className="font-medium">8 Check-in - 1x por semana</span>
                     <span className="text-xs text-muted-foreground">Ciclo de 30 dias</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="12">
                   <div className="flex flex-col">
-                    <span className="font-medium">12 Check-ins - 2x por semana</span>
+                    <span className="font-medium">12 Check-in - 2x por semana</span>
                     <span className="text-xs text-muted-foreground">Ciclo de 30 dias</span>
                   </div>
                 </SelectItem>
@@ -180,7 +180,7 @@ export default function StudentRegistration({
                 Aceito o compromisso
               </label>
               <p className="text-sm text-muted-foreground">
-                Comprometo-me a completar {formData.plano || "os"} check-ins dentro do
+                Comprometo-me a completar {formData.plano || "os"} check-in dentro do
                 ciclo de 30 dias, conforme o plano escolhido.
               </p>
             </div>
