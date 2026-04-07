@@ -249,7 +249,7 @@ export default function TeacherDashboard({
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
             <DialogDescription>
-              Modalidade: <strong>{modalidade}</strong>. O login será o nome e a senha será o CPF.
+              O login será o Nome do Aluno e a senha será o CPF.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
