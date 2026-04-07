@@ -25,6 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -39,6 +46,10 @@ import {
   DollarSign,
   Receipt,
   TrendingUp,
+  MoreHorizontal,
+  History,
+  CalendarClock,
+  CheckCircle2,
 } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
@@ -48,12 +59,14 @@ interface AlunoGestor {
   cpf: string;
   modalidade: string;
   plano: number;
+  planoId: string;
   planoTitulo: string;
   planoValorTexto?: string;
   checkinsRealizados: number;
   statusMensalidade: "Em dia" | "Pendente";
   ultimoCheckin?: string;
   aprovado: boolean;
+  historico: Array<{ data: string; hora: string }>;
 }
 
 interface ProfessorGestor {
@@ -86,6 +99,11 @@ interface ManagerDashboardProps {
   onRegistrarPagamento: (dados: { studentId: string; amount: string; referenceMonth: string; dueDate: string; status: string }) => void;
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
   onIrFinanceiro: () => void;
+  onEditarAluno: (dados: { id: string; nome: string; cpf: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number }) => void;
+  onAlterarPlanoAluno: (alunoId: string, planoId: string) => void;
+  onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
+  onRemoverCheckin: (alunoId: string, index: number) => void;
+  onExcluirAluno: (alunoId: string) => void;
 }
 
 function parseValorPlano(input: string): { checkins: number; valorTexto?: string } {
@@ -115,6 +133,11 @@ export default function ManagerDashboard({
   onRegistrarPagamento,
   onCriarCobranca,
   onIrFinanceiro,
+  onEditarAluno,
+  onAlterarPlanoAluno,
+  onCheckinManual,
+  onRemoverCheckin,
+  onExcluirAluno,
 }: ManagerDashboardProps) {
   const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
 
@@ -124,6 +147,28 @@ export default function ManagerDashboard({
   const [alunoFinanceiroId, setAlunoFinanceiroId] = useState<string>("");
   const [formPagamento, setFormPagamento] = useState({ amount: "", referenceMonth: "", dueDate: "", status: "paid" });
   const [formCobranca, setFormCobranca] = useState({ description: "", amount: "", dueDate: "" });
+
+  // Editar aluno state
+  const [dialogEditarAluno, setDialogEditarAluno] = useState(false);
+  const [alunoEditando, setAlunoEditando] = useState<AlunoGestor | null>(null);
+  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "" });
+
+  // Alterar plano state
+  const [dialogAlterarPlano, setDialogAlterarPlano] = useState(false);
+  const [alunoPlanoId, setAlunoPlanoId] = useState<string>("");
+  const [novoPlanoId, setNovoPlanoId] = useState<string>("");
+
+  // Histórico state
+  const [dialogHistorico, setDialogHistorico] = useState(false);
+  const [alunoHistorico, setAlunoHistorico] = useState<AlunoGestor | null>(null);
+
+  // Checkin retroativo state
+  const [dialogCheckinRetro, setDialogCheckinRetro] = useState(false);
+  const [alunoCheckinId, setAlunoCheckinId] = useState<string>("");
+  const [formCheckin, setFormCheckin] = useState({ data: "", hora: "" });
+
+  // Excluir aluno state
+  const [confirmExcluirAluno, setConfirmExcluirAluno] = useState<AlunoGestor | null>(null);
 
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
@@ -706,47 +751,128 @@ export default function ManagerDashboard({
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-7 px-2"
-                          onClick={() => {
-                            setAlunoFinanceiroId(aluno.id);
-                            const now = new Date();
-                            setFormPagamento({
-                              amount: aluno.planoValorTexto?.replace(/[^0-9,.]/g, "") ?? "",
-                              referenceMonth: `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`,
-                              dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
-                              status: "paid",
-                            });
-                            setDialogPagamento(true);
-                          }}
-                          data-testid={`button-register-payment-${aluno.id}`}
-                        >
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          Pagamento
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-7 px-2"
-                          onClick={() => {
-                            setAlunoFinanceiroId(aluno.id);
-                            const now = new Date();
-                            setFormCobranca({
-                              description: "",
-                              amount: "",
-                              dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
-                            });
-                            setDialogCobranca(true);
-                          }}
-                          data-testid={`button-create-charge-${aluno.id}`}
-                        >
-                          <Receipt className="h-3 w-3 mr-1" />
-                          Cobrança
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" data-testid={`button-actions-${aluno.id}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAlunoEditando(aluno);
+                              setFormEditarAluno({
+                                nome: aluno.nome,
+                                cpf: aluno.cpf,
+                                modalidade: aluno.modalidade,
+                                statusMensalidade: aluno.statusMensalidade,
+                                checkinsRealizados: aluno.checkinsRealizados,
+                                planoId: aluno.planoId,
+                              });
+                              setDialogEditarAluno(true);
+                            }}
+                            data-testid={`menu-edit-student-${aluno.id}`}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar dados
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAlunoPlanoId(aluno.id);
+                              setNovoPlanoId(aluno.planoId);
+                              setDialogAlterarPlano(true);
+                            }}
+                            data-testid={`menu-change-plan-${aluno.id}`}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Alterar plano
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAlunoCheckinId(aluno.id);
+                              const now = new Date();
+                              setFormCheckin({
+                                data: now.toISOString().split("T")[0],
+                                hora: now.toTimeString().slice(0, 5),
+                              });
+                              onCheckinManual(aluno.id);
+                            }}
+                            data-testid={`menu-checkin-${aluno.id}`}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Check-in agora
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAlunoCheckinId(aluno.id);
+                              const now = new Date();
+                              setFormCheckin({
+                                data: now.toISOString().split("T")[0],
+                                hora: now.toTimeString().slice(0, 5),
+                              });
+                              setDialogCheckinRetro(true);
+                            }}
+                            data-testid={`menu-retroactive-checkin-${aluno.id}`}
+                          >
+                            <CalendarClock className="h-4 w-4 mr-2" />
+                            Registrar aula
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAlunoHistorico(aluno);
+                              setDialogHistorico(true);
+                            }}
+                            data-testid={`menu-history-${aluno.id}`}
+                          >
+                            <History className="h-4 w-4 mr-2" />
+                            Histórico de check-ins
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAlunoFinanceiroId(aluno.id);
+                              const now = new Date();
+                              setFormPagamento({
+                                amount: aluno.planoValorTexto?.replace(/[^0-9,.]/g, "") ?? "",
+                                referenceMonth: `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`,
+                                dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
+                                status: "paid",
+                              });
+                              setDialogPagamento(true);
+                            }}
+                            data-testid={`menu-payment-${aluno.id}`}
+                          >
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            Registrar pagamento
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAlunoFinanceiroId(aluno.id);
+                              const now = new Date();
+                              setFormCobranca({
+                                description: "",
+                                amount: "",
+                                dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
+                              });
+                              setDialogCobranca(true);
+                            }}
+                            data-testid={`menu-charge-${aluno.id}`}
+                          >
+                            <Receipt className="h-4 w-4 mr-2" />
+                            Criar cobrança
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setConfirmExcluirAluno(aluno)}
+                            data-testid={`menu-delete-student-${aluno.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir aluno
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -882,6 +1008,243 @@ export default function ManagerDashboard({
               data-testid="button-confirm-charge"
             >
               Criar Cobrança
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Editar Aluno */}
+      <Dialog open={dialogEditarAluno} onOpenChange={(open) => { if (!open) { setDialogEditarAluno(false); setAlunoEditando(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Editar Dados do Aluno
+            </DialogTitle>
+            <DialogDescription>
+              Atualize as informações do aluno. O login permanece o mesmo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Nome</Label>
+              <Input
+                value={formEditarAluno.nome}
+                onChange={(e) => setFormEditarAluno({ ...formEditarAluno, nome: e.target.value })}
+                data-testid="input-edit-nome"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>CPF (também é a senha do aluno)</Label>
+              <Input
+                placeholder="000.000.000-00"
+                value={formEditarAluno.cpf}
+                onChange={(e) => setFormEditarAluno({ ...formEditarAluno, cpf: e.target.value })}
+                data-testid="input-edit-cpf"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Modalidade</Label>
+              <Input
+                value={formEditarAluno.modalidade}
+                onChange={(e) => setFormEditarAluno({ ...formEditarAluno, modalidade: e.target.value })}
+                data-testid="input-edit-modalidade"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Status Mensalidade</Label>
+              <Select
+                value={formEditarAluno.statusMensalidade}
+                onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, statusMensalidade: v })}
+              >
+                <SelectTrigger data-testid="select-edit-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Em dia">Em dia</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Check-ins realizados</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formEditarAluno.checkinsRealizados}
+                onChange={(e) => setFormEditarAluno({ ...formEditarAluno, checkinsRealizados: Number(e.target.value) })}
+                data-testid="input-edit-checkins"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDialogEditarAluno(false); setAlunoEditando(null); }}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (alunoEditando && formEditarAluno.nome && formEditarAluno.cpf && formEditarAluno.modalidade) {
+                  onEditarAluno({ id: alunoEditando.id, ...formEditarAluno });
+                  setDialogEditarAluno(false);
+                  setAlunoEditando(null);
+                }
+              }}
+              disabled={!formEditarAluno.nome || !formEditarAluno.cpf || !formEditarAluno.modalidade}
+              data-testid="button-confirm-edit-student"
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Alterar Plano */}
+      <Dialog open={dialogAlterarPlano} onOpenChange={setDialogAlterarPlano}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Plano do Aluno</DialogTitle>
+            <DialogDescription>Selecione o novo plano para este aluno.</DialogDescription>
+          </DialogHeader>
+          <div className="py-3">
+            <Select value={novoPlanoId} onValueChange={setNovoPlanoId}>
+              <SelectTrigger data-testid="select-new-plan">
+                <SelectValue placeholder="Selecione o plano" />
+              </SelectTrigger>
+              <SelectContent>
+                {planos.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogAlterarPlano(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (alunoPlanoId && novoPlanoId) {
+                  onAlterarPlanoAluno(alunoPlanoId, novoPlanoId);
+                  setDialogAlterarPlano(false);
+                }
+              }}
+              disabled={!novoPlanoId}
+              data-testid="button-confirm-change-plan"
+            >
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Check-in Retroativo */}
+      <Dialog open={dialogCheckinRetro} onOpenChange={setDialogCheckinRetro}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5" />
+              Registrar Aula
+            </DialogTitle>
+            <DialogDescription>Registre um check-in retroativo para este aluno.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Data</Label>
+              <Input
+                type="date"
+                value={formCheckin.data}
+                onChange={(e) => setFormCheckin({ ...formCheckin, data: e.target.value })}
+                data-testid="input-checkin-data"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Hora</Label>
+              <Input
+                type="time"
+                value={formCheckin.hora}
+                onChange={(e) => setFormCheckin({ ...formCheckin, hora: e.target.value })}
+                data-testid="input-checkin-hora"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogCheckinRetro(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (alunoCheckinId && formCheckin.data && formCheckin.hora) {
+                  onCheckinManual(alunoCheckinId, formCheckin.data, formCheckin.hora);
+                  setDialogCheckinRetro(false);
+                }
+              }}
+              disabled={!formCheckin.data || !formCheckin.hora}
+              data-testid="button-confirm-checkin-retro"
+            >
+              Registrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Histórico */}
+      <Dialog open={dialogHistorico} onOpenChange={(open) => { if (!open) { setDialogHistorico(false); setAlunoHistorico(null); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Histórico de Check-ins — {alunoHistorico?.nome}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-80 overflow-y-auto">
+            {(alunoHistorico?.historico ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Nenhum check-in registrado</p>
+            ) : (
+              <div className="space-y-1">
+                {[...(alunoHistorico?.historico ?? [])].reverse().map((h, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 px-1 border-b last:border-0">
+                    <span className="text-sm">{h.data} às {h.hora}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => {
+                        if (alunoHistorico) {
+                          const realIndex = (alunoHistorico.historico.length - 1) - i;
+                          onRemoverCheckin(alunoHistorico.id, realIndex);
+                        }
+                      }}
+                      data-testid={`button-remove-checkin-${i}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDialogHistorico(false); setAlunoHistorico(null); }}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Confirmar Exclusão do Aluno */}
+      <Dialog open={!!confirmExcluirAluno} onOpenChange={(open) => { if (!open) setConfirmExcluirAluno(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Aluno</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o aluno <strong>{confirmExcluirAluno?.nome}</strong>? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmExcluirAluno(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmExcluirAluno) {
+                  onExcluirAluno(confirmExcluirAluno.id);
+                  setConfirmExcluirAluno(null);
+                }
+              }}
+              data-testid="button-confirm-delete-student"
+            >
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

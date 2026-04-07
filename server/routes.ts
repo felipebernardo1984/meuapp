@@ -256,6 +256,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ...student, loginGerado: login, senhaGerada: cpf, historico: [] });
   });
 
+  app.put("/api/alunos/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { nome, cpf, modalidade, statusMensalidade, checkinsRealizados } = req.body;
+    const updates: Record<string, any> = {};
+    if (nome !== undefined) updates.nome = nome;
+    if (cpf !== undefined) { updates.cpf = cpf; updates.senha = cpf; }
+    if (modalidade !== undefined) updates.modalidade = modalidade;
+    if (statusMensalidade !== undefined) updates.statusMensalidade = statusMensalidade;
+    if (checkinsRealizados !== undefined) updates.checkinsRealizados = Number(checkinsRealizados);
+    const student = await storage.updateStudent(req.params.id, updates);
+    res.json(student);
+  });
+
   app.put("/api/alunos/:id/plano", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;

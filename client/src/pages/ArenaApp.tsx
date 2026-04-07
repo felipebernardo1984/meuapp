@@ -120,6 +120,18 @@ export default function ArenaApp() {
       apiRequest("DELETE", `/api/alunos/${alunoId}/checkin/${index}`).then((r) => r.json()),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/alunos"] }); qc.invalidateQueries({ queryKey: ["/api/session"] }); },
   });
+  const editarAluno = useMutation({
+    mutationFn: ({ id: alunoId, ...d }: any) => apiRequest("PUT", `/api/alunos/${alunoId}`, d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+  });
+  const alterarPlanoAluno2 = useMutation({
+    mutationFn: ({ alunoId, planoId }: any) => apiRequest("PUT", `/api/alunos/${alunoId}/plano`, { planoId }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/alunos"] }); },
+  });
+  const excluirAluno = useMutation({
+    mutationFn: (alunoId: string) => apiRequest("DELETE", `/api/alunos/${alunoId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+  });
 
   // ── Financial queries ─────────────────────────────────────────────────────
   const { data: allCharges = [] } = useQuery<any[]>({
@@ -284,10 +296,12 @@ export default function ArenaApp() {
                 id: a.id, nome: a.nome, cpf: a.cpf, modalidade: a.modalidade,
                 plano: a.planoCheckins, planoTitulo: a.planoTitulo,
                 planoValorTexto: a.planoValorTexto ?? undefined,
+                planoId: a.planoId,
                 checkinsRealizados: a.checkinsRealizados,
                 statusMensalidade: a.statusMensalidade,
                 ultimoCheckin: a.ultimoCheckin ?? undefined,
                 aprovado: a.aprovado,
+                historico: a.historico ?? [],
               }))}
               professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, modalidade: p.modalidade }))}
               onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
@@ -303,6 +317,11 @@ export default function ArenaApp() {
               onRegistrarPagamento={(dados: any) => registrarPagamento.mutate(dados)}
               onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
               onIrFinanceiro={() => setGestorTab("financeiro")}
+              onEditarAluno={(dados: any) => editarAluno.mutate(dados)}
+              onAlterarPlanoAluno={(alunoId: string, planoId: string) => alterarPlanoAluno2.mutate({ alunoId, planoId })}
+              onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
+              onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
+              onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
             />
           )}
           {gestorTab === "financeiro" && (
