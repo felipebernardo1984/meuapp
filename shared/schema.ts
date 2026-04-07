@@ -80,6 +80,55 @@ export const insertStudentSchema = createInsertSchema(students).omit({ id: true 
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
 
+// ── Payments (Mensalidades) ──────────────────────────────────────────────────
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => arenas.id, { onDelete: "cascade" }),
+  studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
+  planId: varchar("plan_id").references(() => plans.id, { onDelete: "set null" }),
+  amount: text("amount").notNull(),
+  referenceMonth: text("reference_month").notNull(),
+  dueDate: text("due_date").notNull(),
+  paymentDate: text("payment_date"),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: text("created_by"),
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true });
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;
+
+// ── Charges (Cobranças extras) ────────────────────────────────────────────────
+export const charges = pgTable("charges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").references(() => arenas.id, { onDelete: "cascade" }),
+  studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
+  description: text("description").notNull(),
+  amount: text("amount").notNull(),
+  status: text("status").notNull().default("pending"),
+  dueDate: text("due_date").notNull(),
+  paymentDate: text("payment_date"),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertChargeSchema = createInsertSchema(charges).omit({ id: true, createdAt: true });
+export type InsertCharge = z.infer<typeof insertChargeSchema>;
+export type Charge = typeof charges.$inferSelect;
+
+// ── Payment Settings (Configurações PIX) ─────────────────────────────────────
+export const paymentSettings = pgTable("payment_settings", {
+  tenantId: varchar("tenant_id").primaryKey().references(() => arenas.id, { onDelete: "cascade" }),
+  receiverName: text("receiver_name"),
+  pixKey: text("pix_key"),
+  pixQrcodeImage: text("pix_qrcode_image"),
+});
+
+export const insertPaymentSettingsSchema = createInsertSchema(paymentSettings);
+export type InsertPaymentSettings = z.infer<typeof insertPaymentSettingsSchema>;
+export type PaymentSettings = typeof paymentSettings.$inferSelect;
+
 // ── Checkin History ──────────────────────────────────────────────────────────
 export const checkinHistory = pgTable("checkin_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

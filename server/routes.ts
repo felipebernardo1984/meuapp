@@ -477,6 +477,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true, arenaId: arena.id, arenaName: arena.name });
   });
 
+  // ── Financial Routes ──────────────────────────────────────────────────────
+
+  // Payments — gestor creates/views all payments for arena
+  app.get("/api/finance/payments", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const list = await storage.listPayments(arenaId);
+    res.json(list);
+  });
+
+  app.post("/api/finance/payments", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { studentId, planId, amount, referenceMonth, dueDate, status } = req.body;
+    if (!studentId || !amount || !referenceMonth || !dueDate) {
+      return res.status(400).json({ message: "Campos obrigatórios faltando" });
+    }
+    const payment = await storage.createPayment({
+      tenantId: arenaId, studentId, planId: planId ?? null,
+      amount, referenceMonth, dueDate,
+      paymentDate: status === "paid" ? new Date().toLocaleDateString("pt-BR") : null,
+      status: status ?? "pending",
+      createdBy: req.session.userType ?? "gestor",
+    });
+    res.json(payment);
+  });
+
+  app.put("/api/finance/payments/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { status, paymentDate } = req.body;
+    const payment = await storage.updatePaymentStatus(req.params.id, status, paymentDate);
+    res.json(payment);
+  });
+
+  // Student view of own payments
+  app.get("/api/finance/student/payments", async (req, res) => {
+    if (!req.session.arenaId || !req.session.userId) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
+    const list = await storage.listStudentPayments(req.session.userId);
+    res.json(list);
+  });
+
+  // Charges — gestor creates/views all charges for arena
+  app.get("/api/finance/charges", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const list = await storage.listCharges(arenaId);
+    res.json(list);
+  });
+
+  app.post("/api/finance/charges", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { studentId, description, amount, dueDate } = req.body;
+    if (!studentId || !description || !amount || !dueDate) {
+      return res.status(400).json({ message: "Campos obrigatórios faltando" });
+    }
+    const charge = await storage.createCharge({
+      tenantId: arenaId, studentId, description, amount,
+      status: "pending", dueDate, paymentDate: null,
+      createdBy: req.session.userType ?? "gestor",
+    });
+    res.json(charge);
+  });
+
+  app.put("/api/finance/charges/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { status, paymentDate } = req.body;
+    const charge = await storage.updateChargeStatus(req.params.id, status, paymentDate);
+    res.json(charge);
+  });
+
+  // Student view of own charges
+  app.get("/api/finance/student/charges", async (req, res) => {
+    if (!req.session.arenaId || !req.session.userId) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
+    const list = await storage.listStudentCharges(req.session.userId);
+    res.json(list);
+  });
+
+  // Payment Settings (PIX)
+  app.get("/api/finance/settings", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const settings = await storage.getPaymentSettings(arenaId);
+    res.json(settings ?? { tenantId: arenaId, receiverName: null, pixKey: null, pixQrcodeImage: null });
+  });
+
+  app.put("/api/finance/settings", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { receiverName, pixKey, pixQrcodeImage } = req.body;
+    const settings = await storage.upsertPaymentSettings({ tenantId: arenaId, receiverName, pixKey, pixQrcodeImage });
+    res.json(settings);
+  });
+
+  // Financial summary for gestor dashboard
+  app.get("/api/finance/summary", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const now = new Date();
+    const currentMonth = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+    const [allPayments, allCharges] = await Promise.all([
+      storage.listPayments(arenaId),
+      storage.listCharges(arenaId),
+    ]);
+    const monthPayments = allPayments.filter((p) => p.referenceMonth === currentMonth);
+    const summary = {
+      faturamentoMes: monthPayments.filter((p) => p.status === "paid").reduce((acc, p) => acc + parseFloat(p.amount.replace(/[^0-9.]/g, "") || "0"), 0),
+      mensalidadesPagas: monthPayments.filter((p) => p.status === "paid").length,
+      mensalidadesPendentes: allPayments.filter((p) => p.status === "pending").length,
+      mensalidadesAtrasadas: allPayments.filter((p) => p.status === "overdue").length,
+      totalCobranças: allCharges.filter((c) => c.status === "pending").length,
+    };
+    res.json(summary);
+  });
+
   // Public arena info (for arena-specific login page)
   app.get("/api/arena/:id", async (req, res) => {
     const arena = await storage.getArena(req.params.id);

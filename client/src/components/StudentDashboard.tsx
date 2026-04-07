@@ -24,7 +24,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, Calendar, Trash2, CalendarClock } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, Trash2, CalendarClock, QrCode, Receipt, DollarSign } from "lucide-react";
+
+interface Payment {
+  id: string;
+  referenceMonth: string;
+  amount: string;
+  status: string;
+  dueDate: string;
+  paymentDate?: string | null;
+}
+
+interface Charge {
+  id: string;
+  description: string;
+  amount: string;
+  status: string;
+  dueDate: string;
+  paymentDate?: string | null;
+}
+
+interface PixSettings {
+  receiverName?: string | null;
+  pixKey?: string | null;
+  pixQrcodeImage?: string | null;
+}
 
 interface StudentDashboardProps {
   studentName: string;
@@ -38,9 +62,18 @@ interface StudentDashboardProps {
   diasRestantes: number;
   statusMensalidade: "Em dia" | "Pendente";
   historico: Array<{ data: string; hora: string }>;
+  payments?: Payment[];
+  charges?: Charge[];
+  pixSettings?: PixSettings;
   onCheckin: () => void;
   onRemoverCheckin: (index: number) => void;
   onCheckinRetroativo: (data: string, hora: string) => void;
+}
+
+function paymentStatusBadge(status: string) {
+  if (status === "paid") return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Pago</Badge>;
+  if (status === "overdue") return <Badge variant="destructive">Atrasado</Badge>;
+  return <Badge variant="outline" className="text-orange-600 border-orange-300">Pendente</Badge>;
 }
 
 export default function StudentDashboard({
@@ -55,6 +88,9 @@ export default function StudentDashboard({
   diasRestantes,
   statusMensalidade,
   historico,
+  payments = [],
+  charges = [],
+  pixSettings,
   onCheckin,
   onRemoverCheckin,
   onCheckinRetroativo,
@@ -63,6 +99,8 @@ export default function StudentDashboard({
   const [dialogRetroativo, setDialogRetroativo] = useState(false);
   const [dataRetroativa, setDataRetroativa] = useState("");
   const [horaRetroativa, setHoraRetroativa] = useState("");
+  const [dialogPix, setDialogPix] = useState(false);
+  const [pixItem, setPixItem] = useState<{ amount: string; description: string } | null>(null);
 
   const abrirRetroativo = () => {
     const hoje = new Date().toISOString().split("T")[0];
@@ -227,6 +265,143 @@ export default function StudentDashboard({
           )}
         </CardContent>
       </Card>
+
+      {/* ── Histórico Financeiro ── */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Receipt className="h-5 w-5" />
+            Histórico Financeiro
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {payments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma mensalidade registrada</p>
+          ) : (
+            <div className="space-y-2">
+              {payments.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between py-2 border-b last:border-0"
+                  data-testid={`student-payment-${p.id}`}
+                >
+                  <div>
+                    <p className="text-sm font-medium">Mensalidade — {p.referenceMonth}</p>
+                    <p className="text-xs text-muted-foreground">Venc. {p.dueDate}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">R$ {p.amount}</span>
+                    {paymentStatusBadge(p.status)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Minhas Cobranças ── */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Minhas Cobranças
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {charges.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Nenhuma cobrança pendente</p>
+          ) : (
+            <div className="space-y-2">
+              {charges.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between py-2 border-b last:border-0"
+                  data-testid={`student-charge-${c.id}`}
+                >
+                  <div>
+                    <p className="text-sm font-medium">{c.description}</p>
+                    <p className="text-xs text-muted-foreground">Venc. {c.dueDate}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">R$ {c.amount}</span>
+                    {paymentStatusBadge(c.status)}
+                    {c.status !== "paid" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setPixItem({ amount: c.amount, description: c.description });
+                          setDialogPix(true);
+                        }}
+                        data-testid={`button-pay-charge-${c.id}`}
+                      >
+                        <QrCode className="h-3.5 w-3.5 mr-1" />
+                        Pagar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── PIX Payment Dialog ── */}
+      <Dialog open={dialogPix} onOpenChange={setDialogPix}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              Pagar via PIX
+            </DialogTitle>
+            <DialogDescription>
+              {pixItem && <span>Cobrança: <strong>{pixItem.description}</strong></span>}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-4">
+            {pixItem && (
+              <div className="text-center">
+                <p className="text-3xl font-bold text-primary">R$ {pixItem.amount}</p>
+              </div>
+            )}
+            {pixSettings?.pixKey ? (
+              <div className="space-y-3">
+                <div className="bg-muted rounded-lg p-3 space-y-1">
+                  {pixSettings.receiverName && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Recebedor</span>
+                      <span className="font-medium">{pixSettings.receiverName}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Chave PIX</span>
+                    <span className="font-medium font-mono">{pixSettings.pixKey}</span>
+                  </div>
+                </div>
+                {pixSettings.pixQrcodeImage && (
+                  <div className="flex justify-center">
+                    <img
+                      src={pixSettings.pixQrcodeImage}
+                      alt="QR Code PIX"
+                      className="h-40 w-40 object-contain border rounded-lg"
+                      data-testid="img-pix-qrcode"
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center">
+                Dados de pagamento PIX não configurados. Fale com a recepção.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setDialogPix(false)} data-testid="button-close-pix">Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={confirmarIndex !== null}

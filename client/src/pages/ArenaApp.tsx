@@ -5,12 +5,13 @@ import { apiRequest } from "@/lib/queryClient";
 import StudentDashboard from "@/components/StudentDashboard";
 import TeacherDashboard from "@/components/TeacherDashboard";
 import ManagerDashboard from "@/components/ManagerDashboard";
+import FinancialDashboard from "@/components/FinancialDashboard";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, LayoutDashboard, TrendingUp } from "lucide-react";
 import type { Plano } from "./Home";
 
 export default function ArenaApp() {
@@ -18,6 +19,7 @@ export default function ArenaApp() {
   const qc = useQueryClient();
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [gestorTab, setGestorTab] = useState<"dashboard" | "financeiro">("dashboard");
 
   // ── Arena info ────────────────────────────────────────────────────────────
   const { data: arena, isLoading: arenaLoading } = useQuery<{ id: string; name: string }>({
@@ -59,6 +61,13 @@ export default function ArenaApp() {
   const { data: planos = [] } = useQuery<any[]>({ queryKey: ["/api/planos"], enabled: !!sessao });
   const { data: professores = [] } = useQuery<any[]>({ queryKey: ["/api/professores"], enabled: !!sessao });
   const { data: alunos = [] } = useQuery<any[]>({ queryKey: ["/api/alunos"], enabled: !!sessao });
+
+  // ── Financial data ────────────────────────────────────────────────────────
+  const isAluno = sessao?.tipo === "aluno";
+  const isGestor = sessao?.tipo === "gestor";
+  const { data: studentPayments = [] } = useQuery<any[]>({ queryKey: ["/api/finance/student/payments"], enabled: isAluno });
+  const { data: studentCharges = [] } = useQuery<any[]>({ queryKey: ["/api/finance/student/charges"], enabled: isAluno });
+  const { data: pixSettings } = useQuery<any>({ queryKey: ["/api/finance/settings"], enabled: !!sessao });
 
   // ── Plan mutations ────────────────────────────────────────────────────────
   const criarPlano = useMutation({
@@ -110,6 +119,16 @@ export default function ArenaApp() {
     mutationFn: ({ id: alunoId, index }: any) =>
       apiRequest("DELETE", `/api/alunos/${alunoId}/checkin/${index}`).then((r) => r.json()),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/alunos"] }); qc.invalidateQueries({ queryKey: ["/api/session"] }); },
+  });
+
+  // ── Financial mutations ───────────────────────────────────────────────────
+  const registrarPagamento = useMutation({
+    mutationFn: (d: any) => apiRequest("POST", "/api/finance/payments", d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/finance/payments"] }),
+  });
+  const criarCobranca = useMutation({
+    mutationFn: (d: any) => apiRequest("POST", "/api/finance/charges", d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/finance/charges"] }),
   });
 
   const planosAdaptados: Plano[] = planos.map((p: any) => ({
@@ -220,6 +239,9 @@ export default function ArenaApp() {
           diasRestantes={12}
           statusMensalidade={alunoAtual.statusMensalidade}
           historico={alunoAtual.historico ?? []}
+          payments={studentPayments}
+          charges={studentCharges}
+          pixSettings={pixSettings}
           onCheckin={() => checkinManual.mutate({ id: alunoAtual.id })}
           onRemoverCheckin={(index: number) => removerCheckin.mutate({ id: alunoAtual.id, index })}
           onCheckinRetroativo={(data: string, hora: string) => checkinManual.mutate({ id: alunoAtual.id, data, hora })}
@@ -247,29 +269,62 @@ export default function ArenaApp() {
       )}
 
       {sessao.tipo === "gestor" && (
-        <ManagerDashboard
-          planos={planosAdaptados}
-          alunos={alunos.map((a: any) => ({
-            id: a.id, nome: a.nome, cpf: a.cpf, modalidade: a.modalidade,
-            plano: a.planoCheckins, planoTitulo: a.planoTitulo,
-            planoValorTexto: a.planoValorTexto ?? undefined,
-            checkinsRealizados: a.checkinsRealizados,
-            statusMensalidade: a.statusMensalidade,
-            ultimoCheckin: a.ultimoCheckin ?? undefined,
-            aprovado: a.aprovado,
-          }))}
-          professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, modalidade: p.modalidade }))}
-          onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
-          onCadastrarProfessor={(nome: string, modalidade: string) => cadastrarProfessor.mutate({ nome, modalidade })}
-          onEditarProfessor={(profId: string, nome: string, modalidade: string) => editarProfessor.mutate({ id: profId, nome, modalidade })}
-          onExcluirProfessor={(profId: string) => excluirProfessor.mutate(profId)}
-          onCadastrarAluno={(dados: any) => cadastrarAluno.mutate(dados)}
-          onCriarPlano={(titulo: string, checkins: number, valorTexto?: string) => criarPlano.mutate({ titulo, checkins, valorTexto })}
-          onEditarPlano={(planId: string, titulo: string, checkins: number, valorTexto?: string) => editarPlano.mutate({ id: planId, titulo, checkins, valorTexto })}
-          onExcluirPlano={(planId: string) => excluirPlano.mutate(planId)}
-          onExportarPDF={() => alert("Exportar PDF em breve")}
-          onExportarExcel={() => alert("Exportar Excel em breve")}
-        />
+        <>
+          <div className="fixed top-14 left-0 right-0 z-40 flex justify-center gap-2 px-4 pt-2 pb-0">
+            <Button
+              variant={gestorTab === "dashboard" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setGestorTab("dashboard")}
+              data-testid="tab-manager-dashboard"
+            >
+              <LayoutDashboard className="h-4 w-4 mr-1" />
+              Painel
+            </Button>
+            <Button
+              variant={gestorTab === "financeiro" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setGestorTab("financeiro")}
+              data-testid="tab-financial-dashboard"
+            >
+              <TrendingUp className="h-4 w-4 mr-1" />
+              Financeiro
+            </Button>
+          </div>
+          <div className="pt-10">
+            {gestorTab === "dashboard" && (
+              <ManagerDashboard
+                planos={planosAdaptados}
+                alunos={alunos.map((a: any) => ({
+                  id: a.id, nome: a.nome, cpf: a.cpf, modalidade: a.modalidade,
+                  plano: a.planoCheckins, planoTitulo: a.planoTitulo,
+                  planoValorTexto: a.planoValorTexto ?? undefined,
+                  checkinsRealizados: a.checkinsRealizados,
+                  statusMensalidade: a.statusMensalidade,
+                  ultimoCheckin: a.ultimoCheckin ?? undefined,
+                  aprovado: a.aprovado,
+                }))}
+                professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, modalidade: p.modalidade }))}
+                onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
+                onCadastrarProfessor={(nome: string, modalidade: string) => cadastrarProfessor.mutate({ nome, modalidade })}
+                onEditarProfessor={(profId: string, nome: string, modalidade: string) => editarProfessor.mutate({ id: profId, nome, modalidade })}
+                onExcluirProfessor={(profId: string) => excluirProfessor.mutate(profId)}
+                onCadastrarAluno={(dados: any) => cadastrarAluno.mutate(dados)}
+                onCriarPlano={(titulo: string, checkins: number, valorTexto?: string) => criarPlano.mutate({ titulo, checkins, valorTexto })}
+                onEditarPlano={(planId: string, titulo: string, checkins: number, valorTexto?: string) => editarPlano.mutate({ id: planId, titulo, checkins, valorTexto })}
+                onExcluirPlano={(planId: string) => excluirPlano.mutate(planId)}
+                onExportarPDF={() => alert("Exportar PDF em breve")}
+                onExportarExcel={() => alert("Exportar Excel em breve")}
+                onRegistrarPagamento={(dados: any) => registrarPagamento.mutate(dados)}
+                onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
+              />
+            )}
+            {gestorTab === "financeiro" && (
+              <FinancialDashboard
+                alunos={alunos.map((a: any) => ({ id: a.id, nome: a.nome }))}
+              />
+            )}
+          </div>
+        </>
       )}
     </>
   );

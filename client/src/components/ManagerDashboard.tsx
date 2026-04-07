@@ -36,6 +36,8 @@ import {
   Pencil,
   Trash2,
   Plus,
+  DollarSign,
+  Receipt,
 } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
@@ -80,6 +82,8 @@ interface ManagerDashboardProps {
   onExcluirPlano: (id: string) => void;
   onExportarPDF: () => void;
   onExportarExcel: () => void;
+  onRegistrarPagamento: (dados: { studentId: string; amount: string; referenceMonth: string; dueDate: string; status: string }) => void;
+  onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
 }
 
 function parseValorPlano(input: string): { checkins: number; valorTexto?: string } {
@@ -106,8 +110,17 @@ export default function ManagerDashboard({
   onExcluirPlano,
   onExportarPDF,
   onExportarExcel,
+  onRegistrarPagamento,
+  onCriarCobranca,
 }: ManagerDashboardProps) {
   const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
+
+  // Financial state
+  const [dialogPagamento, setDialogPagamento] = useState(false);
+  const [dialogCobranca, setDialogCobranca] = useState(false);
+  const [alunoFinanceiroId, setAlunoFinanceiroId] = useState<string>("");
+  const [formPagamento, setFormPagamento] = useState({ amount: "", referenceMonth: "", dueDate: "", status: "paid" });
+  const [formCobranca, setFormCobranca] = useState({ description: "", amount: "", dueDate: "" });
 
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
@@ -657,6 +670,7 @@ export default function ManagerDashboard({
                   <TableHead>Mensalidade</TableHead>
                   <TableHead>Último Check-in</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -685,6 +699,49 @@ export default function ManagerDashboard({
                         <XCircle className="h-4 w-4 text-orange-600" />
                       )}
                     </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 px-2"
+                          onClick={() => {
+                            setAlunoFinanceiroId(aluno.id);
+                            const now = new Date();
+                            setFormPagamento({
+                              amount: aluno.planoValorTexto?.replace(/[^0-9,.]/g, "") ?? "",
+                              referenceMonth: `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`,
+                              dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
+                              status: "paid",
+                            });
+                            setDialogPagamento(true);
+                          }}
+                          data-testid={`button-register-payment-${aluno.id}`}
+                        >
+                          <DollarSign className="h-3 w-3 mr-1" />
+                          Pagamento
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 px-2"
+                          onClick={() => {
+                            setAlunoFinanceiroId(aluno.id);
+                            const now = new Date();
+                            setFormCobranca({
+                              description: "",
+                              amount: "",
+                              dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
+                            });
+                            setDialogCobranca(true);
+                          }}
+                          data-testid={`button-create-charge-${aluno.id}`}
+                        >
+                          <Receipt className="h-3 w-3 mr-1" />
+                          Cobrança
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -692,6 +749,137 @@ export default function ManagerDashboard({
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog Registrar Pagamento */}
+      <Dialog open={dialogPagamento} onOpenChange={setDialogPagamento}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Registrar Pagamento
+            </DialogTitle>
+            <DialogDescription>
+              Registre uma mensalidade para o aluno selecionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Valor (R$)</Label>
+              <Input
+                placeholder="Ex: 140,00"
+                value={formPagamento.amount}
+                onChange={(e) => setFormPagamento({ ...formPagamento, amount: e.target.value })}
+                data-testid="input-payment-amount"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Mês de Referência</Label>
+              <Input
+                placeholder="Ex: 04/2025"
+                value={formPagamento.referenceMonth}
+                onChange={(e) => setFormPagamento({ ...formPagamento, referenceMonth: e.target.value })}
+                data-testid="input-payment-month"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Vencimento</Label>
+              <Input
+                placeholder="Ex: 10/04/2025"
+                value={formPagamento.dueDate}
+                onChange={(e) => setFormPagamento({ ...formPagamento, dueDate: e.target.value })}
+                data-testid="input-payment-due"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select value={formPagamento.status} onValueChange={(v) => setFormPagamento({ ...formPagamento, status: v })}>
+                <SelectTrigger data-testid="select-payment-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="paid">Pago</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="overdue">Atrasado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogPagamento(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (formPagamento.amount && formPagamento.referenceMonth && formPagamento.dueDate) {
+                  onRegistrarPagamento({ studentId: alunoFinanceiroId, ...formPagamento });
+                  setDialogPagamento(false);
+                }
+              }}
+              disabled={!formPagamento.amount || !formPagamento.referenceMonth || !formPagamento.dueDate}
+              data-testid="button-confirm-payment"
+            >
+              Registrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Criar Cobrança */}
+      <Dialog open={dialogCobranca} onOpenChange={setDialogCobranca}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              Criar Cobrança Extra
+            </DialogTitle>
+            <DialogDescription>
+              Crie uma cobrança adicional para o aluno selecionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Descrição</Label>
+              <Input
+                placeholder="Ex: Taxa de falta, Aula extra..."
+                value={formCobranca.description}
+                onChange={(e) => setFormCobranca({ ...formCobranca, description: e.target.value })}
+                data-testid="input-charge-description"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Valor (R$)</Label>
+              <Input
+                placeholder="Ex: 30,00"
+                value={formCobranca.amount}
+                onChange={(e) => setFormCobranca({ ...formCobranca, amount: e.target.value })}
+                data-testid="input-charge-amount"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Vencimento</Label>
+              <Input
+                placeholder="Ex: 10/04/2025"
+                value={formCobranca.dueDate}
+                onChange={(e) => setFormCobranca({ ...formCobranca, dueDate: e.target.value })}
+                data-testid="input-charge-due"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogCobranca(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (formCobranca.description && formCobranca.amount && formCobranca.dueDate) {
+                  onCriarCobranca({ studentId: alunoFinanceiroId, ...formCobranca });
+                  setDialogCobranca(false);
+                }
+              }}
+              disabled={!formCobranca.description || !formCobranca.amount || !formCobranca.dueDate}
+              data-testid="button-confirm-charge"
+            >
+              Criar Cobrança
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

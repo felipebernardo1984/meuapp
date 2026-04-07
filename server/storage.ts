@@ -2,12 +2,16 @@ import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, arenas, plans, teachers, students, checkinHistory,
+  payments, charges, paymentSettings,
   type User, type InsertUser,
   type Arena, type InsertArena,
   type Plan, type InsertPlan,
   type Teacher, type InsertTeacher,
   type Student, type InsertStudent,
   type CheckinEntry, type InsertCheckin,
+  type Payment, type InsertPayment,
+  type Charge, type InsertCharge,
+  type PaymentSettings, type InsertPaymentSettings,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -52,6 +56,22 @@ export interface IStorage {
   addCheckin(checkin: InsertCheckin): Promise<CheckinEntry>;
   removeCheckin(id: string): Promise<void>;
   removeCheckinByIndex(studentId: string, index: number): Promise<void>;
+
+  // Payments
+  listPayments(tenantId: string): Promise<Payment[]>;
+  listStudentPayments(studentId: string): Promise<Payment[]>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePaymentStatus(id: string, status: string, paymentDate?: string): Promise<Payment>;
+
+  // Charges
+  listCharges(tenantId: string): Promise<Charge[]>;
+  listStudentCharges(studentId: string): Promise<Charge[]>;
+  createCharge(charge: InsertCharge): Promise<Charge>;
+  updateChargeStatus(id: string, status: string, paymentDate?: string): Promise<Charge>;
+
+  // Payment Settings
+  getPaymentSettings(tenantId: string): Promise<PaymentSettings | undefined>;
+  upsertPaymentSettings(settings: InsertPaymentSettings): Promise<PaymentSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -211,6 +231,67 @@ export class DatabaseStorage implements IStorage {
     if (index >= 0 && index < all.length) {
       await this.removeCheckin(all[index].id);
     }
+  }
+
+  // ── Payments ──────────────────────────────────────────────────────────────
+  async listPayments(tenantId: string): Promise<Payment[]> {
+    return db.select().from(payments).where(eq(payments.tenantId, tenantId));
+  }
+
+  async listStudentPayments(studentId: string): Promise<Payment[]> {
+    return db.select().from(payments).where(eq(payments.studentId, studentId));
+  }
+
+  async createPayment(data: InsertPayment): Promise<Payment> {
+    const [payment] = await db.insert(payments).values(data).returning();
+    return payment;
+  }
+
+  async updatePaymentStatus(id: string, status: string, paymentDate?: string): Promise<Payment> {
+    const [payment] = await db
+      .update(payments)
+      .set({ status, ...(paymentDate ? { paymentDate } : {}) })
+      .where(eq(payments.id, id))
+      .returning();
+    return payment;
+  }
+
+  // ── Charges ───────────────────────────────────────────────────────────────
+  async listCharges(tenantId: string): Promise<Charge[]> {
+    return db.select().from(charges).where(eq(charges.tenantId, tenantId));
+  }
+
+  async listStudentCharges(studentId: string): Promise<Charge[]> {
+    return db.select().from(charges).where(eq(charges.studentId, studentId));
+  }
+
+  async createCharge(data: InsertCharge): Promise<Charge> {
+    const [charge] = await db.insert(charges).values(data).returning();
+    return charge;
+  }
+
+  async updateChargeStatus(id: string, status: string, paymentDate?: string): Promise<Charge> {
+    const [charge] = await db
+      .update(charges)
+      .set({ status, ...(paymentDate ? { paymentDate } : {}) })
+      .where(eq(charges.id, id))
+      .returning();
+    return charge;
+  }
+
+  // ── Payment Settings ──────────────────────────────────────────────────────
+  async getPaymentSettings(tenantId: string): Promise<PaymentSettings | undefined> {
+    const [settings] = await db.select().from(paymentSettings).where(eq(paymentSettings.tenantId, tenantId));
+    return settings;
+  }
+
+  async upsertPaymentSettings(data: InsertPaymentSettings): Promise<PaymentSettings> {
+    const [settings] = await db
+      .insert(paymentSettings)
+      .values(data)
+      .onConflictDoUpdate({ target: paymentSettings.tenantId, set: { receiverName: data.receiverName, pixKey: data.pixKey, pixQrcodeImage: data.pixQrcodeImage } })
+      .returning();
+    return settings;
   }
 }
 
