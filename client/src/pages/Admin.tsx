@@ -177,7 +177,6 @@ export default function Admin() {
               SEVEN SPORTS
             </CardTitle>
             <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
-              <Shield className="h-4 w-4" />
               <p className="text-sm">GESTÃO DE QUADRAS ESPORTIVAS</p>
             </div>
           </CardHeader>
@@ -426,7 +425,6 @@ export default function Admin() {
               SEVEN SPORTS
             </h1>
             <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
-              <Shield className="h-4 w-4" />
               <p className="text-sm">GESTÃO DE QUADRAS ESPORTIVAS</p>
             </div>
           </div>
