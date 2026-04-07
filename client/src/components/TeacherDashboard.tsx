@@ -142,10 +142,6 @@ export default function TeacherDashboard({
       </Card>
 
       {/* Grade de alunos */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-base">Alunos — {modalidade}</h2>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {alunos.map((aluno) => {
           const temCheckins = aluno.plano > 0;
