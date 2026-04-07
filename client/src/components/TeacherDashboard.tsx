@@ -40,6 +40,10 @@ interface AlunoView {
 interface NovoAlunoDados {
   nome: string;
   cpf: string;
+  email: string;
+  telefone: string;
+  login: string;
+  senha: string;
   planoId: string;
 }
 
@@ -89,6 +93,10 @@ export default function TeacherDashboard({
   const [novoAluno, setNovoAluno] = useState<NovoAlunoDados>({
     nome: "",
     cpf: "",
+    email: "",
+    telefone: "",
+    login: "",
+    senha: "",
     planoId: planos[0]?.id ?? "",
   });
 

@@ -15,8 +15,8 @@ declare module "express-session" {
   }
 }
 
-const ADMIN_LOGIN = process.env.ADMIN_LOGIN || "444";
-const ADMIN_SENHA = process.env.ADMIN_SENHA || "444";
+let ADMIN_LOGIN = process.env.ADMIN_LOGIN || "superadmin";
+let ADMIN_SENHA = process.env.ADMIN_SENHA || "superadmin";
 
 function requireArena(req: Request, res: Response): string | null {
   if (!req.session.arenaId) {
@@ -209,10 +209,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/professores", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, modalidade } = req.body;
-    const login = gerarLogin(nome);
-    const teacher = await storage.createTeacher({ arenaId, nome, login, senha: "admin", modalidade });
-    res.json({ ...teacher, senha: undefined, loginGerado: login, senhaGerada: "admin" });
+    const { nome, modalidade, cpf, email, telefone } = req.body;
+    const login = req.body.login?.trim() || gerarLogin(nome);
+    const senha = req.body.senha?.trim() || "admin";
+    const teacher = await storage.createTeacher({ arenaId, nome, login, senha, cpf: cpf ?? null, email: email ?? null, telefone: telefone ?? null, modalidade });
+    res.json({ ...teacher, senha: undefined, loginGerado: login, senhaGerada: senha });
   });
 
   app.put("/api/professores/:id", async (req, res) => {
@@ -244,16 +245,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/alunos", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, modalidade, planoId } = req.body;
+    const { nome, cpf, modalidade, planoId, email, telefone } = req.body;
     const plan = await storage.getPlan(planoId);
     if (!plan) return res.status(400).json({ message: "Plano não encontrado" });
-    const login = gerarLogin(nome);
+    const login = req.body.login?.trim() || gerarLogin(nome);
+    const senha = req.body.senha?.trim() || cpf;
     const student = await storage.createStudent({
-      arenaId, nome, login, senha: cpf, cpf, modalidade,
+      arenaId, nome, login, senha, cpf, email: email ?? null, telefone: telefone ?? null, modalidade,
       planoId: plan.id, planoTitulo: plan.titulo, planoCheckins: plan.checkins, planoValorTexto: plan.valorTexto ?? null,
       checkinsRealizados: 0, statusMensalidade: "Em dia", aprovado: true, ultimoCheckin: null, photoUrl: null,
     });
-    res.json({ ...student, loginGerado: login, senhaGerada: cpf, historico: [] });
+    res.json({ ...student, loginGerado: login, senhaGerada: senha, historico: [] });
   });
 
   app.put("/api/alunos/:id", async (req, res) => {
@@ -405,9 +407,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/arenas", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const { name, subscriptionPlan, gestorLogin, gestorSenha } = req.body;
-    const arena = await storage.createArena({ name, subscriptionPlan: subscriptionPlan || "basic", gestorLogin, gestorSenha });
+    const { name, subscriptionPlan, gestorLogin, gestorSenha, gestorNome, gestorCpf, gestorEmail, gestorTelefone } = req.body;
+    const arena = await storage.createArena({
+      name, subscriptionPlan: subscriptionPlan || "basic", gestorLogin, gestorSenha,
+      gestorNome: gestorNome ?? null, gestorCpf: gestorCpf ?? null,
+      gestorEmail: gestorEmail ?? null, gestorTelefone: gestorTelefone ?? null,
+    });
     res.json(arena);
+  });
+
+  app.put("/api/admin/credentials", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const { login, senha } = req.body;
+    if (!login || !senha) return res.status(400).json({ message: "Login e senha são obrigatórios" });
+    ADMIN_LOGIN = login;
+    ADMIN_SENHA = senha;
+    res.json({ ok: true });
   });
 
   app.put("/api/admin/arenas/:id", async (req, res) => {

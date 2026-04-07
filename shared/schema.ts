@@ -21,6 +21,10 @@ export const arenas = pgTable("arenas", {
   subscriptionPlan: text("subscription_plan").notNull().default("basic"),
   gestorLogin: text("gestor_login").notNull(),
   gestorSenha: text("gestor_senha").notNull(),
+  gestorNome: text("gestor_nome"),
+  gestorCpf: text("gestor_cpf"),
+  gestorEmail: text("gestor_email"),
+  gestorTelefone: text("gestor_telefone"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -49,6 +53,9 @@ export const teachers = pgTable("teachers", {
   nome: text("nome").notNull(),
   login: text("login").notNull(),
   senha: text("senha").notNull(),
+  cpf: text("cpf"),
+  email: text("email"),
+  telefone: text("telefone"),
   modalidade: text("modalidade").notNull(),
 });
 
@@ -64,6 +71,8 @@ export const students = pgTable("students", {
   login: text("login").notNull(),
   senha: text("senha").notNull(),
   cpf: text("cpf").notNull(),
+  email: text("email"),
+  telefone: text("telefone"),
   modalidade: text("modalidade").notNull(),
   planoId: varchar("plano_id").references(() => plans.id, { onDelete: "set null" }),
   planoTitulo: text("plano_titulo").notNull().default(""),

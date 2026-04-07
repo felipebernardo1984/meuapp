@@ -78,6 +78,10 @@ interface ProfessorGestor {
 interface NovoAlunoDados {
   nome: string;
   cpf: string;
+  email: string;
+  telefone: string;
+  login: string;
+  senha: string;
   modalidade: string;
   planoId: string;
 }
@@ -87,7 +91,7 @@ interface ManagerDashboardProps {
   alunos: AlunoGestor[];
   professores: ProfessorGestor[];
   onAprovarAluno: (alunoId: string) => void;
-  onCadastrarProfessor: (nome: string, modalidade: string) => void;
+  onCadastrarProfessor: (dados: { nome: string; cpf: string; email: string; telefone: string; login: string; senha: string; modalidade: string }) => void;
   onEditarProfessor: (id: string, nome: string, modalidade: string) => void;
   onExcluirProfessor: (id: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
@@ -173,13 +177,17 @@ export default function ManagerDashboard({
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
   const [professorEditando, setProfessorEditando] = useState<ProfessorGestor | null>(null);
-  const [formProfessor, setFormProfessor] = useState({ nome: "", modalidade: "" });
+  const [formProfessor, setFormProfessor] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "" });
 
   // Aluno state
   const [dialogNovoAluno, setDialogNovoAluno] = useState(false);
   const [novoAluno, setNovoAluno] = useState<NovoAlunoDados>({
     nome: "",
     cpf: "",
+    email: "",
+    telefone: "",
+    login: "",
+    senha: "",
     modalidade: "",
     planoId: planos[0]?.id ?? "",
   });
@@ -217,7 +225,7 @@ export default function ManagerDashboard({
   // ── Professores ──────────────────────────────────────────────────────────
   const abrirEditarProfessor = (p: ProfessorGestor) => {
     setProfessorEditando(p);
-    setFormProfessor({ nome: p.nome, modalidade: p.modalidade });
+    setFormProfessor({ nome: p.nome, cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: p.modalidade });
   };
 
   const handleSalvarProfessor = () => {
@@ -226,17 +234,18 @@ export default function ManagerDashboard({
       onEditarProfessor(professorEditando.id, formProfessor.nome, formProfessor.modalidade);
       setProfessorEditando(null);
     } else {
-      onCadastrarProfessor(formProfessor.nome, formProfessor.modalidade);
+      if (!formProfessor.login || !formProfessor.senha) return;
+      onCadastrarProfessor({ nome: formProfessor.nome, cpf: formProfessor.cpf, email: formProfessor.email, telefone: formProfessor.telefone, login: formProfessor.login, senha: formProfessor.senha, modalidade: formProfessor.modalidade });
       setDialogProfessor(false);
     }
-    setFormProfessor({ nome: "", modalidade: "" });
+    setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "" });
   };
 
   // ── Alunos ───────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
     if (novoAluno.nome && novoAluno.cpf && novoAluno.modalidade && novoAluno.planoId) {
       onCadastrarAluno(novoAluno);
-      setNovoAluno({ nome: "", cpf: "", modalidade: "", planoId: planos[0]?.id ?? "" });
+      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: planos[0]?.id ?? "" });
       setDialogNovoAluno(false);
     }
   };
@@ -304,16 +313,13 @@ export default function ManagerDashboard({
 
       {/* Dialog Cadastrar Aluno */}
       <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
-            <DialogDescription>
-              O login será o nome e a senha será o CPF.
-            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+          <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
             <div className="space-y-1">
-              <Label>Nome do Aluno</Label>
+              <Label>Nome do Aluno <span className="text-destructive">*</span></Label>
               <Input
                 placeholder="Nome completo"
                 value={novoAluno.nome}
@@ -322,7 +328,7 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>CPF</Label>
+              <Label>CPF <span className="text-destructive">*</span></Label>
               <Input
                 placeholder="000.000.000-00"
                 value={novoAluno.cpf}
@@ -331,7 +337,45 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>Modalidade</Label>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                placeholder="email@exemplo.com"
+                value={novoAluno.email}
+                onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value })}
+                data-testid="input-manager-student-email"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Telefone</Label>
+              <Input
+                placeholder="(00) 00000-0000"
+                value={novoAluno.telefone}
+                onChange={(e) => setNovoAluno({ ...novoAluno, telefone: e.target.value })}
+                data-testid="input-manager-student-telefone"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Login <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="Login de acesso do aluno"
+                value={novoAluno.login}
+                onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
+                data-testid="input-manager-student-login"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Senha <span className="text-destructive">*</span></Label>
+              <Input
+                type="password"
+                placeholder="Senha de acesso do aluno"
+                value={novoAluno.senha}
+                onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
+                data-testid="input-manager-student-senha"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Modalidade <span className="text-destructive">*</span></Label>
               <Select
                 value={novoAluno.modalidade}
                 onValueChange={(v) => setNovoAluno({ ...novoAluno, modalidade: v })}
@@ -347,7 +391,7 @@ export default function ManagerDashboard({
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Plano</Label>
+              <Label>Plano <span className="text-destructive">*</span></Label>
               <Select
                 value={novoAluno.planoId}
                 onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
@@ -369,7 +413,7 @@ export default function ManagerDashboard({
             <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>Cancelar</Button>
             <Button
               onClick={handleCadastrarAluno}
-              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.modalidade || !novoAluno.planoId}
+              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.login || !novoAluno.senha || !novoAluno.modalidade || !novoAluno.planoId}
               data-testid="button-confirm-manager-student"
             >
               Cadastrar
@@ -568,25 +612,69 @@ export default function ManagerDashboard({
 
       {/* Dialog cadastrar professor */}
       <Dialog open={dialogProfessor} onOpenChange={setDialogProfessor}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Cadastrar Novo Professor</DialogTitle>
-            <DialogDescription>
-              O professor receberá senha padrão "admin" que poderá ser alterada após o primeiro acesso.
-            </DialogDescription>
+            <DialogTitle>Cadastrar Professor</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-4">
+          <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
             <div className="space-y-1">
-              <Label>Nome Completo</Label>
+              <Label>Nome do Professor <span className="text-destructive">*</span></Label>
               <Input
-                placeholder="Digite o nome completo"
+                placeholder="Nome completo"
                 value={formProfessor.nome}
                 onChange={(e) => setFormProfessor({ ...formProfessor, nome: e.target.value })}
                 data-testid="input-teacher-name"
               />
             </div>
             <div className="space-y-1">
-              <Label>Modalidade</Label>
+              <Label>CPF</Label>
+              <Input
+                placeholder="000.000.000-00"
+                value={formProfessor.cpf}
+                onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value })}
+                data-testid="input-teacher-cpf"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                placeholder="email@exemplo.com"
+                value={formProfessor.email}
+                onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value })}
+                data-testid="input-teacher-email"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Telefone</Label>
+              <Input
+                placeholder="(00) 00000-0000"
+                value={formProfessor.telefone}
+                onChange={(e) => setFormProfessor({ ...formProfessor, telefone: e.target.value })}
+                data-testid="input-teacher-telefone"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Login <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="Login de acesso do professor"
+                value={formProfessor.login}
+                onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
+                data-testid="input-teacher-login"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Senha <span className="text-destructive">*</span></Label>
+              <Input
+                type="password"
+                placeholder="Senha de acesso do professor"
+                value={formProfessor.senha}
+                onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
+                data-testid="input-teacher-senha"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Modalidade <span className="text-destructive">*</span></Label>
               <Input
                 placeholder="Ex: Beach Tennis, Futevôlei, Surf..."
                 value={formProfessor.modalidade}
@@ -599,7 +687,7 @@ export default function ManagerDashboard({
             <Button variant="outline" onClick={() => setDialogProfessor(false)}>Cancelar</Button>
             <Button
               onClick={handleSalvarProfessor}
-              disabled={!formProfessor.nome || !formProfessor.modalidade}
+              disabled={!formProfessor.nome || !formProfessor.login || !formProfessor.senha || !formProfessor.modalidade}
               data-testid="button-confirm-add-teacher"
             >
               Cadastrar
