@@ -194,7 +194,6 @@ export default function ManagerDashboard({
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-1" data-testid="text-manager-title">Painel do Gestor</h1>
-        <p className="text-muted-foreground">Seven Sports — Controle Total</p>
       </div>
 
       {/* Stats */}
