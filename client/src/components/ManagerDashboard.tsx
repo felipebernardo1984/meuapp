@@ -38,6 +38,7 @@ import {
   Plus,
   DollarSign,
   Receipt,
+  TrendingUp,
 } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
@@ -84,6 +85,7 @@ interface ManagerDashboardProps {
   onExportarExcel: () => void;
   onRegistrarPagamento: (dados: { studentId: string; amount: string; referenceMonth: string; dueDate: string; status: string }) => void;
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
+  onIrFinanceiro: () => void;
 }
 
 function parseValorPlano(input: string): { checkins: number; valorTexto?: string } {
@@ -112,6 +114,7 @@ export default function ManagerDashboard({
   onExportarExcel,
   onRegistrarPagamento,
   onCriarCobranca,
+  onIrFinanceiro,
 }: ManagerDashboardProps) {
   const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
 
@@ -654,6 +657,9 @@ export default function ManagerDashboard({
               </Button>
               <Button variant="outline" onClick={onExportarExcel} data-testid="button-export-excel">
                 <Download className="h-4 w-4 mr-2" />Excel
+              </Button>
+              <Button variant="outline" onClick={onIrFinanceiro} data-testid="button-go-financial">
+                <TrendingUp className="h-4 w-4 mr-2" />Financeiro
               </Button>
             </div>
           </div>

@@ -1,0 +1,172 @@
+ANÁLISE E AJUSTES CIRÚRGICOS NO SISTEMA (SEM QUEBRAR FUNCIONALIDADES)
+
+Primeiro faça uma análise do código atual para verificar se as funcionalidades abaixo já foram implementadas.
+Antes de modificar qualquer coisa, identifique o que já existe no sistema.
+
+IMPORTANTE:
+
+* Fazer apenas ajustes cirúrgicos
+* Não alterar funcionalidades que já estão funcionando
+* Manter a arquitetura SaaS multi-tenant existente
+* Manter padrão visual e estrutural da interface
+
+---
+
+1. EXCLUSÃO DE COBRANÇAS (ERRO DO GESTOR)
+
+Objetivo: permitir que o gestor apague cobranças feitas por engano.
+
+Verificar se já existe opção de exclusão nas seguintes áreas:
+
+* Painel Financeiro
+* Cobranças Extras do Painel do Gestor
+
+Caso ainda não exista, implementar:
+
+Botão:
+Apagar cobrança
+
+Fluxo:
+
+1. Usuário clica em "Apagar"
+2. Sistema abre confirmação (modal ou alert)
+
+Mensagem sugerida:
+"Tem certeza que deseja apagar esta cobrança?"
+
+Botões da confirmação:
+Cancelar
+Confirmar exclusão
+
+Somente após confirmação a cobrança deve ser removida do banco.
+
+Garantir que:
+
+* não quebre o histórico financeiro
+* respeite o tenant atual do SaaS
+
+---
+
+2. ORGANIZAÇÃO DOS BOTÕES
+
+Foi identificado que foram criados dois botões:
+
+* Painel
+* Financeiro
+
+Ajustar layout da seguinte forma:
+
+O botão **Financeiro** deve ficar no card de ações financeiras junto com:
+
+* PDF
+* Excel
+* Financeiro
+
+Manter o padrão visual já utilizado nesses botões.
+
+---
+
+3. BOTÃO VOLTAR NO PAINEL FINANCEIRO
+
+Dentro da página do Painel Financeiro:
+
+Adicionar um botão ao final da lista de cobranças:
+
+Botão:
+Voltar
+
+Função:
+retornar para o Painel do Gestor.
+
+Preferencialmente reutilizar o mesmo padrão de navegação usado em outras páginas do sistema.
+
+---
+
+4. BOTÃO CONFIGURAR PIX (NÃO ESTÁ FUNCIONANDO)
+
+Verificar por que o botão **Configurar Pix** não está funcionando.
+
+Corrigir para permitir duas formas de configuração:
+
+OPÇÃO 1 — Chave Pix
+
+Campo de texto para inserir:
+
+* CPF
+* CNPJ
+* Email
+* Telefone
+* Chave aleatória
+
+OPÇÃO 2 — QR Code Pix
+
+Permitir:
+
+* upload de imagem do QR Code
+  ou
+* campo para inserir código PIX copia e cola
+
+Estrutura sugerida:
+
+Tipo de recebimento PIX:
+
+( ) Chave Pix
+( ) QR Code Pix
+
+Se selecionar chave Pix:
+mostrar campo de chave.
+
+Se selecionar QR Code:
+mostrar campo de upload.
+
+---
+
+5. MELHORIA DO TEXTO DO BOTÃO
+
+Texto atual:
+Configurar Pix
+
+Sugestões melhores:
+
+Configurar recebimento via Pix
+
+ou
+
+Configurar Pix de recebimento
+
+Escolher o texto mais claro dentro do padrão da interface.
+
+---
+
+6. RELATÓRIO FINAL
+
+Após análise e ajustes, informar:
+
+* O que já estava implementado
+* O que foi corrigido
+* O que foi adicionado
+* Quais arquivos foram modificados
+* Se existe algum risco de conflito no sistema
+
+---
+
+7. SEGURANÇA DO SISTEMA
+
+Garantir que:
+
+* cada gestor veja apenas dados do seu tenant
+* exclusão de cobrança não afete outros tenants
+* nenhuma rota administrativa seja exposta indevidamente
+
+---
+
+8. IMPORTANTE
+
+Antes de alterar qualquer código:
+
+* analisar rotas
+* analisar controllers
+* analisar componentes do painel financeiro
+* analisar banco de dados relacionado a cobranças
+
+Evitar duplicação de lógica e reutilizar componentes existentes sempre que possível.

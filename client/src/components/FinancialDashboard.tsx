@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft, Upload } from "lucide-react";
 
 interface FinancialDashboardProps {
   alunos: Array<{ id: string; nome: string }>;
@@ -38,7 +38,9 @@ function statusBadge(status: string) {
 export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashboardProps) {
   const qc = useQueryClient();
   const [dialogPix, setDialogPix] = useState(false);
+  const [pixType, setPixType] = useState<"chave" | "qrcode">("chave");
   const [pixForm, setPixForm] = useState({ receiverName: "", pixKey: "", pixQrcodeImage: "" });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [confirmDelete, setConfirmDelete] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
 
@@ -54,8 +56,20 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
         pixKey: pixSettings.pixKey ?? "",
         pixQrcodeImage: pixSettings.pixQrcodeImage ?? "",
       });
+      if (pixSettings.pixQrcodeImage) setPixType("qrcode");
+      else setPixType("chave");
     }
   }, [pixSettings]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setPixForm((f) => ({ ...f, pixQrcodeImage: ev.target?.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const updatePayment = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -115,7 +129,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
         <h1 className="text-2xl font-bold" data-testid="text-financial-title">Dashboard Financeiro</h1>
         <Button variant="outline" size="sm" onClick={() => setDialogPix(true)} data-testid="button-pix-settings">
           <Settings className="h-4 w-4 mr-2" />
-          Configurar PIX
+          Configurar recebimento via Pix
         </Button>
       </div>
 
@@ -340,17 +354,17 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
 
       {/* PIX Settings Dialog */}
       <Dialog open={dialogPix} onOpenChange={setDialogPix}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <QrCode className="h-5 w-5" />
-              Configurações PIX
+              Configurar recebimento via Pix
             </DialogTitle>
             <DialogDescription>
-              Configure os dados PIX exibidos para os alunos ao realizar pagamentos.
+              Configure como os alunos devem enviar o pagamento via Pix.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+          <div className="space-y-4 py-2">
             <div className="space-y-1">
               <Label>Nome do Recebedor</Label>
               <Input
@@ -360,25 +374,99 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                 data-testid="input-pix-receiver"
               />
             </div>
-            <div className="space-y-1">
-              <Label>Chave PIX</Label>
-              <Input
-                placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
-                value={pixForm.pixKey}
-                onChange={(e) => setPixForm((f) => ({ ...f, pixKey: e.target.value }))}
-                data-testid="input-pix-key"
-              />
+
+            <div className="space-y-2">
+              <Label>Tipo de recebimento Pix</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pixType"
+                    value="chave"
+                    checked={pixType === "chave"}
+                    onChange={() => {
+                      setPixType("chave");
+                      setPixForm((f) => ({ ...f, pixQrcodeImage: "" }));
+                    }}
+                    data-testid="radio-pix-chave"
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">Chave Pix</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="pixType"
+                    value="qrcode"
+                    checked={pixType === "qrcode"}
+                    onChange={() => {
+                      setPixType("qrcode");
+                      setPixForm((f) => ({ ...f, pixKey: "" }));
+                    }}
+                    data-testid="radio-pix-qrcode"
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">QR Code Pix</span>
+                </label>
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label>URL do QR Code PIX (opcional)</Label>
-              <Input
-                placeholder="https://..."
-                value={pixForm.pixQrcodeImage}
-                onChange={(e) => setPixForm((f) => ({ ...f, pixQrcodeImage: e.target.value }))}
-                data-testid="input-pix-qrcode"
-              />
-              <p className="text-xs text-muted-foreground">Cole a URL da imagem do QR Code gerado pelo seu banco.</p>
-            </div>
+
+            {pixType === "chave" && (
+              <div className="space-y-1">
+                <Label>Chave Pix</Label>
+                <Input
+                  placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                  value={pixForm.pixKey}
+                  onChange={(e) => setPixForm((f) => ({ ...f, pixKey: e.target.value }))}
+                  data-testid="input-pix-key"
+                />
+              </div>
+            )}
+
+            {pixType === "qrcode" && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label>Imagem do QR Code</Label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    data-testid="input-pix-file"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                    data-testid="button-upload-qrcode"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {pixForm.pixQrcodeImage ? "Trocar imagem do QR Code" : "Fazer upload do QR Code"}
+                  </Button>
+                  {pixForm.pixQrcodeImage && (
+                    <div className="flex justify-center pt-2">
+                      <img
+                        src={pixForm.pixQrcodeImage}
+                        alt="QR Code Pix"
+                        className="h-32 w-32 object-contain border rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label>Pix Copia e Cola (opcional)</Label>
+                  <Input
+                    placeholder="Cole o código Pix copia e cola aqui"
+                    value={pixForm.pixKey}
+                    onChange={(e) => setPixForm((f) => ({ ...f, pixKey: e.target.value }))}
+                    data-testid="input-pix-copiacola"
+                  />
+                  <p className="text-xs text-muted-foreground">Código gerado pelo seu banco para pagamento via Pix.</p>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogPix(false)}>Cancelar</Button>

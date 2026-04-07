@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, LogOut, LayoutDashboard, TrendingUp } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
 import type { Plano } from "./Home";
 
 export default function ArenaApp() {
@@ -277,60 +277,40 @@ export default function ArenaApp() {
 
       {sessao.tipo === "gestor" && (
         <>
-          <div className="fixed top-14 left-0 right-0 z-40 flex justify-center gap-2 px-4 pt-2 pb-0">
-            <Button
-              variant={gestorTab === "dashboard" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGestorTab("dashboard")}
-              data-testid="tab-manager-dashboard"
-            >
-              <LayoutDashboard className="h-4 w-4 mr-1" />
-              Painel
-            </Button>
-            <Button
-              variant={gestorTab === "financeiro" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGestorTab("financeiro")}
-              data-testid="tab-financial-dashboard"
-            >
-              <TrendingUp className="h-4 w-4 mr-1" />
-              Financeiro
-            </Button>
-          </div>
-          <div className="pt-10">
-            {gestorTab === "dashboard" && (
-              <ManagerDashboard
-                planos={planosAdaptados}
-                alunos={alunos.map((a: any) => ({
-                  id: a.id, nome: a.nome, cpf: a.cpf, modalidade: a.modalidade,
-                  plano: a.planoCheckins, planoTitulo: a.planoTitulo,
-                  planoValorTexto: a.planoValorTexto ?? undefined,
-                  checkinsRealizados: a.checkinsRealizados,
-                  statusMensalidade: a.statusMensalidade,
-                  ultimoCheckin: a.ultimoCheckin ?? undefined,
-                  aprovado: a.aprovado,
-                }))}
-                professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, modalidade: p.modalidade }))}
-                onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
-                onCadastrarProfessor={(nome: string, modalidade: string) => cadastrarProfessor.mutate({ nome, modalidade })}
-                onEditarProfessor={(profId: string, nome: string, modalidade: string) => editarProfessor.mutate({ id: profId, nome, modalidade })}
-                onExcluirProfessor={(profId: string) => excluirProfessor.mutate(profId)}
-                onCadastrarAluno={(dados: any) => cadastrarAluno.mutate(dados)}
-                onCriarPlano={(titulo: string, checkins: number, valorTexto?: string) => criarPlano.mutate({ titulo, checkins, valorTexto })}
-                onEditarPlano={(planId: string, titulo: string, checkins: number, valorTexto?: string) => editarPlano.mutate({ id: planId, titulo, checkins, valorTexto })}
-                onExcluirPlano={(planId: string) => excluirPlano.mutate(planId)}
-                onExportarPDF={() => alert("Exportar PDF em breve")}
-                onExportarExcel={() => alert("Exportar Excel em breve")}
-                onRegistrarPagamento={(dados: any) => registrarPagamento.mutate(dados)}
-                onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
-              />
-            )}
-            {gestorTab === "financeiro" && (
-              <FinancialDashboard
-                alunos={alunos.map((a: any) => ({ id: a.id, nome: a.nome }))}
-              />
-            )}
-          </div>
+          {gestorTab === "dashboard" && (
+            <ManagerDashboard
+              planos={planosAdaptados}
+              alunos={alunos.map((a: any) => ({
+                id: a.id, nome: a.nome, cpf: a.cpf, modalidade: a.modalidade,
+                plano: a.planoCheckins, planoTitulo: a.planoTitulo,
+                planoValorTexto: a.planoValorTexto ?? undefined,
+                checkinsRealizados: a.checkinsRealizados,
+                statusMensalidade: a.statusMensalidade,
+                ultimoCheckin: a.ultimoCheckin ?? undefined,
+                aprovado: a.aprovado,
+              }))}
+              professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, modalidade: p.modalidade }))}
+              onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
+              onCadastrarProfessor={(nome: string, modalidade: string) => cadastrarProfessor.mutate({ nome, modalidade })}
+              onEditarProfessor={(profId: string, nome: string, modalidade: string) => editarProfessor.mutate({ id: profId, nome, modalidade })}
+              onExcluirProfessor={(profId: string) => excluirProfessor.mutate(profId)}
+              onCadastrarAluno={(dados: any) => cadastrarAluno.mutate(dados)}
+              onCriarPlano={(titulo: string, checkins: number, valorTexto?: string) => criarPlano.mutate({ titulo, checkins, valorTexto })}
+              onEditarPlano={(planId: string, titulo: string, checkins: number, valorTexto?: string) => editarPlano.mutate({ id: planId, titulo, checkins, valorTexto })}
+              onExcluirPlano={(planId: string) => excluirPlano.mutate(planId)}
+              onExportarPDF={() => alert("Exportar PDF em breve")}
+              onExportarExcel={() => alert("Exportar Excel em breve")}
+              onRegistrarPagamento={(dados: any) => registrarPagamento.mutate(dados)}
+              onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
+              onIrFinanceiro={() => setGestorTab("financeiro")}
+            />
+          )}
+          {gestorTab === "financeiro" && (
+            <FinancialDashboard
+              alunos={alunos.map((a: any) => ({ id: a.id, nome: a.nome }))}
+              onVoltar={() => setGestorTab("dashboard")}
+            />
+          )}
         </>
       )}
     </>
