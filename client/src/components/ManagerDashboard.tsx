@@ -247,7 +247,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
             <DialogDescription>
-              O login será gerado a partir do nome e a senha será o CPF do aluno.
+              O login será o nome e sobrenome sem espaços (ex: felipebernardo) e a senha será o CPF.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
