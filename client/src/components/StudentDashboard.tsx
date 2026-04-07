@@ -120,10 +120,7 @@ export default function StudentDashboard({
       </div>
 
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Check-in</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="pt-6">
           <Button
             size="lg"
             className="w-full h-14 text-lg"

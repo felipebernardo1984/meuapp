@@ -422,8 +422,8 @@ export default function Admin() {
               SEVEN SPORTS
             </h1>
           </div>
-          <Button onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button size="lg" className="h-14 text-lg" onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
+            <Plus className="h-5 w-5 mr-2" />
             Nova Arena
           </Button>
         </div>
