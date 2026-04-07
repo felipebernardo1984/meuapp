@@ -121,6 +121,12 @@ export default function ArenaApp() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/alunos"] }); qc.invalidateQueries({ queryKey: ["/api/session"] }); },
   });
 
+  // ── Financial queries ─────────────────────────────────────────────────────
+  const { data: allCharges = [] } = useQuery<any[]>({
+    queryKey: ["/api/finance/charges"],
+    enabled: !!sessao && ((sessao as any).tipo === "professor" || (sessao as any).tipo === "gestor"),
+  });
+
   // ── Financial mutations ───────────────────────────────────────────────────
   const registrarPagamento = useMutation({
     mutationFn: (d: any) => apiRequest("POST", "/api/finance/payments", d),
@@ -262,6 +268,7 @@ export default function ArenaApp() {
               ultimoCheckin: a.ultimoCheckin ? { data: a.ultimoCheckin, hora: "" } : undefined,
               historico: a.historico ?? [], photoUrl: a.photoUrl ?? undefined,
             }))}
+          charges={allCharges}
           onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
           onAlterarPlano={(alunoId: string, planoId: string) => alterarPlanoAluno.mutate({ alunoId, planoId })}
           onCadastrarAluno={(dados: any) => cadastrarAluno.mutate({ ...dados, modalidade: sessao.professor.modalidade })}

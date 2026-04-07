@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, Clock, History, CalendarClock, UserPlus } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, DollarSign } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -43,11 +43,21 @@ interface NovoAlunoDados {
   planoId: string;
 }
 
+interface Cobranca {
+  id: string;
+  studentId: string;
+  description: string;
+  amount: string;
+  status: string;
+  dueDate: string;
+}
+
 interface TeacherDashboardProps {
   teacherName: string;
   modalidade: string;
   planos: Plano[];
   alunos: AlunoView[];
+  charges?: Cobranca[];
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onAlterarPlano: (alunoId: string, planoId: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
@@ -58,6 +68,7 @@ export default function TeacherDashboard({
   modalidade,
   planos,
   alunos,
+  charges = [],
   onCheckinManual,
   onAlterarPlano,
   onCadastrarAluno,
@@ -177,16 +188,6 @@ export default function TeacherDashboard({
               </CardHeader>
               <CardContent className="space-y-3">
                 {temCheckins && <Progress value={Math.min(progresso, 100)} />}
-
-                {aluno.ultimoCheckin && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>
-                      {aluno.ultimoCheckin.data}
-                      {aluno.ultimoCheckin.hora ? ` às ${aluno.ultimoCheckin.hora}` : ""}
-                    </span>
-                  </div>
-                )}
 
                 <div className="flex gap-2">
                   <Button
@@ -330,14 +331,15 @@ export default function TeacherDashboard({
 
       {/* ── Dialog: Alterar Plano ── */}
       <Dialog open={dialogAlterarPlano} onOpenChange={setDialogAlterarPlano}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Alterar Plano — {alunoPlano?.nome}</DialogTitle>
+            <DialogTitle>Alterar Plano: {alunoPlano?.nome}</DialogTitle>
             <DialogDescription>
               Plano atual: <strong>{alunoPlano?.planoTitulo}</strong>
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-2">
+
+          <div className="space-y-2 py-1">
             {planos.map((p) => (
               <Button
                 key={p.id}
@@ -356,6 +358,36 @@ export default function TeacherDashboard({
               </Button>
             ))}
           </div>
+
+          {(() => {
+            const cobranças = charges.filter((c) => c.studentId === alunoPlano?.id);
+            if (cobranças.length === 0) return null;
+            return (
+              <div className="border-t pt-3 mt-1">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 mb-2">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  Cobranças do Gestor
+                </p>
+                <div className="space-y-1.5">
+                  {cobranças.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between text-sm px-2 py-1.5 rounded-md bg-muted"
+                      data-testid={`teacher-charge-${c.id}`}
+                    >
+                      <span className="text-foreground">{c.description}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">R$ {c.amount}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${c.status === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"}`}>
+                          {c.status === "paid" ? "Pago" : "Pendente"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
