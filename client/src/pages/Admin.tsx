@@ -176,9 +176,6 @@ export default function Admin() {
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               SEVEN SPORTS
             </CardTitle>
-            <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
-              <p className="text-sm">GESTÃO DE QUADRAS ESPORTIVAS</p>
-            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -424,9 +421,6 @@ export default function Admin() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               SEVEN SPORTS
             </h1>
-            <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
-              <p className="text-sm">GESTÃO DE QUADRAS ESPORTIVAS</p>
-            </div>
           </div>
           <Button onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
             <Plus className="h-4 w-4 mr-2" />

@@ -121,11 +121,6 @@ export default function ArenaLogin() {
               ← Painel geral
             </span>
           </Link>
-          <Link href="/admin">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-admin">
-              GESTÃO DE QUADRAS ESPORTIVAS
-            </span>
-          </Link>
         </div>
       </div>
     </div>

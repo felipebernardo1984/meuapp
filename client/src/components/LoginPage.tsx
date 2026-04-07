@@ -92,11 +92,6 @@ export default function LoginPage({ onLogin, error }: LoginPageProps) {
           <p className="text-xs text-muted-foreground">
             (12) 98237-3299
           </p>
-          <Link href="/admin">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer" data-testid="link-admin">
-              GESTÃO DE QUADRAS ESPORTIVAS
-            </span>
-          </Link>
         </div>
       </div>
     </div>
