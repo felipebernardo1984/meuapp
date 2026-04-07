@@ -114,7 +114,7 @@ export default function Home() {
 
   // ── Teacher mutations ─────────────────────────────────────────────────────
   const cadastrarProfessor = useMutation({
-    mutationFn: (d: { nome: string; modalidade: string }) =>
+    mutationFn: (d: any) =>
       apiRequest("POST", "/api/professores", d).then((r) => r.json()),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/professores"] });
@@ -123,7 +123,7 @@ export default function Home() {
   });
 
   const editarProfessor = useMutation({
-    mutationFn: ({ id, ...d }: { id: string; nome: string; modalidade: string }) =>
+    mutationFn: ({ id, ...d }: any) =>
       apiRequest("PUT", `/api/professores/${id}`, d),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/professores"] }),
   });
@@ -278,10 +278,10 @@ export default function Home() {
             ultimoCheckin: a.ultimoCheckin ?? undefined,
             aprovado: a.aprovado,
           }))}
-          professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, modalidade: p.modalidade }))}
+          professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade }))}
           onAprovarAluno={(id) => aprovarAluno.mutate(id)}
-          onCadastrarProfessor={(nome, modalidade) => cadastrarProfessor.mutate({ nome, modalidade })}
-          onEditarProfessor={(id, nome, modalidade) => editarProfessor.mutate({ id, nome, modalidade })}
+          onCadastrarProfessor={(dados) => cadastrarProfessor.mutate(dados)}
+          onEditarProfessor={(id, dados) => editarProfessor.mutate({ id, ...dados })}
           onExcluirProfessor={(id) => excluirProfessor.mutate(id)}
           onCadastrarAluno={(dados) => cadastrarAluno.mutate(dados)}
           onCriarPlano={(titulo, checkins, valorTexto) => criarPlano.mutate({ titulo, checkins, valorTexto })}

@@ -237,8 +237,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/professores/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, modalidade } = req.body;
-    const teacher = await storage.updateTeacher(req.params.id, { nome, modalidade });
+    const { nome, cpf, email, telefone, login, senha, modalidade } = req.body;
+    const updateData: Partial<{ nome: string; cpf: string | null; email: string | null; telefone: string | null; login: string; senha: string; modalidade: string }> = { nome, modalidade };
+    if (cpf !== undefined) updateData.cpf = cpf || null;
+    if (email !== undefined) updateData.email = email || null;
+    if (telefone !== undefined) updateData.telefone = telefone || null;
+    if (login !== undefined) updateData.login = login;
+    if (senha) updateData.senha = senha;
+    const teacher = await storage.updateTeacher(req.params.id, updateData);
     res.json(teacher);
   });
 

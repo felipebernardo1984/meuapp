@@ -77,6 +77,10 @@ interface AlunoGestor {
 interface ProfessorGestor {
   id: string;
   nome: string;
+  cpf?: string;
+  email?: string;
+  telefone?: string;
+  login?: string;
   modalidade: string;
 }
 
@@ -97,7 +101,7 @@ interface ManagerDashboardProps {
   professores: ProfessorGestor[];
   onAprovarAluno: (alunoId: string) => void;
   onCadastrarProfessor: (dados: { nome: string; cpf: string; email: string; telefone: string; login: string; senha: string; modalidade: string }) => void;
-  onEditarProfessor: (id: string, nome: string, modalidade: string) => void;
+  onEditarProfessor: (id: string, dados: { nome: string; cpf?: string; email?: string; telefone?: string; login?: string; senha?: string; modalidade: string }) => void;
   onExcluirProfessor: (id: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
   onCriarPlano: (titulo: string, checkins: number, valorTexto?: string) => void;
@@ -253,13 +257,22 @@ export default function ManagerDashboard({
   // ── Professores ──────────────────────────────────────────────────────────
   const abrirEditarProfessor = (p: ProfessorGestor) => {
     setProfessorEditando(p);
-    setFormProfessor({ nome: p.nome, cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: p.modalidade });
+    setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade });
   };
 
   const handleSalvarProfessor = () => {
     if (!formProfessor.nome || !formProfessor.modalidade) return;
     if (professorEditando) {
-      onEditarProfessor(professorEditando.id, formProfessor.nome, formProfessor.modalidade);
+      const dados: { nome: string; cpf?: string; email?: string; telefone?: string; login?: string; senha?: string; modalidade: string } = {
+        nome: formProfessor.nome,
+        cpf: formProfessor.cpf || undefined,
+        email: formProfessor.email || undefined,
+        telefone: formProfessor.telefone || undefined,
+        login: formProfessor.login || undefined,
+        modalidade: formProfessor.modalidade,
+      };
+      if (formProfessor.senha) dados.senha = formProfessor.senha;
+      onEditarProfessor(professorEditando.id, dados);
       setProfessorEditando(null);
     } else {
       if (!formProfessor.login || !formProfessor.senha) return;
@@ -814,7 +827,7 @@ export default function ManagerDashboard({
           </DialogHeader>
           <div className="space-y-3 py-4">
             <div className="space-y-1">
-              <Label>Nome Completo</Label>
+              <Label>Nome Completo *</Label>
               <Input
                 placeholder="Nome completo"
                 value={formProfessor.nome}
@@ -823,7 +836,54 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>Modalidade</Label>
+              <Label>CPF</Label>
+              <Input
+                placeholder="000.000.000-00"
+                value={formProfessor.cpf}
+                onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value })}
+                data-testid="input-edit-teacher-cpf"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                placeholder="email@exemplo.com"
+                value={formProfessor.email}
+                onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value })}
+                data-testid="input-edit-teacher-email"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Telefone</Label>
+              <Input
+                placeholder="(00) 00000-0000"
+                value={formProfessor.telefone}
+                onChange={(e) => setFormProfessor({ ...formProfessor, telefone: e.target.value })}
+                data-testid="input-edit-teacher-phone"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Login</Label>
+              <Input
+                placeholder="Login de acesso do professor"
+                value={formProfessor.login}
+                onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
+                data-testid="input-edit-teacher-login"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Nova Senha <span className="text-muted-foreground text-xs">(deixe em branco para não alterar)</span></Label>
+              <Input
+                type="password"
+                placeholder="Nova senha (opcional)"
+                value={formProfessor.senha}
+                onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
+                data-testid="input-edit-teacher-password"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Modalidade *</Label>
               <Input
                 placeholder="Ex: Beach Tennis, Futevôlei, Surf..."
                 value={formProfessor.modalidade}

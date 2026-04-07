@@ -303,10 +303,10 @@ export default function ArenaApp() {
                 aprovado: a.aprovado,
                 historico: a.historico ?? [],
               }))}
-              professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, modalidade: p.modalidade }))}
+              professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade }))}
               onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
-              onCadastrarProfessor={(nome: string, modalidade: string) => cadastrarProfessor.mutate({ nome, modalidade })}
-              onEditarProfessor={(profId: string, nome: string, modalidade: string) => editarProfessor.mutate({ id: profId, nome, modalidade })}
+              onCadastrarProfessor={(dados: any) => cadastrarProfessor.mutate(dados)}
+              onEditarProfessor={(profId: string, dados: any) => editarProfessor.mutate({ id: profId, ...dados })}
               onExcluirProfessor={(profId: string) => excluirProfessor.mutate(profId)}
               onCadastrarAluno={(dados: any) => cadastrarAluno.mutate(dados)}
               onCriarPlano={(titulo: string, checkins: number, valorTexto?: string) => criarPlano.mutate({ titulo, checkins, valorTexto })}
