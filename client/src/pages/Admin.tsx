@@ -245,7 +245,6 @@ export default function Admin() {
               <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
                 <div>
                   <h1 className="text-2xl font-bold" data-testid="text-detail-name">{arenaDetail.name}</h1>
-                  <p className="text-muted-foreground text-sm mt-1">Gestor: {arenaDetail.gestorLogin}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={PLAN_BADGE[arenaDetail.subscriptionPlan]}>
@@ -483,7 +482,6 @@ export default function Admin() {
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg" data-testid={`text-arena-name-${arena.id}`}>{arena.name}</CardTitle>
-                      <p className="text-xs text-muted-foreground mt-0.5">Gestor: <span className="font-mono">{arena.gestorLogin}</span></p>
                     </div>
                     <Badge variant={PLAN_BADGE[arena.subscriptionPlan]}>
                       {PLAN_LABELS[arena.subscriptionPlan] ?? arena.subscriptionPlan}
