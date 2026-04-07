@@ -33,7 +33,7 @@ export default function LoginPage({ onLogin, error }: LoginPageProps) {
               SEVEN SPORTS
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Sistema de Check-ins
+              Informe Seus Dados de Acesso
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -89,9 +89,6 @@ export default function LoginPage({ onLogin, error }: LoginPageProps) {
         </Card>
 
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            (12) 98237-3299
-          </p>
         </div>
       </div>
     </div>

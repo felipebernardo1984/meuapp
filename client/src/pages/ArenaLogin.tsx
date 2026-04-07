@@ -66,7 +66,7 @@ export default function ArenaLogin() {
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               {arena.name}
             </CardTitle>
-            <p className="text-sm text-muted-foreground">Sistema de Check-ins</p>
+            <p className="text-sm text-muted-foreground">Informe Seus Dados de Acesso</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">

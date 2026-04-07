@@ -140,7 +140,7 @@ export default function ArenaApp() {
               <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                 {arena.name}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">Sistema de Check-ins</p>
+              <p className="text-sm text-muted-foreground">Informe Seus Dados de Acesso</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -187,8 +187,7 @@ export default function ArenaApp() {
           </Card>
 
           <div className="text-center space-y-1">
-            <p className="text-sm text-muted-foreground">(12) 98237-3299</p>
-            <p className="text-xs text-muted-foreground font-medium tracking-wide">SISTEMA SEVENSPORTS</p>
+            <p className="text-xs text-muted-foreground font-medium tracking-wide">SISTEMA DE GESTÃO SEVENSPORTS</p>
           </div>
         </div>
       </div>
