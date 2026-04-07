@@ -416,16 +416,18 @@ export default function Admin() {
       </div>
 
       <div className="max-w-6xl mx-auto p-6 pt-16">
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              SEVEN SPORTS
-            </h1>
-          </div>
-          <Button size="lg" className="h-14 text-lg" onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
-            <Plus className="h-5 w-5 mr-2" />
-            Nova Arena
-          </Button>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4">
+            SEVEN SPORTS
+          </h1>
+          <Card>
+            <CardContent className="pt-6">
+              <Button size="lg" className="w-full h-14 text-lg" onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
+                <Plus className="h-5 w-5 mr-2" />
+                Nova Arena
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Summary cards */}
