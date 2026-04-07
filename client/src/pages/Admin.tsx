@@ -429,43 +429,6 @@ export default function Admin() {
           </Card>
         </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Trophy className="h-8 w-8 text-primary opacity-80" />
-                <div>
-                  <p className="text-2xl font-bold" data-testid="text-total-arenas">{arenas.length}</p>
-                  <p className="text-sm text-muted-foreground">Arenas cadastradas</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <Users className="h-8 w-8 text-primary opacity-80" />
-                <div>
-                  <p className="text-2xl font-bold">{arenas.reduce((acc, a) => acc + a.stats.alunosAtivos, 0)}</p>
-                  <p className="text-sm text-muted-foreground">Alunos ativos (total)</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <BookOpen className="h-8 w-8 text-primary opacity-80" />
-                <div>
-                  <p className="text-2xl font-bold">{arenas.reduce((acc, a) => acc + a.stats.professores, 0)}</p>
-                  <p className="text-sm text-muted-foreground">Professores (total)</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando arenas...</div>
         ) : arenas.length === 0 ? (
