@@ -62,12 +62,14 @@ export interface IStorage {
   listStudentPayments(studentId: string): Promise<Payment[]>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePaymentStatus(id: string, status: string, paymentDate?: string): Promise<Payment>;
+  deletePayment(id: string): Promise<void>;
 
   // Charges
   listCharges(tenantId: string): Promise<Charge[]>;
   listStudentCharges(studentId: string): Promise<Charge[]>;
   createCharge(charge: InsertCharge): Promise<Charge>;
   updateChargeStatus(id: string, status: string, paymentDate?: string): Promise<Charge>;
+  deleteCharge(id: string): Promise<void>;
 
   // Payment Settings
   getPaymentSettings(tenantId: string): Promise<PaymentSettings | undefined>;
@@ -256,6 +258,10 @@ export class DatabaseStorage implements IStorage {
     return payment;
   }
 
+  async deletePayment(id: string): Promise<void> {
+    await db.delete(payments).where(eq(payments.id, id));
+  }
+
   // ── Charges ───────────────────────────────────────────────────────────────
   async listCharges(tenantId: string): Promise<Charge[]> {
     return db.select().from(charges).where(eq(charges.tenantId, tenantId));
@@ -277,6 +283,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(charges.id, id))
       .returning();
     return charge;
+  }
+
+  async deleteCharge(id: string): Promise<void> {
+    await db.delete(charges).where(eq(charges.id, id));
   }
 
   // ── Payment Settings ──────────────────────────────────────────────────────

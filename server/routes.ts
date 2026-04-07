@@ -512,6 +512,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(payment);
   });
 
+  app.delete("/api/finance/payments/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.deletePayment(req.params.id);
+    res.json({ ok: true });
+  });
+
   // Student view of own payments
   app.get("/api/finance/student/payments", async (req, res) => {
     if (!req.session.arenaId || !req.session.userId) {
@@ -550,6 +557,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { status, paymentDate } = req.body;
     const charge = await storage.updateChargeStatus(req.params.id, status, paymentDate);
     res.json(charge);
+  });
+
+  app.delete("/api/finance/charges/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.deleteCharge(req.params.id);
+    res.json({ ok: true });
   });
 
   // Student view of own charges

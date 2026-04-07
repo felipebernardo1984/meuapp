@@ -22,10 +22,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft } from "lucide-react";
 
 interface FinancialDashboardProps {
   alunos: Array<{ id: string; nome: string }>;
+  onVoltar?: () => void;
 }
 
 function statusBadge(status: string) {
@@ -34,10 +35,12 @@ function statusBadge(status: string) {
   return <Badge variant="outline" className="text-orange-600 border-orange-300">Pendente</Badge>;
 }
 
-export default function FinancialDashboard({ alunos }: FinancialDashboardProps) {
+export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashboardProps) {
   const qc = useQueryClient();
   const [dialogPix, setDialogPix] = useState(false);
   const [pixForm, setPixForm] = useState({ receiverName: "", pixKey: "", pixQrcodeImage: "" });
+
+  const [confirmDelete, setConfirmDelete] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
 
   const { data: summary } = useQuery<any>({ queryKey: ["/api/finance/summary"] });
   const { data: payments = [] } = useQuery<any[]>({ queryKey: ["/api/finance/payments"] });
@@ -46,7 +49,11 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
 
   useEffect(() => {
     if (pixSettings) {
-      setPixForm({ receiverName: pixSettings.receiverName ?? "", pixKey: pixSettings.pixKey ?? "", pixQrcodeImage: pixSettings.pixQrcodeImage ?? "" });
+      setPixForm({
+        receiverName: pixSettings.receiverName ?? "",
+        pixKey: pixSettings.pixKey ?? "",
+        pixQrcodeImage: pixSettings.pixQrcodeImage ?? "",
+      });
     }
   }, [pixSettings]);
 
@@ -59,6 +66,15 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
     },
   });
 
+  const deletePayment = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/payments/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/summary"] });
+      setConfirmDelete(null);
+    },
+  });
+
   const updateCharge = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       apiRequest("PUT", `/api/finance/charges/${id}`, { status, paymentDate: new Date().toLocaleDateString("pt-BR") }),
@@ -68,8 +84,17 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
     },
   });
 
+  const deleteCharge = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/charges/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/finance/charges"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/summary"] });
+      setConfirmDelete(null);
+    },
+  });
+
   const savePix = useMutation({
-    mutationFn: () => apiRequest("PUT", "/api/finance/settings", pixForm),
+    mutationFn: (form: typeof pixForm) => apiRequest("PUT", "/api/finance/settings", form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/settings"] });
       setDialogPix(false);
@@ -77,6 +102,12 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
   });
 
   const getNomeAluno = (id: string) => alunos.find((a) => a.id === id)?.nome ?? "—";
+
+  const handleConfirmDelete = () => {
+    if (!confirmDelete) return;
+    if (confirmDelete.type === "payment") deletePayment.mutate(confirmDelete.id);
+    else deleteCharge.mutate(confirmDelete.id);
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
@@ -176,17 +207,28 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
                       <TableCell>{statusBadge(p.status)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{p.paymentDate ?? "—"}</TableCell>
                       <TableCell>
-                        {p.status !== "paid" && (
+                        <div className="flex items-center gap-1">
+                          {p.status !== "paid" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updatePayment.mutate({ id: p.id, status: "paid" })}
+                              disabled={updatePayment.isPending}
+                              data-testid={`button-mark-paid-payment-${p.id}`}
+                            >
+                              Marcar Pago
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => updatePayment.mutate({ id: p.id, status: "paid" })}
-                            disabled={updatePayment.isPending}
-                            data-testid={`button-mark-paid-payment-${p.id}`}
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setConfirmDelete({ type: "payment", id: p.id, label: `mensalidade de ${getNomeAluno(p.studentId)} (${p.referenceMonth})` })}
+                            data-testid={`button-delete-payment-${p.id}`}
                           >
-                            Marcar Pago
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -198,7 +240,7 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
       </Card>
 
       {/* Charges table */}
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">Cobranças Extras</CardTitle>
         </CardHeader>
@@ -229,17 +271,28 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
                       <TableCell>{statusBadge(c.status)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{c.paymentDate ?? "—"}</TableCell>
                       <TableCell>
-                        {c.status !== "paid" && (
+                        <div className="flex items-center gap-1">
+                          {c.status !== "paid" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateCharge.mutate({ id: c.id, status: "paid" })}
+                              disabled={updateCharge.isPending}
+                              data-testid={`button-mark-paid-charge-${c.id}`}
+                            >
+                              Marcar Pago
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => updateCharge.mutate({ id: c.id, status: "paid" })}
-                            disabled={updateCharge.isPending}
-                            data-testid={`button-mark-paid-charge-${c.id}`}
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setConfirmDelete({ type: "charge", id: c.id, label: `cobrança "${c.description}" de ${getNomeAluno(c.studentId)}` })}
+                            data-testid={`button-delete-charge-${c.id}`}
                           >
-                            Marcar Pago
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -250,6 +303,41 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
         </CardContent>
       </Card>
 
+      {/* Voltar button */}
+      {onVoltar && (
+        <div className="flex justify-start pb-8">
+          <Button variant="outline" onClick={onVoltar} data-testid="button-voltar-financial">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar ao Painel
+          </Button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir a {confirmDelete?.label}? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deletePayment.isPending || deleteCharge.isPending}
+              data-testid="button-confirm-delete"
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* PIX Settings Dialog */}
       <Dialog open={dialogPix} onOpenChange={setDialogPix}>
         <DialogContent>
@@ -259,7 +347,7 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
               Configurações PIX
             </DialogTitle>
             <DialogDescription>
-              Configure os dados PIX que serão exibidos para os alunos ao realizar pagamentos.
+              Configure os dados PIX exibidos para os alunos ao realizar pagamentos.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -268,7 +356,7 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
               <Input
                 placeholder="Nome completo ou razão social"
                 value={pixForm.receiverName}
-                onChange={(e) => setPixForm({ ...pixForm, receiverName: e.target.value })}
+                onChange={(e) => setPixForm((f) => ({ ...f, receiverName: e.target.value }))}
                 data-testid="input-pix-receiver"
               />
             </div>
@@ -277,7 +365,7 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
               <Input
                 placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
                 value={pixForm.pixKey}
-                onChange={(e) => setPixForm({ ...pixForm, pixKey: e.target.value })}
+                onChange={(e) => setPixForm((f) => ({ ...f, pixKey: e.target.value }))}
                 data-testid="input-pix-key"
               />
             </div>
@@ -286,16 +374,20 @@ export default function FinancialDashboard({ alunos }: FinancialDashboardProps) 
               <Input
                 placeholder="https://..."
                 value={pixForm.pixQrcodeImage}
-                onChange={(e) => setPixForm({ ...pixForm, pixQrcodeImage: e.target.value })}
+                onChange={(e) => setPixForm((f) => ({ ...f, pixQrcodeImage: e.target.value }))}
                 data-testid="input-pix-qrcode"
               />
-              <p className="text-xs text-muted-foreground">Cole a URL de imagem do QR Code gerado pelo seu banco.</p>
+              <p className="text-xs text-muted-foreground">Cole a URL da imagem do QR Code gerado pelo seu banco.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogPix(false)}>Cancelar</Button>
-            <Button onClick={() => savePix.mutate()} disabled={savePix.isPending} data-testid="button-save-pix">
-              Salvar
+            <Button
+              onClick={() => savePix.mutate(pixForm)}
+              disabled={savePix.isPending}
+              data-testid="button-save-pix"
+            >
+              {savePix.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
