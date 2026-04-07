@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import {
   LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye,
-  CheckCircle, XCircle, ArrowLeft, ClipboardList, ExternalLink, LogIn as LogInIcon,
+  CheckCircle, XCircle, ArrowLeft, ClipboardList, ExternalLink, LogIn as LogInIcon, KeyRound,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -33,6 +33,10 @@ interface ArenaCard {
   name: string;
   subscriptionPlan: string;
   gestorLogin: string;
+  gestorNome?: string;
+  gestorCpf?: string;
+  gestorEmail?: string;
+  gestorTelefone?: string;
   createdAt: string;
   stats: { professores: number; alunos: number; planos: number; alunosAtivos: number };
 }
@@ -60,11 +64,15 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const [loginData, setLoginData] = useState({ login: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [arenaForm, setArenaForm] = useState({ name: "", subscriptionPlan: "basic", gestorLogin: "", gestorSenha: "" });
+  const [arenaForm, setArenaForm] = useState({
+    name: "", gestorNome: "", gestorCpf: "", gestorEmail: "", gestorTelefone: "", gestorLogin: "", gestorSenha: "",
+  });
   const [editingArena, setEditingArena] = useState<ArenaCard | null>(null);
   const [deletingArena, setDeletingArena] = useState<ArenaCard | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [credForm, setCredForm] = useState({ login: "", senha: "" });
 
   // ── Admin session ─────────────────────────────────────────────────────────
   const { data: adminSession } = useQuery<{ isAdmin: boolean }>({
@@ -138,6 +146,16 @@ export default function Admin() {
     onError: () => toast({ title: "Erro", description: "Não foi possível atualizar a arena.", variant: "destructive" }),
   });
 
+  const trocarCredenciais = useMutation({
+    mutationFn: (d: { login: string; senha: string }) => apiRequest("PUT", "/api/admin/credentials", d),
+    onSuccess: () => {
+      setShowCredentials(false);
+      setCredForm({ login: "", senha: "" });
+      toast({ title: "Credenciais atualizadas!", description: "Seu novo login e senha foram salvos." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível atualizar as credenciais.", variant: "destructive" }),
+  });
+
   const excluirArena = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/arenas/${id}`),
     onSuccess: () => {
@@ -150,12 +168,20 @@ export default function Admin() {
   });
 
   function resetForm() {
-    setArenaForm({ name: "", subscriptionPlan: "basic", gestorLogin: "", gestorSenha: "" });
+    setArenaForm({ name: "", gestorNome: "", gestorCpf: "", gestorEmail: "", gestorTelefone: "", gestorLogin: "", gestorSenha: "" });
   }
 
   function openEdit(arena: ArenaCard) {
     setEditingArena(arena);
-    setArenaForm({ name: arena.name, subscriptionPlan: arena.subscriptionPlan, gestorLogin: arena.gestorLogin, gestorSenha: "" });
+    setArenaForm({
+      name: arena.name,
+      gestorNome: arena.gestorNome ?? "",
+      gestorCpf: arena.gestorCpf ?? "",
+      gestorEmail: arena.gestorEmail ?? "",
+      gestorTelefone: arena.gestorTelefone ?? "",
+      gestorLogin: arena.gestorLogin,
+      gestorSenha: "",
+    });
   }
 
   function handleSave() {
@@ -408,11 +434,54 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-background">
       <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <Button variant="outline" size="icon" onClick={() => { setCredForm({ login: "", senha: "" }); setShowCredentials(true); }} data-testid="button-change-credentials">
+          <KeyRound className="h-5 w-5" />
+        </Button>
         <Button variant="outline" size="icon" onClick={() => logoutAdmin.mutate()} data-testid="button-admin-logout">
           <LogOut className="h-5 w-5" />
         </Button>
         <ThemeToggle />
       </div>
+
+      {/* Dialog trocar login e senha */}
+      <Dialog open={showCredentials} onOpenChange={setShowCredentials}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Trocar Login e Senha</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Novo Login <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="Novo login de administrador"
+                value={credForm.login}
+                onChange={(e) => setCredForm({ ...credForm, login: e.target.value })}
+                data-testid="input-new-admin-login"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nova Senha <span className="text-destructive">*</span></Label>
+              <Input
+                type="password"
+                placeholder="Nova senha de administrador"
+                value={credForm.senha}
+                onChange={(e) => setCredForm({ ...credForm, senha: e.target.value })}
+                data-testid="input-new-admin-senha"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCredentials(false)}>Cancelar</Button>
+            <Button
+              onClick={() => trocarCredenciais.mutate(credForm)}
+              disabled={!credForm.login || !credForm.senha || trocarCredenciais.isPending}
+              data-testid="button-save-credentials"
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="max-w-6xl mx-auto p-6 pt-16">
         <div className="mb-6">
@@ -531,7 +600,7 @@ function ArenaFormDialog({
 }: {
   open: boolean;
   editing: ArenaCard | null;
-  form: { name: string; subscriptionPlan: string; gestorLogin: string; gestorSenha: string };
+  form: { name: string; gestorNome: string; gestorCpf: string; gestorEmail: string; gestorTelefone: string; gestorLogin: string; gestorSenha: string };
   setForm: (f: any) => void;
   onClose: () => void;
   onSave: () => void;
@@ -539,13 +608,13 @@ function ArenaFormDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? "Editar Arena" : "Nova Arena"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
+        <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
           <div className="space-y-2">
-            <Label>Nome da Arena</Label>
+            <Label>Nome da Arena <span className="text-destructive">*</span></Label>
             <Input
               placeholder="Ex: Arena Beach Sports"
               value={form.name}
@@ -554,32 +623,56 @@ function ArenaFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>Plano de Assinatura</Label>
-            <Select value={form.subscriptionPlan} onValueChange={(v) => setForm({ ...form, subscriptionPlan: v })}>
-              <SelectTrigger data-testid="select-subscription-plan">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="basic">Básico</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
-                <SelectItem value="enterprise">Enterprise</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Nome</Label>
+            <Input
+              placeholder="Nome do gestor responsável"
+              value={form.gestorNome}
+              onChange={(e) => setForm({ ...form, gestorNome: e.target.value })}
+              data-testid="input-gestor-nome"
+            />
           </div>
           <div className="space-y-2">
-            <Label>Login do Gestor</Label>
+            <Label>CPF</Label>
             <Input
-              placeholder="Ex: gestor.arena1"
+              placeholder="000.000.000-00"
+              value={form.gestorCpf}
+              onChange={(e) => setForm({ ...form, gestorCpf: e.target.value })}
+              data-testid="input-gestor-cpf"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              placeholder="email@exemplo.com"
+              value={form.gestorEmail}
+              onChange={(e) => setForm({ ...form, gestorEmail: e.target.value })}
+              data-testid="input-gestor-email"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Telefone</Label>
+            <Input
+              placeholder="(00) 00000-0000"
+              value={form.gestorTelefone}
+              onChange={(e) => setForm({ ...form, gestorTelefone: e.target.value })}
+              data-testid="input-gestor-telefone"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Login <span className="text-destructive">*</span></Label>
+            <Input
+              placeholder="Login de acesso da arena"
               value={form.gestorLogin}
               onChange={(e) => setForm({ ...form, gestorLogin: e.target.value })}
               data-testid="input-gestor-login"
             />
           </div>
           <div className="space-y-2">
-            <Label>{editing ? "Nova Senha do Gestor (opcional)" : "Senha do Gestor"}</Label>
+            <Label>{editing ? "Senha (opcional)" : "Senha"} {!editing && <span className="text-destructive">*</span>}</Label>
             <Input
               type="password"
-              placeholder={editing ? "Deixe vazio para manter a atual" : "Senha"}
+              placeholder={editing ? "Deixe vazio para manter a atual" : "Senha de acesso da arena"}
               value={form.gestorSenha}
               onChange={(e) => setForm({ ...form, gestorSenha: e.target.value })}
               data-testid="input-gestor-senha"
