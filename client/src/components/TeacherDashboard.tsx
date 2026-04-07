@@ -65,6 +65,7 @@ interface TeacherDashboardProps {
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onAlterarPlano: (alunoId: string, planoId: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
+  onMarcarPago?: (chargeId: string) => void;
 }
 
 export default function TeacherDashboard({
