@@ -178,7 +178,7 @@ export default function Admin() {
             </CardTitle>
             <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
               <Shield className="h-4 w-4" />
-              <p className="text-sm">Painel Admin</p>
+              <p className="text-sm">GESTÃO DE QUADRAS ESPORTIVAS</p>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -427,7 +427,7 @@ export default function Admin() {
             </h1>
             <div className="flex items-center gap-1.5 mt-1 text-muted-foreground">
               <Shield className="h-4 w-4" />
-              <p className="text-sm">Painel Admin · Gestão de Arenas</p>
+              <p className="text-sm">GESTÃO DE QUADRAS ESPORTIVAS</p>
             </div>
           </div>
           <Button onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
