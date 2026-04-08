@@ -55,6 +55,7 @@ import {
   CheckCircle2,
   CreditCard,
   AlertCircle,
+  Settings,
 } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
@@ -112,6 +113,7 @@ interface ManagerDashboardProps {
   onRegistrarPagamento: (dados: { studentId: string; description?: string; amount: string; referenceMonth: string; dueDate: string; status: string }) => void;
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
   onIrFinanceiro: () => void;
+  onIrConfiguracoes?: () => void;
   onEditarAluno: (dados: { id: string; nome: string; cpf: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number }) => void;
   onAlterarPlanoAluno: (alunoId: string, planoId: string) => void;
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
@@ -146,6 +148,7 @@ export default function ManagerDashboard({
   onRegistrarPagamento,
   onCriarCobranca,
   onIrFinanceiro,
+  onIrConfiguracoes,
   onEditarAluno,
   onAlterarPlanoAluno,
   onCheckinManual,
@@ -1006,6 +1009,11 @@ export default function ManagerDashboard({
               <Button variant="outline" onClick={onIrFinanceiro} data-testid="button-go-financial">
                 <TrendingUp className="h-4 w-4 mr-2" />Financeiro
               </Button>
+              {onIrConfiguracoes && (
+                <Button variant="outline" onClick={onIrConfiguracoes} data-testid="button-go-settings">
+                  <Settings className="h-4 w-4 mr-2" />Configurações
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -1176,7 +1184,7 @@ export default function ManagerDashboard({
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
+                            className="text-foreground"
                             onClick={() => setConfirmExcluirAluno(aluno)}
                             data-testid={`menu-delete-student-${aluno.id}`}
                           >

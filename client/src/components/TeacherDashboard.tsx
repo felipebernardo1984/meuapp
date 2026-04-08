@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -138,6 +139,16 @@ export default function TeacherDashboard({
   const [alunoFinanceiro, setAlunoFinanceiro] = useState<AlunoView | null>(null);
 
   const [confirmRemoverCheckinTeacher, setConfirmRemoverCheckinTeacher] = useState<{ aluno: AlunoView; index: number } | null>(null);
+
+  const [dialogReceita, setDialogReceita] = useState(false);
+  const [alunoReceita, setAlunoReceita] = useState<AlunoView | null>(null);
+
+  const { data: modalidadeSettings = [] } = useQuery<any[]>({ queryKey: ["/api/configuracoes/modalidades"] });
+
+  const getValorPorCheckin = (mod: string) => {
+    const cfg = modalidadeSettings.find((s: any) => s.modalidade === mod);
+    return cfg ? parseFloat(cfg.valorPorCheckin || "0") : 0;
+  };
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
@@ -398,6 +409,19 @@ export default function TeacherDashboard({
                 >
                   Alterar Plano
                 </Button>
+
+                {getValorPorCheckin(aluno.modalidade ?? modalidade) > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => { setAlunoReceita(aluno); setDialogReceita(true); }}
+                    data-testid={`button-receita-${aluno.id}`}
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1" />
+                    Receita Gerada
+                  </Button>
+                )}
 
                 <Button
                   variant="outline"
@@ -887,6 +911,50 @@ export default function TeacherDashboard({
             >
               Confirmar Check-in
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Receita Gerada ── */}
+      <Dialog open={dialogReceita} onOpenChange={setDialogReceita}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Receita Gerada
+            </DialogTitle>
+            <DialogDescription>{alunoReceita?.nome}</DialogDescription>
+          </DialogHeader>
+          {alunoReceita && (() => {
+            const valor = getValorPorCheckin(alunoReceita.modalidade ?? modalidade);
+            const checkins = alunoReceita.checkinsRealizados;
+            const receita = valor * checkins;
+            return (
+              <div className="space-y-4 py-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Check-ins</p>
+                    <p className="text-2xl font-bold" data-testid="dialog-receita-checkins">{checkins}</p>
+                  </div>
+                  <div className="rounded-lg border p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Valor/Check-in</p>
+                    <p className="text-2xl font-bold">R$ {valor.toFixed(2).replace(".", ",")}</p>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Receita Total Gerada</p>
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="dialog-receita-total">
+                    R$ {receita.toFixed(2).replace(".", ",")}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {checkins} check-ins × R$ {valor.toFixed(2).replace(".", ",")} por check-in
+                </p>
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogReceita(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -24,8 +24,18 @@ import {
 } from "@/components/ui/table";
 import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft, Upload } from "lucide-react";
 
+interface ModalidadeSetting {
+  id: string;
+  arenaId: string;
+  modalidade: string;
+  valorPorCheckin: string;
+  planoMinimo: string | null;
+  totalpassHabilitado: boolean;
+  wellhubHabilitado: boolean;
+}
+
 interface FinancialDashboardProps {
-  alunos: Array<{ id: string; nome: string }>;
+  alunos: Array<{ id: string; nome: string; modalidade?: string; checkinsRealizados?: number }>;
   onVoltar?: () => void;
 }
 
@@ -48,6 +58,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
   const { data: payments = [] } = useQuery<any[]>({ queryKey: ["/api/finance/payments"] });
   const { data: charges = [] } = useQuery<any[]>({ queryKey: ["/api/finance/charges"] });
   const { data: pixSettings } = useQuery<any>({ queryKey: ["/api/finance/settings"] });
+  const { data: modalidadeSettings = [] } = useQuery<ModalidadeSetting[]>({ queryKey: ["/api/configuracoes/modalidades"] });
 
   useEffect(() => {
     if (pixSettings) {
@@ -116,6 +127,46 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
   });
 
   const getNomeAluno = (id: string) => alunos.find((a) => a.id === id)?.nome ?? "—";
+
+  const getValorPorCheckin = (modalidade?: string) => {
+    if (!modalidade) return 0;
+    const setting = modalidadeSettings.find((s) => s.modalidade === modalidade);
+    return setting ? parseFloat(setting.valorPorCheckin || "0") : 0;
+  };
+
+  const receitaCheckins = alunos.reduce((acc, aluno) => {
+    const checkins = aluno.checkinsRealizados ?? 0;
+    const valor = getValorPorCheckin(aluno.modalidade);
+    return acc + checkins * valor;
+  }, 0);
+
+  interface ReceitaModalidade { modalidade: string; alunos: number; checkins: number; receita: number; }
+  const receitaByModalidade: ReceitaModalidade[] = Array.from(
+    alunos.reduce((map, aluno) => {
+      const mod = aluno.modalidade ?? "Sem modalidade";
+      if (!map.has(mod)) map.set(mod, { modalidade: mod, alunos: 0, checkins: 0, receita: 0 });
+      const entry = map.get(mod)!;
+      const checkins = aluno.checkinsRealizados ?? 0;
+      const valor = getValorPorCheckin(aluno.modalidade);
+      entry.alunos++;
+      entry.checkins += checkins;
+      entry.receita += checkins * valor;
+      return map;
+    }, new Map<string, ReceitaModalidade>()).values()
+  ).sort((a, b) => b.receita - a.receita);
+
+  interface TopAluno { nome: string; modalidade: string; checkins: number; receita: number; }
+  const topAlunos: TopAluno[] = alunos
+    .map((a) => {
+      const checkins = a.checkinsRealizados ?? 0;
+      const valor = getValorPorCheckin(a.modalidade);
+      return { nome: a.nome, modalidade: a.modalidade ?? "—", checkins, receita: checkins * valor };
+    })
+    .filter((a) => a.receita > 0)
+    .sort((a, b) => b.receita - a.receita)
+    .slice(0, 5);
+
+  const temConfiguracao = modalidadeSettings.length > 0 && modalidadeSettings.some((s) => parseFloat(s.valorPorCheckin || "0") > 0);
 
   const handleConfirmDelete = () => {
     if (!confirmDelete) return;
@@ -188,6 +239,97 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
           </CardContent>
         </Card>
       </div>
+
+      {/* Receita por Check-in */}
+      {temConfiguracao && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Receita por Check-in
+              <span className="text-sm font-normal text-muted-foreground ml-auto">
+                Total estimado: <strong className="text-foreground">R$ {receitaCheckins.toFixed(2).replace(".", ",")}</strong>
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {receitaByModalidade.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Por modalidade</p>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Modalidade</TableHead>
+                        <TableHead>Alunos</TableHead>
+                        <TableHead>Check-ins</TableHead>
+                        <TableHead>Valor/Check-in</TableHead>
+                        <TableHead>Receita Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {receitaByModalidade.map((r) => {
+                        const cfg = modalidadeSettings.find((s) => s.modalidade === r.modalidade);
+                        return (
+                          <TableRow key={r.modalidade} data-testid={`receita-row-${r.modalidade}`}>
+                            <TableCell className="font-medium">{r.modalidade}</TableCell>
+                            <TableCell>{r.alunos}</TableCell>
+                            <TableCell>{r.checkins}</TableCell>
+                            <TableCell>R$ {parseFloat(cfg?.valorPorCheckin ?? "0").toFixed(2).replace(".", ",")}</TableCell>
+                            <TableCell className="font-semibold text-green-600 dark:text-green-400">
+                              R$ {r.receita.toFixed(2).replace(".", ",")}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+            {topAlunos.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Top alunos por receita gerada</p>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Aluno</TableHead>
+                        <TableHead>Modalidade</TableHead>
+                        <TableHead>Check-ins</TableHead>
+                        <TableHead>Receita</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {topAlunos.map((a, i) => (
+                        <TableRow key={i} data-testid={`top-aluno-row-${i}`}>
+                          <TableCell className="font-medium">{a.nome}</TableCell>
+                          <TableCell>{a.modalidade}</TableCell>
+                          <TableCell>{a.checkins}</TableCell>
+                          <TableCell className="font-semibold text-green-600 dark:text-green-400">
+                            R$ {a.receita.toFixed(2).replace(".", ",")}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {!temConfiguracao && (
+        <Card className="mb-6 border-dashed">
+          <CardContent className="py-6 flex items-center gap-3 text-muted-foreground">
+            <Settings className="h-5 w-5 shrink-0" />
+            <p className="text-sm">
+              Configure o valor por check-in em <strong>Configurações</strong> para visualizar a receita estimada por modalidade e aluno.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Payments table */}
       <Card className="mb-6">

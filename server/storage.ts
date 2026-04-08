@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, arenas, plans, teachers, students, checkinHistory,
-  payments, charges, paymentSettings, platformPlans, arenaSubscriptionPayments,
+  payments, charges, paymentSettings, platformPlans, arenaSubscriptionPayments, modalidadeSettings,
   type User, type InsertUser,
   type Arena, type InsertArena,
   type Plan, type InsertPlan,
@@ -14,6 +14,7 @@ import {
   type PaymentSettings, type InsertPaymentSettings,
   type PlatformPlan, type InsertPlatformPlan,
   type ArenaSubscriptionPayment, type InsertArenaSubscriptionPayment,
+  type ModalidadeSettings, type InsertModalidadeSettings,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -84,6 +85,11 @@ export interface IStorage {
   // Payment Settings
   getPaymentSettings(tenantId: string): Promise<PaymentSettings | undefined>;
   upsertPaymentSettings(settings: InsertPaymentSettings): Promise<PaymentSettings>;
+
+  // Modalidade Settings (valor por check-in)
+  listModalidadeSettings(arenaId: string): Promise<ModalidadeSettings[]>;
+  getModalidadeSetting(arenaId: string, modalidade: string): Promise<ModalidadeSettings | undefined>;
+  upsertModalidadeSetting(data: InsertModalidadeSettings): Promise<ModalidadeSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -343,6 +349,33 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoUpdate({ target: paymentSettings.tenantId, set: { receiverName: data.receiverName, pixKey: data.pixKey, pixQrcodeImage: data.pixQrcodeImage } })
       .returning();
     return settings;
+  }
+
+  // ── Modalidade Settings ───────────────────────────────────────────────────
+  async listModalidadeSettings(arenaId: string): Promise<ModalidadeSettings[]> {
+    return db.select().from(modalidadeSettings).where(eq(modalidadeSettings.arenaId, arenaId));
+  }
+
+  async getModalidadeSetting(arenaId: string, modalidade: string): Promise<ModalidadeSettings | undefined> {
+    const [setting] = await db
+      .select()
+      .from(modalidadeSettings)
+      .where(and(eq(modalidadeSettings.arenaId, arenaId), eq(modalidadeSettings.modalidade, modalidade)));
+    return setting;
+  }
+
+  async upsertModalidadeSetting(data: InsertModalidadeSettings): Promise<ModalidadeSettings> {
+    const existing = await this.getModalidadeSetting(data.arenaId!, data.modalidade);
+    if (existing) {
+      const [updated] = await db
+        .update(modalidadeSettings)
+        .set({ valorPorCheckin: data.valorPorCheckin, planoMinimo: data.planoMinimo, totalpassHabilitado: data.totalpassHabilitado, wellhubHabilitado: data.wellhubHabilitado })
+        .where(eq(modalidadeSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(modalidadeSettings).values(data).returning();
+    return created;
   }
 }
 

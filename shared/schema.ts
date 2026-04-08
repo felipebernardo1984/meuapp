@@ -170,6 +170,21 @@ export const insertPaymentSettingsSchema = createInsertSchema(paymentSettings);
 export type InsertPaymentSettings = z.infer<typeof insertPaymentSettingsSchema>;
 export type PaymentSettings = typeof paymentSettings.$inferSelect;
 
+// ── Modalidade Settings (valor por check-in e integrações) ───────────────────
+export const modalidadeSettings = pgTable("modalidade_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  modalidade: text("modalidade").notNull(),
+  valorPorCheckin: text("valor_por_checkin").notNull().default("0.00"),
+  planoMinimo: text("plano_minimo"),
+  totalpassHabilitado: boolean("totalpass_habilitado").notNull().default(false),
+  wellhubHabilitado: boolean("wellhub_habilitado").notNull().default(false),
+});
+
+export const insertModalidadeSettingsSchema = createInsertSchema(modalidadeSettings).omit({ id: true });
+export type InsertModalidadeSettings = z.infer<typeof insertModalidadeSettingsSchema>;
+export type ModalidadeSettings = typeof modalidadeSettings.$inferSelect;
+
 // ── Checkin History ──────────────────────────────────────────────────────────
 export const checkinHistory = pgTable("checkin_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

@@ -1,0 +1,66 @@
+Objetivo: Implementar controle financeiro baseado em valor por check-in, mantendo todas as funcionalidades atuais do sistema e preservando todas as modificações já realizadas.
+IMPORTANTE:
+Não remover ou modificar funcionalidades existentes. Apenas expandir o sistema com novos recursos financeiros.
+1.	PRESERVAÇÃO DO SISTEMA
+•	Não alterar lógica atual de check-in.
+•	Não remover nenhuma funcionalidade existente.
+•	Não modificar rotas ou componentes já utilizados.
+•	Manter toda a identidade visual atual.
+•	As alterações devem ser incrementais e seguras.
+2.	CONFIGURAÇÃO GLOBAL DO SISTEMA
+Criar um novo botão no painel do gestor chamado:
+"Configurações do Sistema"
+Esse botão deve ficar próximo ao botão atual de "Financeiro".
+Dentro dessa área futuramente serão configuradas integrações como:
+•	TotalPass
+•	Wellhub (Gympass)
+Estrutura inicial da página:
+•	Configurações de integrações
+•	Configuração de valor por check-in
+•	Outras configurações financeiras futuras
+3.	VALOR POR CHECK-IN
+Permitir que o gestor configure quanto vale cada check-in por modalidade.
+Exemplo de configuração:
+Modalidade: Vôlei de Praia
+Plano mínimo aceito: TP2
+Valor por check-in: 13.58
+Modalidade: Beach Tennis
+Plano mínimo aceito: TP3
+Valor por check-in: 20.59
+Esse valor deve ser salvo no banco de dados associado à modalidade ou aula.
+4.	CÁLCULO AUTOMÁTICO DE RECEITA
+Sempre que um check-in for registrado, o sistema deve calcular automaticamente:
+receita = quantidade de check-ins × valor por check-in da modalidade
+Esse cálculo não deve alterar o registro de check-in atual, apenas gerar informação financeira.
+5.	INTEGRAÇÃO COM O FINANCEIRO
+Criar conexão entre check-ins e o painel financeiro existente.
+O painel financeiro deve mostrar:
+•	quantidade total de check-ins
+•	receita gerada por modalidade
+•	receita gerada por aluno
+•	receita total do período
+6.	VISUALIZAÇÃO PARA PROFESSORES
+No painel do professor, no card do aluno, adicionar um ícone de visualização (ícone de olho).
+Ao clicar nesse ícone deve abrir um modal mostrando:
+•	quantidade de check-ins do aluno
+•	valor por check-in da modalidade
+•	receita total gerada por esse aluno
+7.	PREPARAÇÃO PARA INTEGRAÇÃO TOTALPASS / WELLHUB
+Estruturar o sistema para permitir futura integração com:
+•	TotalPass
+•	Wellhub (Gympass)
+Criar espaço nas configurações do sistema para armazenar:
+•	valores por plano (TP1, TP2, TP3 etc.)
+•	chaves de API futuras
+•	configurações de integração
+8.	ORGANIZAÇÃO DO CÓDIGO
+Se necessário:
+•	criar um módulo financeiro centralizado
+•	garantir que todas as partes do sistema financeiro conversem entre si
+•	evitar duplicação de lógica
+9.	SEGURANÇA
+Todas as alterações devem ser feitas sem quebrar funcionalidades existentes.
+Se houver qualquer risco de conflito com código atual, criar novos componentes ou funções em vez de alterar diretamente os existentes.
+Resultado esperado:
+Um sistema financeiro mais completo, onde o valor de cada check-in possa ser configurado e onde o sistema calcule automaticamente a receita gerada por alunos, modalidades e check-ins, mantendo compatibilidade futura com integrações TotalPass e Wellhub.
+

@@ -716,6 +716,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(summary);
   });
 
+  // ── Configurações do Sistema (Modalidade Settings) ────────────────────────
+  app.get("/api/configuracoes/modalidades", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const lista = await storage.listModalidadeSettings(arenaId);
+    res.json(lista);
+  });
+
+  app.put("/api/configuracoes/modalidades/:modalidade", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { modalidade } = req.params;
+    const { valorPorCheckin, planoMinimo, totalpassHabilitado, wellhubHabilitado } = req.body;
+    const setting = await storage.upsertModalidadeSetting({
+      arenaId,
+      modalidade,
+      valorPorCheckin: valorPorCheckin ?? "0.00",
+      planoMinimo: planoMinimo ?? null,
+      totalpassHabilitado: totalpassHabilitado ?? false,
+      wellhubHabilitado: wellhubHabilitado ?? false,
+    });
+    res.json(setting);
+  });
+
   app.get("/api/arena/:id", async (req, res) => {
     const arena = await storage.getArena(req.params.id);
     if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
