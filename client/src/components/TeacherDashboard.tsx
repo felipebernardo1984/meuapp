@@ -21,19 +21,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, DollarSign } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
   id: string;
   nome: string;
+  cpf?: string;
+  email?: string;
+  telefone?: string;
+  login?: string;
+  modalidade?: string;
   plano: number;
   planoTitulo: string;
   planoId: string;
   planoValorTexto?: string;
   checkinsRealizados: number;
   ultimoCheckin?: { data: string; hora: string };
-  historico: Array<{ data: string; hora: string }>;
+  historico: Array<{ id?: string; data: string; hora: string }>;
   photoUrl?: string;
 }
 
@@ -44,6 +49,7 @@ interface NovoAlunoDados {
   telefone: string;
   login: string;
   senha: string;
+  modalidade: string;
   planoId: string;
 }
 
@@ -65,7 +71,9 @@ interface TeacherDashboardProps {
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onAlterarPlano: (alunoId: string, planoId: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
-  onMarcarPago?: (chargeId: string) => void;
+  onEditarAluno: (alunoId: string, dados: Partial<NovoAlunoDados & { senha?: string }>) => void;
+  onExcluirAluno: (alunoId: string) => void;
+  onRemoverCheckin: (alunoId: string, index: number) => void;
 }
 
 export default function TeacherDashboard({
@@ -77,7 +85,15 @@ export default function TeacherDashboard({
   onCheckinManual,
   onAlterarPlano,
   onCadastrarAluno,
+  onEditarAluno,
+  onExcluirAluno,
+  onRemoverCheckin,
 }: TeacherDashboardProps) {
+  const emptyAluno: NovoAlunoDados = {
+    nome: "", cpf: "", email: "", telefone: "",
+    login: "", senha: "", modalidade, planoId: planos[0]?.id ?? "",
+  };
+
   // Diálogos globais
   const [dialogRetroativo, setDialogRetroativo] = useState(false);
   const [alunoRetroativo, setAlunoRetroativo] = useState<AlunoView | null>(null);
@@ -91,21 +107,20 @@ export default function TeacherDashboard({
   const [alunoPlano, setAlunoPlano] = useState<AlunoView | null>(null);
 
   const [dialogNovoAluno, setDialogNovoAluno] = useState(false);
-  const [novoAluno, setNovoAluno] = useState<NovoAlunoDados>({
-    nome: "",
-    cpf: "",
-    email: "",
-    telefone: "",
-    login: "",
-    senha: "",
-    planoId: planos[0]?.id ?? "",
-  });
+  const [novoAluno, setNovoAluno] = useState<NovoAlunoDados>(emptyAluno);
+
+  const [dialogEditarAluno, setDialogEditarAluno] = useState(false);
+  const [alunoEditando, setAlunoEditando] = useState<AlunoView | null>(null);
+  const [dadosEdicao, setDadosEdicao] = useState<Partial<NovoAlunoDados & { senha?: string }>>({});
+
+  const [dialogConfirmarExcluir, setDialogConfirmarExcluir] = useState(false);
+  const [alunoParaExcluir, setAlunoParaExcluir] = useState<AlunoView | null>(null);
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
-    if (novoAluno.nome && novoAluno.cpf && novoAluno.planoId) {
+    if (novoAluno.nome && novoAluno.cpf && novoAluno.login && novoAluno.senha && novoAluno.planoId) {
       onCadastrarAluno(novoAluno);
-      setNovoAluno({ nome: "", cpf: "", planoId: planos[0]?.id ?? "" });
+      setNovoAluno(emptyAluno);
       setDialogNovoAluno(false);
     }
   };
@@ -137,6 +152,54 @@ export default function TeacherDashboard({
     setDialogAlterarPlano(true);
   };
 
+  const openEditar = (aluno: AlunoView) => {
+    setAlunoEditando(aluno);
+    setDadosEdicao({
+      nome: aluno.nome,
+      cpf: aluno.cpf ?? "",
+      email: aluno.email ?? "",
+      telefone: aluno.telefone ?? "",
+      login: aluno.login ?? "",
+      senha: "",
+      modalidade: aluno.modalidade ?? modalidade,
+      planoId: aluno.planoId,
+    });
+    setDialogEditarAluno(true);
+  };
+
+  const handleEditarAluno = () => {
+    if (alunoEditando && dadosEdicao.nome && dadosEdicao.cpf && dadosEdicao.login) {
+      const payload: Partial<NovoAlunoDados & { senha?: string }> = { ...dadosEdicao };
+      if (!payload.senha) delete payload.senha;
+      onEditarAluno(alunoEditando.id, payload);
+      if (dadosEdicao.planoId && dadosEdicao.planoId !== alunoEditando.planoId) {
+        onAlterarPlano(alunoEditando.id, dadosEdicao.planoId);
+      }
+      setDialogEditarAluno(false);
+      setAlunoEditando(null);
+    }
+  };
+
+  const confirmarExcluir = (aluno: AlunoView) => {
+    setAlunoParaExcluir(aluno);
+    setDialogConfirmarExcluir(true);
+  };
+
+  const handleExcluirAluno = () => {
+    if (alunoParaExcluir) {
+      onExcluirAluno(alunoParaExcluir.id);
+      setDialogConfirmarExcluir(false);
+      setAlunoParaExcluir(null);
+    }
+  };
+
+  const handleRemoverCheckin = (aluno: AlunoView, index: number) => {
+    onRemoverCheckin(aluno.id, index);
+    setAlunoHistorico((prev) =>
+      prev ? { ...prev, historico: prev.historico.filter((_, i) => i !== index) } : prev
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
       <div className="mb-6">
@@ -146,13 +209,13 @@ export default function TeacherDashboard({
         <p className="text-muted-foreground">{modalidade}</p>
       </div>
 
-      {/* Botão Cadastrar Aluno — mesmo estilo do Check-in */}
+      {/* Botão Cadastrar Aluno */}
       <Card className="mb-6">
         <CardContent className="pt-6">
           <Button
             size="lg"
             className="w-full h-14 text-lg"
-            onClick={() => setDialogNovoAluno(true)}
+            onClick={() => { setNovoAluno(emptyAluno); setDialogNovoAluno(true); }}
             data-testid="button-add-student"
           >
             <UserPlus className="mr-2 h-5 w-5" />
@@ -167,6 +230,7 @@ export default function TeacherDashboard({
           const temCheckins = aluno.plano > 0;
           const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+          const alunoCharges = charges.filter((c) => c.studentId === aluno.id && c.status === "pending");
 
           return (
             <Card key={aluno.id} className="hover-elevate" data-testid={`card-student-${aluno.id}`}>
@@ -184,19 +248,55 @@ export default function TeacherDashboard({
                       <p className="text-xs text-muted-foreground truncate">{aluno.planoTitulo}</p>
                     </div>
                   </div>
-                  {temCheckins ? (
-                    <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs shrink-0">
-                      {aluno.checkinsRealizados}/{aluno.plano}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs shrink-0">
-                      {aluno.planoValorTexto ?? "Mensalista"}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {temCheckins ? (
+                      <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs">
+                        {aluno.checkinsRealizados}/{aluno.plano}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        {aluno.planoValorTexto ?? "Mensalista"}
+                      </Badge>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => openEditar(aluno)}
+                      data-testid={`button-edit-student-${aluno.id}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => confirmarExcluir(aluno)}
+                      data-testid={`button-delete-student-${aluno.id}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {temCheckins && <Progress value={Math.min(progresso, 100)} />}
+
+                {/* Valor a Pagar */}
+                {alunoCharges.length > 0 && (
+                  <div className="rounded-md bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 px-3 py-2">
+                    <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1 mb-1">
+                      <DollarSign className="h-3 w-3" />
+                      Valor a Pagar
+                    </p>
+                    {alunoCharges.map((c) => (
+                      <div key={c.id} className="flex items-center justify-between text-xs" data-testid={`teacher-charge-${c.id}`}>
+                        <span className="text-muted-foreground truncate mr-2">{c.description}</span>
+                        <span className="font-medium text-orange-700 dark:text-orange-400 shrink-0">R$ {c.amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   <Button
@@ -255,59 +355,234 @@ export default function TeacherDashboard({
 
       {/* ── Dialog: Cadastrar Aluno ── */}
       <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
-            <DialogDescription>
-              O login será o nome e a senha será o CPF.
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <div className="space-y-1">
-              <Label>Nome do Aluno</Label>
-              <Input
-                placeholder="Nome completo"
-                value={novoAluno.nome}
-                onChange={(e) => setNovoAluno({ ...novoAluno, nome: e.target.value })}
-                data-testid="input-new-student-name"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>CPF</Label>
-              <Input
-                placeholder="000.000.000-00"
-                value={novoAluno.cpf}
-                onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value })}
-                data-testid="input-new-student-cpf"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Plano</Label>
-              <Select
-                value={novoAluno.planoId}
-                onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
-              >
-                <SelectTrigger data-testid="select-new-student-plan">
-                  <SelectValue placeholder="Selecione o plano" />
-                </SelectTrigger>
-                <SelectContent>
-                  {planos.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.titulo} — {p.checkins > 0 ? `${p.checkins} check-in` : (p.valorTexto ?? "Mensalidade")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1">
+                <Label>Nome do Aluno <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Nome completo"
+                  value={novoAluno.nome}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, nome: e.target.value })}
+                  data-testid="input-new-student-name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>CPF <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="000.000.000-00"
+                  value={novoAluno.cpf}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value })}
+                  data-testid="input-new-student-cpf"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Telefone</Label>
+                <Input
+                  placeholder="(00) 00000-0000"
+                  value={novoAluno.telefone}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, telefone: e.target.value })}
+                  data-testid="input-new-student-phone"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Email</Label>
+                <Input
+                  placeholder="email@exemplo.com"
+                  type="email"
+                  value={novoAluno.email}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value })}
+                  data-testid="input-new-student-email"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="login de acesso"
+                  value={novoAluno.login}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
+                  data-testid="input-new-student-login"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Senha <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="senha de acesso"
+                  type="password"
+                  value={novoAluno.senha}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
+                  data-testid="input-new-student-password"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Modalidade <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Modalidade"
+                  value={novoAluno.modalidade}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, modalidade: e.target.value })}
+                  data-testid="input-new-student-modality"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Plano <span className="text-destructive">*</span></Label>
+                <Select
+                  value={novoAluno.planoId}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
+                >
+                  <SelectTrigger data-testid="select-new-student-plan">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {planos.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.titulo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>Cancelar</Button>
             <Button
               onClick={handleCadastrarAluno}
-              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.planoId}
+              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.login || !novoAluno.senha || !novoAluno.planoId}
               data-testid="button-confirm-new-student"
             >
               Cadastrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Editar Aluno ── */}
+      <Dialog open={dialogEditarAluno} onOpenChange={setDialogEditarAluno}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Aluno</DialogTitle>
+            <DialogDescription>{alunoEditando?.nome}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1">
+                <Label>Nome do Aluno <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Nome completo"
+                  value={dadosEdicao.nome ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, nome: e.target.value })}
+                  data-testid="input-edit-student-name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>CPF <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="000.000.000-00"
+                  value={dadosEdicao.cpf ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, cpf: e.target.value })}
+                  data-testid="input-edit-student-cpf"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Telefone</Label>
+                <Input
+                  placeholder="(00) 00000-0000"
+                  value={dadosEdicao.telefone ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, telefone: e.target.value })}
+                  data-testid="input-edit-student-phone"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Email</Label>
+                <Input
+                  placeholder="email@exemplo.com"
+                  type="email"
+                  value={dadosEdicao.email ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, email: e.target.value })}
+                  data-testid="input-edit-student-email"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="login de acesso"
+                  value={dadosEdicao.login ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value })}
+                  data-testid="input-edit-student-login"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Nova Senha</Label>
+                <Input
+                  placeholder="deixe em branco para manter"
+                  type="password"
+                  value={dadosEdicao.senha ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value })}
+                  data-testid="input-edit-student-password"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Modalidade</Label>
+                <Input
+                  placeholder="Modalidade"
+                  value={dadosEdicao.modalidade ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, modalidade: e.target.value })}
+                  data-testid="input-edit-student-modality"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Plano</Label>
+                <Select
+                  value={dadosEdicao.planoId ?? ""}
+                  onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, planoId: v })}
+                >
+                  <SelectTrigger data-testid="select-edit-student-plan">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {planos.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.titulo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogEditarAluno(false)}>Cancelar</Button>
+            <Button
+              onClick={handleEditarAluno}
+              disabled={!dadosEdicao.nome || !dadosEdicao.cpf || !dadosEdicao.login}
+              data-testid="button-confirm-edit-student"
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Confirmar Exclusão ── */}
+      <Dialog open={dialogConfirmarExcluir} onOpenChange={setDialogConfirmarExcluir}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Aluno</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir <strong>{alunoParaExcluir?.nome}</strong>? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogConfirmarExcluir(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={handleExcluirAluno}
+              data-testid="button-confirm-delete-student"
+            >
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -320,17 +595,26 @@ export default function TeacherDashboard({
             <DialogTitle>{alunoHistorico?.nome}</DialogTitle>
             <DialogDescription>Histórico de check-in</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-1 max-h-96 overflow-y-auto">
             {alunoHistorico?.historico.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Nenhum check-in registrado</p>
             ) : (
               alunoHistorico?.historico.map((item, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div key={index} className="flex items-center justify-between py-2 border-b last:border-0 group">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-secondary" />
                     <span className="text-sm">{item.data}</span>
+                    <span className="text-sm text-muted-foreground">{item.hora}</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">{item.hora}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => alunoHistorico && handleRemoverCheckin(alunoHistorico, index)}
+                    data-testid={`button-delete-checkin-${index}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               ))
             )}
@@ -347,7 +631,6 @@ export default function TeacherDashboard({
               Plano atual: <strong>{alunoPlano?.planoTitulo}</strong>
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-2 py-1">
             {planos.map((p) => (
               <Button
@@ -367,36 +650,6 @@ export default function TeacherDashboard({
               </Button>
             ))}
           </div>
-
-          {(() => {
-            const cobranças = charges.filter((c) => c.studentId === alunoPlano?.id);
-            if (cobranças.length === 0) return null;
-            return (
-              <div className="border-t pt-3 mt-1">
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1 mb-2">
-                  <DollarSign className="h-3.5 w-3.5" />
-                  Cobranças do Gestor
-                </p>
-                <div className="space-y-1.5">
-                  {cobranças.map((c) => (
-                    <div
-                      key={c.id}
-                      className="flex items-center justify-between text-sm px-2 py-1.5 rounded-md bg-muted"
-                      data-testid={`teacher-charge-${c.id}`}
-                    >
-                      <span className="text-foreground">{c.description}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">R$ {c.amount}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${c.status === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"}`}>
-                          {c.status === "paid" ? "Pago" : "Pendente"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
         </DialogContent>
       </Dialog>
 

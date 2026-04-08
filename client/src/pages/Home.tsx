@@ -91,6 +91,11 @@ export default function Home() {
     enabled: !!sessao,
   });
 
+  const { data: charges = [] } = useQuery<any[]>({
+    queryKey: ["/api/finance/charges"],
+    enabled: !!sessao && (sessao.tipo === "professor" || sessao.tipo === "gestor"),
+  });
+
   // ── Plan mutations ────────────────────────────────────────────────────────
   const criarPlano = useMutation({
     mutationFn: (d: { titulo: string; checkins: number; valorTexto?: string }) =>
@@ -135,12 +140,22 @@ export default function Home() {
 
   // ── Student mutations ─────────────────────────────────────────────────────
   const cadastrarAluno = useMutation({
-    mutationFn: (d: { nome: string; cpf: string; modalidade: string; planoId: string }) =>
+    mutationFn: (d: any) =>
       apiRequest("POST", "/api/alunos", d).then((r) => r.json()),
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
-      alert(`Aluno cadastrado!\n\nLogin: ${data.loginGerado}\nSenha: ${data.senhaGerada}\n\nEntregue estas credenciais ao aluno.`);
     },
+  });
+
+  const editarAluno = useMutation({
+    mutationFn: ({ id, ...d }: any) =>
+      apiRequest("PUT", `/api/alunos/${id}`, d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+  });
+
+  const excluirAluno = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/alunos/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
   });
 
   const alterarPlanoAluno = useMutation({
@@ -245,6 +260,11 @@ export default function Home() {
             .map((a: any) => ({
               id: a.id,
               nome: a.nome,
+              cpf: a.cpf ?? undefined,
+              email: a.email ?? undefined,
+              telefone: a.telefone ?? undefined,
+              login: a.login ?? undefined,
+              modalidade: a.modalidade,
               plano: a.planoCheckins,
               planoTitulo: a.planoTitulo,
               planoId: a.planoId,
@@ -254,11 +274,13 @@ export default function Home() {
               historico: a.historico ?? [],
               photoUrl: a.photoUrl ?? undefined,
             }))}
+          charges={charges}
           onCheckinManual={(alunoId, data, hora) => checkinManual.mutate({ id: alunoId, data, hora })}
           onAlterarPlano={(alunoId, planoId) => alterarPlanoAluno.mutate({ alunoId, planoId })}
-          onCadastrarAluno={(dados) =>
-            cadastrarAluno.mutate({ ...dados, modalidade: sessao.professor.modalidade })
-          }
+          onCadastrarAluno={(dados) => cadastrarAluno.mutate(dados)}
+          onEditarAluno={(alunoId, dados) => editarAluno.mutate({ id: alunoId, ...dados })}
+          onExcluirAluno={(alunoId) => excluirAluno.mutate(alunoId)}
+          onRemoverCheckin={(alunoId, index) => removerCheckin.mutate({ id: alunoId, index })}
         />
       )}
 

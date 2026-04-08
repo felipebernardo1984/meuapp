@@ -285,10 +285,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/alunos/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, modalidade, statusMensalidade, checkinsRealizados } = req.body;
+    const { nome, cpf, email, telefone, login, senha, modalidade, statusMensalidade, checkinsRealizados } = req.body;
     const updates: Record<string, any> = {};
     if (nome !== undefined) updates.nome = nome;
-    if (cpf !== undefined) { updates.cpf = cpf; updates.senha = cpf; }
+    if (cpf !== undefined) updates.cpf = cpf;
+    if (email !== undefined) updates.email = email || null;
+    if (telefone !== undefined) updates.telefone = telefone || null;
+    if (login !== undefined) updates.login = login;
+    if (senha) updates.senha = senha;
     if (modalidade !== undefined) updates.modalidade = modalidade;
     if (statusMensalidade !== undefined) updates.statusMensalidade = statusMensalidade;
     if (checkinsRealizados !== undefined) updates.checkinsRealizados = Number(checkinsRealizados);
