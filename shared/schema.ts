@@ -197,3 +197,46 @@ export const checkinHistory = pgTable("checkin_history", {
 export const insertCheckinSchema = createInsertSchema(checkinHistory).omit({ id: true });
 export type InsertCheckin = z.infer<typeof insertCheckinSchema>;
 export type CheckinEntry = typeof checkinHistory.$inferSelect;
+
+// ── Checkin Financeiro (receita por check-in) ─────────────────────────────────
+export const checkinFinanceiro = pgTable("checkin_financeiro", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  checkinId: varchar("checkin_id").references(() => checkinHistory.id, { onDelete: "cascade" }),
+  studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
+  modalidade: text("modalidade").notNull(),
+  valorUnitario: text("valor_unitario").notNull().default("0.00"),
+  valorTotal: text("valor_total").notNull().default("0.00"),
+  dataCheckin: text("data_checkin").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCheckinFinanceiroSchema = createInsertSchema(checkinFinanceiro).omit({ id: true, createdAt: true });
+export type InsertCheckinFinanceiro = z.infer<typeof insertCheckinFinanceiroSchema>;
+export type CheckinFinanceiro = typeof checkinFinanceiro.$inferSelect;
+
+// ── Integration Plans (TotalPass / Wellhub) ───────────────────────────────────
+export const integrationPlans = pgTable("integration_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  nome: text("nome").notNull(),
+  valor: text("valor").notNull().default("0.00"),
+  provider: text("provider").notNull(),
+});
+
+export const insertIntegrationPlanSchema = createInsertSchema(integrationPlans).omit({ id: true });
+export type InsertIntegrationPlan = z.infer<typeof insertIntegrationPlanSchema>;
+export type IntegrationPlan = typeof integrationPlans.$inferSelect;
+
+// ── Integration Settings (API keys por provider) ──────────────────────────────
+export const integrationSettings = pgTable("integration_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  apiKey: text("api_key"),
+  habilitado: boolean("habilitado").notNull().default(false),
+});
+
+export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({ id: true });
+export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
+export type IntegrationSettings = typeof integrationSettings.$inferSelect;

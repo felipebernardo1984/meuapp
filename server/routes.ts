@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
+import { financeService } from "./financeService";
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -339,11 +340,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       : agora.toLocaleDateString("pt-BR");
     const hora = req.body.hora || agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-    await storage.addCheckin({ arenaId, studentId: student.id, data, hora });
+    const checkinEntry = await storage.addCheckin({ arenaId, studentId: student.id, data, hora });
     const updated = await storage.updateStudent(student.id, {
       checkinsRealizados: student.checkinsRealizados + 1,
       ultimoCheckin: data,
     });
+
+    // Registrar receita financeira automaticamente (sem alterar lógica de check-in)
+    try {
+      await financeService.calcularReceitaCheckin(arenaId, student.id, student.modalidade, checkinEntry.id, data);
+    } catch (_e) {
+      // Não bloquear check-in se a gravação financeira falhar
+    }
+
     const historico = await storage.listCheckins(student.id);
     res.json({ ...updated, historico });
   });
@@ -714,6 +723,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       totalCobranças: allCharges.filter((c) => c.status === "pending").length,
     };
     res.json(summary);
+  });
+
+  // ── Receita por Check-in (dados reais do checkinFinanceiro) ──────────────
+  app.get("/api/finance/receita/summary", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { dataInicio, dataFim } = req.query as { dataInicio?: string; dataFim?: string };
+    const result = await financeService.getReceitaTotalPeriodo(arenaId, dataInicio, dataFim);
+    res.json(result);
+  });
+
+  app.get("/api/finance/receita/aluno/:studentId", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const result = await financeService.getReceitaPorAluno(arenaId, req.params.studentId);
+    res.json(result);
+  });
+
+  // ── Integration Plans ──────────────────────────────────────────────────────
+  app.get("/api/integracoes/planos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const lista = await storage.listIntegrationPlans(arenaId);
+    res.json(lista);
+  });
+
+  app.post("/api/integracoes/planos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { nome, valor, provider } = req.body;
+    if (!nome || !provider) return res.status(400).json({ message: "Nome e provider são obrigatórios" });
+    const plan = await storage.createIntegrationPlan({ arenaId, nome, valor: valor ?? "0.00", provider });
+    res.json(plan);
+  });
+
+  app.put("/api/integracoes/planos/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { nome, valor } = req.body;
+    const plan = await storage.updateIntegrationPlan(req.params.id, { nome, valor });
+    res.json(plan);
+  });
+
+  app.delete("/api/integracoes/planos/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.deleteIntegrationPlan(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // ── Integration Settings ───────────────────────────────────────────────────
+  app.get("/api/integracoes/settings/:provider", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const settings = await storage.getIntegrationSettings(arenaId, req.params.provider);
+    res.json(settings ?? { arenaId, provider: req.params.provider, apiKey: null, habilitado: false });
+  });
+
+  app.put("/api/integracoes/settings/:provider", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { apiKey, habilitado } = req.body;
+    const settings = await storage.upsertIntegrationSettings({
+      arenaId,
+      provider: req.params.provider,
+      apiKey: apiKey ?? null,
+      habilitado: habilitado ?? false,
+    });
+    res.json(settings);
   });
 
   // ── Configurações do Sistema (Modalidade Settings) ────────────────────────

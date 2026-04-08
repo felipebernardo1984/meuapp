@@ -150,6 +150,19 @@ export default function TeacherDashboard({
     return cfg ? parseFloat(cfg.valorPorCheckin || "0") : 0;
   };
 
+  const { data: receitaAlunoData, isLoading: receitaLoading } = useQuery<{
+    studentId: string;
+    nome: string;
+    modalidade: string;
+    checkins: number;
+    valorUnitario: number;
+    receitaTotal: number;
+  }>({
+    queryKey: ["/api/finance/receita/aluno", alunoReceita?.id],
+    queryFn: () => fetch(`/api/finance/receita/aluno/${alunoReceita!.id}`).then((r) => r.json()),
+    enabled: !!alunoReceita,
+  });
+
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
     if (novoAluno.nome && novoAluno.cpf && novoAluno.login && novoAluno.senha && novoAluno.planoId) {
@@ -925,34 +938,36 @@ export default function TeacherDashboard({
             </DialogTitle>
             <DialogDescription>{alunoReceita?.nome}</DialogDescription>
           </DialogHeader>
-          {alunoReceita && (() => {
-            const valor = getValorPorCheckin(alunoReceita.modalidade ?? modalidade);
-            const checkins = alunoReceita.checkinsRealizados;
-            const receita = valor * checkins;
-            return (
-              <div className="space-y-4 py-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Check-ins</p>
-                    <p className="text-2xl font-bold" data-testid="dialog-receita-checkins">{checkins}</p>
-                  </div>
-                  <div className="rounded-lg border p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Valor/Check-in</p>
-                    <p className="text-2xl font-bold">R$ {valor.toFixed(2).replace(".", ",")}</p>
-                  </div>
+          {receitaLoading ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">Carregando...</div>
+          ) : receitaAlunoData ? (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Check-ins</p>
+                  <p className="text-2xl font-bold" data-testid="dialog-receita-checkins">{receitaAlunoData.checkins}</p>
                 </div>
-                <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Receita Total Gerada</p>
-                  <p className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="dialog-receita-total">
-                    R$ {receita.toFixed(2).replace(".", ",")}
-                  </p>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Valor/Check-in</p>
+                  <p className="text-2xl font-bold">R$ {receitaAlunoData.valorUnitario.toFixed(2).replace(".", ",")}</p>
                 </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  {checkins} check-ins × R$ {valor.toFixed(2).replace(".", ",")} por check-in
+              </div>
+              <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Receita Total Gerada</p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="dialog-receita-total">
+                  R$ {receitaAlunoData.receitaTotal.toFixed(2).replace(".", ",")}
                 </p>
               </div>
-            );
-          })()}
+              <p className="text-xs text-muted-foreground text-center">
+                {receitaAlunoData.checkins} check-ins × R$ {receitaAlunoData.valorUnitario.toFixed(2).replace(".", ",")} por check-in
+              </p>
+              {receitaAlunoData.checkins === 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Nenhum check-in financeiro registrado. Os dados são gerados automaticamente a partir do próximo check-in.
+                </p>
+              )}
+            </div>
+          ) : null}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogReceita(false)}>Fechar</Button>
           </DialogFooter>

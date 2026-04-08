@@ -33,9 +33,27 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `teachers` — Arena teachers
 - `students` — Arena students with plan/checkin data
 - `checkin_history` — Student check-in records
+- `checkin_financeiro` — Financial snapshot per check-in (valorUnitario saved at moment of check-in for historical consistency)
 - `payments` — Student monthly payment records
 - `charges` — Ad-hoc charges for students
 - `payment_settings` — Arena PIX payment configuration
+- `modalidade_settings` — Per-modality value per check-in and integration toggles
+- `integration_plans` — TotalPass/Wellhub plan structure (prepared for future integration)
+- `integration_settings` — API keys and provider config per arena (prepared for future integration)
+
+## Finance Module
+- `server/financeService.ts` — Central finance service with:
+  - `calcularReceitaCheckin` — Creates a financial record at check-in time (snapshot)
+  - `getReceitaTotalPeriodo` — Total revenue aggregation with optional date filters
+  - `getReceitaPorAluno` — Revenue summary for a specific student
+- Financial records are created automatically on every check-in without altering check-in logic
+- Historical consistency: `valorUnitario` is saved at check-in time, unaffected by future config changes
+
+## Financial API Endpoints (new)
+- `GET /api/finance/receita/summary?dataInicio=&dataFim=` — Aggregated revenue (total checkins, receita total, by modality, by student)
+- `GET /api/finance/receita/aluno/:studentId` — Student-specific financial summary
+- `GET/PUT /api/integracoes/settings/:provider` — Integration settings (API keys)
+- `GET/POST/PUT/DELETE /api/integracoes/planos` — Integration plans (TotalPass/Wellhub)
 
 ## Multi-Tenant Security
 - All arena data is filtered by `arenaId` / `tenantId`

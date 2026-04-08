@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft, Upload } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft, Upload, CalendarRange } from "lucide-react";
 
 interface ModalidadeSetting {
   id: string;
@@ -45,6 +45,13 @@ function statusBadge(status: string) {
   return <Badge variant="outline" className="text-orange-600 border-orange-300">Pendente</Badge>;
 }
 
+interface ReceitaSummary {
+  totalCheckins: number;
+  receitaTotal: number;
+  porModalidade: Array<{ modalidade: string; checkins: number; receita: number }>;
+  porAluno: Array<{ studentId: string; nome: string; modalidade: string; checkins: number; receita: number }>;
+}
+
 export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashboardProps) {
   const qc = useQueryClient();
   const [dialogPix, setDialogPix] = useState(false);
@@ -54,11 +61,22 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
 
   const [confirmDelete, setConfirmDelete] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
 
+  const today = new Date().toISOString().split("T")[0];
+  const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
+  const [dataInicio, setDataInicio] = useState(firstOfMonth);
+  const [dataFim, setDataFim] = useState(today);
+
+  const receitaParams = new URLSearchParams({ dataInicio, dataFim }).toString();
+
   const { data: summary } = useQuery<any>({ queryKey: ["/api/finance/summary"] });
   const { data: payments = [] } = useQuery<any[]>({ queryKey: ["/api/finance/payments"] });
   const { data: charges = [] } = useQuery<any[]>({ queryKey: ["/api/finance/charges"] });
   const { data: pixSettings } = useQuery<any>({ queryKey: ["/api/finance/settings"] });
   const { data: modalidadeSettings = [] } = useQuery<ModalidadeSetting[]>({ queryKey: ["/api/configuracoes/modalidades"] });
+  const { data: receitaSummary } = useQuery<ReceitaSummary>({
+    queryKey: ["/api/finance/receita/summary", dataInicio, dataFim],
+    queryFn: () => fetch(`/api/finance/receita/summary?${receitaParams}`).then((r) => r.json()),
+  });
 
   useEffect(() => {
     if (pixSettings) {
@@ -128,45 +146,13 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
 
   const getNomeAluno = (id: string) => alunos.find((a) => a.id === id)?.nome ?? "—";
 
-  const getValorPorCheckin = (modalidade?: string) => {
-    if (!modalidade) return 0;
-    const setting = modalidadeSettings.find((s) => s.modalidade === modalidade);
-    return setting ? parseFloat(setting.valorPorCheckin || "0") : 0;
-  };
-
-  const receitaCheckins = alunos.reduce((acc, aluno) => {
-    const checkins = aluno.checkinsRealizados ?? 0;
-    const valor = getValorPorCheckin(aluno.modalidade);
-    return acc + checkins * valor;
-  }, 0);
-
-  interface ReceitaModalidade { modalidade: string; alunos: number; checkins: number; receita: number; }
-  const receitaByModalidade: ReceitaModalidade[] = Array.from(
-    alunos.reduce((map, aluno) => {
-      const mod = aluno.modalidade ?? "Sem modalidade";
-      if (!map.has(mod)) map.set(mod, { modalidade: mod, alunos: 0, checkins: 0, receita: 0 });
-      const entry = map.get(mod)!;
-      const checkins = aluno.checkinsRealizados ?? 0;
-      const valor = getValorPorCheckin(aluno.modalidade);
-      entry.alunos++;
-      entry.checkins += checkins;
-      entry.receita += checkins * valor;
-      return map;
-    }, new Map<string, ReceitaModalidade>()).values()
-  ).sort((a, b) => b.receita - a.receita);
-
-  interface TopAluno { nome: string; modalidade: string; checkins: number; receita: number; }
-  const topAlunos: TopAluno[] = alunos
-    .map((a) => {
-      const checkins = a.checkinsRealizados ?? 0;
-      const valor = getValorPorCheckin(a.modalidade);
-      return { nome: a.nome, modalidade: a.modalidade ?? "—", checkins, receita: checkins * valor };
-    })
-    .filter((a) => a.receita > 0)
-    .sort((a, b) => b.receita - a.receita)
-    .slice(0, 5);
+  const receitaCheckins = receitaSummary?.receitaTotal ?? 0;
+  const totalCheckins = receitaSummary?.totalCheckins ?? 0;
+  const receitaByModalidade = receitaSummary?.porModalidade ?? [];
+  const topAlunos = (receitaSummary?.porAluno ?? []).filter((a) => a.receita > 0).slice(0, 5);
 
   const temConfiguracao = modalidadeSettings.length > 0 && modalidadeSettings.some((s) => parseFloat(s.valorPorCheckin || "0") > 0);
+  const temReceitaReal = (receitaSummary?.totalCheckins ?? 0) > 0;
 
   const handleConfirmDelete = () => {
     if (!confirmDelete) return;
@@ -244,13 +230,39 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
       {temConfiguracao && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Receita por Check-in
-              <span className="text-sm font-normal text-muted-foreground ml-auto">
-                Total estimado: <strong className="text-foreground">R$ {receitaCheckins.toFixed(2).replace(".", ",")}</strong>
-              </span>
-            </CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Receita por Check-in
+              </CardTitle>
+              <div className="flex items-center gap-2 flex-wrap">
+                <CalendarRange className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">De</Label>
+                  <Input
+                    type="date"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                    className="h-8 text-xs w-36 [&::-webkit-calendar-picker-indicator]:hidden"
+                    data-testid="input-data-inicio"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">Até</Label>
+                  <Input
+                    type="date"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                    className="h-8 text-xs w-36 [&::-webkit-calendar-picker-indicator]:hidden"
+                    data-testid="input-data-fim"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+              <span>Total de check-ins: <strong className="text-foreground" data-testid="text-total-checkins">{totalCheckins}</strong></span>
+              <span>Receita total: <strong className="text-green-600 dark:text-green-400" data-testid="text-receita-total">R$ {receitaCheckins.toFixed(2).replace(".", ",")}</strong></span>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {receitaByModalidade.length > 0 && (
@@ -261,7 +273,6 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                     <TableHeader>
                       <TableRow>
                         <TableHead>Modalidade</TableHead>
-                        <TableHead>Alunos</TableHead>
                         <TableHead>Check-ins</TableHead>
                         <TableHead>Valor/Check-in</TableHead>
                         <TableHead>Receita Total</TableHead>
@@ -273,7 +284,6 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                         return (
                           <TableRow key={r.modalidade} data-testid={`receita-row-${r.modalidade}`}>
                             <TableCell className="font-medium">{r.modalidade}</TableCell>
-                            <TableCell>{r.alunos}</TableCell>
                             <TableCell>{r.checkins}</TableCell>
                             <TableCell>R$ {parseFloat(cfg?.valorPorCheckin ?? "0").toFixed(2).replace(".", ",")}</TableCell>
                             <TableCell className="font-semibold text-green-600 dark:text-green-400">
@@ -316,6 +326,11 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                 </div>
               </div>
             )}
+            {!temReceitaReal && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum check-in registrado no período selecionado. Os dados serão exibidos automaticamente conforme os check-ins forem realizados.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -325,7 +340,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
           <CardContent className="py-6 flex items-center gap-3 text-muted-foreground">
             <Settings className="h-5 w-5 shrink-0" />
             <p className="text-sm">
-              Configure o valor por check-in em <strong>Configurações</strong> para visualizar a receita estimada por modalidade e aluno.
+              Configure o valor por check-in em <strong>Configurações</strong> para visualizar a receita por modalidade e aluno.
             </p>
           </CardContent>
         </Card>

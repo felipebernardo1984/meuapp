@@ -1,0 +1,98 @@
+Objetivo: Finalizar a implementação do sistema financeiro baseado em valor por check-in, COMPLETANDO apenas o que ainda não foi feito, sem alterar ou quebrar nenhuma funcionalidade existente.
+IMPORTANTE:
+•	NÃO modificar a lógica atual de check-in
+•	NÃO alterar estruturas já existentes
+•	NÃO remover nada
+•	Apenas adicionar novas estruturas e integrações financeiras faltantes
+________________________________________
+❗ FALTAS IDENTIFICADAS — IMPLEMENTAR
+1. CRIAR ESTRUTURA DE RECEITA (OBRIGATÓRIO)
+Criar uma nova tabela para registrar a receita gerada por cada check-in.
+Exemplo de estrutura:
+checkinFinanceiro:
+•	id
+•	checkinId (referência ao check-in existente)
+•	studentId
+•	modalidade
+•	valorUnitario (valor no momento do check-in)
+•	valorTotal
+•	createdAt
+IMPORTANTE:
+•	O valor deve ser SALVO no momento do check-in (snapshot)
+•	NÃO depender de recálculo futuro
+________________________________________
+2. IMPLEMENTAR CÁLCULO AUTOMÁTICO DE RECEITA
+Sempre que um check-in for registrado:
+•	Buscar valorPorCheckin da modalidade
+•	Gerar automaticamente um registro em checkinFinanceiro
+Fórmula:
+receita = 1 × valorPorCheckin
+IMPORTANTE:
+•	NÃO alterar a lógica atual do check-in
+•	Apenas adicionar essa ação após o check-in
+________________________________________
+3. GARANTIR CONSISTÊNCIA HISTÓRICA
+•	O valorUnitario deve ser salvo no momento do check-in
+•	Mesmo que o valor da modalidade mude depois, o histórico não pode ser afetado
+________________________________________
+4. CRIAR MÓDULO FINANCEIRO CENTRALIZADO
+Criar um service (ex: financeService) responsável por:
+•	calcularReceitaCheckin
+•	getReceitaTotalPeriodo
+•	getReceitaPorAluno
+•	getReceitaPorModalidade
+•	getTotalCheckins
+IMPORTANTE:
+•	NÃO duplicar lógica em controllers ou frontend
+•	Tudo deve passar por esse service
+________________________________________
+5. INTEGRAR COM O PAINEL FINANCEIRO EXISTENTE
+Conectar os dados reais ao painel financeiro para exibir:
+•	total de check-ins
+•	receita total
+•	receita por modalidade
+•	receita por aluno
+Adicionar suporte a filtro por período (data inicial e final)
+________________________________________
+6. CRIAR AGREGAÇÕES (BACKEND)
+Criar queries para:
+•	soma de receita por aluno
+•	soma de receita por modalidade
+•	soma total no período
+•	contagem de check-ins
+________________________________________
+7. ATUALIZAR PAINEL DO PROFESSOR
+No card do aluno:
+•	Adicionar/ajustar modal de visualização para mostrar:
+o	quantidade de check-ins
+o	valor por check-in
+o	receita total gerada pelo aluno
+Os dados devem vir do backend (não calcular no frontend)
+________________________________________
+8. PREPARAR BASE PARA PLANOS (TOTALPASS / WELLHUB)
+Adicionar estrutura para:
+planos:
+•	nome (TP1, TP2, TP3...)
+•	valor
+•	integração futura
+E também permitir salvar:
+•	apiKey
+•	provider (totalpass / wellhub)
+(NÃO precisa integrar ainda, apenas estruturar)
+________________________________________
+9. GARANTIR ISOLAMENTO E SEGURANÇA
+•	NÃO modificar tabelas existentes
+•	NÃO alterar rotas existentes
+•	Criar novas rotas/endpoints se necessário
+•	Toda lógica nova deve ser desacoplada
+________________________________________
+RESULTADO ESPERADO
+O sistema deve:
+•	Registrar automaticamente a receita a cada check-in
+•	Manter histórico financeiro consistente
+•	Permitir visualização de receita por aluno, modalidade e período
+•	Estar preparado para integrações futuras (TotalPass / Wellhub)
+•	Funcionar sem quebrar nenhuma funcionalidade existente
+________________________________________
+Implementar exatamente isso, sem refatorações desnecessárias e sem alterar o comportamento atual do sistema.
+

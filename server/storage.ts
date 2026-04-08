@@ -3,6 +3,7 @@ import { db } from "./db";
 import {
   users, arenas, plans, teachers, students, checkinHistory,
   payments, charges, paymentSettings, platformPlans, arenaSubscriptionPayments, modalidadeSettings,
+  checkinFinanceiro, integrationPlans, integrationSettings,
   type User, type InsertUser,
   type Arena, type InsertArena,
   type Plan, type InsertPlan,
@@ -15,6 +16,9 @@ import {
   type PlatformPlan, type InsertPlatformPlan,
   type ArenaSubscriptionPayment, type InsertArenaSubscriptionPayment,
   type ModalidadeSettings, type InsertModalidadeSettings,
+  type CheckinFinanceiro, type InsertCheckinFinanceiro,
+  type IntegrationPlan, type InsertIntegrationPlan,
+  type IntegrationSettings, type InsertIntegrationSettings,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -90,6 +94,21 @@ export interface IStorage {
   listModalidadeSettings(arenaId: string): Promise<ModalidadeSettings[]>;
   getModalidadeSetting(arenaId: string, modalidade: string): Promise<ModalidadeSettings | undefined>;
   upsertModalidadeSetting(data: InsertModalidadeSettings): Promise<ModalidadeSettings>;
+
+  // Checkin Financeiro
+  createCheckinFinanceiro(data: InsertCheckinFinanceiro): Promise<CheckinFinanceiro>;
+  listCheckinFinanceiro(arenaId: string): Promise<CheckinFinanceiro[]>;
+  listCheckinFinanceiroByStudent(studentId: string): Promise<CheckinFinanceiro[]>;
+
+  // Integration Plans
+  listIntegrationPlans(arenaId: string): Promise<IntegrationPlan[]>;
+  createIntegrationPlan(data: InsertIntegrationPlan): Promise<IntegrationPlan>;
+  updateIntegrationPlan(id: string, data: Partial<InsertIntegrationPlan>): Promise<IntegrationPlan>;
+  deleteIntegrationPlan(id: string): Promise<void>;
+
+  // Integration Settings
+  getIntegrationSettings(arenaId: string, provider: string): Promise<IntegrationSettings | undefined>;
+  upsertIntegrationSettings(data: InsertIntegrationSettings): Promise<IntegrationSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -375,6 +394,62 @@ export class DatabaseStorage implements IStorage {
       return updated;
     }
     const [created] = await db.insert(modalidadeSettings).values(data).returning();
+    return created;
+  }
+
+  // ── Checkin Financeiro ────────────────────────────────────────────────────
+  async createCheckinFinanceiro(data: InsertCheckinFinanceiro): Promise<CheckinFinanceiro> {
+    const [record] = await db.insert(checkinFinanceiro).values(data).returning();
+    return record;
+  }
+
+  async listCheckinFinanceiro(arenaId: string): Promise<CheckinFinanceiro[]> {
+    return db.select().from(checkinFinanceiro).where(eq(checkinFinanceiro.arenaId, arenaId));
+  }
+
+  async listCheckinFinanceiroByStudent(studentId: string): Promise<CheckinFinanceiro[]> {
+    return db.select().from(checkinFinanceiro).where(eq(checkinFinanceiro.studentId, studentId));
+  }
+
+  // ── Integration Plans ─────────────────────────────────────────────────────
+  async listIntegrationPlans(arenaId: string): Promise<IntegrationPlan[]> {
+    return db.select().from(integrationPlans).where(eq(integrationPlans.arenaId, arenaId));
+  }
+
+  async createIntegrationPlan(data: InsertIntegrationPlan): Promise<IntegrationPlan> {
+    const [plan] = await db.insert(integrationPlans).values(data).returning();
+    return plan;
+  }
+
+  async updateIntegrationPlan(id: string, data: Partial<InsertIntegrationPlan>): Promise<IntegrationPlan> {
+    const [plan] = await db.update(integrationPlans).set(data).where(eq(integrationPlans.id, id)).returning();
+    return plan;
+  }
+
+  async deleteIntegrationPlan(id: string): Promise<void> {
+    await db.delete(integrationPlans).where(eq(integrationPlans.id, id));
+  }
+
+  // ── Integration Settings ──────────────────────────────────────────────────
+  async getIntegrationSettings(arenaId: string, provider: string): Promise<IntegrationSettings | undefined> {
+    const [setting] = await db
+      .select()
+      .from(integrationSettings)
+      .where(and(eq(integrationSettings.arenaId, arenaId), eq(integrationSettings.provider, provider)));
+    return setting;
+  }
+
+  async upsertIntegrationSettings(data: InsertIntegrationSettings): Promise<IntegrationSettings> {
+    const existing = await this.getIntegrationSettings(data.arenaId!, data.provider);
+    if (existing) {
+      const [updated] = await db
+        .update(integrationSettings)
+        .set({ apiKey: data.apiKey, habilitado: data.habilitado })
+        .where(eq(integrationSettings.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(integrationSettings).values(data).returning();
     return created;
   }
 }
