@@ -361,7 +361,6 @@ export default function TeacherDashboard({
                   onClick={() => openHistorico(aluno)}
                   data-testid={`button-view-history-${aluno.id}`}
                 >
-                  <History className="h-4 w-4 mr-1" />
                   Histórico
                 </Button>
 
@@ -372,7 +371,6 @@ export default function TeacherDashboard({
                   onClick={() => openRetroativo(aluno)}
                   data-testid={`button-retroactive-checkin-${aluno.id}`}
                 >
-                  <CalendarClock className="h-4 w-4 mr-1" />
                   Registrar Aula
                 </Button>
 
@@ -393,8 +391,7 @@ export default function TeacherDashboard({
                   onClick={() => openFinanceiro(aluno)}
                   data-testid={`button-financeiro-${aluno.id}`}
                 >
-                  <Banknote className="h-4 w-4 mr-1" />
-                  Ver Cobranças e Pagamentos
+                  Cobrança e Pagamento
                 </Button>
               </CardContent>
             </Card>

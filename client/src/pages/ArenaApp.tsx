@@ -138,6 +138,10 @@ export default function ArenaApp() {
     queryKey: ["/api/finance/charges"],
     enabled: !!sessao && ((sessao as any).tipo === "professor" || (sessao as any).tipo === "gestor"),
   });
+  const { data: allPayments = [] } = useQuery<any[]>({
+    queryKey: ["/api/finance/payments"],
+    enabled: !!sessao && ((sessao as any).tipo === "professor" || (sessao as any).tipo === "gestor"),
+  });
 
   // ── Financial mutations ───────────────────────────────────────────────────
   const registrarPagamento = useMutation({
@@ -281,6 +285,7 @@ export default function ArenaApp() {
               historico: a.historico ?? [], photoUrl: a.photoUrl ?? undefined,
             }))}
           charges={allCharges}
+          payments={allPayments}
           onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
           onAlterarPlano={(alunoId: string, planoId: string) => alterarPlanoAluno.mutate({ alunoId, planoId })}
           onCadastrarAluno={(dados: any) => cadastrarAluno.mutate({ ...dados, modalidade: sessao.professor.modalidade })}
