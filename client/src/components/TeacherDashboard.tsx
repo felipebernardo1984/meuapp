@@ -279,15 +279,6 @@ export default function TeacherDashboard({
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => confirmarExcluir(aluno)}
-                      data-testid={`button-delete-student-${aluno.id}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -581,15 +572,29 @@ export default function TeacherDashboard({
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogEditarAluno(false)}>Cancelar</Button>
+          <DialogFooter className="flex-row justify-between gap-2 sm:flex-row sm:justify-between">
             <Button
-              onClick={handleEditarAluno}
-              disabled={!dadosEdicao.nome || !dadosEdicao.cpf || !dadosEdicao.login}
-              data-testid="button-confirm-edit-student"
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                setDialogEditarAluno(false);
+                if (alunoEditando) confirmarExcluir(alunoEditando);
+              }}
+              data-testid="button-delete-from-edit"
             >
-              Salvar
+              <Trash2 className="h-4 w-4 mr-1" />
+              Excluir Aluno
             </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setDialogEditarAluno(false)}>Cancelar</Button>
+              <Button
+                onClick={handleEditarAluno}
+                disabled={!dadosEdicao.nome || !dadosEdicao.cpf || !dadosEdicao.login}
+                data-testid="button-confirm-edit-student"
+              >
+                Salvar
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
