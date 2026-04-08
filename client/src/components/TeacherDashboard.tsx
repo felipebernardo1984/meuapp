@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -134,6 +134,9 @@ export default function TeacherDashboard({
   const [dialogConfirmarExcluir, setDialogConfirmarExcluir] = useState(false);
   const [alunoParaExcluir, setAlunoParaExcluir] = useState<AlunoView | null>(null);
 
+  const [dialogFinanceiro, setDialogFinanceiro] = useState(false);
+  const [alunoFinanceiro, setAlunoFinanceiro] = useState<AlunoView | null>(null);
+
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
     if (novoAluno.nome && novoAluno.cpf && novoAluno.login && novoAluno.senha && novoAluno.planoId) {
@@ -168,6 +171,11 @@ export default function TeacherDashboard({
   const openAlterarPlano = (aluno: AlunoView) => {
     setAlunoPlano(aluno);
     setDialogAlterarPlano(true);
+  };
+
+  const openFinanceiro = (aluno: AlunoView) => {
+    setAlunoFinanceiro(aluno);
+    setDialogFinanceiro(true);
   };
 
   const openEditar = (aluno: AlunoView) => {
@@ -334,26 +342,26 @@ export default function TeacherDashboard({
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => openHistorico(aluno)}
-                    data-testid={`button-view-history-${aluno.id}`}
-                  >
-                    <History className="h-4 w-4 mr-1" />
-                    Histórico
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => onCheckinManual(aluno.id)}
-                    data-testid={`button-manual-checkin-${aluno.id}`}
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Check-in
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onCheckinManual(aluno.id)}
+                  data-testid={`button-manual-checkin-${aluno.id}`}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Check-in
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => openHistorico(aluno)}
+                  data-testid={`button-view-history-${aluno.id}`}
+                >
+                  <History className="h-4 w-4 mr-1" />
+                  Histórico
+                </Button>
 
                 <Button
                   variant="outline"
@@ -374,6 +382,17 @@ export default function TeacherDashboard({
                   data-testid={`button-edit-plan-${aluno.id}`}
                 >
                   Alterar Plano
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => openFinanceiro(aluno)}
+                  data-testid={`button-financeiro-${aluno.id}`}
+                >
+                  <Banknote className="h-4 w-4 mr-1" />
+                  Ver Cobranças e Pagamentos
                 </Button>
               </CardContent>
             </Card>
@@ -699,6 +718,84 @@ export default function TeacherDashboard({
                 </span>
               </Button>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Cobranças e Pagamentos ── */}
+      <Dialog open={dialogFinanceiro} onOpenChange={setDialogFinanceiro}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Banknote className="h-5 w-5" />
+              {alunoFinanceiro?.nome}
+            </DialogTitle>
+            <DialogDescription>Todas as cobranças e pagamentos</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+            {/* Cobranças */}
+            {(() => {
+              const cols = charges.filter((c) => c.studentId === alunoFinanceiro?.id);
+              return cols.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    Cobranças
+                  </p>
+                  <div className="space-y-1">
+                    {cols.map((c) => (
+                      <div key={c.id} className="flex items-center justify-between py-2 border-b last:border-0" data-testid={`dialog-charge-${c.id}`}>
+                        <div>
+                          <p className="text-sm font-medium">{c.description}</p>
+                          <p className="text-xs text-muted-foreground">Venc. {c.dueDate}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <span className="text-sm font-medium">R$ {c.amount}</span>
+                          {paymentStatusBadge(c.status)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Pagamentos */}
+            {(() => {
+              const pays = payments.filter((p) => p.studentId === alunoFinanceiro?.id);
+              return pays.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <Receipt className="h-3 w-3" />
+                    Mensalidades
+                  </p>
+                  <div className="space-y-1">
+                    {pays.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between py-2 border-b last:border-0" data-testid={`dialog-payment-${p.id}`}>
+                        <div>
+                          <p className="text-sm font-medium">Mensalidade — {p.referenceMonth}</p>
+                          <p className="text-xs text-muted-foreground">Venc. {p.dueDate}</p>
+                          {p.paymentDate && (
+                            <p className="text-xs text-green-600 dark:text-green-400">Pago em {p.paymentDate}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <span className="text-sm font-medium">R$ {p.amount}</span>
+                          {paymentStatusBadge(p.status)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {charges.filter((c) => c.studentId === alunoFinanceiro?.id).length === 0 &&
+              payments.filter((p) => p.studentId === alunoFinanceiro?.id).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Nenhuma cobrança ou pagamento registrado
+                </p>
+              )}
           </div>
         </DialogContent>
       </Dialog>
