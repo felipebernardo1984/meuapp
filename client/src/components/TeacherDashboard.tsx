@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -67,8 +67,15 @@ interface Pagamento {
   studentId: string;
   amount: string;
   referenceMonth: string;
+  dueDate: string;
   status: string;
   paymentDate?: string | null;
+}
+
+function paymentStatusBadge(status: string) {
+  if (status === "paid") return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs px-1.5 py-0">Pago</Badge>;
+  if (status === "overdue") return <Badge variant="destructive" className="text-xs px-1.5 py-0">Atrasado</Badge>;
+  return <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs px-1.5 py-0">Pendente</Badge>;
 }
 
 interface TeacherDashboardProps {
@@ -242,7 +249,7 @@ export default function TeacherDashboard({
           const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
           const alunoCharges = charges.filter((c) => c.studentId === aluno.id && c.status === "pending");
-          const alunoPayments = payments.filter((p) => p.studentId === aluno.id && p.status === "paid");
+          const alunoPayments = payments.filter((p) => p.studentId === aluno.id);
 
           return (
             <Card key={aluno.id} className="hover-elevate" data-testid={`card-student-${aluno.id}`}>
@@ -301,17 +308,27 @@ export default function TeacherDashboard({
                   </div>
                 )}
 
-                {/* Histórico Financeiro (pagamentos pagos) */}
+                {/* Histórico Financeiro (igual ao painel do aluno) */}
                 {alunoPayments.length > 0 && (
-                  <div className="rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-3 py-2">
-                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-1 mb-1">
-                      <CheckCircle2 className="h-3 w-3" />
+                  <div className="rounded-md border px-3 py-2 space-y-0">
+                    <p className="text-xs font-semibold flex items-center gap-1 mb-2">
+                      <Receipt className="h-3 w-3" />
                       Histórico Financeiro
                     </p>
                     {alunoPayments.map((p) => (
-                      <div key={p.id} className="flex items-center justify-between text-xs" data-testid={`teacher-payment-${p.id}`}>
-                        <span className="text-muted-foreground truncate mr-2">{p.referenceMonth}</span>
-                        <span className="font-medium text-green-700 dark:text-green-400 shrink-0">R$ {p.amount}</span>
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between py-1.5 border-b last:border-0"
+                        data-testid={`teacher-payment-${p.id}`}
+                      >
+                        <div>
+                          <p className="text-xs font-medium">Mensalidade — {p.referenceMonth}</p>
+                          <p className="text-xs text-muted-foreground">Venc. {p.dueDate}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <span className="text-xs font-medium">R$ {p.amount}</span>
+                          {paymentStatusBadge(p.status)}
+                        </div>
                       </div>
                     ))}
                   </div>
