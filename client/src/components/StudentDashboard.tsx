@@ -514,8 +514,8 @@ export default function StudentDashboard({
           </div>
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
             <Button
-              variant="ghost"
-              className="text-destructive hover:text-destructive w-full sm:w-auto"
+              variant="destructive"
+              className="w-full sm:w-auto"
               onClick={handleExcluirDoDialog}
               data-testid="button-delete-from-edit-dialog"
             >

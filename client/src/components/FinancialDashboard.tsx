@@ -235,8 +235,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                           )}
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            variant="destructive"
                             onClick={() => setConfirmDelete({ type: "payment", id: p.id, label: `mensalidade de ${getNomeAluno(p.studentId)} (${p.referenceMonth})` })}
                             data-testid={`button-delete-payment-${p.id}`}
                           >
@@ -299,8 +298,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                           )}
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            variant="destructive"
                             onClick={() => setConfirmDelete({ type: "charge", id: c.id, label: `cobrança "${c.description}" de ${getNomeAluno(c.studentId)}` })}
                             data-testid={`button-delete-charge-${c.id}`}
                           >
