@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, Calendar, Trash2, CalendarClock, QrCode, Receipt, DollarSign } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, Trash2, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Payment {
   id: string;
@@ -101,6 +101,9 @@ export default function StudentDashboard({
   const [horaRetroativa, setHoraRetroativa] = useState("");
   const [dialogPix, setDialogPix] = useState(false);
   const [pixItem, setPixItem] = useState<{ amount: string; description: string } | null>(null);
+  const [checkinExpandido, setCheckinExpandido] = useState(false);
+
+  const CHECKIN_PREVIEW = 3;
 
   const abrirRetroativo = () => {
     const hoje = new Date().toISOString().split("T")[0];
@@ -237,7 +240,7 @@ export default function StudentDashboard({
             </p>
           ) : (
             <div className="space-y-1">
-              {historico.map((item, index) => (
+              {(checkinExpandido ? historico : historico.slice(0, CHECKIN_PREVIEW)).map((item, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between py-2 border-b last:border-0"
@@ -261,6 +264,27 @@ export default function StudentDashboard({
                   </Button>
                 </div>
               ))}
+              {historico.length > CHECKIN_PREVIEW && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => setCheckinExpandido(!checkinExpandido)}
+                  data-testid="button-toggle-checkin-history"
+                >
+                  {checkinExpandido ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      Ver menos
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Ver todos ({historico.length} check-ins)
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
