@@ -690,9 +690,9 @@ export default function TeacherDashboard({
                     <span className="text-sm text-muted-foreground">{item.hora}</span>
                   </div>
                   <Button
-                    variant="destructive"
+                    variant="ghost"
                     size="icon"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => alunoHistorico && setConfirmRemoverCheckinTeacher({ aluno: alunoHistorico, index })}
                     data-testid={`button-delete-checkin-${index}`}
                   >

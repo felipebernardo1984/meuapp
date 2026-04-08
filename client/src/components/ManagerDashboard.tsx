@@ -615,7 +615,8 @@ export default function ManagerDashboard({
                   </Button>
                   <Button
                     size="icon"
-                    variant="destructive"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
                     onClick={() => setConfirmExcluirPlano({ id: plano.id, titulo: plano.titulo })}
                     data-testid={`button-delete-plan-${plano.id}`}
                   >
@@ -750,7 +751,8 @@ export default function ManagerDashboard({
                   </Button>
                   <Button
                     size="icon"
-                    variant="destructive"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
                     onClick={() => setConfirmExcluirProfessor(professor)}
                     data-testid={`button-delete-teacher-${professor.id}`}
                   >
@@ -1519,8 +1521,8 @@ export default function ManagerDashboard({
                     <span className="text-sm">{h.data} às {h.hora}</span>
                     <Button
                       size="sm"
-                      variant="destructive"
-                      className="h-6 w-6 p-0"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => {
                         if (alunoHistorico) {
                           const realIndex = (alunoHistorico.historico.length - 1) - i;
