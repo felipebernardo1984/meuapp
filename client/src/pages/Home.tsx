@@ -96,6 +96,11 @@ export default function Home() {
     enabled: !!sessao && (sessao.tipo === "professor" || sessao.tipo === "gestor"),
   });
 
+  const { data: payments = [] } = useQuery<any[]>({
+    queryKey: ["/api/finance/payments"],
+    enabled: !!sessao && (sessao.tipo === "professor" || sessao.tipo === "gestor"),
+  });
+
   // ── Plan mutations ────────────────────────────────────────────────────────
   const criarPlano = useMutation({
     mutationFn: (d: { titulo: string; checkins: number; valorTexto?: string }) =>
@@ -275,6 +280,7 @@ export default function Home() {
               photoUrl: a.photoUrl ?? undefined,
             }))}
           charges={charges}
+          payments={payments}
           onCheckinManual={(alunoId, data, hora) => checkinManual.mutate({ id: alunoId, data, hora })}
           onAlterarPlano={(alunoId, planoId) => alterarPlanoAluno.mutate({ alunoId, planoId })}
           onCadastrarAluno={(dados) => cadastrarAluno.mutate(dados)}

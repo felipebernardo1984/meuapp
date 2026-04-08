@@ -62,12 +62,22 @@ interface Cobranca {
   dueDate: string;
 }
 
+interface Pagamento {
+  id: string;
+  studentId: string;
+  amount: string;
+  referenceMonth: string;
+  status: string;
+  paymentDate?: string | null;
+}
+
 interface TeacherDashboardProps {
   teacherName: string;
   modalidade: string;
   planos: Plano[];
   alunos: AlunoView[];
   charges?: Cobranca[];
+  payments?: Pagamento[];
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onAlterarPlano: (alunoId: string, planoId: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
@@ -82,6 +92,7 @@ export default function TeacherDashboard({
   planos,
   alunos,
   charges = [],
+  payments = [],
   onCheckinManual,
   onAlterarPlano,
   onCadastrarAluno,
@@ -231,6 +242,7 @@ export default function TeacherDashboard({
           const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
           const alunoCharges = charges.filter((c) => c.studentId === aluno.id && c.status === "pending");
+          const alunoPayments = payments.filter((p) => p.studentId === aluno.id && p.status === "paid");
 
           return (
             <Card key={aluno.id} className="hover-elevate" data-testid={`card-student-${aluno.id}`}>
@@ -282,7 +294,7 @@ export default function TeacherDashboard({
               <CardContent className="space-y-3">
                 {temCheckins && <Progress value={Math.min(progresso, 100)} />}
 
-                {/* Valor a Pagar */}
+                {/* Valor a Pagar (cobranças pendentes) */}
                 {alunoCharges.length > 0 && (
                   <div className="rounded-md bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 px-3 py-2">
                     <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1 mb-1">
@@ -293,6 +305,22 @@ export default function TeacherDashboard({
                       <div key={c.id} className="flex items-center justify-between text-xs" data-testid={`teacher-charge-${c.id}`}>
                         <span className="text-muted-foreground truncate mr-2">{c.description}</span>
                         <span className="font-medium text-orange-700 dark:text-orange-400 shrink-0">R$ {c.amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Histórico Financeiro (pagamentos pagos) */}
+                {alunoPayments.length > 0 && (
+                  <div className="rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-3 py-2">
+                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-1 mb-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Histórico Financeiro
+                    </p>
+                    {alunoPayments.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between text-xs" data-testid={`teacher-payment-${p.id}`}>
+                        <span className="text-muted-foreground truncate mr-2">{p.referenceMonth}</span>
+                        <span className="font-medium text-green-700 dark:text-green-400 shrink-0">R$ {p.amount}</span>
                       </div>
                     ))}
                   </div>
@@ -331,9 +359,9 @@ export default function TeacherDashboard({
                 </Button>
 
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="w-full text-muted-foreground"
+                  className="w-full"
                   onClick={() => openAlterarPlano(aluno)}
                   data-testid={`button-edit-plan-${aluno.id}`}
                 >
