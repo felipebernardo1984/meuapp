@@ -109,7 +109,7 @@ interface ManagerDashboardProps {
   onExcluirPlano: (id: string) => void;
   onExportarPDF: () => void;
   onExportarExcel: () => void;
-  onRegistrarPagamento: (dados: { studentId: string; amount: string; referenceMonth: string; dueDate: string; status: string }) => void;
+  onRegistrarPagamento: (dados: { studentId: string; description?: string; amount: string; referenceMonth: string; dueDate: string; status: string }) => void;
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
   onIrFinanceiro: () => void;
   onEditarAluno: (dados: { id: string; nome: string; cpf: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number }) => void;
@@ -158,8 +158,14 @@ export default function ManagerDashboard({
   const [dialogPagamento, setDialogPagamento] = useState(false);
   const [dialogCobranca, setDialogCobranca] = useState(false);
   const [alunoFinanceiroId, setAlunoFinanceiroId] = useState<string>("");
-  const [formPagamento, setFormPagamento] = useState({ amount: "", referenceMonth: "", dueDate: "", status: "paid" });
+  const [formPagamento, setFormPagamento] = useState({ description: "", amount: "", referenceMonth: "", dueDate: "", status: "paid" });
   const [formCobranca, setFormCobranca] = useState({ description: "", amount: "", dueDate: "" });
+
+  // Histórico financeiro state
+  const [dialogHistFinanceiro, setDialogHistFinanceiro] = useState(false);
+  const [alunoHistFinanceiroId, setAlunoHistFinanceiroId] = useState<string>("");
+  const [alunoHistFinanceiroNome, setAlunoHistFinanceiroNome] = useState<string>("");
+  const [confirmDeleteFinanceiro, setConfirmDeleteFinanceiro] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
 
   // Editar aluno state
   const [dialogEditarAluno, setDialogEditarAluno] = useState(false);
@@ -183,6 +189,13 @@ export default function ManagerDashboard({
   // Excluir aluno state
   const [confirmExcluirAluno, setConfirmExcluirAluno] = useState<AlunoGestor | null>(null);
 
+  // Confirmação excluir plano e professor
+  const [confirmExcluirPlano, setConfirmExcluirPlano] = useState<{ id: string; titulo: string } | null>(null);
+  const [confirmExcluirProfessor, setConfirmExcluirProfessor] = useState<ProfessorGestor | null>(null);
+
+  // Confirmação remover checkin no histórico
+  const [confirmRemoverCheckin, setConfirmRemoverCheckin] = useState<{ alunoId: string; index: number } | null>(null);
+
   // Subscription state
   const [showPayDialog, setShowPayDialog] = useState(false);
   const qc = useQueryClient();
@@ -205,6 +218,36 @@ export default function ManagerDashboard({
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível registrar o pagamento.", variant: "destructive" }),
   });
+
+  // Queries financeiras para histórico
+  const { data: allPayments = [] } = useQuery<any[]>({ queryKey: ["/api/finance/payments"] });
+  const { data: allCharges = [] } = useQuery<any[]>({ queryKey: ["/api/finance/charges"] });
+
+  const deletePayment = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/payments/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      setConfirmDeleteFinanceiro(null);
+      toast({ title: "Pagamento removido" });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível remover.", variant: "destructive" }),
+  });
+
+  const deleteCharge = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/charges/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/finance/charges"] });
+      setConfirmDeleteFinanceiro(null);
+      toast({ title: "Cobrança removida" });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível remover.", variant: "destructive" }),
+  });
+
+  const handleConfirmDeleteFinanceiro = () => {
+    if (!confirmDeleteFinanceiro) return;
+    if (confirmDeleteFinanceiro.type === "payment") deletePayment.mutate(confirmDeleteFinanceiro.id);
+    else deleteCharge.mutate(confirmDeleteFinanceiro.id);
+  };
 
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
@@ -573,8 +616,8 @@ export default function ManagerDashboard({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => onExcluirPlano(plano.id)}
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setConfirmExcluirPlano({ id: plano.id, titulo: plano.titulo })}
                     data-testid={`button-delete-plan-${plano.id}`}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -709,8 +752,8 @@ export default function ManagerDashboard({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => onExcluirProfessor(professor.id)}
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setConfirmExcluirProfessor(professor)}
                     data-testid={`button-delete-teacher-${professor.id}`}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1088,9 +1131,21 @@ export default function ManagerDashboard({
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => {
+                              setAlunoHistFinanceiroId(aluno.id);
+                              setAlunoHistFinanceiroNome(aluno.nome);
+                              setDialogHistFinanceiro(true);
+                            }}
+                            data-testid={`menu-hist-financeiro-${aluno.id}`}
+                          >
+                            <Receipt className="h-4 w-4 mr-2" />
+                            Histórico pagamento
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
                               setAlunoFinanceiroId(aluno.id);
                               const now = new Date();
                               setFormPagamento({
+                                description: "",
                                 amount: aluno.planoValorTexto?.replace(/[^0-9,.]/g, "") ?? "",
                                 referenceMonth: `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`,
                                 dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
@@ -1152,6 +1207,15 @@ export default function ManagerDashboard({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Descrição (opcional)</Label>
+              <Input
+                placeholder="Ex: Mensalidade março, Aula avulsa..."
+                value={formPagamento.description}
+                onChange={(e) => setFormPagamento({ ...formPagamento, description: e.target.value })}
+                data-testid="input-payment-description"
+              />
+            </div>
             <div className="space-y-1">
               <Label>Valor (R$)</Label>
               <Input
@@ -1462,7 +1526,7 @@ export default function ManagerDashboard({
                       onClick={() => {
                         if (alunoHistorico) {
                           const realIndex = (alunoHistorico.historico.length - 1) - i;
-                          onRemoverCheckin(alunoHistorico.id, realIndex);
+                          setConfirmRemoverCheckin({ alunoId: alunoHistorico.id, index: realIndex });
                         }
                       }}
                       data-testid={`button-remove-checkin-${i}`}
@@ -1486,7 +1550,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Excluir Aluno</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir o aluno <strong>{confirmExcluirAluno?.nome}</strong>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover o aluno <strong>{confirmExcluirAluno?.nome}</strong>? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1502,6 +1566,215 @@ export default function ManagerDashboard({
               data-testid="button-confirm-delete-student"
             >
               Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Confirmar Exclusão de Plano */}
+      <Dialog open={!!confirmExcluirPlano} onOpenChange={(open) => { if (!open) setConfirmExcluirPlano(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Plano</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover o plano <strong>{confirmExcluirPlano?.titulo}</strong>? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmExcluirPlano(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmExcluirPlano) {
+                  onExcluirPlano(confirmExcluirPlano.id);
+                  setConfirmExcluirPlano(null);
+                }
+              }}
+              data-testid="button-confirm-delete-plan"
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Confirmar Exclusão de Professor */}
+      <Dialog open={!!confirmExcluirProfessor} onOpenChange={(open) => { if (!open) setConfirmExcluirProfessor(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Professor</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover o professor <strong>{confirmExcluirProfessor?.nome}</strong>? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmExcluirProfessor(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmExcluirProfessor) {
+                  onExcluirProfessor(confirmExcluirProfessor.id);
+                  setConfirmExcluirProfessor(null);
+                }
+              }}
+              data-testid="button-confirm-delete-teacher"
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Confirmar Remover Check-in */}
+      <Dialog open={!!confirmRemoverCheckin} onOpenChange={(open) => { if (!open) setConfirmRemoverCheckin(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover Check-in</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover este check-in? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmRemoverCheckin(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmRemoverCheckin) {
+                  onRemoverCheckin(confirmRemoverCheckin.alunoId, confirmRemoverCheckin.index);
+                  setConfirmRemoverCheckin(null);
+                }
+              }}
+              data-testid="button-confirm-remove-checkin"
+            >
+              Remover
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Histórico Financeiro */}
+      <Dialog open={dialogHistFinanceiro} onOpenChange={setDialogHistFinanceiro}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              Histórico — {alunoHistFinanceiroNome}
+            </DialogTitle>
+            <DialogDescription>Cobranças e pagamentos do aluno</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+            {/* Pagamentos */}
+            {(() => {
+              const pays = allPayments.filter((p: any) => p.studentId === alunoHistFinanceiroId);
+              return pays.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    Mensalidades
+                  </p>
+                  <div className="space-y-1">
+                    {pays.map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between py-2 border-b last:border-0" data-testid={`hist-payment-${p.id}`}>
+                        <div>
+                          {p.description && <p className="text-xs text-muted-foreground">{p.description}</p>}
+                          <p className="text-sm font-medium">Mensalidade — {p.referenceMonth}</p>
+                          <p className="text-xs text-muted-foreground">Venc. {p.dueDate}</p>
+                          {p.paymentDate && <p className="text-xs text-green-600 dark:text-green-400">Pago em {p.paymentDate}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <div className="text-right">
+                            <p className="text-sm font-medium">R$ {p.amount}</p>
+                            {p.status === "paid" ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Pago</Badge>
+                              : p.status === "overdue" ? <Badge variant="destructive" className="text-xs">Atrasado</Badge>
+                              : <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">Pendente</Badge>}
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setConfirmDeleteFinanceiro({ type: "payment", id: p.id, label: `mensalidade ${p.referenceMonth}` })}
+                            data-testid={`button-delete-hist-payment-${p.id}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Cobranças */}
+            {(() => {
+              const cols = allCharges.filter((c: any) => c.studentId === alunoHistFinanceiroId);
+              return cols.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <Receipt className="h-3 w-3" />
+                    Cobranças
+                  </p>
+                  <div className="space-y-1">
+                    {cols.map((c: any) => (
+                      <div key={c.id} className="flex items-center justify-between py-2 border-b last:border-0" data-testid={`hist-charge-${c.id}`}>
+                        <div>
+                          <p className="text-sm font-medium">{c.description}</p>
+                          <p className="text-xs text-muted-foreground">Venc. {c.dueDate}</p>
+                          {c.paymentDate && <p className="text-xs text-green-600 dark:text-green-400">Pago em {c.paymentDate}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <div className="text-right">
+                            <p className="text-sm font-medium">R$ {c.amount}</p>
+                            {c.status === "paid" ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Pago</Badge>
+                              : c.status === "overdue" ? <Badge variant="destructive" className="text-xs">Atrasado</Badge>
+                              : <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">Pendente</Badge>}
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setConfirmDeleteFinanceiro({ type: "charge", id: c.id, label: `cobrança "${c.description}"` })}
+                            data-testid={`button-delete-hist-charge-${c.id}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {allPayments.filter((p: any) => p.studentId === alunoHistFinanceiroId).length === 0 &&
+              allCharges.filter((c: any) => c.studentId === alunoHistFinanceiroId).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">Nenhum lançamento registrado</p>
+              )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogHistFinanceiro(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Confirmar Delete Financeiro */}
+      <Dialog open={!!confirmDeleteFinanceiro} onOpenChange={(open) => { if (!open) setConfirmDeleteFinanceiro(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover Lançamento</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover {confirmDeleteFinanceiro?.label}? Esta ação não pode ser desfeita e o registro sumirá também para o aluno.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteFinanceiro(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDeleteFinanceiro}
+              disabled={deletePayment.isPending || deleteCharge.isPending}
+              data-testid="button-confirm-delete-lancamento"
+            >
+              Remover
             </Button>
           </DialogFooter>
         </DialogContent>

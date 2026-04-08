@@ -137,6 +137,8 @@ export default function TeacherDashboard({
   const [dialogFinanceiro, setDialogFinanceiro] = useState(false);
   const [alunoFinanceiro, setAlunoFinanceiro] = useState<AlunoView | null>(null);
 
+  const [confirmRemoverCheckinTeacher, setConfirmRemoverCheckinTeacher] = useState<{ aluno: AlunoView; index: number } | null>(null);
+
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
     if (novoAluno.nome && novoAluno.cpf && novoAluno.login && novoAluno.senha && novoAluno.planoId) {
@@ -679,7 +681,7 @@ export default function TeacherDashboard({
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => alunoHistorico && handleRemoverCheckin(alunoHistorico, index)}
+                    onClick={() => alunoHistorico && setConfirmRemoverCheckinTeacher({ aluno: alunoHistorico, index })}
                     data-testid={`button-delete-checkin-${index}`}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -719,6 +721,33 @@ export default function TeacherDashboard({
               </Button>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Confirmar Remover Check-in ── */}
+      <Dialog open={!!confirmRemoverCheckinTeacher} onOpenChange={(open) => { if (!open) setConfirmRemoverCheckinTeacher(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover Check-in</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover este check-in de <strong>{confirmRemoverCheckinTeacher?.aluno.nome}</strong>? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmRemoverCheckinTeacher(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmRemoverCheckinTeacher) {
+                  handleRemoverCheckin(confirmRemoverCheckinTeacher.aluno, confirmRemoverCheckinTeacher.index);
+                  setConfirmRemoverCheckinTeacher(null);
+                }
+              }}
+              data-testid="button-confirm-remove-checkin-teacher"
+            >
+              Remover
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

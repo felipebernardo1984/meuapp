@@ -126,6 +126,7 @@ export const payments = pgTable("payments", {
   tenantId: varchar("tenant_id").references(() => arenas.id, { onDelete: "cascade" }),
   studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
   planId: varchar("plan_id").references(() => plans.id, { onDelete: "set null" }),
+  description: text("description"),
   amount: text("amount").notNull(),
   referenceMonth: text("reference_month").notNull(),
   dueDate: text("due_date").notNull(),

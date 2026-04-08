@@ -583,12 +583,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/finance/payments", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { studentId, planId, amount, referenceMonth, dueDate, status } = req.body;
+    const { studentId, planId, amount, referenceMonth, dueDate, status, description } = req.body;
     if (!studentId || !amount || !referenceMonth || !dueDate) {
       return res.status(400).json({ message: "Campos obrigatórios faltando" });
     }
     const payment = await storage.createPayment({
       tenantId: arenaId, studentId, planId: planId ?? null,
+      description: description ?? null,
       amount, referenceMonth, dueDate,
       paymentDate: status === "paid" ? new Date().toLocaleDateString("pt-BR") : null,
       status: status ?? "pending",
