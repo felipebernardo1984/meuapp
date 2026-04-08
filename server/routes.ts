@@ -348,6 +348,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ...updated, historico });
   });
 
+  app.put("/api/alunos/:id/checkin/:index", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const student = await storage.getStudent(req.params.id);
+    if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
+    const index = parseInt(req.params.index, 10);
+    const { data: dataISO, hora } = req.body;
+    const data = dataISO
+      ? new Date(dataISO + "T12:00:00").toLocaleDateString("pt-BR")
+      : "";
+    await storage.updateCheckinByIndex(student.id, index, data, hora);
+    const historico = await storage.listCheckins(student.id);
+    res.json({ historico });
+  });
+
   app.delete("/api/alunos/:id/checkin/:index", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;

@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, Calendar, Trash2, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
 interface Payment {
   id: string;
@@ -68,12 +68,19 @@ interface StudentDashboardProps {
   onCheckin: () => void;
   onRemoverCheckin: (index: number) => void;
   onCheckinRetroativo: (data: string, hora: string) => void;
+  onEditarCheckin?: (index: number, data: string, hora: string) => void;
 }
 
 function paymentStatusBadge(status: string) {
   if (status === "paid") return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Pago</Badge>;
   if (status === "overdue") return <Badge variant="destructive">Atrasado</Badge>;
   return <Badge variant="outline" className="text-orange-600 border-orange-300">Pendente</Badge>;
+}
+
+function ptBrParaISO(data: string): string {
+  const partes = data.split("/");
+  if (partes.length === 3) return `${partes[2]}-${partes[1]}-${partes[0]}`;
+  return "";
 }
 
 export default function StudentDashboard({
@@ -94,6 +101,7 @@ export default function StudentDashboard({
   onCheckin,
   onRemoverCheckin,
   onCheckinRetroativo,
+  onEditarCheckin,
 }: StudentDashboardProps) {
   const [confirmarIndex, setConfirmarIndex] = useState<number | null>(null);
   const [dialogRetroativo, setDialogRetroativo] = useState(false);
@@ -102,6 +110,34 @@ export default function StudentDashboard({
   const [dialogPix, setDialogPix] = useState(false);
   const [pixItem, setPixItem] = useState<{ amount: string; description: string } | null>(null);
   const [checkinExpandido, setCheckinExpandido] = useState(false);
+  const [dialogEditar, setDialogEditar] = useState(false);
+  const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
+  const [dataEditar, setDataEditar] = useState("");
+  const [horaEditar, setHoraEditar] = useState("");
+
+  const abrirEditar = (index: number) => {
+    const item = historico[index];
+    setEditandoIndex(index);
+    setDataEditar(ptBrParaISO(item.data));
+    setHoraEditar(item.hora || "");
+    setDialogEditar(true);
+  };
+
+  const handleSalvarEdicao = () => {
+    if (editandoIndex !== null && dataEditar && horaEditar && onEditarCheckin) {
+      onEditarCheckin(editandoIndex, dataEditar, horaEditar);
+      setDialogEditar(false);
+      setEditandoIndex(null);
+    }
+  };
+
+  const handleExcluirDoDialog = () => {
+    if (editandoIndex !== null) {
+      setDialogEditar(false);
+      setConfirmarIndex(editandoIndex);
+      setEditandoIndex(null);
+    }
+  };
 
   const CHECKIN_PREVIEW = 3;
 
@@ -256,11 +292,11 @@ export default function StudentDashboard({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
-                    onClick={() => setConfirmarIndex(index)}
-                    data-testid={`button-delete-checkin-${index}`}
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    onClick={() => abrirEditar(index)}
+                    data-testid={`button-edit-checkin-${index}`}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Pencil className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
@@ -423,6 +459,74 @@ export default function StudentDashboard({
           </div>
           <DialogFooter>
             <Button onClick={() => setDialogPix(false)} data-testid="button-close-pix">Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Editar Check-in ── */}
+      <Dialog open={dialogEditar} onOpenChange={(open) => { if (!open) { setDialogEditar(false); setEditandoIndex(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Check-in</DialogTitle>
+            <DialogDescription>
+              Altere a data e hora deste check-in ou exclua-o.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="data-editar-aluno">Data</Label>
+                <Input
+                  id="data-editar-aluno"
+                  type="date"
+                  value={dataEditar}
+                  max={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setDataEditar(e.target.value)}
+                  className="[&::-webkit-calendar-picker-indicator]:hidden"
+                  data-testid="input-edit-checkin-date"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hora-editar-aluno">Hora</Label>
+                <Input
+                  id="hora-editar-aluno"
+                  type="time"
+                  value={horaEditar}
+                  onChange={(e) => setHoraEditar(e.target.value)}
+                  className="[&::-webkit-calendar-picker-indicator]:hidden"
+                  data-testid="input-edit-checkin-time"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button
+              variant="ghost"
+              className="text-destructive hover:text-destructive w-full sm:w-auto"
+              onClick={handleExcluirDoDialog}
+              data-testid="button-delete-from-edit-dialog"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir
+            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setDialogEditar(false); setEditandoIndex(null); }}
+                data-testid="button-cancel-edit-checkin"
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSalvarEdicao}
+                disabled={!dataEditar || !horaEditar}
+                data-testid="button-save-edit-checkin"
+              >
+                Salvar
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

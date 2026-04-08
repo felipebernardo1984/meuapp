@@ -269,6 +269,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateCheckinByIndex(studentId: string, index: number, data: string, hora: string): Promise<void> {
+    const all = await this.listCheckins(studentId);
+    if (index >= 0 && index < all.length) {
+      await db.update(checkinHistory).set({ data, hora }).where(eq(checkinHistory.id, all[index].id));
+    }
+  }
+
   // ── Payments ──────────────────────────────────────────────────────────────
   async listPayments(tenantId: string): Promise<Payment[]> {
     return db.select().from(payments).where(eq(payments.tenantId, tenantId));
