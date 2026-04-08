@@ -803,55 +803,40 @@ export default function Admin() {
                       </Button>
                     </div>
                   </div>
+
+                  {/* Histórico de pagamentos desta arena */}
+                  {subscriptionPayments.filter((p) => p.arenaId === arena.id).length > 0 && (
+                    <div className="border-t pt-3">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <History className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">Histórico de Pagamentos</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {subscriptionPayments
+                          .filter((p) => p.arenaId === arena.id)
+                          .map((p) => (
+                            <div key={p.id} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1.5" data-testid={`row-sub-payment-${p.id}`}>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-medium">{p.referenceMonth}</span>
+                                <span className="text-muted-foreground">{p.paymentDate ?? "—"}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{p.amount}</span>
+                                <Badge variant={p.status === "paid" ? "default" : "destructive"} className="text-xs px-1.5 py-0">
+                                  {p.status === "paid" ? "Pago" : "Pendente"}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
 
-        {/* Payment history section */}
-        {subscriptionPayments.length > 0 && (
-          <div className="mt-8">
-            <div className="flex items-center gap-2 mb-3">
-              <History className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Histórico de Pagamentos de Assinatura</h2>
-            </div>
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Arena</TableHead>
-                    <TableHead>Plano</TableHead>
-                    <TableHead>Valor pago</TableHead>
-                    <TableHead>Referência</TableHead>
-                    <TableHead>Data de pagamento</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subscriptionPayments.map((p) => (
-                    <TableRow key={p.id} data-testid={`row-sub-payment-${p.id}`}>
-                      <TableCell className="font-medium">{p.arenaName}</TableCell>
-                      <TableCell>
-                        <Badge variant={PLAN_BADGE[p.planType] ?? "secondary"}>
-                          {PLAN_LABELS[p.planType] ?? p.planType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{p.amount}</TableCell>
-                      <TableCell>{p.referenceMonth}</TableCell>
-                      <TableCell>{p.paymentDate ?? "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant={p.status === "paid" ? "default" : "destructive"}>
-                          {p.status === "paid" ? "Pago" : "Pendente"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </div>
-        )}
       </div>
 
       <ArenaFormDialog
