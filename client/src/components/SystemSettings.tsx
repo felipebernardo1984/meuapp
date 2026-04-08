@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Settings, DollarSign, Zap, Save, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Settings, DollarSign, Zap, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -18,6 +17,17 @@ interface ModalidadeSetting {
   planoMinimo: string | null;
   totalpassHabilitado: boolean;
   wellhubHabilitado: boolean;
+  wellhubPlanoMinimo: string | null;
+  wellhubValorCheckin: string;
+  totalpassPlanoMinimo: string | null;
+  totalpassValorCheckin: string;
+}
+
+interface LocalEdit {
+  wellhubPlanoMinimo: string;
+  wellhubValorCheckin: string;
+  totalpassPlanoMinimo: string;
+  totalpassValorCheckin: string;
 }
 
 interface SystemSettingsProps {
@@ -54,23 +64,27 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
       planoMinimo: null,
       totalpassHabilitado: false,
       wellhubHabilitado: false,
+      wellhubPlanoMinimo: null,
+      wellhubValorCheckin: "0.00",
+      totalpassPlanoMinimo: null,
+      totalpassValorCheckin: "0.00",
     };
   };
 
-  const [editando, setEditando] = useState<Record<string, { valorPorCheckin: string; planoMinimo: string; totalpassHabilitado: boolean; wellhubHabilitado: boolean }>>({});
+  const [editando, setEditando] = useState<Record<string, LocalEdit>>({});
 
-  const getLocal = (modalidade: string) => {
+  const getLocal = (modalidade: string): LocalEdit => {
     if (editando[modalidade]) return editando[modalidade];
     const cfg = getConfig(modalidade);
     return {
-      valorPorCheckin: cfg.valorPorCheckin,
-      planoMinimo: cfg.planoMinimo ?? "",
-      totalpassHabilitado: cfg.totalpassHabilitado,
-      wellhubHabilitado: cfg.wellhubHabilitado,
+      wellhubPlanoMinimo: cfg.wellhubPlanoMinimo ?? "",
+      wellhubValorCheckin: cfg.wellhubValorCheckin ?? "0.00",
+      totalpassPlanoMinimo: cfg.totalpassPlanoMinimo ?? "",
+      totalpassValorCheckin: cfg.totalpassValorCheckin ?? "0.00",
     };
   };
 
-  const setLocal = (modalidade: string, field: string, value: any) => {
+  const setLocal = (modalidade: string, field: keyof LocalEdit, value: string) => {
     setEditando((prev) => ({
       ...prev,
       [modalidade]: { ...getLocal(modalidade), [field]: value },
@@ -93,10 +107,10 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
     salvarMutation.mutate({
       modalidade,
       dados: {
-        valorPorCheckin: local.valorPorCheckin || "0.00",
-        planoMinimo: local.planoMinimo || null,
-        totalpassHabilitado: local.totalpassHabilitado,
-        wellhubHabilitado: local.wellhubHabilitado,
+        wellhubPlanoMinimo: local.wellhubPlanoMinimo || null,
+        wellhubValorCheckin: local.wellhubValorCheckin || "0.00",
+        totalpassPlanoMinimo: local.totalpassPlanoMinimo || null,
+        totalpassValorCheckin: local.totalpassValorCheckin || "0.00",
       },
     });
   };
@@ -112,7 +126,7 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
             <Settings className="h-6 w-6" />
             Configurações do Sistema
           </h1>
-          <p className="text-sm text-muted-foreground">Gerencie integrações e valores por check-in</p>
+          <p className="text-sm text-muted-foreground">Gerencie valores por check-in por integração e modalidade</p>
         </div>
       </div>
 
@@ -123,7 +137,7 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
             Valor por Check-in por Modalidade
           </CardTitle>
           <CardDescription>
-            Configure quanto vale cada check-in em cada modalidade. Esse valor é usado para calcular a receita gerada automaticamente.
+            Configure os valores separados por integração (Wellhub e TotalPass) para cada modalidade. Esses valores são usados para calcular a receita gerada automaticamente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -145,65 +159,94 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
                     data-testid={`card-modalidade-settings-${modalidade}`}
                   >
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{modalidade}</h3>
-                      {isDirty && <Badge variant="outline" className="text-orange-600 border-orange-300">Alterado</Badge>}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label htmlFor={`valor-${modalidade}`}>Valor por Check-in (R$)</Label>
-                        <Input
-                          id={`valor-${modalidade}`}
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          value={local.valorPorCheckin}
-                          onChange={(e) => setLocal(modalidade, "valorPorCheckin", e.target.value)}
-                          data-testid={`input-valor-checkin-${modalidade}`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor={`plano-${modalidade}`}>Plano Mínimo (TotalPass/Wellhub)</Label>
-                        <Input
-                          id={`plano-${modalidade}`}
-                          placeholder="Ex: TP2, TP3..."
-                          value={local.planoMinimo}
-                          onChange={(e) => setLocal(modalidade, "planoMinimo", e.target.value)}
-                          data-testid={`input-plano-minimo-${modalidade}`}
-                        />
+                      <h3 className="font-semibold text-base">{modalidade}</h3>
+                      <div className="flex items-center gap-2">
+                        {isDirty && <Badge variant="outline" className="text-orange-600 border-orange-300">Alterado</Badge>}
+                        <Button
+                          size="sm"
+                          onClick={() => handleSalvar(modalidade)}
+                          disabled={salvarMutation.isPending}
+                          data-testid={`button-salvar-settings-${modalidade}`}
+                        >
+                          <Save className="h-4 w-4 mr-1" />
+                          Salvar
+                        </Button>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="flex gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Wellhub block */}
+                      <div className="border rounded-md p-3 space-y-3 bg-muted/30">
                         <div className="flex items-center gap-2">
-                          <Switch
-                            id={`tp-${modalidade}`}
-                            checked={local.totalpassHabilitado}
-                            onCheckedChange={(v) => setLocal(modalidade, "totalpassHabilitado", v)}
-                            data-testid={`switch-totalpass-${modalidade}`}
-                          />
-                          <Label htmlFor={`tp-${modalidade}`} className="text-sm cursor-pointer">TotalPass</Label>
+                          <span className="text-sm font-semibold text-foreground">Wellhub</span>
+                          <Badge variant="secondary" className="text-xs">Gympass</Badge>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            id={`wh-${modalidade}`}
-                            checked={local.wellhubHabilitado}
-                            onCheckedChange={(v) => setLocal(modalidade, "wellhubHabilitado", v)}
-                            data-testid={`switch-wellhub-${modalidade}`}
+                        <div className="space-y-1">
+                          <Label htmlFor={`wh-plano-${modalidade}`} className="text-xs text-muted-foreground">
+                            Plano Mínimo
+                          </Label>
+                          <Input
+                            id={`wh-plano-${modalidade}`}
+                            placeholder="Ex: GP1, GP2..."
+                            value={local.wellhubPlanoMinimo}
+                            onChange={(e) => setLocal(modalidade, "wellhubPlanoMinimo", e.target.value)}
+                            data-testid={`input-wellhub-plano-${modalidade}`}
+                            className="h-8 text-sm"
                           />
-                          <Label htmlFor={`wh-${modalidade}`} className="text-sm cursor-pointer">Wellhub (Gympass)</Label>
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`wh-valor-${modalidade}`} className="text-xs text-muted-foreground">
+                            Valor por Check-in (R$)
+                          </Label>
+                          <Input
+                            id={`wh-valor-${modalidade}`}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={local.wellhubValorCheckin}
+                            onChange={(e) => setLocal(modalidade, "wellhubValorCheckin", e.target.value)}
+                            data-testid={`input-wellhub-valor-${modalidade}`}
+                            className="h-8 text-sm"
+                          />
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSalvar(modalidade)}
-                        disabled={salvarMutation.isPending}
-                        data-testid={`button-salvar-settings-${modalidade}`}
-                      >
-                        <Save className="h-4 w-4 mr-1" />
-                        Salvar
-                      </Button>
+
+                      {/* TotalPass block */}
+                      <div className="border rounded-md p-3 space-y-3 bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">TotalPass</span>
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`tp-plano-${modalidade}`} className="text-xs text-muted-foreground">
+                            Plano Mínimo
+                          </Label>
+                          <Input
+                            id={`tp-plano-${modalidade}`}
+                            placeholder="Ex: TP1, TP2..."
+                            value={local.totalpassPlanoMinimo}
+                            onChange={(e) => setLocal(modalidade, "totalpassPlanoMinimo", e.target.value)}
+                            data-testid={`input-totalpass-plano-${modalidade}`}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`tp-valor-${modalidade}`} className="text-xs text-muted-foreground">
+                            Valor por Check-in (R$)
+                          </Label>
+                          <Input
+                            id={`tp-valor-${modalidade}`}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={local.totalpassValorCheckin}
+                            onChange={(e) => setLocal(modalidade, "totalpassValorCheckin", e.target.value)}
+                            data-testid={`input-totalpass-valor-${modalidade}`}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -220,7 +263,7 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
             Integrações
           </CardTitle>
           <CardDescription>
-            Configurações futuras para TotalPass e Wellhub (Gympass). Habilite por modalidade acima.
+            Configurações de API para TotalPass e Wellhub (Gympass). Os valores por plano e modalidade são configurados acima.
           </CardDescription>
         </CardHeader>
         <CardContent>

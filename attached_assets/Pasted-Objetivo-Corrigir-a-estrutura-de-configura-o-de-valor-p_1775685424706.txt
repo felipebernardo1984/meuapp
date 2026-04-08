@@ -1,0 +1,119 @@
+Objetivo: Corrigir a estrutura de configuração de valor por check-in por modalidade, separando corretamente os valores por integração (Wellhub e TotalPass), sem alterar funcionalidades existentes.
+
+IMPORTANTE:
+
+* NÃO remover funcionalidades atuais
+* NÃO alterar lógica de check-in
+* Apenas ajustar a estrutura de configuração para ficar correta e mais clara
+
+---
+
+## ❗ PROBLEMA ATUAL
+
+Atualmente existe apenas um valor por modalidade, o que está incorreto.
+
+Cada modalidade precisa ter valores diferentes para:
+
+* Wellhub (Gympass)
+* TotalPass
+
+---
+
+## ✅ NOVA ESTRUTURA NECESSÁRIA
+
+Para cada modalidade, devem existir DUAS configurações separadas:
+
+### Wellhub:
+
+* plano mínimo (ex: GP1, GP2, etc.)
+* valor por check-in
+
+### TotalPass:
+
+* plano mínimo (ex: TP1, TP2, etc.)
+* valor por check-in
+
+---
+
+## 🧱 AJUSTE NO BANCO DE DADOS
+
+Atualizar a estrutura de modalidadeSettings para incluir:
+
+* wellhubPlanoMinimo
+
+* wellhubValorCheckin
+
+* totalpassPlanoMinimo
+
+* totalpassValorCheckin
+
+IMPORTANTE:
+
+* NÃO remover campos existentes sem garantir compatibilidade
+* Se necessário, manter campos antigos e migrar gradualmente
+
+---
+
+## 🎨 AJUSTE NA INTERFACE (CONFIGURAÇÕES DO SISTEMA)
+
+Na seção:
+"Valor por Check-in por Modalidade"
+
+Alterar para:
+
+* Um único card geral
+* Dentro dele, listar TODAS as modalidades cadastradas automaticamente
+* Cada modalidade deve aparecer em formato compacto (mini card)
+
+Dentro de cada modalidade:
+
+### Bloco Wellhub
+
+* campo: plano mínimo
+* campo: valor por check-in
+
+### Bloco TotalPass
+
+* campo: plano mínimo
+* campo: valor por check-in
+
+---
+
+## 🔁 COMPORTAMENTO DINÂMICO
+
+* Sempre que uma nova modalidade for criada, ela deve aparecer automaticamente nessa tela
+* Não permitir configuração manual fora dessa lista
+
+---
+
+## ⚙️ REGRA DE NEGÓCIO (IMPORTANTE)
+
+Ao calcular receita do check-in:
+
+* identificar se o aluno pertence a:
+
+  * Wellhub
+  * TotalPass
+
+* usar o valor correspondente da modalidade
+
+---
+
+## 🚫 NÃO FAZER
+
+* Não misturar valores de Wellhub e TotalPass
+* Não manter apenas um valor único por modalidade
+* Não alterar a lógica de check-in existente
+
+---
+
+## RESULTADO ESPERADO
+
+* Cada modalidade com dois conjuntos de configuração (Wellhub e TotalPass)
+* Interface clara e organizada
+* Base pronta para integrações reais
+* Sem confusão de valores
+
+---
+
+Implementar exatamente essa estrutura, mantendo compatibilidade com o sistema atual.

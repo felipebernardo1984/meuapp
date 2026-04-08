@@ -806,14 +806,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     const { modalidade } = req.params;
-    const { valorPorCheckin, planoMinimo, totalpassHabilitado, wellhubHabilitado } = req.body;
+    const {
+      wellhubPlanoMinimo, wellhubValorCheckin,
+      totalpassPlanoMinimo, totalpassValorCheckin,
+      // legado — mantido para compatibilidade
+      valorPorCheckin, planoMinimo, totalpassHabilitado, wellhubHabilitado,
+    } = req.body;
+
+    // Auto-derive legado valorPorCheckin from the highest integration value, for backward compat
+    const whVal = parseFloat(wellhubValorCheckin ?? "0") || 0;
+    const tpVal = parseFloat(totalpassValorCheckin ?? "0") || 0;
+    const derivedValor = Math.max(whVal, tpVal);
+
     const setting = await storage.upsertModalidadeSetting({
       arenaId,
       modalidade,
-      valorPorCheckin: valorPorCheckin ?? "0.00",
+      valorPorCheckin: derivedValor > 0 ? derivedValor.toFixed(2) : (valorPorCheckin ?? "0.00"),
       planoMinimo: planoMinimo ?? null,
-      totalpassHabilitado: totalpassHabilitado ?? false,
-      wellhubHabilitado: wellhubHabilitado ?? false,
+      totalpassHabilitado: totalpassHabilitado ?? tpVal > 0,
+      wellhubHabilitado: wellhubHabilitado ?? whVal > 0,
+      wellhubPlanoMinimo: wellhubPlanoMinimo ?? null,
+      wellhubValorCheckin: wellhubValorCheckin ?? "0.00",
+      totalpassPlanoMinimo: totalpassPlanoMinimo ?? null,
+      totalpassValorCheckin: totalpassValorCheckin ?? "0.00",
     });
     res.json(setting);
   });

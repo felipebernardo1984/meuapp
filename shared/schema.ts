@@ -175,10 +175,17 @@ export const modalidadeSettings = pgTable("modalidade_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
   modalidade: text("modalidade").notNull(),
+  // Legado — mantido para compatibilidade com dados existentes
   valorPorCheckin: text("valor_por_checkin").notNull().default("0.00"),
   planoMinimo: text("plano_minimo"),
   totalpassHabilitado: boolean("totalpass_habilitado").notNull().default(false),
   wellhubHabilitado: boolean("wellhub_habilitado").notNull().default(false),
+  // Wellhub (Gympass)
+  wellhubPlanoMinimo: text("wellhub_plano_minimo"),
+  wellhubValorCheckin: text("wellhub_valor_checkin").notNull().default("0.00"),
+  // TotalPass
+  totalpassPlanoMinimo: text("totalpass_plano_minimo"),
+  totalpassValorCheckin: text("totalpass_valor_checkin").notNull().default("0.00"),
 });
 
 export const insertModalidadeSettingsSchema = createInsertSchema(modalidadeSettings).omit({ id: true });
