@@ -62,11 +62,14 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
   const [confirmDelete, setConfirmDelete] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
-  const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
-  const [dataInicio, setDataInicio] = useState(firstOfMonth);
+  const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState(today);
 
-  const receitaParams = new URLSearchParams({ dataInicio, dataFim }).toString();
+  const receitaParams = new URLSearchParams(
+    Object.fromEntries(
+      Object.entries({ dataInicio, dataFim }).filter(([, v]) => v !== "")
+    )
+  ).toString();
 
   const { data: summary } = useQuery<any>({ queryKey: ["/api/finance/summary"] });
   const { data: payments = [] } = useQuery<any[]>({ queryKey: ["/api/finance/payments"] });
