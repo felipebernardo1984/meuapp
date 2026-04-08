@@ -270,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/alunos", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, modalidade, planoId, email, telefone } = req.body;
+    const { nome, cpf, modalidade, planoId, email, telefone, integrationType, integrationPlan } = req.body;
     const plan = await storage.getPlan(planoId);
     if (!plan) return res.status(400).json({ message: "Plano não encontrado" });
     const login = req.body.login?.trim() || gerarLogin(nome);
@@ -279,6 +279,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       arenaId, nome, login, senha, cpf, email: email ?? null, telefone: telefone ?? null, modalidade,
       planoId: plan.id, planoTitulo: plan.titulo, planoCheckins: plan.checkins, planoValorTexto: plan.valorTexto ?? null,
       checkinsRealizados: 0, statusMensalidade: "Em dia", aprovado: true, ultimoCheckin: null, photoUrl: null,
+      integrationType: integrationType ?? "none",
+      integrationPlan: integrationPlan ?? null,
     });
     res.json({ ...student, loginGerado: login, senhaGerada: senha, historico: [] });
   });
@@ -286,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/alunos/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, email, telefone, login, senha, modalidade, statusMensalidade, checkinsRealizados } = req.body;
+    const { nome, cpf, email, telefone, login, senha, modalidade, statusMensalidade, checkinsRealizados, integrationType, integrationPlan } = req.body;
     const updates: Record<string, any> = {};
     if (nome !== undefined) updates.nome = nome;
     if (cpf !== undefined) updates.cpf = cpf;
@@ -297,6 +299,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (modalidade !== undefined) updates.modalidade = modalidade;
     if (statusMensalidade !== undefined) updates.statusMensalidade = statusMensalidade;
     if (checkinsRealizados !== undefined) updates.checkinsRealizados = Number(checkinsRealizados);
+    if (integrationType !== undefined) updates.integrationType = integrationType;
+    if (integrationPlan !== undefined) updates.integrationPlan = integrationPlan || null;
     const student = await storage.updateStudent(req.params.id, updates);
     res.json(student);
   });
@@ -334,6 +338,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const student = await storage.getStudent(req.params.id);
     if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
 
+    // Validate plan minimum (warn but do not block check-in)
+    let planWarning: string | undefined;
+    try {
+      const modalidadeSetting = await storage.getModalidadeSetting(arenaId, student.modalidade);
+      const planCheck = financeService.validatePlanMinimum(modalidadeSetting, student);
+      if (!planCheck.allowed) planWarning = planCheck.reason;
+    } catch (_e) {}
+
     const agora = new Date();
     const data = req.body.data
       ? new Date(req.body.data + "T12:00:00").toLocaleDateString("pt-BR")
@@ -354,7 +366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const historico = await storage.listCheckins(student.id);
-    res.json({ ...updated, historico });
+    res.json({ ...updated, historico, planWarning });
   });
 
   app.put("/api/alunos/:id/checkin/:index", async (req, res) => {
@@ -378,6 +390,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const student = await storage.getStudent(req.params.id);
     if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
     const index = parseInt(req.params.index, 10);
+
+    // Get the checkin entry before deleting so we can cancel the financial record
+    const allCheckins = await storage.listCheckins(student.id);
+    const checkinToRemove = allCheckins[index];
+    if (checkinToRemove?.id) {
+      try {
+        await storage.cancelCheckinFinanceiro(checkinToRemove.id);
+      } catch (_e) {
+        // Don't block removal if cancel fails
+      }
+    }
+
     await storage.removeCheckinByIndex(student.id, index);
     const historico = await storage.listCheckins(student.id);
     const updated = await storage.updateStudent(student.id, {

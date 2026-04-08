@@ -99,6 +99,8 @@ export interface IStorage {
   createCheckinFinanceiro(data: InsertCheckinFinanceiro): Promise<CheckinFinanceiro>;
   listCheckinFinanceiro(arenaId: string): Promise<CheckinFinanceiro[]>;
   listCheckinFinanceiroByStudent(studentId: string): Promise<CheckinFinanceiro[]>;
+  getCheckinFinanceiroByCheckinId(checkinId: string): Promise<CheckinFinanceiro | undefined>;
+  cancelCheckinFinanceiro(checkinId: string): Promise<void>;
 
   // Integration Plans
   listIntegrationPlans(arenaId: string): Promise<IntegrationPlan[]>;
@@ -388,7 +390,16 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       const [updated] = await db
         .update(modalidadeSettings)
-        .set({ valorPorCheckin: data.valorPorCheckin, planoMinimo: data.planoMinimo, totalpassHabilitado: data.totalpassHabilitado, wellhubHabilitado: data.wellhubHabilitado })
+        .set({
+          valorPorCheckin: data.valorPorCheckin,
+          planoMinimo: data.planoMinimo,
+          totalpassHabilitado: data.totalpassHabilitado,
+          wellhubHabilitado: data.wellhubHabilitado,
+          wellhubPlanoMinimo: data.wellhubPlanoMinimo,
+          wellhubValorCheckin: data.wellhubValorCheckin,
+          totalpassPlanoMinimo: data.totalpassPlanoMinimo,
+          totalpassValorCheckin: data.totalpassValorCheckin,
+        })
         .where(eq(modalidadeSettings.id, existing.id))
         .returning();
       return updated;
@@ -409,6 +420,18 @@ export class DatabaseStorage implements IStorage {
 
   async listCheckinFinanceiroByStudent(studentId: string): Promise<CheckinFinanceiro[]> {
     return db.select().from(checkinFinanceiro).where(eq(checkinFinanceiro.studentId, studentId));
+  }
+
+  async getCheckinFinanceiroByCheckinId(checkinId: string): Promise<CheckinFinanceiro | undefined> {
+    const [record] = await db.select().from(checkinFinanceiro).where(eq(checkinFinanceiro.checkinId, checkinId));
+    return record;
+  }
+
+  async cancelCheckinFinanceiro(checkinId: string): Promise<void> {
+    await db
+      .update(checkinFinanceiro)
+      .set({ status: "cancelado" })
+      .where(eq(checkinFinanceiro.checkinId, checkinId));
   }
 
   // ── Integration Plans ─────────────────────────────────────────────────────

@@ -41,6 +41,8 @@ interface AlunoView {
   ultimoCheckin?: { data: string; hora: string };
   historico: Array<{ id?: string; data: string; hora: string }>;
   photoUrl?: string;
+  integrationType?: string;
+  integrationPlan?: string;
 }
 
 interface NovoAlunoDados {
@@ -52,6 +54,8 @@ interface NovoAlunoDados {
   senha: string;
   modalidade: string;
   planoId: string;
+  integrationType: string;
+  integrationPlan: string;
 }
 
 interface Cobranca {
@@ -111,6 +115,7 @@ export default function TeacherDashboard({
   const emptyAluno: NovoAlunoDados = {
     nome: "", cpf: "", email: "", telefone: "",
     login: "", senha: "", modalidade, planoId: planos[0]?.id ?? "",
+    integrationType: "none", integrationPlan: "",
   };
 
   // Diálogos globais
@@ -215,6 +220,8 @@ export default function TeacherDashboard({
       senha: "",
       modalidade: aluno.modalidade ?? modalidade,
       planoId: aluno.planoId,
+      integrationType: aluno.integrationType ?? "none",
+      integrationPlan: aluno.integrationPlan ?? "",
     });
     setDialogEditarAluno(true);
   };
@@ -550,6 +557,33 @@ export default function TeacherDashboard({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1">
+                <Label>Integração</Label>
+                <Select
+                  value={novoAluno.integrationType}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "" })}
+                >
+                  <SelectTrigger data-testid="select-new-student-integration-type">
+                    <SelectValue placeholder="Nenhuma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
+                    <SelectItem value="totalpass">TotalPass</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {novoAluno.integrationType !== "none" && (
+                <div className="space-y-1">
+                  <Label>Plano da Integração</Label>
+                  <Input
+                    placeholder="Ex: TP1, TP2, GP1..."
+                    value={novoAluno.integrationPlan}
+                    onChange={(e) => setNovoAluno({ ...novoAluno, integrationPlan: e.target.value })}
+                    data-testid="input-new-student-integration-plan"
+                  />
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -657,6 +691,33 @@ export default function TeacherDashboard({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Integração</Label>
+                <Select
+                  value={dadosEdicao.integrationType ?? "none"}
+                  onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, integrationType: v, integrationPlan: "" })}
+                >
+                  <SelectTrigger data-testid="select-edit-student-integration-type">
+                    <SelectValue placeholder="Nenhuma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
+                    <SelectItem value="totalpass">TotalPass</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {dadosEdicao.integrationType !== "none" && (
+                <div className="col-span-2 space-y-1">
+                  <Label>Plano da Integração</Label>
+                  <Input
+                    placeholder="Ex: TP1, TP2, GP1..."
+                    value={dadosEdicao.integrationPlan ?? ""}
+                    onChange={(e) => setDadosEdicao({ ...dadosEdicao, integrationPlan: e.target.value })}
+                    data-testid="input-edit-student-integration-plan"
+                  />
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter className="flex-row justify-between gap-2 sm:flex-row sm:justify-between">

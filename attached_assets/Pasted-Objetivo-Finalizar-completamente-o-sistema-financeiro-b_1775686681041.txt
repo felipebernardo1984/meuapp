@@ -1,0 +1,234 @@
+Objetivo: Finalizar completamente o sistema financeiro baseado em check-ins, garantindo cálculo correto por modalidade e integração (Wellhub / TotalPass), com persistência, consistência histórica e sem quebrar nenhuma funcionalidade existente.
+
+IMPORTANTE:
+
+* NÃO alterar lógica atual de check-in
+* NÃO remover funcionalidades existentes
+* NÃO modificar rotas existentes
+* Apenas adicionar e integrar novas estruturas de forma isolada e segura
+
+---
+
+# 1. PADRONIZAR INTEGRAÇÃO DO ALUNO (CRÍTICO)
+
+Garantir que cada aluno possua um campo único e confiável:
+
+student:
+
+* integrationType: 'wellhub' | 'totalpass' | 'none'
+* plan: string (ex: TP1, TP2, GP1...)
+
+IMPORTANTE:
+
+* Esse campo deve ser a única fonte de verdade
+* NÃO usar lógica espalhada ou implícita
+
+---
+
+# 2. AJUSTAR E GARANTIR ESTRUTURA POR MODALIDADE
+
+Cada modalidade deve conter:
+
+Wellhub:
+
+* wellhubPlanoMinimo
+* wellhubValorCheckin
+
+TotalPass:
+
+* totalpassPlanoMinimo
+* totalpassValorCheckin
+
+IMPORTANTE:
+
+* NÃO misturar valores
+* NÃO usar valor único por modalidade
+
+---
+
+# 3. CRIAR FUNÇÃO CENTRAL DE CÁLCULO (OBRIGATÓRIO)
+
+Criar um service central (financeService):
+
+Função obrigatória:
+
+getValorCheckin(modalidade, aluno):
+
+Regras:
+
+* se aluno.integrationType === 'wellhub'
+  → usar wellhubValorCheckin
+* se aluno.integrationType === 'totalpass'
+  → usar totalpassValorCheckin
+* se 'none'
+  → retornar 0 ou valor padrão definido
+
+Essa função deve ser a ÚNICA responsável pelo cálculo
+
+---
+
+# 4. VALIDAR PLANO MÍNIMO (REGRA DE NEGÓCIO)
+
+Antes de permitir check-in:
+
+* verificar se plano do aluno atende o plano mínimo da modalidade
+
+Exemplo:
+
+* aluno TP1 não pode acessar modalidade que exige TP2
+
+Ação:
+
+* bloquear OU alertar (sem quebrar fluxo atual)
+
+---
+
+# 5. CRIAR TABELA FINANCEIRA (SNAPSHOT)
+
+Criar tabela:
+
+checkinFinanceiro:
+
+* id
+* checkinId (UNIQUE)
+* studentId
+* modalidade
+* integrationType
+* valorUnitario
+* valorTotal
+* createdAt
+
+IMPORTANTE:
+
+* salvar snapshot no momento do check-in
+* NÃO recalcular no futuro
+
+---
+
+# 6. GERAR RECEITA AUTOMATICAMENTE
+
+Após cada check-in:
+
+1. identificar aluno
+2. identificar modalidade
+3. calcular valor via financeService
+4. salvar em checkinFinanceiro
+
+IMPORTANTE:
+
+* garantir que cada check-in gere apenas UM registro financeiro
+* evitar duplicidade
+
+---
+
+# 7. TRATAR EXCLUSÃO / CANCELAMENTO
+
+Se um check-in for removido:
+
+Opções:
+
+* remover registro financeiro correspondente
+  OU
+* marcar como cancelado
+
+Adicionar campo opcional:
+
+* status: 'ativo' | 'cancelado'
+
+---
+
+# 8. CRIAR AGREGAÇÕES FINANCEIRAS
+
+No backend, criar funções:
+
+* getReceitaTotalPeriodo(dataInicio, dataFim)
+* getReceitaPorAluno
+* getReceitaPorModalidade
+* getTotalCheckins
+
+Todas devem usar APENAS a tabela checkinFinanceiro
+
+---
+
+# 9. INTEGRAR COM PAINEL FINANCEIRO
+
+Atualizar painel para mostrar:
+
+* total de check-ins
+* receita total
+* receita por modalidade
+* receita por aluno
+
+Com filtro por período
+
+IMPORTANTE:
+
+* NÃO recalcular baseado em configurações atuais
+* usar apenas dados persistidos
+
+---
+
+# 10. ATUALIZAR PAINEL DO PROFESSOR
+
+No modal do aluno mostrar:
+
+* total de check-ins
+* valor por check-in (baseado na integração)
+* receita total gerada
+
+Dados devem vir do backend
+
+---
+
+# 11. GARANTIR SUPORTE A ALUNOS "NONE"
+
+Se integrationType = 'none':
+
+* definir comportamento:
+
+  * receita = 0
+    OU
+  * usar valor padrão (se existir)
+
+---
+
+# 12. EVITAR DUPLICIDADE
+
+Garantir:
+
+* checkinId único na tabela financeira
+* não permitir múltiplos registros para o mesmo check-in
+
+---
+
+# 13. CENTRALIZAÇÃO TOTAL
+
+Toda lógica deve estar no financeService:
+
+* cálculo
+* validação
+* agregação
+
+NÃO duplicar lógica em:
+
+* controllers
+* frontend
+
+---
+
+# RESULTADO FINAL ESPERADO
+
+O sistema deve:
+
+* calcular automaticamente a receita correta por check-in
+* considerar integração do aluno (Wellhub / TotalPass)
+* validar plano mínimo
+* salvar histórico financeiro imutável (snapshot)
+* permitir relatórios por aluno, modalidade e período
+* evitar duplicidade
+* funcionar sem quebrar nada existente
+* estar pronto para integração futura com APIs reais
+
+---
+
+Implementar exatamente isso, sem simplificações e sem alterar o comportamento atual do sistema.

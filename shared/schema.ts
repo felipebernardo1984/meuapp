@@ -114,6 +114,9 @@ export const students = pgTable("students", {
   aprovado: boolean("aprovado").notNull().default(false),
   ultimoCheckin: text("ultimo_checkin"),
   photoUrl: text("photo_url"),
+  // Integração (fonte única de verdade para cálculo financeiro)
+  integrationType: text("integration_type").notNull().default("none"), // 'wellhub' | 'totalpass' | 'none'
+  integrationPlan: text("integration_plan"),                           // ex: TP1, TP2, GP1...
 });
 
 export const insertStudentSchema = createInsertSchema(students).omit({ id: true });
@@ -209,12 +212,14 @@ export type CheckinEntry = typeof checkinHistory.$inferSelect;
 export const checkinFinanceiro = pgTable("checkin_financeiro", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
-  checkinId: varchar("checkin_id").references(() => checkinHistory.id, { onDelete: "cascade" }),
+  checkinId: varchar("checkin_id").references(() => checkinHistory.id, { onDelete: "cascade" }).unique(),
   studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
   modalidade: text("modalidade").notNull(),
+  integrationType: text("integration_type").notNull().default("none"), // snapshot: 'wellhub' | 'totalpass' | 'none'
   valorUnitario: text("valor_unitario").notNull().default("0.00"),
   valorTotal: text("valor_total").notNull().default("0.00"),
   dataCheckin: text("data_checkin").notNull(),
+  status: text("status").notNull().default("ativo"),                   // 'ativo' | 'cancelado'
   createdAt: timestamp("created_at").defaultNow(),
 });
 
