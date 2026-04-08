@@ -344,35 +344,50 @@ export default function TeacherDashboard({
                   </div>
                 )}
 
-                <Button
-                  size="sm"
-                  className="w-full"
-                  onClick={() => onCheckinManual(aluno.id)}
-                  data-testid={`button-manual-checkin-${aluno.id}`}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-1" />
-                  Check-in
-                </Button>
+                {!temCheckins ? (
+                  <Button
+                    size="sm"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    data-testid={`button-mensalista-${aluno.id}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    Plano Mensalista
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={() => onCheckinManual(aluno.id)}
+                    data-testid={`button-manual-checkin-${aluno.id}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    Check-in
+                  </Button>
+                )}
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => openHistorico(aluno)}
-                  data-testid={`button-view-history-${aluno.id}`}
-                >
-                  Histórico
-                </Button>
+                {temCheckins && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => openHistorico(aluno)}
+                    data-testid={`button-view-history-${aluno.id}`}
+                  >
+                    Histórico
+                  </Button>
+                )}
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => openRetroativo(aluno)}
-                  data-testid={`button-retroactive-checkin-${aluno.id}`}
-                >
-                  Registrar Aula
-                </Button>
+                {temCheckins && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => openRetroativo(aluno)}
+                    data-testid={`button-retroactive-checkin-${aluno.id}`}
+                  >
+                    Registrar Aula
+                  </Button>
+                )}
 
                 <Button
                   variant="outline"
@@ -571,7 +586,7 @@ export default function TeacherDashboard({
               <div className="space-y-1">
                 <Label>Nova Senha</Label>
                 <Input
-                  placeholder="deixe em branco para manter"
+                  placeholder="senha aluno"
                   type="password"
                   value={dadosEdicao.senha ?? ""}
                   onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value })}
@@ -640,7 +655,7 @@ export default function TeacherDashboard({
           <DialogHeader>
             <DialogTitle>Excluir Aluno</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir <strong>{alunoParaExcluir?.nome}</strong>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir <strong>{alunoParaExcluir?.nome}</strong>?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -727,7 +742,7 @@ export default function TeacherDashboard({
           <DialogHeader>
             <DialogTitle>Remover Check-in</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover este check-in de <strong>{confirmRemoverCheckinTeacher?.aluno.nome}</strong>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover este check-in de <strong>{confirmRemoverCheckinTeacher?.aluno.nome}</strong>?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -833,7 +848,7 @@ export default function TeacherDashboard({
             <DialogTitle className="sr-only">Registrar Aula</DialogTitle>
             <DialogDescription asChild>
               <p className="font-bold text-foreground text-sm">
-                Selecione a data e hora da aula de {alunoRetroativo?.nome} que ainda não foi registrada.
+                Selecione a data e hora da aula que não foi registrada.
               </p>
             </DialogDescription>
           </DialogHeader>

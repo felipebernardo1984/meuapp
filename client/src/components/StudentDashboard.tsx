@@ -198,15 +198,26 @@ export default function StudentDashboard({
 
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <Button
-            size="lg"
-            className="w-full h-14 text-lg"
-            onClick={onCheckin}
-            data-testid="button-checkin"
-          >
-            <CheckCircle2 className="mr-2 h-5 w-5" />
-            Fazer Check-in
-          </Button>
+          {!temCheckins ? (
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg bg-green-600 hover:bg-green-700 text-white"
+              data-testid="button-checkin-mensalista"
+            >
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              Plano Mensalista
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg"
+              onClick={onCheckin}
+              data-testid="button-checkin"
+            >
+              <CheckCircle2 className="mr-2 h-5 w-5" />
+              Fazer Check-in
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -254,77 +265,79 @@ export default function StudentDashboard({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <CardTitle className="text-lg">Histórico de Check-in</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={abrirRetroativo}
-              data-testid="button-student-retroactive"
-            >
-              <CalendarClock className="h-4 w-4 mr-1" />
-              Registrar Aula
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {historico.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Nenhum check-in realizado ainda
-            </p>
-          ) : (
-            <div className="space-y-1">
-              {(checkinExpandido ? historico : historico.slice(0, CHECKIN_PREVIEW)).map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between py-2 border-b last:border-0"
-                  data-testid={`checkin-history-${index}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-secondary" />
-                    <span className="text-sm font-medium">{item.data}</span>
-                    {item.hora && (
-                      <span className="text-xs text-muted-foreground">às {item.hora}</span>
-                    )}
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                    onClick={() => abrirEditar(index)}
-                    data-testid={`button-edit-checkin-${index}`}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
-              {historico.length > CHECKIN_PREVIEW && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full mt-1 text-muted-foreground hover:text-foreground"
-                  onClick={() => setCheckinExpandido(!checkinExpandido)}
-                  data-testid="button-toggle-checkin-history"
-                >
-                  {checkinExpandido ? (
-                    <>
-                      <ChevronUp className="h-4 w-4 mr-1" />
-                      Ver menos
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-1" />
-                      Ver todos ({historico.length} check-ins)
-                    </>
-                  )}
-                </Button>
-              )}
+      {temCheckins && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <CardTitle className="text-lg">Histórico de Check-in</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={abrirRetroativo}
+                data-testid="button-student-retroactive"
+              >
+                <CalendarClock className="h-4 w-4 mr-1" />
+                Registrar Aula
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {historico.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum check-in realizado ainda
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {(checkinExpandido ? historico : historico.slice(0, CHECKIN_PREVIEW)).map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                    data-testid={`checkin-history-${index}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-secondary" />
+                      <span className="text-sm font-medium">{item.data}</span>
+                      {item.hora && (
+                        <span className="text-xs text-muted-foreground">às {item.hora}</span>
+                      )}
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      onClick={() => abrirEditar(index)}
+                      data-testid={`button-edit-checkin-${index}`}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+                {historico.length > CHECKIN_PREVIEW && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-1 text-muted-foreground hover:text-foreground"
+                    onClick={() => setCheckinExpandido(!checkinExpandido)}
+                    data-testid="button-toggle-checkin-history"
+                  >
+                    {checkinExpandido ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-1" />
+                        Ver menos
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-1" />
+                        Ver todos ({historico.length} check-ins)
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Histórico Financeiro ── */}
       <Card className="mt-6">
@@ -541,12 +554,7 @@ export default function StudentDashboard({
             <AlertDialogDescription>
               {confirmarIndex !== null && historico[confirmarIndex] && (
                 <>
-                  Tem certeza que deseja remover o check-in do dia{" "}
-                  <strong>{historico[confirmarIndex].data}</strong>
-                  {historico[confirmarIndex].hora && (
-                    <> às <strong>{historico[confirmarIndex].hora}</strong></>
-                  )}
-                  ? O progresso na barra será atualizado.
+                  Tem certeza que deseja remover o check-in?
                 </>
               )}
             </AlertDialogDescription>

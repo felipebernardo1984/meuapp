@@ -1550,7 +1550,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Excluir Aluno</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover o aluno <strong>{confirmExcluirAluno?.nome}</strong>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover o aluno <strong>{confirmExcluirAluno?.nome}</strong>? 
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1577,7 +1577,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Excluir Plano</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover o plano <strong>{confirmExcluirPlano?.titulo}</strong>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover o plano <strong>{confirmExcluirPlano?.titulo}</strong>? 
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1604,7 +1604,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Excluir Professor</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover o professor <strong>{confirmExcluirProfessor?.nome}</strong>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover o professor <strong>{confirmExcluirProfessor?.nome}</strong>? 
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1631,7 +1631,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Remover Check-in</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover este check-in? Esta ação não pode ser desfeita.
+              Tem certeza que deseja remover este check-in?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1763,7 +1763,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Remover Lançamento</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover {confirmDeleteFinanceiro?.label}? Esta ação não pode ser desfeita e o registro sumirá também para o aluno.
+              Tem certeza que deseja remover {confirmDeleteFinanceiro?.label}?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

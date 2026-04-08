@@ -985,8 +985,6 @@ function DeleteDialog({
           <AlertDialogTitle>Excluir Arena</AlertDialogTitle>
           <AlertDialogDescription>
             Tem certeza que deseja excluir a arena <strong>{arena?.name}</strong>?
-            Todos os dados — alunos, professores, planos e check-in — serão <strong>permanentemente removidos</strong>.
-            Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -333,7 +333,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
           <DialogHeader>
             <DialogTitle>Confirmar exclusão</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir a {confirmDelete?.label}? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir a {confirmDelete?.label}?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
