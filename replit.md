@@ -73,6 +73,17 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - Student/teacher/plan management
 - Financial dashboard
 
+## AutomationService
+
+- `server/automationService.ts` — Read-only analysis service that inspects arena data and surfaces actionable situations:
+  - **`paymentsNearDue`** — Pending payments whose `dueDate` is within N days (default: 3)
+  - **`overduePayments`** — Pending payments whose `dueDate` has already passed
+  - **`inactiveStudents`** — Students with no check-in in the last N days (default: 7), or never
+- `server/automationRoutes.ts` — Mounts `GET /api/automation/report/:arenaId`
+  - Query params: `nearDueDays` (int), `inactiveDays` (int)
+  - Requires an authenticated arena session or admin session
+  - Returns an `AutomationReport` JSON with all three alert lists
+
 ## Dev Setup
 - `npm run dev` — Starts Express + Vite on port 5000
 - `npm run db:push` — Sync Drizzle schema to DB

@@ -4,6 +4,7 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { financeService } from "./financeService";
+import { automationRouter } from "./automationRoutes";
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -897,6 +898,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (_e) {}
   })();
+
+  app.use(automationRouter);
 
   const httpServer = createServer(app);
   return httpServer;
