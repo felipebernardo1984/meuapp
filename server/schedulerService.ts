@@ -7,27 +7,39 @@ function prefix(): string {
   return `[AutomationJob ${new Date().toISOString()}]`;
 }
 
-function logReport(arenaId: string, arenaName: string, report: Awaited<ReturnType<typeof automationService.analyzeArena>>): void {
+function logReport(
+  arenaId: string,
+  arenaName: string,
+  report: Awaited<ReturnType<typeof automationService.analyzeArena>>
+): void {
   const p = prefix();
 
   const totalAlerts =
     report.paymentsNearDue.length +
     report.overduePayments.length +
-    report.inactiveStudents.length;
+    report.lowFrequencyStudents.length;
 
-  console.log(`${p} Arena "${arenaName}" (${arenaId}) — ${totalAlerts} alerta(s) encontrado(s)`);
+  console.log(
+    `${p} Arena "${arenaName}" (${arenaId}) — ${totalAlerts} alerta(s) encontrado(s)`
+  );
 
   if (report.paymentsNearDue.length > 0) {
-    console.log(`${p}   Pagamentos próximos do vencimento (${report.paymentsNearDue.length}):`);
+    console.log(
+      `${p}   Mensalistas com vencimento próximo (${report.paymentsNearDue.length}):`
+    );
     for (const item of report.paymentsNearDue) {
+      const when =
+        item.daysUntilDue === 0 ? "hoje" : `em ${item.daysUntilDue} dia(s)`;
       console.log(
-        `${p}     • ${item.studentName} — R$ ${item.amount} — vence em ${item.daysUntilDue} dia(s) (${item.dueDate}) [${item.referenceMonth}]`
+        `${p}     • ${item.studentName} — R$ ${item.amount} — vence ${when} (${item.dueDate}) [${item.referenceMonth}]`
       );
     }
   }
 
   if (report.overduePayments.length > 0) {
-    console.log(`${p}   Pagamentos atrasados (${report.overduePayments.length}):`);
+    console.log(
+      `${p}   Mensalistas com pagamento atrasado (${report.overduePayments.length}):`
+    );
     for (const item of report.overduePayments) {
       console.log(
         `${p}     • ${item.studentName} — R$ ${item.amount} — ${item.daysOverdue} dia(s) em atraso (venceu ${item.dueDate}) [${item.referenceMonth}]`
@@ -35,13 +47,17 @@ function logReport(arenaId: string, arenaName: string, report: Awaited<ReturnTyp
     }
   }
 
-  if (report.inactiveStudents.length > 0) {
-    console.log(`${p}   Alunos sem check-in recente (${report.inactiveStudents.length}):`);
-    for (const item of report.inactiveStudents) {
-      const since = item.daysSinceLastCheckin !== null
-        ? `${item.daysSinceLastCheckin} dia(s) sem check-in (último: ${item.lastCheckinDate})`
+  if (report.lowFrequencyStudents.length > 0) {
+    console.log(
+      `${p}   Alunos de check-in com baixa frequência (${report.lowFrequencyStudents.length}):`
+    );
+    for (const item of report.lowFrequencyStudents) {
+      const lastSeen = item.lastCheckinDate
+        ? `último check-in: ${item.lastCheckinDate} (${item.daysSinceLastCheckin}d atrás)`
         : "nunca realizou check-in";
-      console.log(`${p}     • ${item.studentName} — ${since}`);
+      console.log(
+        `${p}     • ${item.studentName} [${item.integrationType}] — ${item.checkinsLast30Days}/${item.expectedCheckins30Days} check-ins nos últimos 30 dias — ${lastSeen}`
+      );
     }
   }
 
@@ -73,7 +89,10 @@ async function runJob(): Promise<void> {
       const report = await automationService.analyzeArena(arena.id);
       logReport(arena.id, arena.name, report);
     } catch (err) {
-      console.error(`${prefix()} Erro ao analisar arena "${arena.name}" (${arena.id}):`, err);
+      console.error(
+        `${prefix()} Erro ao analisar arena "${arena.name}" (${arena.id}):`,
+        err
+      );
     }
   }
 
@@ -83,5 +102,7 @@ async function runJob(): Promise<void> {
 export function startDailyAutomationJob(): void {
   runJob();
   setInterval(runJob, DAILY_INTERVAL_MS);
-  console.log(`[AutomationJob] Job diário registrado — próxima execução em 24h.`);
+  console.log(
+    `[AutomationJob] Job diário registrado — próxima execução em 24h.`
+  );
 }

@@ -19,19 +19,22 @@ automationRouter.get(
     const nearDueDays = req.query.nearDueDays
       ? parseInt(req.query.nearDueDays as string, 10)
       : undefined;
-    const inactiveDays = req.query.inactiveDays
-      ? parseInt(req.query.inactiveDays as string, 10)
+
+    const lowFrequencyPct = req.query.lowFrequencyPct
+      ? parseInt(req.query.lowFrequencyPct as string, 10)
       : undefined;
 
     try {
       const report = await automationService.analyzeArena(arenaId, {
         nearDueDaysThreshold: nearDueDays,
-        inactiveDaysThreshold: inactiveDays,
+        lowFrequencyThresholdPct: lowFrequencyPct,
       });
       return res.json(report);
     } catch (err) {
       console.error("[AutomationService] Erro ao gerar relatório:", err);
-      return res.status(500).json({ message: "Erro ao gerar relatório de automação" });
+      return res
+        .status(500)
+        .json({ message: "Erro ao gerar relatório de automação" });
     }
   }
 );

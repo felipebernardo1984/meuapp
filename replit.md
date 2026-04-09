@@ -84,11 +84,11 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 ## AutomationService
 
 - `server/automationService.ts` — Read-only analysis service that inspects arena data and surfaces actionable situations:
-  - **`paymentsNearDue`** — Pending payments whose `dueDate` is within N days (default: 3)
-  - **`overduePayments`** — Pending payments whose `dueDate` has already passed
-  - **`inactiveStudents`** — Students with no check-in in the last N days (default: 7), or never
+  - **`paymentsNearDue`** — Mensalistas (`integrationType === "none"`) with pending payments due within N days (default: 3)
+  - **`overduePayments`** — Mensalistas with pending payments past their due date
+  - **`lowFrequencyStudents`** — Check-in students (`integrationType === "wellhub"` or `"totalpass"`) who have done less than 50% of expected check-ins in the last 30 days (threshold configurable)
 - `server/automationRoutes.ts` — Mounts `GET /api/automation/report/:arenaId`
-  - Query params: `nearDueDays` (int), `inactiveDays` (int)
+  - Query params: `nearDueDays` (int), `lowFrequencyPct` (int, 0–100)
   - Requires an authenticated arena session or admin session
   - Returns an `AutomationReport` JSON with all three alert lists
 
