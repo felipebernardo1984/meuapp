@@ -85,23 +85,25 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           {onVoltar && (
-            <Button variant="outline" size="sm" onClick={onVoltar}>
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Voltar
+            <Button variant="outline" onClick={onVoltar} data-testid="button-voltar-alertas">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar ao Painel
             </Button>
           )}
           <h1 className="text-2xl font-bold">Painel de Alertas</h1>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-        >
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
       </div>
+
+      <Button
+        size="lg"
+        className="w-full h-14 text-lg mb-6"
+        onClick={() => refetch()}
+        disabled={isFetching}
+        data-testid="button-atualizar-alertas"
+      >
+        <RefreshCw className={`h-5 w-5 mr-2 ${isFetching ? "animate-spin" : ""}`} />
+        Atualizar
+      </Button>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
