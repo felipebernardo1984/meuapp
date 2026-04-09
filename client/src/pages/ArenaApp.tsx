@@ -115,12 +115,22 @@ export default function ArenaApp() {
   const checkinManual = useMutation({
     mutationFn: ({ id: alunoId, data, hora }: any) =>
       apiRequest("POST", `/api/alunos/${alunoId}/checkin`, { data, hora }).then((r) => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/alunos"] }); qc.invalidateQueries({ queryKey: ["/api/session"] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      qc.invalidateQueries({ queryKey: ["/api/session"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/receita/summary"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/summary"] });
+    },
   });
   const removerCheckin = useMutation({
     mutationFn: ({ id: alunoId, index }: any) =>
       apiRequest("DELETE", `/api/alunos/${alunoId}/checkin/${index}`).then((r) => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/alunos"] }); qc.invalidateQueries({ queryKey: ["/api/session"] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      qc.invalidateQueries({ queryKey: ["/api/session"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/receita/summary"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/summary"] });
+    },
   });
   const editarAluno = useMutation({
     mutationFn: ({ id: alunoId, ...d }: any) => apiRequest("PUT", `/api/alunos/${alunoId}`, d),
