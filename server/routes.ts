@@ -124,6 +124,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // ── ADMIN AUTH ─────────────────────────────────────────────────────────────
+  app.post("/api/admin/login", (req, res) => {
+    const { login, senha } = req.body;
+    if (login === ADMIN_LOGIN && senha === ADMIN_SENHA) {
+      req.session.isAdmin = true;
+      return res.json({ success: true });
+    }
+    return res.status(401).json({ message: "Login ou senha inválidos" });
+  });
+
+  app.get("/api/admin/session", (req, res) => {
+    return res.json({ isAdmin: !!req.session.isAdmin });
+  });
+
+  app.post("/api/admin/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ success: true });
+    });
+  });
+
   // SEED
   app.use(async (_req, _res, next) => {
     try {
