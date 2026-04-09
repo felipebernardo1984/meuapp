@@ -651,25 +651,25 @@ export default function Admin() {
           </Card>
 
           {/* Action buttons */}
-          <div className="flex gap-2">
-            <Card className="flex-1">
-              <CardContent className="pt-4 pb-4">
-                <Button size="lg" className="w-full h-12 text-base" onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-3">
+                <Button size="lg" className="flex-1 h-12 text-base" onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
                   <Plus className="h-5 w-5 mr-2" />
                   Nova Arena
                 </Button>
-              </CardContent>
-            </Card>
-            <Button
-              variant="outline"
-              className="h-auto px-4"
-              onClick={() => setMinimized((m) => !m)}
-              data-testid="button-minimize-arenas"
-            >
-              {minimized ? <ChevronDown className="h-4 w-4 mr-2" /> : <ChevronUp className="h-4 w-4 mr-2" />}
-              {minimized ? "Expandir Arenas" : "Minimizar Arenas"}
-            </Button>
-          </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setMinimized((m) => !m)}
+                  data-testid="button-minimize-arenas"
+                >
+                  {minimized ? <ChevronDown className="h-3.5 w-3.5 mr-1.5" /> : <ChevronUp className="h-3.5 w-3.5 mr-1.5" />}
+                  {minimized ? "Expandir Arenas" : "Minimizar Arenas"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {isLoading ? (
