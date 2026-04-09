@@ -2,6 +2,21 @@ import { storage } from "./storage";
 import { sendNotification, type NotificationResult } from "./notificationService";
 import { messageTemplates } from "./messageTemplates";
 
+// 🧠 Anti-spam cache (em memória)
+const notificationCache = new Map<string, number>();
+
+function canSendNotification(key: string, intervalMs: number): boolean {
+  const lastSent = notificationCache.get(key);
+  const now = Date.now();
+
+  if (lastSent && now - lastSent < intervalMs) {
+    return false;
+  }
+
+  notificationCache.set(key, now);
+  return true;
+}
+
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
 export interface PaymentNearDueItem {
@@ -93,8 +108,6 @@ export const automationService = {
 
     const studentMap = new Map(students.map((s) => [s.id, s]));
 
-    // ── 1. Mensalistas ────────────────────────────────────────────────────────
-
     const paymentsNearDue: PaymentNearDueItem[] = [];
     const overduePayments: OverduePaymentItem[] = [];
 
@@ -136,8 +149,6 @@ export const automationService = {
         });
       }
     }
-
-    // ── 2. Check-in (baixa frequência) ────────────────────────────────────────
 
     const lowFrequencyStudents: LowFrequencyStudentItem[] = [];
 
@@ -181,22 +192,21 @@ export const automationService = {
       }
     }
 
-    // ── Sort ──────────────────────────────────────────────────────────────────
-
     paymentsNearDue.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
     overduePayments.sort((a, b) => b.daysOverdue - a.daysOverdue);
     lowFrequencyStudents.sort(
       (a, b) => a.checkinsLast30Days - b.checkinsLast30Days
     );
 
-    // ── Notifications ─────────────────────────────────────────────────────────
-
     const notificationsSent: NotificationResult[] = [];
 
-    // 🔔 Vencendo em breve
+    // 🔔 Vencimento (3 dias)
     for (const item of paymentsNearDue) {
       const student = studentMap.get(item.studentId);
       if (!student) continue;
+
+      const key = `${student.id}-dueSoon`;
+      if (!canSendNotification(key, 3 * 24 * 60 * 60 * 1000)) continue;
 
       const when =
         item.daysUntilDue === 0
@@ -222,10 +232,13 @@ export const automationService = {
       notificationsSent.push(result);
     }
 
-    // 🔴 Inadimplentes
+    // 🔴 Inadimplente (3 dias)
     for (const item of overduePayments) {
       const student = studentMap.get(item.studentId);
       if (!student) continue;
+
+      const key = `${student.id}-overdue`;
+      if (!canSendNotification(key, 3 * 24 * 60 * 60 * 1000)) continue;
 
       const mensagem = messageTemplates.overdueMessage
         .replace("{{nome}}", student.nome);
@@ -243,10 +256,13 @@ export const automationService = {
       notificationsSent.push(result);
     }
 
-    // 🔵 Baixa frequência
+    // 🔵 Baixa frequência (7 dias)
     for (const item of lowFrequencyStudents) {
       const student = studentMap.get(item.studentId);
       if (!student) continue;
+
+      const key = `${student.id}-lowFrequency`;
+      if (!canSendNotification(key, 7 * 24 * 60 * 60 * 1000)) continue;
 
       const mensagem = messageTemplates.lowFrequencyMessage
         .replace("{{nome}}", student.nome);
