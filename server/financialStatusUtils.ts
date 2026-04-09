@@ -5,8 +5,9 @@ export type FinancialStatus = "inadimplente" | "ativo";
 /**
  * Determines the financial status of a student within a given arena.
  *
- * Returns "inadimplente" if any payment is overdue (status "overdue", or
- * status "pending" with a past due date). Returns "ativo" otherwise.
+ * - Wellhub / TotalPass students are always "ativo" (handled externally).
+ * - Mensalistas (integrationType "none") are "inadimplente" if any payment
+ *   is overdue (status "overdue", or status "pending" with a past due date).
  *
  * Does not persist anything — purely a read-only calculation.
  */
@@ -14,6 +15,14 @@ export async function getFinancialStatus(
   alunoId: string,
   arenaId: string
 ): Promise<FinancialStatus> {
+  const student = await storage.getStudent(alunoId);
+
+  if (!student) return "ativo";
+
+  if (student.integrationType === "wellhub" || student.integrationType === "totalpass") {
+    return "ativo";
+  }
+
   const payments = await storage.listStudentPayments(alunoId);
 
   const today = new Date();
