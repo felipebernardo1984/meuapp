@@ -308,6 +308,8 @@ export default function ArenaApp() {
                 ultimoCheckin: a.ultimoCheckin ?? undefined,
                 aprovado: a.aprovado,
                 historico: a.historico ?? [],
+                integrationType: a.integrationType ?? "none",
+                integrationPlan: a.integrationPlan ?? "",
               }))}
               professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade }))}
               onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
