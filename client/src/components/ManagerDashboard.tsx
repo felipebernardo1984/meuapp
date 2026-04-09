@@ -56,6 +56,8 @@ import {
   CreditCard,
   AlertCircle,
   Settings,
+  LayoutGrid,
+  LayoutList,
 } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
