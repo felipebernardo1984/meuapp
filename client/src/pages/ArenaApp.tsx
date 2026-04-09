@@ -290,6 +290,7 @@ export default function ArenaApp() {
           onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
           onAlterarPlano={(alunoId: string, planoId: string) => alterarPlanoAluno.mutate({ alunoId, planoId })}
           onCadastrarAluno={(dados: any) => cadastrarAluno.mutate({ ...dados, modalidade: sessao.professor.modalidade })}
+          onEditarAluno={(alunoId: string, dados: any) => editarAluno.mutate({ id: alunoId, ...dados })}
         />
       )}
 
