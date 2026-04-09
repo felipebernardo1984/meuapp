@@ -1,5 +1,6 @@
 import { storage } from "./storage";
 import { sendNotification, type NotificationResult } from "./notificationService";
+import { messageTemplates } from "./messageTemplates";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
@@ -77,8 +78,6 @@ export const automationService = {
     } = {}
   ): Promise<AutomationReport> {
     const nearDueDaysThreshold = options.nearDueDaysThreshold ?? 3;
-
-    // Flag a check-in student if they've done less than this % of expected check-ins
     const lowFrequencyThresholdPct = options.lowFrequencyThresholdPct ?? 50;
 
     const today = new Date();
@@ -94,8 +93,7 @@ export const automationService = {
 
     const studentMap = new Map(students.map((s) => [s.id, s]));
 
-    // ── 1. Mensalistas: payment alerts ────────────────────────────────────────
-    //    Only students with integrationType === "none" pay mensalidades.
+    // ── 1. Mensalistas ────────────────────────────────────────────────────────
 
     const paymentsNearDue: PaymentNearDueItem[] = [];
     const overduePayments: OverduePaymentItem[] = [];
@@ -106,7 +104,6 @@ export const automationService = {
       const student = studentMap.get(payment.studentId);
       if (!student) continue;
 
-      // Skip integration students — they don't generate mensalidade payments
       if (isCheckinStudent(student.integrationType)) continue;
 
       const due = parseBrDate(payment.dueDate);
@@ -140,10 +137,7 @@ export const automationService = {
       }
     }
 
-    // ── 2. Check-in students: low frequency ───────────────────────────────────
-    //    Only students with integrationType wellhub/totalpass are check-in based.
-    //    Expected frequency is derived from their plan's check-in limit per month.
-    //    If the plan has no limit (planoCheckins === 0), use a default of 4/month.
+    // ── 2. Check-in (baixa frequência) ────────────────────────────────────────
 
     const lowFrequencyStudents: LowFrequencyStudentItem[] = [];
 
@@ -187,7 +181,7 @@ export const automationService = {
       }
     }
 
-    // ── Sort results by urgency ───────────────────────────────────────────────
+    // ── Sort ──────────────────────────────────────────────────────────────────
 
     paymentsNearDue.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
     overduePayments.sort((a, b) => b.daysOverdue - a.daysOverdue);
@@ -195,10 +189,11 @@ export const automationService = {
       (a, b) => a.checkinsLast30Days - b.checkinsLast30Days
     );
 
-    // ── Send notifications for payments near due ──────────────────────────────
+    // ── Notifications ─────────────────────────────────────────────────────────
 
     const notificationsSent: NotificationResult[] = [];
 
+    // 🔔 Vencendo em breve
     for (const item of paymentsNearDue) {
       const student = studentMap.get(item.studentId);
       if (!student) continue;
@@ -206,12 +201,55 @@ export const automationService = {
       const when =
         item.daysUntilDue === 0
           ? "hoje"
-          : `em ${item.daysUntilDue} dia(s) (${item.dueDate})`;
+          : `em ${item.daysUntilDue} dia(s)`;
 
-      const mensagem =
-        `Olá, ${student.nome}! Sua mensalidade de R$ ${item.amount}` +
-        ` referente a ${item.referenceMonth} vence ${when}.` +
-        ` Fique em dia para continuar aproveitando a arena!`;
+      const mensagem = messageTemplates.dueSoonMessage
+        .replace("{{nome}}", student.nome)
+        .replace("{{valor}}", `R$ ${item.amount}`)
+        .replace("{{mes}}", item.referenceMonth)
+        .replace("{{quando}}", when);
+
+      const result = await sendNotification(
+        {
+          id: student.id,
+          nome: student.nome,
+          telefone: student.telefone,
+          email: student.email,
+        },
+        mensagem
+      );
+
+      notificationsSent.push(result);
+    }
+
+    // 🔴 Inadimplentes
+    for (const item of overduePayments) {
+      const student = studentMap.get(item.studentId);
+      if (!student) continue;
+
+      const mensagem = messageTemplates.overdueMessage
+        .replace("{{nome}}", student.nome);
+
+      const result = await sendNotification(
+        {
+          id: student.id,
+          nome: student.nome,
+          telefone: student.telefone,
+          email: student.email,
+        },
+        mensagem
+      );
+
+      notificationsSent.push(result);
+    }
+
+    // 🔵 Baixa frequência
+    for (const item of lowFrequencyStudents) {
+      const student = studentMap.get(item.studentId);
+      if (!student) continue;
+
+      const mensagem = messageTemplates.lowFrequencyMessage
+        .replace("{{nome}}", student.nome);
 
       const result = await sendNotification(
         {
