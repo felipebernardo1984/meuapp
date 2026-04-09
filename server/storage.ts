@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, arenas, plans, teachers, students, checkinHistory,
-  payments, charges, paymentSettings, platformPlans, arenaSubscriptionPayments, modalidadeSettings,
+  payments, charges, messageSettings, paymentSettings, platformPlans, arenaSubscriptionPayments, modalidadeSettings,
   checkinFinanceiro, integrationPlans, integrationSettings,
   type User, type InsertUser,
   type Arena, type InsertArena,
@@ -12,6 +12,7 @@ import {
   type CheckinEntry, type InsertCheckin,
   type Payment, type InsertPayment,
   type Charge, type InsertCharge,
+  type MessageSettings, type InsertMessageSettings,
   type PaymentSettings, type InsertPaymentSettings,
   type PlatformPlan, type InsertPlatformPlan,
   type ArenaSubscriptionPayment, type InsertArenaSubscriptionPayment,
@@ -85,6 +86,10 @@ export interface IStorage {
   createCharge(charge: InsertCharge): Promise<Charge>;
   updateChargeStatus(id: string, status: string, paymentDate?: string): Promise<Charge>;
   deleteCharge(id: string): Promise<void>;
+
+  // Message Settings
+  getMessageSettings(tenantId: string): Promise<MessageSettings | undefined>;
+  upsertMessageSettings(data: InsertMessageSettings): Promise<MessageSettings>;
 
   // Payment Settings
   getPaymentSettings(tenantId: string): Promise<PaymentSettings | undefined>;
@@ -356,6 +361,28 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCharge(id: string): Promise<void> {
     await db.delete(charges).where(eq(charges.id, id));
+  }
+
+  // ── Message Settings ──────────────────────────────────────────────────────
+  async getMessageSettings(tenantId: string): Promise<MessageSettings | undefined> {
+    const [row] = await db.select().from(messageSettings).where(eq(messageSettings.tenantId, tenantId));
+    return row;
+  }
+
+  async upsertMessageSettings(data: InsertMessageSettings): Promise<MessageSettings> {
+    const [row] = await db
+      .insert(messageSettings)
+      .values(data)
+      .onConflictDoUpdate({
+        target: messageSettings.tenantId,
+        set: {
+          overdueMessage: data.overdueMessage,
+          dueSoonMessage: data.dueSoonMessage,
+          lowFrequencyMessage: data.lowFrequencyMessage,
+        },
+      })
+      .returning();
+    return row;
   }
 
   // ── Payment Settings ──────────────────────────────────────────────────────

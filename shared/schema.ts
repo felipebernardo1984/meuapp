@@ -161,6 +161,18 @@ export const insertChargeSchema = createInsertSchema(charges).omit({ id: true, c
 export type InsertCharge = z.infer<typeof insertChargeSchema>;
 export type Charge = typeof charges.$inferSelect;
 
+// ── Message Settings (Mensagens de notificação) ───────────────────────────────
+export const messageSettings = pgTable("message_settings", {
+  tenantId: varchar("tenant_id").primaryKey().references(() => arenas.id, { onDelete: "cascade" }),
+  overdueMessage: text("overdue_message"),
+  dueSoonMessage: text("due_soon_message"),
+  lowFrequencyMessage: text("low_frequency_message"),
+});
+
+export const insertMessageSettingsSchema = createInsertSchema(messageSettings);
+export type InsertMessageSettings = z.infer<typeof insertMessageSettingsSchema>;
+export type MessageSettings = typeof messageSettings.$inferSelect;
+
 // ── Payment Settings (Configurações PIX) ─────────────────────────────────────
 export const paymentSettings = pgTable("payment_settings", {
   tenantId: varchar("tenant_id").primaryKey().references(() => arenas.id, { onDelete: "cascade" }),
