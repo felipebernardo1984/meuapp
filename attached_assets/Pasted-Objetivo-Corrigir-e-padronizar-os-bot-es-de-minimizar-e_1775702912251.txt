@@ -1,0 +1,100 @@
+Objetivo: Corrigir e padronizar os botões de minimizar e navegação no painel do professor e nas configurações do sistema, garantindo consistência com o layout já existente.
+
+IMPORTANTE:
+
+* NÃO refatorar o projeto inteiro
+* NÃO recriar componentes desnecessários
+* Apenas ajustar o que já foi implementado
+* Reutilizar padrões já existentes no sistema
+
+---
+
+# 1. PADRONIZAR BOTÃO "MINIMIZAR ALUNOS"
+
+* Ajustar o botão para seguir exatamente o mesmo padrão visual e estrutural já usado em outros componentes de minimizar
+* NÃO criar estilo novo
+* Reutilizar classes, ícones e comportamento já existentes
+
+Garantir:
+
+* mesmo ícone (seta ou similar)
+* mesma posição
+* mesma interação (click abre/fecha)
+
+---
+
+# 2. CRIAR "MINIMIZAR MODALIDADES" NO MESMO PADRÃO
+
+* Implementar minimizar para modalidades
+* Usar exatamente o mesmo padrão visual e lógico do minimizar de alunos
+
+IMPORTANTE:
+
+* NÃO duplicar lógica manualmente
+* Reutilizar o mesmo padrão de estrutura
+
+---
+
+# 3. EVITAR DUPLICAÇÃO DE LÓGICA
+
+Se já existir um padrão de collapse/minimizar:
+
+* reutilizar estrutura existente
+* evitar múltiplos useState isolados desnecessários
+* manter comportamento consistente entre alunos e modalidades
+
+---
+
+# 4. CORRIGIR BOTÕES DE VOLTAR
+
+Na tela de configurações do sistema:
+
+* remover botão duplicado de "voltar"
+* manter apenas:
+  "Voltar ao painel"
+
+Garantir:
+
+* botão funcional
+* navegação correta (usar mesmo padrão de navegação do sistema)
+
+---
+
+# 5. GARANTIR FEEDBACK VISUAL CORRETO
+
+Nos botões de minimizar:
+
+* indicar claramente aberto/fechado
+* ícone deve refletir estado (ex: seta girando)
+* manter padrão visual já existente no sistema
+
+---
+
+# 6. CORRIGIR LAYOUT
+
+Ao minimizar:
+
+* não quebrar espaçamento
+* não deixar elementos sobrepostos
+* manter alinhamento consistente
+
+---
+
+# 7. (SE JÁ EXISTIR NO SISTEMA) USAR ANIMAÇÃO PADRÃO
+
+* aplicar a mesma animação usada em outros minimizar (se houver)
+* NÃO criar nova animação
+
+---
+
+# RESULTADO ESPERADO
+
+* botão "minimizar alunos" padronizado
+* botão "minimizar modalidades" funcionando igual
+* apenas um botão "voltar" visível
+* UI consistente com o resto do sistema
+* sem duplicação de lógica
+
+---
+
+Executar apenas esses ajustes, sem alterar outras partes do sistema.
