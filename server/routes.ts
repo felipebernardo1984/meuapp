@@ -765,6 +765,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(result);
   });
 
+  // ── /financeiro/resumo — summary endpoint with explicit field naming ────────
+  app.get("/api/financeiro/resumo", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { dataInicio, dataFim } = req.query as { dataInicio?: string; dataFim?: string };
+    const result = await financeService.getReceitaTotalPeriodo(arenaId, dataInicio, dataFim);
+    res.json({
+      totalCheckins: result.totalCheckins,
+      receitaTotal: result.receitaTotal,
+      receitaPorModalidade: result.porModalidade,
+      receitaPorAluno: result.porAluno,
+    });
+  });
+
   // ── Integration Plans ──────────────────────────────────────────────────────
   app.get("/api/integracoes/planos", async (req, res) => {
     const arenaId = requireArena(req, res);

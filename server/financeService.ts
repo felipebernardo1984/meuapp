@@ -198,6 +198,24 @@ export const financeService = {
     };
   },
 
+  async getReceitaPorModalidade(
+    arenaId: string,
+    dataInicio?: string,
+    dataFim?: string
+  ): Promise<Array<{ modalidade: string; checkins: number; receita: number }>> {
+    const result = await financeService.getReceitaTotalPeriodo(arenaId, dataInicio, dataFim);
+    return result.porModalidade;
+  },
+
+  async getTotalCheckins(
+    arenaId: string,
+    dataInicio?: string,
+    dataFim?: string
+  ): Promise<number> {
+    const result = await financeService.getReceitaTotalPeriodo(arenaId, dataInicio, dataFim);
+    return result.totalCheckins;
+  },
+
   async getReceitaPorAluno(arenaId: string, studentId: string): Promise<ReceitaAluno> {
     const [records, student, modalidadeSetting] = await Promise.all([
       storage.listCheckinFinanceiroByStudent(studentId),
