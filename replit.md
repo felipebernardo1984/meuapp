@@ -81,6 +81,14 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
   - Percorre todas as arenas cadastradas e loga os alertas encontrados
   - Não altera nenhum dado — apenas leitura e log
 
+## NotificationService
+
+- `server/notificationService.ts` — Camada de envio de mensagens (mock por ora):
+  - `sendNotification(aluno, mensagem)` — assinatura estável, pronta para integração real
+  - Recebe `{ id, nome, telefone?, email? }` + texto da mensagem
+  - Loga no console com `[MOCK]` e retorna um `NotificationResult` com `mock: true`
+  - Para integrar WhatsApp/SMS/e-mail: substituir apenas o corpo desta função
+
 ## AutomationService
 
 - `server/automationService.ts` — Read-only analysis service that inspects arena data and surfaces actionable situations:

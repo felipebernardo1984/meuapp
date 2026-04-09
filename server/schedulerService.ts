@@ -61,6 +61,17 @@ function logReport(
     }
   }
 
+  if (report.notificationsSent.length > 0) {
+    console.log(
+      `${p}   Notificações enviadas (${report.notificationsSent.length}):`
+    );
+    for (const n of report.notificationsSent) {
+      const status = n.success ? "✓" : "✗";
+      const tag = n.mock ? " [MOCK]" : "";
+      console.log(`${p}     ${status}${tag} ID ${n.recipientId} — "${n.message.slice(0, 60)}…"`);
+    }
+  }
+
   if (totalAlerts === 0) {
     console.log(`${p}   Nenhum alerta. Arena em dia.`);
   }

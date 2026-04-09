@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { sendNotification, type NotificationResult } from "./notificationService";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ export interface AutomationReport {
   paymentsNearDue: PaymentNearDueItem[];
   overduePayments: OverduePaymentItem[];
   lowFrequencyStudents: LowFrequencyStudentItem[];
+  notificationsSent: NotificationResult[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -193,12 +195,44 @@ export const automationService = {
       (a, b) => a.checkinsLast30Days - b.checkinsLast30Days
     );
 
+    // ── Send notifications for payments near due ──────────────────────────────
+
+    const notificationsSent: NotificationResult[] = [];
+
+    for (const item of paymentsNearDue) {
+      const student = studentMap.get(item.studentId);
+      if (!student) continue;
+
+      const when =
+        item.daysUntilDue === 0
+          ? "hoje"
+          : `em ${item.daysUntilDue} dia(s) (${item.dueDate})`;
+
+      const mensagem =
+        `Olá, ${student.nome}! Sua mensalidade de R$ ${item.amount}` +
+        ` referente a ${item.referenceMonth} vence ${when}.` +
+        ` Fique em dia para continuar aproveitando a arena!`;
+
+      const result = await sendNotification(
+        {
+          id: student.id,
+          nome: student.nome,
+          telefone: student.telefone,
+          email: student.email,
+        },
+        mensagem
+      );
+
+      notificationsSent.push(result);
+    }
+
     return {
       generatedAt: new Date().toISOString(),
       arenaId,
       paymentsNearDue,
       overduePayments,
       lowFrequencyStudents,
+      notificationsSent,
     };
   },
 };
