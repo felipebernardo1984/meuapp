@@ -4,6 +4,7 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { financeService } from "./financeService";
+import { getFinancialStatus } from "./financialStatusUtils";
 import { automationRouter } from "./automationRoutes";
 
 const MemoryStoreSession = MemoryStore(session);
@@ -349,6 +350,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     const student = await storage.getStudent(req.params.id);
     if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
+
+    // Block check-in only for mensalistas with overdue payments
+    if (student.integrationType === "none") {
+      const financialStatus = await getFinancialStatus(student.id, arenaId);
+      if (financialStatus === "inadimplente") {
+        return res.status(403).json({ message: "Check-in bloqueado: aluno com mensalidade em atraso." });
+      }
+    }
 
     // Validate plan minimum (warn but do not block check-in)
     let planWarning: string | undefined;
