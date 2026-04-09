@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -311,7 +312,82 @@ export default function TeacherDashboard({
         </Button>
       </div>
 
-      {/* Grade de alunos */}
+      {/* Grade de alunos — minimizado: tabela compacta */}
+      {alunosMinimizado && alunos.length > 0 && (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Aluno</TableHead>
+                <TableHead>Plano</TableHead>
+                <TableHead>Check-ins</TableHead>
+                <TableHead>Integração</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {alunos.map((aluno) => {
+                const temCheckins = aluno.plano > 0;
+                const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
+                const initials = aluno.nome.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                const pendentes = charges.filter((c) => c.studentId === aluno.id && c.status === "pending").length;
+                return (
+                  <TableRow key={aluno.id} data-testid={`row-student-minimized-${aluno.id}`}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={aluno.photoUrl} alt={aluno.nome} />
+                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm leading-tight">{aluno.nome}</p>
+                          {pendentes > 0 && (
+                            <span className="text-xs text-orange-600 dark:text-orange-400">{pendentes} cobrança{pendentes > 1 ? "s" : ""} pend.</span>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{aluno.planoTitulo}</TableCell>
+                    <TableCell>
+                      {temCheckins ? (
+                        <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs">
+                          {aluno.checkinsRealizados}/{aluno.plano}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">Mensalista</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {aluno.integrationType && aluno.integrationType !== "none" ? (
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {aluno.integrationType === "wellhub" ? "Wellhub" : "TotalPass"}
+                          {aluno.integrationPlan ? ` · ${aluno.integrationPlan}` : ""}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        {temCheckins && (
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onCheckinManual(aluno.id)} data-testid={`button-mini-checkin-${aluno.id}`}>
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => openEditar(aluno)} data-testid={`button-mini-edit-${aluno.id}`}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      {/* Grade de alunos — expandido */}
       {!alunosMinimizado && (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {alunos.map((aluno) => {
@@ -467,7 +543,6 @@ export default function TeacherDashboard({
                     onClick={() => { setAlunoReceita(aluno); setDialogReceita(true); }}
                     data-testid={`button-receita-${aluno.id}`}
                   >
-                    <Eye className="h-3.5 w-3.5 mr-1" />
                     Receita Gerada
                   </Button>
                 )}
