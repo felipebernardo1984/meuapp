@@ -650,27 +650,46 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          {/* Action buttons */}
+          {/* Nova Arena button */}
           <Card>
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-3">
-                <Button size="lg" className="flex-1 h-12 text-base" onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }} data-testid="button-nova-arena">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Nova Arena
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="px-5 shrink-0"
-                  onClick={() => setMinimized((m) => !m)}
-                  data-testid="button-minimize-arenas"
-                >
-                  {minimized ? <ChevronDown className="h-3.5 w-3.5 mr-1.5" /> : <ChevronUp className="h-3.5 w-3.5 mr-1.5" />}
-                  {minimized ? "Expandir" : "Minimizar"}
-                </Button>
-              </div>
+            <CardContent className="pt-6">
+              <Button
+                size="lg"
+                className="w-full h-14 text-lg"
+                onClick={() => { resetForm(); setEditingArena(null); setShowForm(true); }}
+                data-testid="button-nova-arena"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Nova Arena
+              </Button>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Section header: count + toggle */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Arenas ({arenas.length})
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => setMinimized((m) => !m)}
+            data-testid="button-minimize-arenas"
+          >
+            {minimized ? (
+              <>
+                <ChevronDown className="h-4 w-4 mr-1" />
+                Mostrar Arenas
+              </>
+            ) : (
+              <>
+                <ChevronUp className="h-4 w-4 mr-1" />
+                Minimizar Arenas
+              </>
+            )}
+          </Button>
         </div>
 
         {isLoading ? (
