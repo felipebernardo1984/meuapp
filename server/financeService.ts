@@ -101,6 +101,45 @@ export const financeService = {
   // Exposed for routes to use
   validatePlanMinimum,
 
+  // Backfill financial records for all check-ins that don't have one yet
+  async backfillCheckinFinanceiro(arenaId: string): Promise<void> {
+    const allStudents = await storage.listStudents(arenaId);
+    for (const student of allStudents) {
+      const checkins = await storage.listCheckins(student.id);
+      if (!checkins.length) continue;
+      const modalidadeSetting = await storage.getModalidadeSetting(arenaId, student.modalidade);
+      const valorUnitario = getValorCheckin(modalidadeSetting, student);
+      for (const checkin of checkins) {
+        const existing = await storage.getCheckinFinanceiroByCheckinId(checkin.id);
+        if (existing) continue;
+        await storage.createCheckinFinanceiro({
+          arenaId,
+          checkinId: checkin.id,
+          studentId: student.id,
+          modalidade: student.modalidade,
+          integrationType: student.integrationType ?? "none",
+          valorUnitario: valorUnitario.toFixed(2),
+          valorTotal: valorUnitario.toFixed(2),
+          dataCheckin: checkin.data,
+          status: "ativo",
+        });
+      }
+    }
+  },
+
+  // Recalculate all active financial records for a student using current integration settings
+  async recalcularReceitaAluno(arenaId: string, studentId: string): Promise<void> {
+    const student = await storage.getStudent(studentId);
+    if (!student) return;
+    const modalidadeSetting = await storage.getModalidadeSetting(arenaId, student.modalidade);
+    const valorUnitario = getValorCheckin(modalidadeSetting, student);
+    await storage.updateCheckinFinanceiroValues(
+      studentId,
+      valorUnitario.toFixed(2),
+      student.integrationType ?? "none"
+    );
+  },
+
   async calcularReceitaCheckin(
     arenaId: string,
     studentId: string,

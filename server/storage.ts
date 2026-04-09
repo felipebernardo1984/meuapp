@@ -101,6 +101,7 @@ export interface IStorage {
   listCheckinFinanceiroByStudent(studentId: string): Promise<CheckinFinanceiro[]>;
   getCheckinFinanceiroByCheckinId(checkinId: string): Promise<CheckinFinanceiro | undefined>;
   cancelCheckinFinanceiro(checkinId: string): Promise<void>;
+  updateCheckinFinanceiroValues(studentId: string, valorUnitario: string, integrationType: string): Promise<void>;
 
   // Integration Plans
   listIntegrationPlans(arenaId: string): Promise<IntegrationPlan[]>;
@@ -432,6 +433,13 @@ export class DatabaseStorage implements IStorage {
       .update(checkinFinanceiro)
       .set({ status: "cancelado" })
       .where(eq(checkinFinanceiro.checkinId, checkinId));
+  }
+
+  async updateCheckinFinanceiroValues(studentId: string, valorUnitario: string, integrationType: string): Promise<void> {
+    await db
+      .update(checkinFinanceiro)
+      .set({ valorUnitario, valorTotal: valorUnitario, integrationType })
+      .where(and(eq(checkinFinanceiro.studentId, studentId), eq(checkinFinanceiro.status, "ativo")));
   }
 
   // ── Integration Plans ─────────────────────────────────────────────────────

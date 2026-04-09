@@ -289,6 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     const { nome, cpf, email, telefone, login, senha, modalidade, statusMensalidade, checkinsRealizados, integrationType, integrationPlan } = req.body;
+    const studentBefore = await storage.getStudent(req.params.id);
     const updates: Record<string, any> = {};
     if (nome !== undefined) updates.nome = nome;
     if (cpf !== undefined) updates.cpf = cpf;
@@ -302,6 +303,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (integrationType !== undefined) updates.integrationType = integrationType;
     if (integrationPlan !== undefined) updates.integrationPlan = integrationPlan || null;
     const student = await storage.updateStudent(req.params.id, updates);
+    // Recalculate financial records if integration settings changed
+    const integrationChanged =
+      (integrationType !== undefined && integrationType !== studentBefore?.integrationType) ||
+      (integrationPlan !== undefined && integrationPlan !== studentBefore?.integrationPlan) ||
+      (modalidade !== undefined && modalidade !== studentBefore?.modalidade);
+    if (integrationChanged) {
+      try {
+        await financeService.recalcularReceitaAluno(arenaId, req.params.id);
+      } catch (_e) {}
+    }
     res.json(student);
   });
 
@@ -876,6 +887,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
     res.json({ id: arena.id, name: arena.name, subscriptionPlan: arena.subscriptionPlan });
   });
+
+  // ── Startup: backfill missing financial records for historical check-ins ──
+  (async () => {
+    try {
+      const arenas = await storage.listArenas();
+      for (const arena of arenas) {
+        await financeService.backfillCheckinFinanceiro(arena.id);
+      }
+    } catch (_e) {}
+  })();
 
   const httpServer = createServer(app);
   return httpServer;
