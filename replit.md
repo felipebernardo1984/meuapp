@@ -83,11 +83,11 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 
 ## NotificationService
 
-- `server/notificationService.ts` — Camada de envio de mensagens (mock por ora):
-  - `sendNotification(aluno, mensagem)` — assinatura estável, pronta para integração real
-  - Recebe `{ id, nome, telefone?, email? }` + texto da mensagem
-  - Loga no console com `[MOCK]` e retorna um `NotificationResult` com `mock: true`
-  - Para integrar WhatsApp/SMS/e-mail: substituir apenas o corpo desta função
+- `server/notificationService.ts` — Camada de envio de mensagens com seleção automática de provider:
+  - `sendNotification(aluno, mensagem)` — assinatura estável, sem mudanças de código para trocar provider
+  - **MockProvider** (padrão): ativo quando qualquer secret do Twilio estiver ausente — loga no console, nunca bloqueia
+  - **TwilioProvider**: ativado automaticamente quando `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` + `TWILIO_WHATSAPP_FROM` estiverem configurados
+  - Para ativar WhatsApp real: basta adicionar os 3 secrets — nenhuma mudança de código necessária
 
 ## AutomationService
 
