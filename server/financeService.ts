@@ -20,6 +20,9 @@ export interface ReceitaAluno {
   checkins: number;
   valorUnitario: number;
   receitaTotal: number;
+  receitaCheckins: number;
+  receitaMensalidades: number;
+  receitaCobranças: number;
 }
 
 export interface PlanMinimumResult {
@@ -266,18 +269,20 @@ export const financeService = {
   },
 
   async getReceitaPorAluno(arenaId: string, studentId: string): Promise<ReceitaAluno> {
-    const [records, student, modalidadeSetting] = await Promise.all([
+    const [records, student, modalidadeSetting, studentPayments, studentCharges] = await Promise.all([
       storage.listCheckinFinanceiroByStudent(studentId),
       storage.getStudent(studentId),
       storage.getStudent(studentId).then((s) =>
         s ? storage.getModalidadeSetting(arenaId, s.modalidade) : undefined
       ),
+      storage.listStudentPayments(studentId),
+      storage.listStudentCharges(studentId),
     ]);
 
     const integrationType = student?.integrationType ?? "none";
     const integrationPlan = student?.integrationPlan ?? null;
 
-    // Only count active records
+    // Only count active check-in records
     const activeRecords = records.filter((r) => r.status !== "cancelado");
 
     // Current per-check-in value based on student's integration type
@@ -286,7 +291,19 @@ export const financeService = {
       : 0;
 
     const checkins = activeRecords.length;
-    const receitaTotal = activeRecords.reduce((acc, r) => acc + parseFloat(r.valorTotal || "0"), 0);
+    const receitaCheckins = activeRecords.reduce((acc, r) => acc + parseFloat(r.valorTotal || "0"), 0);
+
+    // Sum of paid mensalidades (payments)
+    const receitaMensalidades = studentPayments
+      .filter((p) => p.status === "paid")
+      .reduce((acc, p) => acc + parseFloat(p.amount || "0"), 0);
+
+    // Sum of paid cobranças (charges)
+    const receitaCobranças = studentCharges
+      .filter((c) => c.status === "paid")
+      .reduce((acc, c) => acc + parseFloat(c.amount || "0"), 0);
+
+    const receitaTotal = receitaCheckins + receitaMensalidades + receitaCobranças;
 
     return {
       studentId,
@@ -297,6 +314,9 @@ export const financeService = {
       checkins,
       valorUnitario,
       receitaTotal,
+      receitaCheckins,
+      receitaMensalidades,
+      receitaCobranças,
     };
   },
 };

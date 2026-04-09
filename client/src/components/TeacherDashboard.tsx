@@ -165,6 +165,9 @@ export default function TeacherDashboard({
     checkins: number;
     valorUnitario: number;
     receitaTotal: number;
+    receitaCheckins: number;
+    receitaMensalidades: number;
+    receitaCobranças: number;
   }>({
     queryKey: ["/api/finance/receita/aluno", alunoReceita?.id],
     queryFn: () => fetch(`/api/finance/receita/aluno/${alunoReceita!.id}`).then((r) => r.json()),
@@ -535,7 +538,7 @@ export default function TeacherDashboard({
                   Alterar Plano
                 </Button>
 
-                {getValorPorCheckin(aluno.modalidade ?? modalidade) > 0 && (
+                {(getValorPorCheckin(aluno.modalidade ?? modalidade) > 0 || !temCheckins) && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -1153,31 +1156,55 @@ export default function TeacherDashboard({
           {receitaLoading ? (
             <div className="py-8 text-center text-sm text-muted-foreground">Carregando...</div>
           ) : receitaAlunoData ? (
-            <div className="space-y-4 py-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Check-ins</p>
-                  <p className="text-2xl font-bold" data-testid="dialog-receita-checkins">{receitaAlunoData.checkins}</p>
+            <div className="space-y-3 py-2">
+              {/* Check-in revenue (shown only when student uses check-ins) */}
+              {receitaAlunoData.checkins > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Check-ins</p>
+                    <p className="text-2xl font-bold" data-testid="dialog-receita-checkins">{receitaAlunoData.checkins}</p>
+                  </div>
+                  <div className="rounded-lg border p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Valor/Check-in</p>
+                    <p className="text-2xl font-bold">R$ {receitaAlunoData.valorUnitario.toFixed(2).replace(".", ",")}</p>
+                  </div>
                 </div>
-                <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Valor/Check-in</p>
-                  <p className="text-2xl font-bold">R$ {receitaAlunoData.valorUnitario.toFixed(2).replace(".", ",")}</p>
-                </div>
+              )}
+
+              {/* Breakdown rows */}
+              <div className="rounded-lg border divide-y text-sm">
+                {receitaAlunoData.checkins > 0 && (
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-muted-foreground">Check-ins ({receitaAlunoData.checkins})</span>
+                    <span className="font-medium">R$ {receitaAlunoData.receitaCheckins.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                )}
+                {receitaAlunoData.receitaMensalidades > 0 && (
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-muted-foreground">Mensalidades pagas</span>
+                    <span className="font-medium">R$ {receitaAlunoData.receitaMensalidades.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                )}
+                {receitaAlunoData.receitaCobranças > 0 && (
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-muted-foreground">Cobranças pagas</span>
+                    <span className="font-medium">R$ {receitaAlunoData.receitaCobranças.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                )}
+                {receitaAlunoData.receitaTotal === 0 && (
+                  <div className="px-3 py-3 text-center text-xs text-muted-foreground">
+                    Nenhuma receita registrada ainda.
+                  </div>
+                )}
               </div>
+
+              {/* Total */}
               <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 text-center">
                 <p className="text-xs text-muted-foreground mb-1">Receita Total Gerada</p>
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="dialog-receita-total">
                   R$ {receitaAlunoData.receitaTotal.toFixed(2).replace(".", ",")}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground text-center">
-                {receitaAlunoData.checkins} check-ins × R$ {receitaAlunoData.valorUnitario.toFixed(2).replace(".", ",")} por check-in
-              </p>
-              {receitaAlunoData.checkins === 0 && (
-                <p className="text-xs text-muted-foreground text-center">
-                  Nenhum check-in financeiro registrado. Os dados são gerados automaticamente a partir do próximo check-in.
-                </p>
-              )}
             </div>
           ) : null}
           <DialogFooter>
