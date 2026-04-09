@@ -73,6 +73,14 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - Student/teacher/plan management
 - Financial dashboard
 
+## Scheduler (Job Diário)
+
+- `server/schedulerService.ts` — Executa o `AutomationService` automaticamente 1 vez ao dia:
+  - Roda imediatamente ao iniciar o servidor
+  - Repete a cada 24h via `setInterval`
+  - Percorre todas as arenas cadastradas e loga os alertas encontrados
+  - Não altera nenhum dado — apenas leitura e log
+
 ## AutomationService
 
 - `server/automationService.ts` — Read-only analysis service that inspects arena data and surfaces actionable situations:
