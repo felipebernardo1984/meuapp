@@ -661,6 +661,7 @@ export default function Admin() {
                 <Button
                   size="sm"
                   variant="outline"
+                  className="px-5 shrink-0"
                   onClick={() => setMinimized((m) => !m)}
                   data-testid="button-minimize-arenas"
                 >
