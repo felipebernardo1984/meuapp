@@ -31,6 +31,14 @@ function requireArena(req: Request, res: Response): string | null {
   return req.session.arenaId;
 }
 
+// 🔐 NOVA FUNÇÃO SEGURA (CRÍTICO PARA MULTI-TENANT)
+function getArenaOrFail(req: Request): string {
+  if (!req.session.arenaId) {
+    throw new Error("Arena não autenticada");
+  }
+  return req.session.arenaId;
+}
+
 function requireAdmin(req: Request, res: Response): boolean {
   if (!req.session.isAdmin) {
     res.status(401).json({ message: "Acesso negado" });
@@ -48,11 +56,10 @@ function calcNextBillingDate(startDate: string): string {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
-  // ───────────────── SESSION STORE PROFISSIONAL ─────────────────
-
   let sessionStore: any;
 
   if (process.env.REDIS_URL) {
+
     const RedisStore = connectRedis(session);
 
     const redisClient = createClient({
@@ -67,12 +74,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     console.log("✅ Redis Session Store ativo");
+
   } else {
+
     sessionStore = new MemoryStoreSession({
       checkPeriod: 86400000,
     });
 
     console.log("⚠️ MemoryStore ativo (modo desenvolvimento)");
+
   }
 
   app.use(
@@ -89,11 +99,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
-  // ── Seed default arena on first boot ──────────────────────────────────────
+  // ── Seed default arena ─────────────────────────
+
   app.use(async (_req, _res, next) => {
+
     try {
+
       const existing = await storage.getArenaByGestorLogin("333");
+
       if (!existing) {
+
         const today = new Date().toLocaleDateString("pt-BR");
 
         const defaultArena = await storage.createArena({
@@ -183,12 +198,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ];
 
         for (const d of datas) {
+
           await storage.addCheckin({
             arenaId: defaultArena.id,
             studentId: a1.id,
             data: d,
             hora: "18:30",
           });
+
         }
 
       }
@@ -196,6 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (_e) {}
 
     next();
+
   });
 
   // ───────────────── DASHBOARD FINANCEIRO ─────────────────
@@ -264,13 +282,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   });
 
-  // ───────────────── AUTOMATION ROUTES ─────────────────
-
   app.use(automationRouter);
 
   const httpServer = createServer(app);
 
   return httpServer;
+
 }
 
 function gerarLogin(nome: string): string {
