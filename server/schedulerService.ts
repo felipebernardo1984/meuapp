@@ -1,5 +1,6 @@
 import { storage } from "./storage";
 import { automationService } from "./automationService";
+import { runDatabaseBackup } from "./backupService";
 
 const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -68,7 +69,12 @@ function logReport(
     for (const n of report.notificationsSent) {
       const status = n.success ? "✓" : "✗";
       const tag = n.mock ? " [MOCK]" : "";
-      console.log(`${p}     ${status}${tag} ID ${n.recipientId} — "${n.message.slice(0, 60)}…"`);
+      console.log(
+        `${p}     ${status}${tag} ID ${n.recipientId} — "${n.message.slice(
+          0,
+          60
+        )}…"`
+      );
     }
   }
 
@@ -81,6 +87,7 @@ async function runJob(): Promise<void> {
   console.log(`${prefix()} Iniciando análise diária...`);
 
   let arenas: Awaited<ReturnType<typeof storage.listArenas>>;
+
   try {
     arenas = await storage.listArenas();
   } catch (err) {
@@ -90,30 +97,51 @@ async function runJob(): Promise<void> {
 
   if (arenas.length === 0) {
     console.log(`${prefix()} Nenhuma arena encontrada. Nada a analisar.`);
-    return;
-  }
+  } else {
+    console.log(`${prefix()} Analisando ${arenas.length} arena(s)...`);
 
-  console.log(`${prefix()} Analisando ${arenas.length} arena(s)...`);
-
-  for (const arena of arenas) {
-    try {
-      const report = await automationService.analyzeArena(arena.id);
-      logReport(arena.id, arena.name, report);
-    } catch (err) {
-      console.error(
-        `${prefix()} Erro ao analisar arena "${arena.name}" (${arena.id}):`,
-        err
-      );
+    for (const arena of arenas) {
+      try {
+        const report = await automationService.analyzeArena(arena.id);
+        logReport(arena.id, arena.name, report);
+      } catch (err) {
+        console.error(
+          `${prefix()} Erro ao analisar arena "${arena.name}" (${arena.id}):`,
+          err
+        );
+      }
     }
   }
 
-  console.log(`${prefix()} Análise diária concluída.`);
+  /**
+   * Backup automático do banco
+   */
+
+  try {
+
+    console.log(`${prefix()} Iniciando backup automático do banco...`);
+
+    await runDatabaseBackup();
+
+    console.log(`${prefix()} Backup concluído com sucesso.`);
+
+  } catch (err) {
+
+    console.error(`${prefix()} Erro ao executar backup:`, err);
+
+  }
+
+  console.log(`${prefix()} Job diário finalizado.`);
 }
 
 export function startDailyAutomationJob(): void {
+
   runJob();
+
   setInterval(runJob, DAILY_INTERVAL_MS);
+
   console.log(
     `[AutomationJob] Job diário registrado — próxima execução em 24h.`
   );
+
 }

@@ -1,0 +1,44 @@
+import fs from "fs";
+import path from "path";
+import { db } from "./db";
+import { arenas, students, teachers, plans, checkins } from "@shared/schema";
+
+const BACKUP_DIR = path.join(process.cwd(), "backups");
+
+export async function runDatabaseBackup() {
+  try {
+
+    if (!fs.existsSync(BACKUP_DIR)) {
+      fs.mkdirSync(BACKUP_DIR);
+    }
+
+    const date = new Date().toISOString().split("T")[0];
+
+    const backupFile = path.join(
+      BACKUP_DIR,
+      `backup_${date}.json`
+    );
+
+    const data = {
+      arenas: await db.select().from(arenas),
+      students: await db.select().from(students),
+      teachers: await db.select().from(teachers),
+      plans: await db.select().from(plans),
+      checkins: await db.select().from(checkins),
+      createdAt: new Date().toISOString(),
+    };
+
+    fs.writeFileSync(
+      backupFile,
+      JSON.stringify(data, null, 2),
+      "utf8"
+    );
+
+    console.log("✅ Backup criado:", backupFile);
+
+  } catch (error) {
+
+    console.error("❌ Erro ao gerar backup:", error);
+
+  }
+}

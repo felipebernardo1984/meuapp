@@ -20,8 +20,8 @@ declare module "express-session" {
   }
 }
 
-let ADMIN_LOGIN = process.env.ADMIN_LOGIN || "superadmin";
-let ADMIN_SENHA = process.env.ADMIN_SENHA || "superadmin";
+let ADMIN_LOGIN = process.env.ADMIN_LOGIN || "admin";
+let ADMIN_SENHA = process.env.ADMIN_SENHA || "admin";
 
 function requireArena(req: Request, res: Response): string | null {
   if (!req.session.arenaId) {
@@ -195,133 +195,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (_e) {}
 
-    try {
-      const existingPlans = await storage.listPlatformPlans();
-      if (existingPlans.length === 0) {
-        await storage.upsertPlatformPlan({ planType: "basic", monthlyValue: "R$ 99,00" });
-        await storage.upsertPlatformPlan({ planType: "premium", monthlyValue: "R$ 199,00" });
-      }
-    } catch (_e) {}
-
     next();
   });
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
-  app.post("/api/login", async (req, res) => {
-    const { login, senha } = req.body;
+  // ───────────────── DASHBOARD FINANCEIRO ─────────────────
 
-    if (!login || !senha) {
-      return res.status(400).json({ message: "Credenciais inválidas" });
+  app.get("/api/financeiro/dashboard", async (req, res) => {
+
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+
+    try {
+
+      const payments = await storage.listPayments(arenaId);
+      const checkinsFinanceiros = await storage.listCheckinFinanceiro(arenaId);
+
+      const agora = new Date();
+      const mesAtual = agora.getMonth();
+      const anoAtual = agora.getFullYear();
+
+      const pagamentosMes = payments.filter(p => {
+        if (!p.paymentDate) return false;
+        const data = new Date(p.paymentDate);
+        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+      });
+
+      const receitaMensalidades = pagamentosMes.reduce(
+        (acc, p) => acc + Number(p.amount),
+        0
+      );
+
+      const checkinsMes = checkinsFinanceiros.filter(c => {
+        const data = new Date(c.dataCheckin);
+        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+      });
+
+      const receitaCheckin = checkinsMes.reduce(
+        (acc, c) => acc + Number(c.valorTotal),
+        0
+      );
+
+      const receitaWellhub = checkinsMes
+        .filter(c => c.integrationType === "wellhub")
+        .reduce((acc, c) => acc + Number(c.valorTotal), 0);
+
+      const receitaTotalpass = checkinsMes
+        .filter(c => c.integrationType === "totalpass")
+        .reduce((acc, c) => acc + Number(c.valorTotal), 0);
+
+      res.json({
+        faturamentoMes: receitaMensalidades + receitaCheckin,
+        receitaMensalidades,
+        receitaCheckin,
+        receitaWellhub,
+        receitaTotalpass,
+        totalCheckins: checkinsMes.length
+      });
+
+    } catch (error) {
+
+      console.error("Erro dashboard financeiro:", error);
+
+      res.status(500).json({
+        error: "Erro ao gerar dashboard financeiro"
+      });
+
     }
 
-    const arenas = await storage.listArenas();
-
-    for (const arena of arenas) {
-
-      if (arena.gestorLogin === login && arena.gestorSenha === senha) {
-        req.session.arenaId = arena.id;
-        req.session.userType = "gestor";
-        req.session.userId = arena.id;
-
-        return res.json({
-          tipo: "gestor",
-          arenaId: arena.id,
-          arenaName: arena.name,
-        });
-      }
-
-      const teacher = await storage.getTeacherByLogin(arena.id, login);
-
-      if (teacher && teacher.senha === senha) {
-        req.session.arenaId = arena.id;
-        req.session.userType = "professor";
-        req.session.userId = teacher.id;
-
-        return res.json({
-          tipo: "professor",
-          professor: {
-            id: teacher.id,
-            nome: teacher.nome,
-            modalidade: teacher.modalidade,
-          },
-          arenaId: arena.id,
-        });
-      }
-
-      const student = await storage.getStudentByLogin(arena.id, login);
-
-      if (student && student.senha === senha && student.aprovado) {
-        req.session.arenaId = arena.id;
-        req.session.userType = "aluno";
-        req.session.userId = student.id;
-
-        const historico = await storage.listCheckins(student.id);
-
-        return res.json({
-          tipo: "aluno",
-          aluno: { ...student, historico },
-          arenaId: arena.id,
-        });
-      }
-    }
-
-    return res.status(401).json({
-      message: "Usuário ou senha incorretos",
-    });
   });
 
-  app.post("/api/logout", (req, res) => {
-    req.session.destroy(() => res.json({ ok: true }));
-  });
-
-  app.get("/api/session", async (req, res) => {
-    if (!req.session.arenaId) {
-      return res.json({ authenticated: false });
-    }
-
-    const { arenaId, userType, userId } = req.session;
-
-    if (userType === "gestor") {
-      const arena = await storage.getArena(arenaId!);
-
-      return res.json({
-        authenticated: true,
-        tipo: "gestor",
-        arenaId,
-        arenaName: arena?.name,
-      });
-    }
-
-    if (userType === "professor") {
-      const teacher = await storage.getTeacher(userId!);
-
-      return res.json({
-        authenticated: true,
-        tipo: "professor",
-        professor: teacher,
-        arenaId,
-      });
-    }
-
-    if (userType === "aluno") {
-      const student = await storage.getStudent(userId!);
-
-      if (!student) {
-        return res.json({ authenticated: false });
-      }
-
-      const historico = await storage.listCheckins(student.id);
-
-      return res.json({
-        authenticated: true,
-        tipo: "aluno",
-        aluno: { ...student, historico },
-        arenaId,
-      });
-    }
-
-    return res.json({ authenticated: false });
-  });
+  // ───────────────── AUTOMATION ROUTES ─────────────────
 
   app.use(automationRouter);
 
