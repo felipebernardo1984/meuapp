@@ -94,17 +94,6 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
         </div>
       </div>
 
-      <Button
-        size="lg"
-        className="w-full h-14 text-lg mb-6"
-        onClick={() => refetch()}
-        disabled={isFetching}
-        data-testid="button-atualizar-alertas"
-      >
-        <RefreshCw className={`h-5 w-5 mr-2 ${isFetching ? "animate-spin" : ""}`} />
-        Atualizar
-      </Button>
-
       {isLoading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
           Carregando alertas...
@@ -298,6 +287,19 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
           </Card>
         </>
       )}
+
+      <div className="pt-6 pb-8">
+        <Button
+          size="lg"
+          className="w-full h-14 text-lg"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          data-testid="button-atualizar-alertas"
+        >
+          <RefreshCw className={`h-5 w-5 mr-2 ${isFetching ? "animate-spin" : ""}`} />
+          Atualizar
+        </Button>
+      </div>
     </div>
   );
 }
