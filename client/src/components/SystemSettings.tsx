@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Settings, DollarSign, Zap, Save } from "lucide-react";
+import { ArrowLeft, Settings, DollarSign, Zap, Save, ChevronUp, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -72,6 +72,7 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
   };
 
   const [editando, setEditando] = useState<Record<string, LocalEdit>>({});
+  const [modalidadesMinimizado, setModalidadesMinimizado] = useState(false);
 
   const getLocal = (modalidade: string): LocalEdit => {
     if (editando[modalidade]) return editando[modalidade];
@@ -117,29 +118,48 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-settings">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Settings className="h-6 w-6" />
-            Configurações do Sistema
-          </h1>
-          <p className="text-sm text-muted-foreground">Gerencie valores por check-in por integração e modalidade</p>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Settings className="h-6 w-6" />
+          Configurações do Sistema
+        </h1>
+        <p className="text-sm text-muted-foreground">Gerencie valores por check-in por integração e modalidade</p>
       </div>
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <DollarSign className="h-5 w-5" />
-            Valor por Check-in por Modalidade
-          </CardTitle>
-          <CardDescription>
-            Configure os valores separados por integração (Wellhub e TotalPass) para cada modalidade. Esses valores são usados para calcular a receita gerada automaticamente.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <DollarSign className="h-5 w-5" />
+              Valor por Check-in por Modalidade
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setModalidadesMinimizado(!modalidadesMinimizado)}
+              data-testid="button-toggle-modalidades"
+            >
+              {modalidadesMinimizado ? (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                  Mostrar modalidades
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                  Minimizar modalidades
+                </>
+              )}
+            </Button>
+          </div>
+          {!modalidadesMinimizado && (
+            <CardDescription>
+              Configure os valores separados por integração (Wellhub e TotalPass) para cada modalidade. Esses valores são usados para calcular a receita gerada automaticamente.
+            </CardDescription>
+          )}
         </CardHeader>
+        {!modalidadesMinimizado && (
         <CardContent>
           {isLoading ? (
             <p className="text-sm text-muted-foreground text-center py-6">Carregando...</p>
@@ -254,6 +274,7 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
             </div>
           )}
         </CardContent>
+        )}
       </Card>
 
       <Card className="mb-6">

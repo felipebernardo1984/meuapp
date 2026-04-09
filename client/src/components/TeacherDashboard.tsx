@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, ChevronUp, ChevronDown } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -147,6 +147,8 @@ export default function TeacherDashboard({
 
   const [dialogReceita, setDialogReceita] = useState(false);
   const [alunoReceita, setAlunoReceita] = useState<AlunoView | null>(null);
+
+  const [alunosMinimizado, setAlunosMinimizado] = useState(false);
 
   const { data: modalidadeSettings = [] } = useQuery<any[]>({ queryKey: ["/api/configuracoes/modalidades"] });
 
@@ -283,7 +285,34 @@ export default function TeacherDashboard({
         </CardContent>
       </Card>
 
+      {/* Cabeçalho da seção de alunos com minimizar */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-medium text-muted-foreground">
+          Alunos ({alunos.length})
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-foreground"
+          onClick={() => setAlunosMinimizado(!alunosMinimizado)}
+          data-testid="button-toggle-alunos"
+        >
+          {alunosMinimizado ? (
+            <>
+              <ChevronDown className="h-4 w-4 mr-1" />
+              Mostrar alunos
+            </>
+          ) : (
+            <>
+              <ChevronUp className="h-4 w-4 mr-1" />
+              Minimizar alunos
+            </>
+          )}
+        </Button>
+      </div>
+
       {/* Grade de alunos */}
+      {!alunosMinimizado && (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {alunos.map((aluno) => {
           const temCheckins = aluno.plano > 0;
@@ -457,8 +486,9 @@ export default function TeacherDashboard({
           );
         })}
       </div>
+      )}
 
-      {alunos.length === 0 && (
+      {alunos.length === 0 && !alunosMinimizado && (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Nenhum aluno cadastrado nesta modalidade</p>
