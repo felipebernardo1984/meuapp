@@ -665,7 +665,7 @@ export default function Admin() {
                   data-testid="button-minimize-arenas"
                 >
                   {minimized ? <ChevronDown className="h-3.5 w-3.5 mr-1.5" /> : <ChevronUp className="h-3.5 w-3.5 mr-1.5" />}
-                  {minimized ? "Expandir Arenas" : "Minimizar Arenas"}
+                  {minimized ? "Expandir" : "Minimizar"}
                 </Button>
               </div>
             </CardContent>
