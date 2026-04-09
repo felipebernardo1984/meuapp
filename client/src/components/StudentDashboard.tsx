@@ -365,6 +365,20 @@ export default function StudentDashboard({
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">R$ {p.amount}</span>
                     {paymentStatusBadge(p.status)}
+                    {p.status !== "paid" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setPixItem({ amount: p.amount, description: `Mensalidade — ${p.referenceMonth}` });
+                          setDialogPix(true);
+                        }}
+                        data-testid={`button-pay-payment-${p.id}`}
+                      >
+                        <QrCode className="h-3.5 w-3.5 mr-1" />
+                        Pagar
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
