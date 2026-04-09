@@ -212,7 +212,7 @@ export type CheckinEntry = typeof checkinHistory.$inferSelect;
 export const checkinFinanceiro = pgTable("checkin_financeiro", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
-  checkinId: varchar("checkin_id").references(() => checkinHistory.id, { onDelete: "cascade" }).unique(),
+  checkinId: varchar("checkin_id").references(() => checkinHistory.id, { onDelete: "set null" }).unique(),
   studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
   modalidade: text("modalidade").notNull(),
   integrationType: text("integration_type").notNull().default("none"), // snapshot: 'wellhub' | 'totalpass' | 'none'
