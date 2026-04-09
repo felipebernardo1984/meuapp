@@ -5,8 +5,6 @@ import MemoryStore from "memorystore";
 import { createClient } from "redis";
 import connectRedis from "connect-redis";
 import { storage } from "./storage";
-import { financeService } from "./financeService";
-import { getFinancialStatus } from "./financialStatusUtils";
 import { automationRouter } from "./automationRoutes";
 
 const MemoryStoreSession = MemoryStore(session);
@@ -31,7 +29,7 @@ function requireArena(req: Request, res: Response): string | null {
   return req.session.arenaId;
 }
 
-// 🔐 NOVA FUNÇÃO SEGURA (CRÍTICO PARA MULTI-TENANT)
+// segurança multi-tenant
 function getArenaOrFail(req: Request): string {
   if (!req.session.arenaId) {
     throw new Error("Arena não autenticada");
@@ -52,6 +50,38 @@ function calcNextBillingDate(startDate: string): string {
   const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
   d.setMonth(d.getMonth() + 1);
   return d.toLocaleDateString("pt-BR");
+}
+
+// NOVA FUNÇÃO → registra financeiro do checkin
+async function registrarFinanceiroCheckin({
+  arenaId,
+  studentId,
+  integrationType,
+  valor
+}: {
+  arenaId: string;
+  studentId: string;
+  integrationType: "wellhub" | "totalpass" | "normal";
+  valor: number;
+}) {
+
+  try {
+
+    await storage.createCheckinFinanceiro({
+      arenaId,
+      studentId,
+      integrationType,
+      valorUnitario: valor,
+      valorTotal: valor,
+      dataCheckin: new Date().toISOString()
+    });
+
+  } catch (err) {
+
+    console.error("Erro ao registrar financeiro do checkin:", err);
+
+  }
+
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -99,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
-  // ── Seed default arena ─────────────────────────
+  // ───────────── Seed Arena ─────────────
 
   app.use(async (_req, _res, next) => {
 
@@ -206,6 +236,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             hora: "18:30",
           });
 
+          await registrarFinanceiroCheckin({
+            arenaId: defaultArena.id,
+            studentId: a1.id,
+            integrationType: "normal",
+            valor: 0
+          });
+
         }
 
       }
@@ -216,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   });
 
-  // ───────────────── DASHBOARD FINANCEIRO ─────────────────
+  // ───────────── Dashboard Financeiro ─────────────
 
   app.get("/api/financeiro/dashboard", async (req, res) => {
 
@@ -233,9 +270,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const anoAtual = agora.getFullYear();
 
       const pagamentosMes = payments.filter(p => {
+
         if (!p.paymentDate) return false;
+
         const data = new Date(p.paymentDate);
+
         return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+
       });
 
       const receitaMensalidades = pagamentosMes.reduce(
@@ -244,14 +285,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const checkinsMes = checkinsFinanceiros.filter(c => {
-        const data = new Date(c.dataCheckin);
-        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
-      });
 
-      const receitaCheckin = checkinsMes.reduce(
-        (acc, c) => acc + Number(c.valorTotal),
-        0
-      );
+        const data = new Date(c.dataCheckin);
+
+        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+
+      });
 
       const receitaWellhub = checkinsMes
         .filter(c => c.integrationType === "wellhub")
@@ -261,13 +300,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .filter(c => c.integrationType === "totalpass")
         .reduce((acc, c) => acc + Number(c.valorTotal), 0);
 
+      const receitaCheckin = receitaWellhub + receitaTotalpass;
+
       res.json({
+
         faturamentoMes: receitaMensalidades + receitaCheckin,
         receitaMensalidades,
         receitaCheckin,
         receitaWellhub,
         receitaTotalpass,
         totalCheckins: checkinsMes.length
+
       });
 
     } catch (error) {
@@ -291,9 +334,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 function gerarLogin(nome: string): string {
+
   return nome
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, ".");
+
 }
