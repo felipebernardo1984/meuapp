@@ -7,6 +7,7 @@ import TeacherDashboard from "@/components/TeacherDashboard";
 import ManagerDashboard from "@/components/ManagerDashboard";
 import FinancialDashboard from "@/components/FinancialDashboard";
 import SystemSettings from "@/components/SystemSettings";
+import AlertPanel from "@/components/AlertPanel";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,7 @@ export default function ArenaApp() {
   const qc = useQueryClient();
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [gestorTab, setGestorTab] = useState<"dashboard" | "financeiro" | "configuracoes">("dashboard");
+  const [gestorTab, setGestorTab] = useState<"dashboard" | "financeiro" | "configuracoes" | "alertas">("dashboard");
 
   // ── Arena info ────────────────────────────────────────────────────────────
   const { data: arena, isLoading: arenaLoading } = useQuery<{ id: string; name: string }>({
@@ -347,6 +348,7 @@ export default function ArenaApp() {
               onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
               onIrFinanceiro={() => setGestorTab("financeiro")}
               onIrConfiguracoes={() => setGestorTab("configuracoes")}
+              onIrAlertas={() => setGestorTab("alertas")}
               onEditarAluno={(dados: any) => editarAluno.mutate(dados)}
               onAlterarPlanoAluno={(alunoId: string, planoId: string) => alterarPlanoAluno2.mutate({ alunoId, planoId })}
               onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
@@ -362,6 +364,9 @@ export default function ArenaApp() {
           )}
           {gestorTab === "configuracoes" && (
             <SystemSettings onVoltar={() => setGestorTab("dashboard")} />
+          )}
+          {gestorTab === "alertas" && (
+            <AlertPanel arenaId={id!} onVoltar={() => setGestorTab("dashboard")} />
           )}
         </>
       )}

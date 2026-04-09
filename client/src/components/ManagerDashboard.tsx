@@ -123,6 +123,7 @@ interface ManagerDashboardProps {
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
   onIrFinanceiro: () => void;
   onIrConfiguracoes?: () => void;
+  onIrAlertas?: () => void;
   onEditarAluno: (dados: { id: string; nome: string; cpf: string; email: string; telefone: string; login: string; senha?: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number; planoId: string; integrationType: string; integrationPlan: string }) => void;
   onAlterarPlanoAluno: (alunoId: string, planoId: string) => void;
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
@@ -158,6 +159,7 @@ export default function ManagerDashboard({
   onCriarCobranca,
   onIrFinanceiro,
   onIrConfiguracoes,
+  onIrAlertas,
   onEditarAluno,
   onAlterarPlanoAluno,
   onCheckinManual,
@@ -1073,6 +1075,11 @@ export default function ManagerDashboard({
               <Button variant="outline" onClick={onIrFinanceiro} data-testid="button-go-financial">
                 <TrendingUp className="h-4 w-4 mr-2" />Financeiro
               </Button>
+              {onIrAlertas && (
+                <Button variant="outline" onClick={onIrAlertas} data-testid="button-go-alerts">
+                  <AlertCircle className="h-4 w-4 mr-2" />Alertas
+                </Button>
+              )}
               {onIrConfiguracoes && (
                 <Button variant="outline" onClick={onIrConfiguracoes} data-testid="button-go-settings">
                   <Settings className="h-4 w-4 mr-2" />Configurações
