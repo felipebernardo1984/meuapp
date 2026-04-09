@@ -65,6 +65,9 @@ interface AlunoGestor {
   id: string;
   nome: string;
   cpf: string;
+  email?: string;
+  telefone?: string;
+  login?: string;
   modalidade: string;
   plano: number;
   planoId: string;
@@ -120,7 +123,7 @@ interface ManagerDashboardProps {
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
   onIrFinanceiro: () => void;
   onIrConfiguracoes?: () => void;
-  onEditarAluno: (dados: { id: string; nome: string; cpf: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number; integrationType: string; integrationPlan: string }) => void;
+  onEditarAluno: (dados: { id: string; nome: string; cpf: string; email: string; telefone: string; login: string; senha?: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number; planoId: string; integrationType: string; integrationPlan: string }) => void;
   onAlterarPlanoAluno: (alunoId: string, planoId: string) => void;
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onRemoverCheckin: (alunoId: string, index: number) => void;
@@ -179,7 +182,7 @@ export default function ManagerDashboard({
   // Editar aluno state
   const [dialogEditarAluno, setDialogEditarAluno] = useState(false);
   const [alunoEditando, setAlunoEditando] = useState<AlunoGestor | null>(null);
-  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "", integrationType: "none", integrationPlan: "" });
+  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "", integrationType: "none", integrationPlan: "" });
 
   // Alterar plano state
   const [dialogAlterarPlano, setDialogAlterarPlano] = useState(false);
@@ -340,7 +343,7 @@ export default function ManagerDashboard({
   const handleCadastrarAluno = () => {
     if (novoAluno.nome && novoAluno.cpf && novoAluno.modalidade && novoAluno.planoId) {
       onCadastrarAluno(novoAluno);
-      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: planos[0]?.id ?? "" });
+      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: planos[0]?.id ?? "", integrationType: "none", integrationPlan: "" });
       setDialogNovoAluno(false);
     }
   };
@@ -805,7 +808,7 @@ export default function ManagerDashboard({
             <Button
               size="lg"
               className="w-full h-14 text-lg mt-2"
-              onClick={() => { setFormProfessor({ nome: "", modalidade: "" }); setDialogProfessor(true); }}
+              onClick={() => { setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "" }); setDialogProfessor(true); }}
               data-testid="button-add-teacher"
             >
               <UserPlus className="mr-2 h-5 w-5" />
@@ -1109,6 +1112,10 @@ export default function ManagerDashboard({
                               setFormEditarAluno({
                                 nome: aluno.nome,
                                 cpf: aluno.cpf,
+                                email: aluno.email ?? "",
+                                telefone: aluno.telefone ?? "",
+                                login: aluno.login ?? "",
+                                senha: "",
                                 modalidade: aluno.modalidade,
                                 statusMensalidade: aluno.statusMensalidade,
                                 checkinsRealizados: aluno.checkinsRealizados,
@@ -1383,106 +1390,166 @@ export default function ManagerDashboard({
 
       {/* Dialog Editar Aluno */}
       <Dialog open={dialogEditarAluno} onOpenChange={(open) => { if (!open) { setDialogEditarAluno(false); setAlunoEditando(null); } }}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5" />
               Editar Dados do Aluno
             </DialogTitle>
-            <DialogDescription>
-              Atualize as informações do aluno. O login permanece o mesmo.
-            </DialogDescription>
+            <DialogDescription>{alunoEditando?.nome}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <div className="space-y-1">
-              <Label>Nome</Label>
-              <Input
-                value={formEditarAluno.nome}
-                onChange={(e) => setFormEditarAluno({ ...formEditarAluno, nome: e.target.value })}
-                data-testid="input-edit-nome"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>CPF (também é a senha do aluno)</Label>
-              <Input
-                placeholder="000.000.000-00"
-                value={formEditarAluno.cpf}
-                onChange={(e) => setFormEditarAluno({ ...formEditarAluno, cpf: e.target.value })}
-                data-testid="input-edit-cpf"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Modalidade</Label>
-              <Input
-                value={formEditarAluno.modalidade}
-                onChange={(e) => setFormEditarAluno({ ...formEditarAluno, modalidade: e.target.value })}
-                data-testid="input-edit-modalidade"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Status Mensalidade</Label>
-              <Select
-                value={formEditarAluno.statusMensalidade}
-                onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, statusMensalidade: v })}
-              >
-                <SelectTrigger data-testid="select-edit-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Em dia">Em dia</SelectItem>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Check-ins realizados</Label>
-              <Input
-                type="number"
-                min={0}
-                value={formEditarAluno.checkinsRealizados}
-                onChange={(e) => setFormEditarAluno({ ...formEditarAluno, checkinsRealizados: Number(e.target.value) })}
-                data-testid="input-edit-checkins"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Integração</Label>
-              <Select
-                value={formEditarAluno.integrationType}
-                onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationType: v, integrationPlan: "" })}
-              >
-                <SelectTrigger data-testid="select-edit-integration-type">
-                  <SelectValue placeholder="Nenhuma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                  <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
-                  <SelectItem value="totalpass">TotalPass</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {formEditarAluno.integrationType !== "none" && (
-              <div className="space-y-1">
-                <Label>Plano da Integração</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1">
+                <Label>Nome do Aluno <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="Ex: TP1, TP2, GP1..."
-                  value={formEditarAluno.integrationPlan}
-                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: e.target.value })}
-                  data-testid="input-edit-integration-plan"
+                  placeholder="Nome completo"
+                  value={formEditarAluno.nome}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, nome: e.target.value })}
+                  data-testid="input-edit-nome"
                 />
               </div>
-            )}
+              <div className="space-y-1">
+                <Label>CPF <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="000.000.000-00"
+                  value={formEditarAluno.cpf}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, cpf: e.target.value })}
+                  data-testid="input-edit-cpf"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Telefone</Label>
+                <Input
+                  placeholder="(00) 00000-0000"
+                  value={formEditarAluno.telefone}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, telefone: e.target.value })}
+                  data-testid="input-edit-telefone"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Email</Label>
+                <Input
+                  placeholder="email@exemplo.com"
+                  type="email"
+                  value={formEditarAluno.email}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, email: e.target.value })}
+                  data-testid="input-edit-email"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="login de acesso"
+                  value={formEditarAluno.login}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, login: e.target.value })}
+                  data-testid="input-edit-login"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Nova Senha</Label>
+                <Input
+                  placeholder="deixe em branco para manter"
+                  type="password"
+                  value={formEditarAluno.senha}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, senha: e.target.value })}
+                  data-testid="input-edit-senha"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Modalidade <span className="text-destructive">*</span></Label>
+                <Input
+                  value={formEditarAluno.modalidade}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, modalidade: e.target.value })}
+                  data-testid="input-edit-modalidade"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Plano</Label>
+                <Select
+                  value={formEditarAluno.planoId}
+                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, planoId: v })}
+                >
+                  <SelectTrigger data-testid="select-edit-plano">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {planos.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Status Mensalidade</Label>
+                <Select
+                  value={formEditarAluno.statusMensalidade}
+                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, statusMensalidade: v })}
+                >
+                  <SelectTrigger data-testid="select-edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Em dia">Em dia</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Check-ins realizados</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={formEditarAluno.checkinsRealizados}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, checkinsRealizados: Number(e.target.value) })}
+                  data-testid="input-edit-checkins"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Integração</Label>
+                <Select
+                  value={formEditarAluno.integrationType}
+                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationType: v, integrationPlan: "" })}
+                >
+                  <SelectTrigger data-testid="select-edit-integration-type">
+                    <SelectValue placeholder="Nenhuma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
+                    <SelectItem value="totalpass">TotalPass</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {formEditarAluno.integrationType !== "none" && (
+                <div className="col-span-2 space-y-1">
+                  <Label>Plano da Integração</Label>
+                  <Input
+                    placeholder="Ex: TP1, TP2, GP1..."
+                    value={formEditarAluno.integrationPlan}
+                    onChange={(e) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: e.target.value })}
+                    data-testid="input-edit-integration-plan"
+                  />
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setDialogEditarAluno(false); setAlunoEditando(null); }}>Cancelar</Button>
             <Button
               onClick={() => {
-                if (alunoEditando && formEditarAluno.nome && formEditarAluno.cpf && formEditarAluno.modalidade) {
-                  onEditarAluno({ id: alunoEditando.id, ...formEditarAluno });
+                if (alunoEditando && formEditarAluno.nome && formEditarAluno.cpf && formEditarAluno.login && formEditarAluno.modalidade) {
+                  const payload = { id: alunoEditando.id, ...formEditarAluno };
+                  if (!payload.senha) delete (payload as any).senha;
+                  onEditarAluno(payload);
+                  if (formEditarAluno.planoId && formEditarAluno.planoId !== alunoEditando.planoId) {
+                    onAlterarPlanoAluno(alunoEditando.id, formEditarAluno.planoId);
+                  }
                   setDialogEditarAluno(false);
                   setAlunoEditando(null);
                 }
               }}
-              disabled={!formEditarAluno.nome || !formEditarAluno.cpf || !formEditarAluno.modalidade}
+              disabled={!formEditarAluno.nome || !formEditarAluno.cpf || !formEditarAluno.login || !formEditarAluno.modalidade}
               data-testid="button-confirm-edit-student"
             >
               Salvar

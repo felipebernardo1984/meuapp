@@ -1,0 +1,120 @@
+Precisamos corrigir e padronizar o sistema de alunos mantendo o layout e estrutura já existentes no painel do professor.
+
+IMPORTANTE:
+- NÃO alterar o layout do formulário do professor
+- NÃO remover campos existentes
+- NÃO recriar o formulário do zero
+- O formulário do professor deve ser o modelo padrão do sistema
+
+---
+
+OBJETIVO:
+
+Garantir que:
+- O painel do gestor utilize exatamente o mesmo modelo de dados do professor
+- Os campos permaneçam flexíveis (como já estão)
+- O cálculo financeiro funcione corretamente com base nesses dados
+
+---
+
+1. FORMULÁRIO (PROFESSOR COMO PADRÃO)
+
+- Manter exatamente o layout atual
+- Manter todos os campos existentes
+- Garantir que todos os campos sejam reaproveitados no sistema inteiro
+
+- Adicionar o campo:
+  integrationType (caso ainda não exista)
+
+Valores:
+- "none" (Sem integração)
+- "wellhub"
+- "totalpass"
+
+- Esse campo deve:
+  - aparecer no formulário
+  - carregar ao editar aluno
+  - ser salvo corretamente
+
+---
+
+2. REUTILIZAÇÃO DO FORMULÁRIO
+
+- O painel do gestor deve usar o MESMO formulário do professor
+  (reutilizar componente, não duplicar)
+
+- O botão "Editar aluno" do gestor deve:
+  - abrir esse mesmo formulário
+  - com os dados já preenchidos
+
+---
+
+3. FONTE ÚNICA DE DADOS (CRÍTICO)
+
+- O aluno deve vir sempre do backend (single source of truth)
+
+- Remover qualquer duplicação de estado entre:
+  - painel do professor
+  - painel do gestor
+
+- Após editar:
+  - atualizar no backend
+  - atualizar automaticamente nas telas (refetch ou estado global)
+
+---
+
+4. MANUTER FLEXIBILIDADE DOS CAMPOS
+
+- Não engessar os campos existentes
+- Permitir que continuem dinâmicos como já estão
+- Apenas garantir que todos sejam persistidos corretamente
+
+---
+
+5. CÁLCULO FINANCEIRO
+
+Garantir que o cálculo use:
+
+- integrationType do aluno
+- valores da modalidade
+
+Regra:
+
+- wellhub → usar wellhubValorCheckin
+- totalpass → usar totalpassValorCheckin
+- none → usar valor padrão da modalidade
+
+Total:
+total = quantidadeCheckins * valorCheckin
+
+---
+
+6. VALIDAÇÕES IMPORTANTES
+
+Garantir que:
+
+- integrationType nunca seja undefined
+- valores sejam numéricos (usar "20.00", não "20,00")
+- modalidade esteja sempre vinculada ao aluno
+
+---
+
+7. SINCRONIZAÇÃO TOTAL
+
+Garantir que:
+
+- Professor edita → gestor vê igual
+- Gestor edita → professor vê igual
+- Dados sempre consistentes
+
+---
+
+OBJETIVO FINAL:
+
+- Mesmo layout do professor
+- Mesmos campos em todo sistema
+- Sem duplicação de formulário
+- Dados sincronizados
+- Cálculo funcionando corretamente
+
+Sem quebrar nada que já funciona visualmente.

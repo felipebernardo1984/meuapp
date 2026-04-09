@@ -278,6 +278,8 @@ export default function Home() {
               ultimoCheckin: a.ultimoCheckin ? { data: a.ultimoCheckin, hora: "" } : undefined,
               historico: a.historico ?? [],
               photoUrl: a.photoUrl ?? undefined,
+              integrationType: a.integrationType ?? "none",
+              integrationPlan: a.integrationPlan ?? undefined,
             }))}
           charges={charges}
           payments={payments}
@@ -297,14 +299,21 @@ export default function Home() {
             id: a.id,
             nome: a.nome,
             cpf: a.cpf,
+            email: a.email ?? undefined,
+            telefone: a.telefone ?? undefined,
+            login: a.login ?? undefined,
             modalidade: a.modalidade,
             plano: a.planoCheckins,
+            planoId: a.planoId,
             planoTitulo: a.planoTitulo,
             planoValorTexto: a.planoValorTexto ?? undefined,
             checkinsRealizados: a.checkinsRealizados,
             statusMensalidade: a.statusMensalidade,
             ultimoCheckin: a.ultimoCheckin ?? undefined,
             aprovado: a.aprovado,
+            historico: a.historico ?? [],
+            integrationType: a.integrationType ?? "none",
+            integrationPlan: a.integrationPlan ?? undefined,
           }))}
           professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade }))}
           onAprovarAluno={(id) => aprovarAluno.mutate(id)}
@@ -317,6 +326,14 @@ export default function Home() {
           onExcluirPlano={(id) => excluirPlano.mutate(id)}
           onExportarPDF={() => alert("Exportar PDF em breve")}
           onExportarExcel={() => alert("Exportar Excel em breve")}
+          onEditarAluno={({ id, senha, ...dados }) => editarAluno.mutate({ id, ...dados, ...(senha ? { senha } : {}) })}
+          onAlterarPlanoAluno={(alunoId, planoId) => alterarPlanoAluno.mutate({ alunoId, planoId })}
+          onCheckinManual={(alunoId, data, hora) => checkinManual.mutate({ id: alunoId, data, hora })}
+          onRemoverCheckin={(alunoId, index) => removerCheckin.mutate({ id: alunoId, index })}
+          onExcluirAluno={(alunoId) => excluirAluno.mutate(alunoId)}
+          onRegistrarPagamento={(dados) => apiRequest("POST", "/api/finance/payments", dados)}
+          onCriarCobranca={(dados) => apiRequest("POST", "/api/finance/charges", dados)}
+          onIrFinanceiro={() => {}}
         />
       )}
     </>

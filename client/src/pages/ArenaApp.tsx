@@ -279,11 +279,22 @@ export default function ArenaApp() {
           alunos={alunos
             .filter((a: any) => a.modalidade === sessao.professor.modalidade)
             .map((a: any) => ({
-              id: a.id, nome: a.nome, plano: a.planoCheckins, planoTitulo: a.planoTitulo,
-              planoId: a.planoId, planoValorTexto: a.planoValorTexto ?? undefined,
+              id: a.id,
+              nome: a.nome,
+              cpf: a.cpf ?? undefined,
+              email: a.email ?? undefined,
+              telefone: a.telefone ?? undefined,
+              login: a.login ?? undefined,
+              plano: a.planoCheckins,
+              planoTitulo: a.planoTitulo,
+              planoId: a.planoId,
+              planoValorTexto: a.planoValorTexto ?? undefined,
               checkinsRealizados: a.checkinsRealizados,
               ultimoCheckin: a.ultimoCheckin ? { data: a.ultimoCheckin, hora: "" } : undefined,
-              historico: a.historico ?? [], photoUrl: a.photoUrl ?? undefined,
+              historico: a.historico ?? [],
+              photoUrl: a.photoUrl ?? undefined,
+              integrationType: a.integrationType ?? "none",
+              integrationPlan: a.integrationPlan ?? undefined,
             }))}
           charges={allCharges}
           payments={allPayments}
@@ -291,6 +302,8 @@ export default function ArenaApp() {
           onAlterarPlano={(alunoId: string, planoId: string) => alterarPlanoAluno.mutate({ alunoId, planoId })}
           onCadastrarAluno={(dados: any) => cadastrarAluno.mutate({ ...dados, modalidade: sessao.professor.modalidade })}
           onEditarAluno={(alunoId: string, dados: any) => editarAluno.mutate({ id: alunoId, ...dados })}
+          onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
+          onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
         />
       )}
 
@@ -300,8 +313,15 @@ export default function ArenaApp() {
             <ManagerDashboard
               planos={planosAdaptados}
               alunos={alunos.map((a: any) => ({
-                id: a.id, nome: a.nome, cpf: a.cpf, modalidade: a.modalidade,
-                plano: a.planoCheckins, planoTitulo: a.planoTitulo,
+                id: a.id,
+                nome: a.nome,
+                cpf: a.cpf,
+                email: a.email ?? undefined,
+                telefone: a.telefone ?? undefined,
+                login: a.login ?? undefined,
+                modalidade: a.modalidade,
+                plano: a.planoCheckins,
+                planoTitulo: a.planoTitulo,
                 planoValorTexto: a.planoValorTexto ?? undefined,
                 planoId: a.planoId,
                 checkinsRealizados: a.checkinsRealizados,
