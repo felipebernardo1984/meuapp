@@ -606,12 +606,35 @@ export default function TeacherDashboard({
               {novoAluno.integrationType !== "none" && (
                 <div className="space-y-1">
                   <Label>Plano da Integração</Label>
-                  <Input
-                    placeholder="Ex: TP1, TP2, GP1..."
-                    value={novoAluno.integrationPlan}
-                    onChange={(e) => setNovoAluno({ ...novoAluno, integrationPlan: e.target.value })}
-                    data-testid="input-new-student-integration-plan"
-                  />
+                  {(() => {
+                    const opts = Array.from(new Set(
+                      modalidadeSettings
+                        .map((s: any) => novoAluno.integrationType === "wellhub" ? s.wellhubPlanoMinimo : s.totalpassPlanoMinimo)
+                        .filter(Boolean)
+                    ));
+                    return opts.length > 0 ? (
+                      <Select
+                        value={novoAluno.integrationPlan}
+                        onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationPlan: v })}
+                      >
+                        <SelectTrigger data-testid="input-new-student-integration-plan">
+                          <SelectValue placeholder="Selecione o plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opts.map((p: any) => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder="Ex: TP1, TP2, GP1..."
+                        value={novoAluno.integrationPlan}
+                        onChange={(e) => setNovoAluno({ ...novoAluno, integrationPlan: e.target.value })}
+                        data-testid="input-new-student-integration-plan"
+                      />
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -740,12 +763,35 @@ export default function TeacherDashboard({
               {dadosEdicao.integrationType !== "none" && (
                 <div className="col-span-2 space-y-1">
                   <Label>Plano da Integração</Label>
-                  <Input
-                    placeholder="Ex: TP1, TP2, GP1..."
-                    value={dadosEdicao.integrationPlan ?? ""}
-                    onChange={(e) => setDadosEdicao({ ...dadosEdicao, integrationPlan: e.target.value })}
-                    data-testid="input-edit-student-integration-plan"
-                  />
+                  {(() => {
+                    const opts = Array.from(new Set(
+                      modalidadeSettings
+                        .map((s: any) => dadosEdicao.integrationType === "wellhub" ? s.wellhubPlanoMinimo : s.totalpassPlanoMinimo)
+                        .filter(Boolean)
+                    ));
+                    return opts.length > 0 ? (
+                      <Select
+                        value={dadosEdicao.integrationPlan ?? ""}
+                        onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, integrationPlan: v })}
+                      >
+                        <SelectTrigger data-testid="input-edit-student-integration-plan">
+                          <SelectValue placeholder="Selecione o plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opts.map((p: any) => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder="Ex: TP1, TP2, GP1..."
+                        value={dadosEdicao.integrationPlan ?? ""}
+                        onChange={(e) => setDadosEdicao({ ...dadosEdicao, integrationPlan: e.target.value })}
+                        data-testid="input-edit-student-integration-plan"
+                      />
+                    );
+                  })()}
                 </div>
               )}
             </div>

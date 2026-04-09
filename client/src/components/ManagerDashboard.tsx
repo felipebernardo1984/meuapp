@@ -234,6 +234,7 @@ export default function ManagerDashboard({
   // Queries financeiras para histórico
   const { data: allPayments = [] } = useQuery<any[]>({ queryKey: ["/api/finance/payments"] });
   const { data: allCharges = [] } = useQuery<any[]>({ queryKey: ["/api/finance/charges"] });
+  const { data: modalidadeSettingsList = [] } = useQuery<any[]>({ queryKey: ["/api/configuracoes/modalidades"] });
 
   const deletePayment = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/payments/${id}`),
@@ -607,12 +608,35 @@ export default function ManagerDashboard({
               {novoAluno.integrationType !== "none" && (
                 <div className="space-y-1">
                   <Label>Plano da Integração</Label>
-                  <Input
-                    placeholder="Ex: TP1, TP2, GP1..."
-                    value={novoAluno.integrationPlan}
-                    onChange={(e) => setNovoAluno({ ...novoAluno, integrationPlan: e.target.value })}
-                    data-testid="input-manager-student-integration-plan"
-                  />
+                  {(() => {
+                    const opts = Array.from(new Set(
+                      modalidadeSettingsList
+                        .map((s: any) => novoAluno.integrationType === "wellhub" ? s.wellhubPlanoMinimo : s.totalpassPlanoMinimo)
+                        .filter(Boolean)
+                    ));
+                    return opts.length > 0 ? (
+                      <Select
+                        value={novoAluno.integrationPlan}
+                        onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationPlan: v })}
+                      >
+                        <SelectTrigger data-testid="input-manager-student-integration-plan">
+                          <SelectValue placeholder="Selecione o plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opts.map((p: any) => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder="Ex: TP1, TP2, GP1..."
+                        value={novoAluno.integrationPlan}
+                        onChange={(e) => setNovoAluno({ ...novoAluno, integrationPlan: e.target.value })}
+                        data-testid="input-manager-student-integration-plan"
+                      />
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -1524,12 +1548,35 @@ export default function ManagerDashboard({
               {formEditarAluno.integrationType !== "none" && (
                 <div className="col-span-2 space-y-1">
                   <Label>Plano da Integração</Label>
-                  <Input
-                    placeholder="Ex: TP1, TP2, GP1..."
-                    value={formEditarAluno.integrationPlan}
-                    onChange={(e) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: e.target.value })}
-                    data-testid="input-edit-integration-plan"
-                  />
+                  {(() => {
+                    const opts = Array.from(new Set(
+                      modalidadeSettingsList
+                        .map((s: any) => formEditarAluno.integrationType === "wellhub" ? s.wellhubPlanoMinimo : s.totalpassPlanoMinimo)
+                        .filter(Boolean)
+                    ));
+                    return opts.length > 0 ? (
+                      <Select
+                        value={formEditarAluno.integrationPlan}
+                        onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: v })}
+                      >
+                        <SelectTrigger data-testid="input-edit-integration-plan">
+                          <SelectValue placeholder="Selecione o plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opts.map((p: any) => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder="Ex: TP1, TP2, GP1..."
+                        value={formEditarAluno.integrationPlan}
+                        onChange={(e) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: e.target.value })}
+                        data-testid="input-edit-integration-plan"
+                      />
+                    );
+                  })()}
                 </div>
               )}
             </div>
