@@ -2,8 +2,6 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { createClient } from "redis";
-import { RedisStore } from "connect-redis";
 import { storage } from "./storage";
 import { financeService } from "./financeService";
 import { getFinancialStatus } from "./financialStatusUtils";
@@ -20,8 +18,8 @@ declare module "express-session" {
   }
 }
 
-let ADMIN_LOGIN = process.env.ADMIN_LOGIN || "admin";
-let ADMIN_SENHA = process.env.ADMIN_SENHA || "admin";
+let ADMIN_LOGIN = process.env.ADMIN_LOGIN || "superadmin";
+let ADMIN_SENHA = process.env.ADMIN_SENHA || "superadmin";
 
 function requireArena(req: Request, res: Response): string | null {
   if (!req.session.arenaId) {
@@ -47,26 +45,13 @@ function calcNextBillingDate(startDate: string): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  let sessionStore: any;
-
-  if (process.env.REDIS_URL) {
-    const redisClient = createClient({ url: process.env.REDIS_URL });
-    redisClient.on("error", (err) => console.error("Redis error:", err));
-    await redisClient.connect();
-    sessionStore = new RedisStore({ client: redisClient, prefix: "arena:sess:" });
-    console.log("✅ Redis Session Store ativo");
-  } else {
-    sessionStore = new MemoryStoreSession({ checkPeriod: 86400000 });
-    console.log("⚠️ MemoryStore ativo (modo desenvolvimento)");
-  }
-
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "arena-secret-key",
       resave: false,
       saveUninitialized: false,
-      store: sessionStore,
-      cookie: { secure: process.env.NODE_ENV === "production", httpOnly: true, maxAge: 24 * 60 * 60 * 1000 },
+      store: new MemoryStoreSession({ checkPeriod: 86400000 }),
+      cookie: { secure: false, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 },
     })
   );
 
@@ -86,39 +71,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionStatus: "Ativo",
           nextBillingDate: calcNextBillingDate(today),
         });
+        // Seed default plans
         const p1 = await storage.createPlan({ arenaId: defaultArena.id, titulo: "1x por semana", checkins: 8, valorTexto: null });
         const p2 = await storage.createPlan({ arenaId: defaultArena.id, titulo: "2x por semana", checkins: 12, valorTexto: null });
         await storage.createPlan({ arenaId: defaultArena.id, titulo: "Mensalista", checkins: 0, valorTexto: "R$ 140,00" });
+        // Seed default teachers
         await storage.createTeacher({ arenaId: defaultArena.id, nome: "Carlos Mendes", login: "222", senha: "222", modalidade: "Beach Tennis" });
         await storage.createTeacher({ arenaId: defaultArena.id, nome: "Fernanda Lima", login: "fernanda", senha: "admin", modalidade: "Vôlei de Praia" });
         await storage.createTeacher({ arenaId: defaultArena.id, nome: "Ricardo Souza", login: "ricardo", senha: "admin", modalidade: "Futevôlei" });
+        // Seed default students
         const a1 = await storage.createStudent({
           arenaId: defaultArena.id, nome: "Maria Santos", login: "111", senha: "111",
           cpf: "987.654.321-00", modalidade: "Beach Tennis",
           planoId: p2.id, planoTitulo: p2.titulo, planoCheckins: p2.checkins, planoValorTexto: null,
           checkinsRealizados: 9, statusMensalidade: "Em dia", aprovado: true, ultimoCheckin: "02/01/2025", photoUrl: null,
         });
-        for (const [data, hora] of [
-          ["15/12/2024","18:30"],["18/12/2024","19:00"],["22/12/2024","18:45"],
-          ["25/12/2024","19:15"],["29/12/2024","18:20"],["30/12/2024","18:00"],
-          ["31/12/2024","17:45"],["01/01/2025","19:30"],["02/01/2025","18:30"],
-        ]) {
-          await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data, hora });
-        }
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "15/12/2024", hora: "18:30" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "18/12/2024", hora: "19:00" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "22/12/2024", hora: "18:45" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "25/12/2024", hora: "19:15" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "29/12/2024", hora: "18:20" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "30/12/2024", hora: "18:00" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "31/12/2024", hora: "17:45" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "01/01/2025", hora: "19:30" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data: "02/01/2025", hora: "18:30" });
+
         const a2 = await storage.createStudent({
           arenaId: defaultArena.id, nome: "Pedro Oliveira", login: "pedro", senha: "admin",
           cpf: "456.789.123-00", modalidade: "Vôlei de Praia",
           planoId: p1.id, planoTitulo: p1.titulo, planoCheckins: p1.checkins, planoValorTexto: null,
           checkinsRealizados: 3, statusMensalidade: "Pendente", aprovado: true, ultimoCheckin: "30/12/2024", photoUrl: null,
         });
-        for (const [data, hora] of [
-          ["20/12/2024","18:00"],["25/12/2024","19:00"],["30/12/2024","19:00"],
-        ]) {
-          await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data, hora });
-        }
-      }
-    } catch (_e) {}
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data: "20/12/2024", hora: "18:00" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data: "25/12/2024", hora: "19:00" });
+        await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data: "30/12/2024", hora: "19:00" });
 
+      }
+
+    } catch (_e) {
+      // ignore seed errors (already seeded)
+    }
+
+    // Always ensure platform plan prices exist
     try {
       const existingPlans = await storage.listPlatformPlans();
       if (existingPlans.length === 0) {
@@ -188,24 +182,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({ authenticated: false });
   });
 
-  // ── Admin Auth ─────────────────────────────────────────────────────────────
-  app.post("/api/admin/login", (req, res) => {
-    const { login, senha } = req.body;
-    if (login === ADMIN_LOGIN && senha === ADMIN_SENHA) {
-      req.session.isAdmin = true;
-      return res.json({ success: true });
-    }
-    return res.status(401).json({ message: "Credenciais de administrador inválidas" });
-  });
-
-  app.post("/api/admin/logout", (req, res) => {
-    req.session.destroy(() => res.json({ ok: true }));
-  });
-
-  app.get("/api/admin/session", (req, res) => {
-    res.json({ isAdmin: !!req.session.isAdmin });
-  });
-
   // ── Plans ─────────────────────────────────────────────────────────────────
   app.get("/api/planos", async (req, res) => {
     const arenaId = requireArena(req, res);
@@ -265,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     const { nome, cpf, email, telefone, login, senha, modalidade } = req.body;
-    const updateData: Record<string, any> = { nome, modalidade };
+    const updateData: Partial<{ nome: string; cpf: string | null; email: string | null; telefone: string | null; login: string; senha: string; modalidade: string }> = { nome, modalidade };
     if (cpf !== undefined) updateData.cpf = cpf || null;
     if (email !== undefined) updateData.email = email || null;
     if (telefone !== undefined) updateData.telefone = telefone || null;
@@ -329,12 +305,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (integrationType !== undefined) updates.integrationType = integrationType;
     if (integrationPlan !== undefined) updates.integrationPlan = integrationPlan || null;
     const student = await storage.updateStudent(req.params.id, updates);
+    // Recalculate financial records if integration settings changed
     const integrationChanged =
       (integrationType !== undefined && integrationType !== studentBefore?.integrationType) ||
       (integrationPlan !== undefined && integrationPlan !== studentBefore?.integrationPlan) ||
       (modalidade !== undefined && modalidade !== studentBefore?.modalidade);
     if (integrationChanged) {
-      try { await financeService.recalcularReceitaAluno(arenaId, req.params.id); } catch (_e) {}
+      try {
+        await financeService.recalcularReceitaAluno(arenaId, req.params.id);
+      } catch (_e) {}
     }
     res.json(student);
   });
@@ -372,6 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const student = await storage.getStudent(req.params.id);
     if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
 
+    // Block check-in only for mensalistas with overdue payments
     if (student.integrationType === "none") {
       const financialStatus = await getFinancialStatus(student.id, arenaId);
       if (financialStatus === "inadimplente") {
@@ -379,6 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
 
+    // Validate plan minimum (warn but do not block check-in)
     let planWarning: string | undefined;
     try {
       const modalidadeSetting = await storage.getModalidadeSetting(arenaId, student.modalidade);
@@ -398,9 +379,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ultimoCheckin: data,
     });
 
+    // Registrar receita financeira automaticamente (sem alterar lógica de check-in)
     try {
       await financeService.calcularReceitaCheckin(arenaId, student.id, student.modalidade, checkinEntry.id, data);
-    } catch (_e) {}
+    } catch (_e) {
+      // Não bloquear check-in se a gravação financeira falhar
+    }
 
     const historico = await storage.listCheckins(student.id);
     res.json({ ...updated, historico, planWarning });
@@ -413,7 +397,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
     const index = parseInt(req.params.index, 10);
     const { data: dataISO, hora } = req.body;
-    const data = dataISO ? new Date(dataISO + "T12:00:00").toLocaleDateString("pt-BR") : "";
+    const data = dataISO
+      ? new Date(dataISO + "T12:00:00").toLocaleDateString("pt-BR")
+      : "";
     await storage.updateCheckinByIndex(student.id, index, data, hora);
     const historico = await storage.listCheckins(student.id);
     res.json({ historico });
@@ -426,10 +412,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
     const index = parseInt(req.params.index, 10);
 
+    // Get the checkin entry before deleting so we can cancel the financial record
     const allCheckins = await storage.listCheckins(student.id);
     const checkinToRemove = allCheckins[index];
     if (checkinToRemove?.id) {
-      try { await storage.cancelCheckinFinanceiro(checkinToRemove.id); } catch (_e) {}
+      try {
+        await storage.cancelCheckinFinanceiro(checkinToRemove.id);
+      } catch (_e) {
+        // Don't block removal if cancel fails
+      }
     }
 
     await storage.removeCheckinByIndex(student.id, index);
@@ -467,7 +458,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const now = new Date();
     const referenceMonth = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
 
-    await storage.updateArena(arenaId, { subscriptionStatus: "Ativo", nextBillingDate: nextBilling });
+    await storage.updateArena(arenaId, {
+      subscriptionStatus: "Ativo",
+      nextBillingDate: nextBilling,
+    });
+
     await storage.createArenaSubscriptionPayment({
       arenaId,
       arenaName: arena.name,
@@ -482,6 +477,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Admin Panel ───────────────────────────────────────────────────────────
+  app.post("/api/admin/login", (req, res) => {
+    const { login, senha } = req.body;
+    if (login === ADMIN_LOGIN && senha === ADMIN_SENHA) {
+      req.session.isAdmin = true;
+      return res.json({ ok: true });
+    }
+    return res.status(401).json({ message: "Credenciais de administrador inválidas" });
+  });
+
+  app.post("/api/admin/logout", (req, res) => {
+    req.session.isAdmin = false;
+    res.json({ ok: true });
+  });
+
+  app.get("/api/admin/session", (req, res) => {
+    res.json({ isAdmin: !!req.session.isAdmin });
+  });
+
   app.get("/api/admin/arenas", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const lista = await storage.listArenas();
@@ -606,7 +619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true, arenaId: arena.id, arenaName: arena.name });
   });
 
-  // ── Platform Plans ─────────────────────────────────────────────────────────
+  // ── Platform Plans (admin sets pricing) ───────────────────────────────────
   app.get("/api/admin/platform-plans", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const plans = await storage.listPlatformPlans();
@@ -621,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(plan);
   });
 
-  // ── Arena Subscription Payment History ──────────────────────────────────────
+  // ── Arena Subscription Payment History (admin) ─────────────────────────────
   app.get("/api/admin/subscription-payments", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const payments = await storage.listArenaSubscriptionPayments();
@@ -757,7 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(summary);
   });
 
-  // ── Receita por Check-in ───────────────────────────────────────────────────
+  // ── Receita por Check-in (dados reais do checkinFinanceiro) ──────────────
   app.get("/api/finance/receita/summary", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -773,6 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(result);
   });
 
+  // ── /financeiro/resumo — summary endpoint with explicit field naming ────────
   app.get("/api/financeiro/resumo", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -784,17 +798,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       receitaPorModalidade: result.porModalidade,
       receitaPorAluno: result.porAluno,
     });
-  });
-
-  // Legacy dashboard route
-  app.get("/api/financeiro/dashboard", async (req, res) => {
-    const arenaId = requireArena(req, res);
-    if (!arenaId) return;
-    const checkinsFinanceiros = await storage.listCheckinFinanceiro(arenaId) || [];
-    const receitaWellhub = checkinsFinanceiros.filter(c => c.integrationType === "wellhub").reduce((acc, c) => acc + Number(c.valorTotal), 0);
-    const receitaTotalpass = checkinsFinanceiros.filter(c => c.integrationType === "totalpass").reduce((acc, c) => acc + Number(c.valorTotal), 0);
-    const receitaNormal = checkinsFinanceiros.filter(c => c.integrationType === "none").reduce((acc, c) => acc + Number(c.valorTotal), 0);
-    res.json({ receitaWellhub, receitaTotalpass, receitaNormal });
   });
 
   // ── Integration Plans ──────────────────────────────────────────────────────
@@ -850,7 +853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(settings);
   });
 
-  // ── Modalidade Settings ────────────────────────────────────────────────────
+  // ── Configurações do Sistema (Modalidade Settings) ────────────────────────
   app.get("/api/configuracoes/modalidades", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -865,11 +868,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const {
       wellhubPlanoMinimo, wellhubValorCheckin,
       totalpassPlanoMinimo, totalpassValorCheckin,
+      // legado — mantido para compatibilidade
       valorPorCheckin, planoMinimo, totalpassHabilitado, wellhubHabilitado,
     } = req.body;
+
+    // Auto-derive legado valorPorCheckin from the highest integration value, for backward compat
     const whVal = parseFloat(wellhubValorCheckin ?? "0") || 0;
     const tpVal = parseFloat(totalpassValorCheckin ?? "0") || 0;
     const derivedValor = Math.max(whVal, tpVal);
+
     const setting = await storage.upsertModalidadeSetting({
       arenaId,
       modalidade,
@@ -891,7 +898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ id: arena.id, name: arena.name, subscriptionPlan: arena.subscriptionPlan });
   });
 
-  // ── Backfill historical financial records on startup ─────────────────────
+  // ── Startup: backfill missing financial records for historical check-ins ──
   (async () => {
     try {
       const arenas = await storage.listArenas();
@@ -903,7 +910,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use(automationRouter);
 
-  return createServer(app);
+  const httpServer = createServer(app);
+  return httpServer;
 }
 
 function gerarLogin(nome: string): string {
