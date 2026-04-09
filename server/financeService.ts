@@ -7,7 +7,7 @@ import type { Student, ModalidadeSettings } from "@shared/schema";
 export interface ReceitaPeriodo {
   totalCheckins: number;
   receitaTotal: number;
-  porModalidade: Array<{ modalidade: string; checkins: number; receita: number }>;
+  porModalidade: Array<{ modalidade: string; integrationType: string; checkins: number; receita: number; valorUnitario: number }>;
   porAluno: Array<{ studentId: string; nome: string; modalidade: string; integrationType: string; checkins: number; receita: number }>;
 }
 
@@ -187,7 +187,8 @@ export const financeService = {
     const allStudents = await storage.listStudents(arenaId);
     const studentMap = new Map(allStudents.map((s) => [s.id, s]));
 
-    const modalidadeMap = new Map<string, { checkins: number; receita: number }>();
+    // Key: "modalidade|integrationType"
+    const modalidadeMap = new Map<string, { modalidade: string; integrationType: string; checkins: number; receita: number; valorUnitario: number }>();
     const alunoMap = new Map<string, { nome: string; modalidade: string; integrationType: string; checkins: number; receita: number }>();
 
     let totalCheckins = 0;
@@ -202,21 +203,31 @@ export const financeService = {
       if (!isInRange(recordDate, inicio, fim)) continue;
 
       const valor = parseFloat(r.valorTotal || "0");
+      const integrationType = r.integrationType ?? "none";
       totalCheckins += 1;
       receitaTotal += valor;
 
-      const mod = r.modalidade;
-      if (!modalidadeMap.has(mod)) modalidadeMap.set(mod, { checkins: 0, receita: 0 });
-      modalidadeMap.get(mod)!.checkins += 1;
-      modalidadeMap.get(mod)!.receita += valor;
+      // Group by modalidade + integrationType, only tracking revenue-generating check-ins
+      if (valor > 0) {
+        const mod = r.modalidade;
+        const key = `${mod}|${integrationType}`;
+        if (!modalidadeMap.has(key)) {
+          modalidadeMap.set(key, { modalidade: mod, integrationType, checkins: 0, receita: 0, valorUnitario: valor });
+        }
+        const entry = modalidadeMap.get(key)!;
+        entry.checkins += 1;
+        entry.receita += valor;
+        // valorUnitario: keep consistent (all records in same group share same rate)
+        entry.valorUnitario = valor;
+      }
 
       const sid = r.studentId!;
       if (!alunoMap.has(sid)) {
         const student = studentMap.get(sid);
         alunoMap.set(sid, {
           nome: student?.nome ?? "—",
-          modalidade: mod,
-          integrationType: r.integrationType ?? "none",
+          modalidade: r.modalidade,
+          integrationType,
           checkins: 0,
           receita: 0,
         });
@@ -228,8 +239,7 @@ export const financeService = {
     return {
       totalCheckins,
       receitaTotal,
-      porModalidade: Array.from(modalidadeMap.entries())
-        .map(([modalidade, v]) => ({ modalidade, ...v }))
+      porModalidade: Array.from(modalidadeMap.values())
         .sort((a, b) => b.receita - a.receita),
       porAluno: Array.from(alunoMap.entries())
         .map(([studentId, v]) => ({ studentId, ...v }))
@@ -241,7 +251,7 @@ export const financeService = {
     arenaId: string,
     dataInicio?: string,
     dataFim?: string
-  ): Promise<Array<{ modalidade: string; checkins: number; receita: number }>> {
+  ): Promise<ReceitaPeriodo["porModalidade"]> {
     const result = await financeService.getReceitaTotalPeriodo(arenaId, dataInicio, dataFim);
     return result.porModalidade;
   },

@@ -48,7 +48,7 @@ function statusBadge(status: string) {
 interface ReceitaSummary {
   totalCheckins: number;
   receitaTotal: number;
-  porModalidade: Array<{ modalidade: string; checkins: number; receita: number }>;
+  porModalidade: Array<{ modalidade: string; integrationType: string; checkins: number; receita: number; valorUnitario: number }>;
   porAluno: Array<{ studentId: string; nome: string; modalidade: string; checkins: number; receita: number }>;
 }
 
@@ -154,7 +154,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
   const receitaByModalidade = receitaSummary?.porModalidade ?? [];
   const topAlunos = (receitaSummary?.porAluno ?? []).filter((a) => a.receita > 0).slice(0, 5);
 
-  const temConfiguracao = modalidadeSettings.length > 0 && modalidadeSettings.some((s) => parseFloat(s.valorPorCheckin || "0") > 0);
+  const temConfiguracao = (modalidadeSettings.length > 0 && modalidadeSettings.some((s) => parseFloat(s.valorPorCheckin || "0") > 0)) || (receitaSummary?.porModalidade ?? []).length > 0;
   const temReceitaReal = (receitaSummary?.totalCheckins ?? 0) > 0;
 
   const handleConfirmDelete = () => {
@@ -276,25 +276,28 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                     <TableHeader>
                       <TableRow>
                         <TableHead>Modalidade</TableHead>
+                        <TableHead>Integração</TableHead>
                         <TableHead>Check-ins</TableHead>
                         <TableHead>Valor/Check-in</TableHead>
                         <TableHead>Receita Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {receitaByModalidade.map((r) => {
-                        const cfg = modalidadeSettings.find((s) => s.modalidade === r.modalidade);
-                        return (
-                          <TableRow key={r.modalidade} data-testid={`receita-row-${r.modalidade}`}>
-                            <TableCell className="font-medium">{r.modalidade}</TableCell>
-                            <TableCell>{r.checkins}</TableCell>
-                            <TableCell>R$ {parseFloat(cfg?.valorPorCheckin ?? "0").toFixed(2).replace(".", ",")}</TableCell>
-                            <TableCell className="font-semibold text-green-600 dark:text-green-400">
-                              R$ {r.receita.toFixed(2).replace(".", ",")}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                      {receitaByModalidade.map((r, i) => (
+                        <TableRow key={i} data-testid={`receita-row-${r.modalidade}-${r.integrationType}`}>
+                          <TableCell className="font-medium">{r.modalidade}</TableCell>
+                          <TableCell>
+                            <span className="capitalize text-xs font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              {r.integrationType === "wellhub" ? "Wellhub" : r.integrationType === "totalpass" ? "TotalPass" : r.integrationType}
+                            </span>
+                          </TableCell>
+                          <TableCell>{r.checkins}</TableCell>
+                          <TableCell>R$ {r.valorUnitario.toFixed(2).replace(".", ",")}</TableCell>
+                          <TableCell className="font-semibold text-green-600 dark:text-green-400">
+                            R$ {r.receita.toFixed(2).replace(".", ",")}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
