@@ -322,10 +322,12 @@ export default function ManagerDashboard({
   };
 
   const handleSalvarPlano = () => {
-    if (!formPlano.titulo || (!formPlano.checkins.trim() && !formPlano.valorTexto.trim())) return;
-    const checkins = formPlano.checkins.trim() ? parseInt(formPlano.checkins, 10) : 0;
-    const valorTexto = formPlano.valorTexto.trim()
-      ? (formPlano.valorTexto.startsWith("R$") ? formPlano.valorTexto.trim() : `R$ ${formPlano.valorTexto.trim()}`)
+    const checkinsVal = (formPlano.checkins ?? "").trim();
+    const valorTextoVal = (formPlano.valorTexto ?? "").trim();
+    if (!formPlano.titulo || (!checkinsVal && !valorTextoVal)) return;
+    const checkins = checkinsVal ? parseInt(checkinsVal, 10) : 0;
+    const valorTexto = valorTextoVal
+      ? (valorTextoVal.startsWith("R$") ? valorTextoVal : `R$ ${valorTextoVal}`)
       : undefined;
     if (planoEditando) {
       onEditarPlano(planoEditando.id, formPlano.titulo, checkins, valorTexto);
