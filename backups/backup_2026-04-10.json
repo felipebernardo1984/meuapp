@@ -20,28 +20,6 @@
   ],
   "students": [
     {
-      "id": "f70d6380-dfcc-4598-a5c2-5e81df6dadcb",
-      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "nome": "Maria Santos",
-      "login": "111",
-      "senha": "111",
-      "cpf": "987.654.321-00",
-      "email": null,
-      "telefone": null,
-      "modalidade": "Beach Tennis",
-      "planoId": "1d6976e8-71d6-4731-98c9-0e25e948f4f0",
-      "planoTitulo": "2x por semana",
-      "planoCheckins": 12,
-      "planoValorTexto": null,
-      "checkinsRealizados": 9,
-      "statusMensalidade": "Em dia",
-      "aprovado": true,
-      "ultimoCheckin": "02/01/2025",
-      "photoUrl": null,
-      "integrationType": "none",
-      "integrationPlan": null
-    },
-    {
       "id": "9ad657ea-730a-47f7-89cf-02ae6fffcf38",
       "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
       "nome": "Pedro Oliveira",
@@ -51,7 +29,7 @@
       "email": null,
       "telefone": null,
       "modalidade": "Vôlei de Praia",
-      "planoId": "10f9b6d8-a91c-4750-a840-492ef3f245df",
+      "planoId": null,
       "planoTitulo": "1x por semana",
       "planoCheckins": 8,
       "planoValorTexto": null,
@@ -59,6 +37,28 @@
       "statusMensalidade": "Pendente",
       "aprovado": true,
       "ultimoCheckin": "30/12/2024",
+      "photoUrl": null,
+      "integrationType": "none",
+      "integrationPlan": null
+    },
+    {
+      "id": "f70d6380-dfcc-4598-a5c2-5e81df6dadcb",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "nome": "Maria Santos",
+      "login": "111",
+      "senha": "111",
+      "cpf": "987.654.321-00",
+      "email": null,
+      "telefone": null,
+      "modalidade": "Beach Tennis",
+      "planoId": null,
+      "planoTitulo": "2x por semana",
+      "planoCheckins": 12,
+      "planoValorTexto": null,
+      "checkinsRealizados": 9,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "02/01/2025",
       "photoUrl": null,
       "integrationType": "none",
       "integrationPlan": null
@@ -73,7 +73,7 @@
       "email": null,
       "telefone": null,
       "modalidade": "Beach Tennis",
-      "planoId": "52a5ec2a-3885-4dfd-ad1f-5c8f413bf462",
+      "planoId": null,
       "planoTitulo": "1x por semana",
       "planoCheckins": 0,
       "planoValorTexto": "R$ 140,00",
@@ -121,36 +121,7 @@
       "modalidade": "Futevôlei"
     }
   ],
-  "plans": [
-    {
-      "id": "10f9b6d8-a91c-4750-a840-492ef3f245df",
-      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "titulo": "1x por semana",
-      "checkins": 8,
-      "valorTexto": null
-    },
-    {
-      "id": "1d6976e8-71d6-4731-98c9-0e25e948f4f0",
-      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "titulo": "2x por semana",
-      "checkins": 12,
-      "valorTexto": null
-    },
-    {
-      "id": "52a5ec2a-3885-4dfd-ad1f-5c8f413bf462",
-      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "titulo": "1x por semana",
-      "checkins": 0,
-      "valorTexto": "R$ 140,00"
-    },
-    {
-      "id": "8da6cee6-a76b-4cc7-b5b5-3a27cf92a591",
-      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "titulo": "2x por semana",
-      "checkins": 0,
-      "valorTexto": "R$ 200,00"
-    }
-  ],
+  "plans": [],
   "checkins": [
     {
       "id": "f9ef66a9-05fa-4db4-a94f-a1c2b3029568",
@@ -237,5 +208,5 @@
       "hora": "19:00"
     }
   ],
-  "createdAt": "2026-04-10T04:03:43.464Z"
+  "createdAt": "2026-04-10T22:40:17.479Z"
 }
