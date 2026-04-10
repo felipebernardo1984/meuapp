@@ -308,6 +308,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       integrationType: integrationType ?? "none",
       integrationPlan: integrationPlan ?? null,
     });
+
+    if (integrationType === "mensalista" && plan.valorTexto) {
+      const now = new Date();
+      const refMonth = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+      const dueDate = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
+      const amount = plan.valorTexto.replace(/[^0-9,.]/g, "").replace(",", ".");
+      await storage.createPayment({
+        tenantId: arenaId, studentId: student.id, planId: plan.id,
+        description: `Mensalidade ${refMonth}`, amount, referenceMonth: refMonth,
+        dueDate, paymentDate: null, status: "pending", createdBy: "sistema",
+      });
+    }
+
     res.json({ ...student, loginGerado: login, senhaGerada: senha, historico: [] });
   });
 
@@ -659,6 +672,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     const { status, paymentDate } = req.body;
     const payment = await storage.updatePaymentStatus(req.params.id, status, paymentDate);
+    if (status === "paid" && payment?.studentId) {
+      const today = paymentDate || new Date().toLocaleDateString("pt-BR");
+      await storage.updateStudent(payment.studentId, { ultimoCheckin: today });
+    }
     res.json(payment);
   });
 
@@ -704,6 +721,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     const { status, paymentDate } = req.body;
     const charge = await storage.updateChargeStatus(req.params.id, status, paymentDate);
+    if (status === "paid" && charge?.studentId) {
+      const today = paymentDate || new Date().toLocaleDateString("pt-BR");
+      await storage.updateStudent(charge.studentId, { ultimoCheckin: today });
+    }
     res.json(charge);
   });
 

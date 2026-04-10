@@ -662,12 +662,13 @@ export default function TeacherDashboard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhuma</SelectItem>
+                    <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {novoAluno.integrationType !== "none" && (
+              {novoAluno.integrationType !== "none" && novoAluno.integrationType !== "mensalista" && (
                 <div className="space-y-1">
                   <Label>Plano da Integração</Label>
                   {(() => {
@@ -819,12 +820,13 @@ export default function TeacherDashboard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhuma</SelectItem>
+                    <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {dadosEdicao.integrationType !== "none" && (
+              {dadosEdicao.integrationType !== "none" && dadosEdicao.integrationType !== "mensalista" && (
                 <div className="col-span-2 space-y-1">
                   <Label>Plano da Integração</Label>
                   {(() => {

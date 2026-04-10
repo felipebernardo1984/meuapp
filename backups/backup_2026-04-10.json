@@ -62,6 +62,28 @@
       "photoUrl": null,
       "integrationType": "none",
       "integrationPlan": null
+    },
+    {
+      "id": "0c092cdd-f3c6-4376-88d9-d7ff5c5fe4d5",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "nome": "Felipe",
+      "login": "1111",
+      "senha": "1111",
+      "cpf": "000000000",
+      "email": "",
+      "telefone": "",
+      "modalidade": "Beach Tennis",
+      "planoId": "52a5ec2a-3885-4dfd-ad1f-5c8f413bf462",
+      "planoTitulo": "1x por semana",
+      "planoCheckins": 0,
+      "planoValorTexto": "R$ 140,00",
+      "checkinsRealizados": 0,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": null,
+      "photoUrl": null,
+      "integrationType": "none",
+      "integrationPlan": ""
     }
   ],
   "teachers": [
@@ -117,9 +139,16 @@
     {
       "id": "52a5ec2a-3885-4dfd-ad1f-5c8f413bf462",
       "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "titulo": "Mensalista",
+      "titulo": "1x por semana",
       "checkins": 0,
       "valorTexto": "R$ 140,00"
+    },
+    {
+      "id": "8da6cee6-a76b-4cc7-b5b5-3a27cf92a591",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "titulo": "2x por semana",
+      "checkins": 0,
+      "valorTexto": "R$ 200,00"
     }
   ],
   "checkins": [
@@ -208,5 +237,5 @@
       "hora": "19:00"
     }
   ],
-  "createdAt": "2026-04-10T03:07:39.586Z"
+  "createdAt": "2026-04-10T03:49:56.743Z"
 }

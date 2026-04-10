@@ -171,6 +171,9 @@ export default function ManagerDashboard({
   // Financial state
   const [dialogPagamento, setDialogPagamento] = useState(false);
   const [dialogCobranca, setDialogCobranca] = useState(false);
+  const [dialogValidarPagamento, setDialogValidarPagamento] = useState(false);
+  const [alunoValidarId, setAlunoValidarId] = useState<string>("");
+  const [alunoValidarNome, setAlunoValidarNome] = useState<string>("");
   const [alunoFinanceiroId, setAlunoFinanceiroId] = useState<string>("");
   const [formPagamento, setFormPagamento] = useState({ description: "", amount: "", referenceMonth: "", dueDate: "", status: "paid" });
   const [formCobranca, setFormCobranca] = useState({ description: "", amount: "", dueDate: "" });
@@ -263,6 +266,25 @@ export default function ManagerDashboard({
     if (confirmDeleteFinanceiro.type === "payment") deletePayment.mutate(confirmDeleteFinanceiro.id);
     else deleteCharge.mutate(confirmDeleteFinanceiro.id);
   };
+
+  const validarPagamento = useMutation({
+    mutationFn: ({ type, id }: { type: "payment" | "charge"; id: string }) => {
+      const today = new Date().toLocaleDateString("pt-BR");
+      if (type === "payment") {
+        return apiRequest("PUT", `/api/finance/payments/${id}`, { status: "paid", paymentDate: today });
+      } else {
+        return apiRequest("PUT", `/api/finance/charges/${id}`, { status: "paid", paymentDate: today });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/charges"] });
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/receita/aluno"] });
+      toast({ title: "Pagamento validado!", description: "Receita e histórico atualizados." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível validar o pagamento.", variant: "destructive" }),
+  });
 
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
@@ -602,12 +624,13 @@ export default function ManagerDashboard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhuma</SelectItem>
+                    <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {novoAluno.integrationType !== "none" && (
+              {novoAluno.integrationType !== "none" && novoAluno.integrationType !== "mensalista" && (
                 <div className="space-y-1">
                   <Label>Plano da Integração</Label>
                   {(() => {
@@ -1227,16 +1250,9 @@ export default function ManagerDashboard({
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
-                              setAlunoFinanceiroId(aluno.id);
-                              const now = new Date();
-                              setFormPagamento({
-                                description: "",
-                                amount: aluno.planoValorTexto?.replace(/[^0-9,.]/g, "") ?? "",
-                                referenceMonth: `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`,
-                                dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
-                                status: "paid",
-                              });
-                              setDialogPagamento(true);
+                              setAlunoValidarId(aluno.id);
+                              setAlunoValidarNome(aluno.nome);
+                              setDialogValidarPagamento(true);
                             }}
                             data-testid={`menu-payment-${aluno.id}`}
                           >
@@ -1356,6 +1372,86 @@ export default function ManagerDashboard({
             >
               Registrar
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Validar Pagamento */}
+      <Dialog open={dialogValidarPagamento} onOpenChange={setDialogValidarPagamento}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Cobranças — {alunoValidarNome}
+            </DialogTitle>
+            <DialogDescription>Selecione uma cobrança para validar o pagamento.</DialogDescription>
+          </DialogHeader>
+          {(() => {
+            const pendingPayments = allPayments.filter(
+              (p) => p.studentId === alunoValidarId && p.status !== "paid"
+            );
+            const pendingCharges = allCharges.filter(
+              (c) => c.studentId === alunoValidarId && c.status !== "paid"
+            );
+            if (pendingPayments.length === 0 && pendingCharges.length === 0) {
+              return (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Nenhuma cobrança pendente para este aluno.
+                </p>
+              );
+            }
+            return (
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto py-2 pr-1">
+                {pendingPayments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between rounded-lg border px-4 py-3 gap-3"
+                    data-testid={`validar-payment-${p.id}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {p.description || `Mensalidade — ${p.referenceMonth}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Venc. {p.dueDate} · R$ {p.amount}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => validarPagamento.mutate({ type: "payment", id: p.id })}
+                      disabled={validarPagamento.isPending}
+                      data-testid={`button-validar-payment-${p.id}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Validar
+                    </Button>
+                  </div>
+                ))}
+                {pendingCharges.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 px-4 py-3 gap-3"
+                    data-testid={`validar-charge-${c.id}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{c.description}</p>
+                      <p className="text-xs text-muted-foreground">Venc. {c.dueDate} · R$ {c.amount}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => validarPagamento.mutate({ type: "charge", id: c.id })}
+                      disabled={validarPagamento.isPending}
+                      data-testid={`button-validar-charge-${c.id}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Validar
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogValidarPagamento(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1547,12 +1643,13 @@ export default function ManagerDashboard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhuma</SelectItem>
+                    <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {formEditarAluno.integrationType !== "none" && (
+              {formEditarAluno.integrationType !== "none" && formEditarAluno.integrationType !== "mensalista" && (
                 <div className="col-span-2 space-y-1">
                   <Label>Plano da Integração</Label>
                   {(() => {
