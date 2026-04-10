@@ -400,6 +400,28 @@ export default function TeacherDashboard({
           const alunoCharges = charges.filter((c) => c.studentId === aluno.id && c.status === "pending");
           const alunoPayments = payments.filter((p) => p.studentId === aluno.id);
 
+          let mensalistaProgresso = 0;
+          if (!temCheckins) {
+            const refPayment = alunoPayments.find((p) => p.status === "pending") ?? alunoPayments[alunoPayments.length - 1];
+            if (refPayment) {
+              const [refMonth, refYear] = refPayment.referenceMonth.split("/");
+              const startDate = new Date(parseInt(refYear), parseInt(refMonth) - 1, 1);
+              const [dueDay, dueMonth, dueYear] = refPayment.dueDate.split("/");
+              const endDate = new Date(parseInt(dueYear), parseInt(dueMonth) - 1, parseInt(dueDay));
+              const today = new Date();
+              const totalDays = (endDate.getTime() - startDate.getTime()) / 86400000;
+              const elapsedDays = (today.getTime() - startDate.getTime()) / 86400000;
+              mensalistaProgresso = totalDays > 0 ? Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100) : 0;
+            } else {
+              const today = new Date();
+              const start = new Date(today.getFullYear(), today.getMonth(), 1);
+              const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              const totalDays = (end.getTime() - start.getTime()) / 86400000;
+              const elapsedDays = (today.getTime() - start.getTime()) / 86400000;
+              mensalistaProgresso = totalDays > 0 ? Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100) : 0;
+            }
+          }
+
           return (
             <Card key={aluno.id} className="hover-elevate" data-testid={`card-student-${aluno.id}`}>
               <CardHeader className="pb-3">
@@ -481,6 +503,13 @@ export default function TeacherDashboard({
                       </div>
                     ))}
                   </div>
+                )}
+
+                {!temCheckins && (
+                  <Progress
+                    value={mensalistaProgresso}
+                    data-testid={`progress-mensalista-${aluno.id}`}
+                  />
                 )}
 
                 {!temCheckins ? (
