@@ -232,6 +232,8 @@ export const checkinFinanceiro = pgTable("checkin_financeiro", {
   valorTotal: text("valor_total").notNull().default("0.00"),
   dataCheckin: text("data_checkin").notNull(),
   status: text("status").notNull().default("ativo"),                   // 'ativo' | 'cancelado'
+  tipoPlanoNoMomento: text("tipo_plano_no_momento"),                   // snapshot: 'checkin' | 'mensalista' — nullable for backwards compat
+  valorOriginal: text("valor_original"),                               // snapshot do valor calculado no momento — nullable for backwards compat
   createdAt: timestamp("created_at").defaultNow(),
 });
 

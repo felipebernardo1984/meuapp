@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, arenas, plans, teachers, students, checkinHistory,
@@ -185,6 +185,8 @@ export class DatabaseStorage {
       if (student.integrationType === "wellhub") valor = config.wellhubValorCheckin;
       if (student.integrationType === "totalpass") valor = config.totalpassValorCheckin;
 
+      const tipoPlanoNoMomento = (student.planoCheckins ?? 0) === 0 ? "mensalista" : "checkin";
+
       await this.createCheckinFinanceiro({
         arenaId: student.arenaId,
         studentId: student.id,
@@ -195,6 +197,8 @@ export class DatabaseStorage {
         valorTotal: valor,
         dataCheckin: data.data,
         status: "ativo",
+        tipoPlanoNoMomento,
+        valorOriginal: valor,
       });
     } catch (err) {
       console.error("Erro financeiro checkin:", err);
@@ -236,6 +240,43 @@ export class DatabaseStorage {
       .update(checkinFinanceiro)
       .set({ status: "cancelado" })
       .where(eq(checkinFinanceiro.checkinId, checkinId));
+  }
+
+  async getCheckinFinanceiroByCheckinId(checkinId: string) {
+    const [row] = await db
+      .select()
+      .from(checkinFinanceiro)
+      .where(eq(checkinFinanceiro.checkinId, checkinId));
+    return row;
+  }
+
+  async listCheckinFinanceiroSemTipoPlano(arenaId: string) {
+    return db
+      .select()
+      .from(checkinFinanceiro)
+      .where(and(eq(checkinFinanceiro.arenaId, arenaId), isNull(checkinFinanceiro.tipoPlanoNoMomento)));
+  }
+
+  async updateCheckinFinanceiroValues(studentId: string, valorUnitario: string, integrationType: string) {
+    const rows = await db
+      .select()
+      .from(checkinFinanceiro)
+      .where(and(eq(checkinFinanceiro.studentId, studentId), eq(checkinFinanceiro.status, "ativo")));
+
+    for (const row of rows) {
+      if (row.valorOriginal) continue;
+      await db
+        .update(checkinFinanceiro)
+        .set({ valorUnitario, valorTotal: valorUnitario, integrationType })
+        .where(eq(checkinFinanceiro.id, row.id));
+    }
+  }
+
+  async updateCheckinFinanceiroTipoPlano(id: string, tipoPlanoNoMomento: string, valorOriginal: string) {
+    await db
+      .update(checkinFinanceiro)
+      .set({ tipoPlanoNoMomento, valorOriginal })
+      .where(eq(checkinFinanceiro.id, id));
   }
 
   // PAYMENTS

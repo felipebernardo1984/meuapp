@@ -48,6 +48,8 @@ function statusBadge(status: string) {
 interface ReceitaSummary {
   totalCheckins: number;
   receitaTotal: number;
+  receitaCheckins: number;
+  receitaMensalidades: number;
   porModalidade: Array<{ modalidade: string; integrationType: string; checkins: number; receita: number; valorUnitario: number }>;
   porAluno: Array<{ studentId: string; nome: string; modalidade: string; checkins: number; receita: number }>;
 }
@@ -149,7 +151,9 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
 
   const getNomeAluno = (id: string) => alunos.find((a) => a.id === id)?.nome ?? "—";
 
-  const receitaCheckins = receitaSummary?.receitaTotal ?? 0;
+  const receitaCheckinsValor = receitaSummary?.receitaCheckins ?? 0;
+  const receitaMensalidadesValor = receitaSummary?.receitaMensalidades ?? 0;
+  const receitaTotalValor = receitaSummary?.receitaTotal ?? 0;
   const totalCheckins = receitaSummary?.totalCheckins ?? 0;
   const receitaByModalidade = receitaSummary?.porModalidade ?? [];
   const topAlunos = (receitaSummary?.porAluno ?? []).filter((a) => a.receita > 0).slice(0, 5);
@@ -262,9 +266,13 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                 </div>
               </div>
             </div>
-            <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-muted-foreground">
               <span>Total de check-ins: <strong className="text-foreground" data-testid="text-total-checkins">{totalCheckins}</strong></span>
-              <span>Receita total: <strong className="text-green-600 dark:text-green-400" data-testid="text-receita-total">R$ {receitaCheckins.toFixed(2).replace(".", ",")}</strong></span>
+              <span>Receita check-ins: <strong className="text-green-600 dark:text-green-400" data-testid="text-receita-checkins">R$ {receitaCheckinsValor.toFixed(2).replace(".", ",")}</strong></span>
+              {receitaMensalidadesValor > 0 && (
+                <span>Receita mensalidades: <strong className="text-blue-600 dark:text-blue-400" data-testid="text-receita-mensalidades">R$ {receitaMensalidadesValor.toFixed(2).replace(".", ",")}</strong></span>
+              )}
+              <span>Total: <strong className="text-foreground font-bold" data-testid="text-receita-total">R$ {receitaTotalValor.toFixed(2).replace(".", ",")}</strong></span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

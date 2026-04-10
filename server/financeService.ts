@@ -1,12 +1,14 @@
 import { eq } from "drizzle-orm";
 import { db } from "./db";
-import { checkinFinanceiro } from "@shared/schema";
+import { checkinFinanceiro, payments } from "@shared/schema";
 import { storage } from "./storage";
 import type { Student, ModalidadeSettings } from "@shared/schema";
 
 export interface ReceitaPeriodo {
   totalCheckins: number;
   receitaTotal: number;
+  receitaCheckins: number;
+  receitaMensalidades: number;
   porModalidade: Array<{ modalidade: string; integrationType: string; checkins: number; receita: number; valorUnitario: number }>;
   porAluno: Array<{ studentId: string; nome: string; modalidade: string; integrationType: string; checkins: number; receita: number }>;
 }
@@ -73,6 +75,11 @@ function getValorCheckin(modalidadeSetting: ModalidadeSettings | undefined, stud
   return 0;
 }
 
+// Snapshot: determine plan type at check-in time
+function getTipoPlanoNoMomento(student: Student): "checkin" | "mensalista" {
+  return (student.planoCheckins ?? 0) === 0 ? "mensalista" : "checkin";
+}
+
 // Validate minimum plan requirement
 function validatePlanMinimum(
   modalidadeSetting: ModalidadeSettings | undefined,
@@ -112,6 +119,7 @@ export const financeService = {
       if (!checkins.length) continue;
       const modalidadeSetting = await storage.getModalidadeSetting(arenaId, student.modalidade);
       const valorUnitario = getValorCheckin(modalidadeSetting, student);
+      const tipoPlanoNoMomento = getTipoPlanoNoMomento(student);
       for (const checkin of checkins) {
         const existing = await storage.getCheckinFinanceiroByCheckinId(checkin.id);
         if (existing) continue;
@@ -125,12 +133,14 @@ export const financeService = {
           valorTotal: valorUnitario.toFixed(2),
           dataCheckin: checkin.data,
           status: "ativo",
+          tipoPlanoNoMomento,
+          valorOriginal: valorUnitario.toFixed(2),
         });
       }
     }
   },
 
-  // Recalculate all active financial records for a student using current integration settings
+  // Recalculate all active financial records for a student — skips records that have valorOriginal (immutable snapshots)
   async recalcularReceitaAluno(arenaId: string, studentId: string): Promise<void> {
     const student = await storage.getStudent(studentId);
     if (!student) return;
@@ -163,8 +173,8 @@ export const financeService = {
 
     const integrationType = student.integrationType ?? "none";
     const valorUnitario = getValorCheckin(modalidadeSetting, student);
+    const tipoPlanoNoMomento = getTipoPlanoNoMomento(student);
 
-    // Always save the snapshot — including when valorUnitario is 0 (tracks 'none' check-ins)
     await storage.createCheckinFinanceiro({
       arenaId,
       checkinId,
@@ -175,7 +185,19 @@ export const financeService = {
       valorTotal: valorUnitario.toFixed(2),
       dataCheckin,
       status: "ativo",
+      tipoPlanoNoMomento,
+      valorOriginal: valorUnitario.toFixed(2),
     });
+  },
+
+  // Migrate old records that don't have tipoPlanoNoMomento — safe, runs once, fills only null fields
+  async migrarCheckinsAntigos(arenaId: string): Promise<void> {
+    const registrosSemTipo = await storage.listCheckinFinanceiroSemTipoPlano(arenaId);
+    for (const r of registrosSemTipo) {
+      if (!r.tipoPlanoNoMomento) {
+        await storage.updateCheckinFinanceiroTipoPlano(r.id, "checkin", r.valorTotal);
+      }
+    }
   },
 
   async getReceitaTotalPeriodo(
@@ -188,29 +210,31 @@ export const financeService = {
 
     const allFinancialRecords = await storage.listCheckinFinanceiro(arenaId);
     const allStudents = await storage.listStudents(arenaId);
+    const allPayments = await storage.listPayments(arenaId);
     const studentMap = new Map(allStudents.map((s) => [s.id, s]));
 
-    // Key: "modalidade|integrationType"
     const modalidadeMap = new Map<string, { modalidade: string; integrationType: string; checkins: number; receita: number; valorUnitario: number }>();
     const alunoMap = new Map<string, { nome: string; modalidade: string; integrationType: string; checkins: number; receita: number }>();
 
     let totalCheckins = 0;
-    let receitaTotal = 0;
+    let receitaCheckins = 0;
 
     for (const r of allFinancialRecords) {
-      // Only count active records
       if (r.status === "cancelado") continue;
 
-      // Filter by date of checkin (not createdAt)
       const recordDate = parsePtBRDate(r.dataCheckin);
       if (!isInRange(recordDate, inicio, fim)) continue;
 
+      totalCheckins += 1;
+
+      // Use snapshot to determine if this was a mensalista check-in — mensalistas don't generate check-in revenue
+      const tipoPlano = r.tipoPlanoNoMomento ?? "checkin";
+      if (tipoPlano === "mensalista") continue;
+
       const valor = parseFloat(r.valorTotal || "0");
       const integrationType = r.integrationType ?? "none";
-      totalCheckins += 1;
-      receitaTotal += valor;
+      receitaCheckins += valor;
 
-      // Group by modalidade + integrationType, only tracking revenue-generating check-ins
       if (valor > 0) {
         const mod = r.modalidade;
         const key = `${mod}|${integrationType}`;
@@ -220,7 +244,6 @@ export const financeService = {
         const entry = modalidadeMap.get(key)!;
         entry.checkins += 1;
         entry.receita += valor;
-        // valorUnitario: keep consistent (all records in same group share same rate)
         entry.valorUnitario = valor;
       }
 
@@ -239,9 +262,22 @@ export const financeService = {
       alunoMap.get(sid)!.receita += valor;
     }
 
+    // Mensalidade revenue: paid payments in the period
+    const now = new Date();
+    const receitaMensalidades = allPayments
+      .filter((p) => {
+        if (p.status !== "paid") return false;
+        if (!p.paymentDate) return false;
+        const pDate = parsePtBRDate(p.paymentDate);
+        return isInRange(pDate, inicio, fim);
+      })
+      .reduce((acc, p) => acc + parseFloat(p.amount.replace(/[^0-9.]/g, "") || "0"), 0);
+
     return {
       totalCheckins,
-      receitaTotal,
+      receitaTotal: receitaCheckins + receitaMensalidades,
+      receitaCheckins,
+      receitaMensalidades,
       porModalidade: Array.from(modalidadeMap.values())
         .sort((a, b) => b.receita - a.receita),
       porAluno: Array.from(alunoMap.entries())
@@ -282,23 +318,24 @@ export const financeService = {
     const integrationType = student?.integrationType ?? "none";
     const integrationPlan = student?.integrationPlan ?? null;
 
-    // Only count active check-in records
-    const activeRecords = records.filter((r) => r.status !== "cancelado");
+    // Only count active check-in records from students that were in checkin mode at the time
+    const activeCheckinRecords = records.filter((r) => {
+      if (r.status === "cancelado") return false;
+      const tipoPlano = r.tipoPlanoNoMomento ?? "checkin";
+      return tipoPlano !== "mensalista";
+    });
 
-    // Current per-check-in value based on student's integration type
     const valorUnitario = student && modalidadeSetting
       ? getValorCheckin(modalidadeSetting, student)
       : 0;
 
-    const checkins = activeRecords.length;
-    const receitaCheckins = activeRecords.reduce((acc, r) => acc + parseFloat(r.valorTotal || "0"), 0);
+    const checkins = activeCheckinRecords.length;
+    const receitaCheckins = activeCheckinRecords.reduce((acc, r) => acc + parseFloat(r.valorTotal || "0"), 0);
 
-    // Sum of paid mensalidades (payments)
     const receitaMensalidades = studentPayments
       .filter((p) => p.status === "paid")
       .reduce((acc, p) => acc + parseFloat(p.amount || "0"), 0);
 
-    // Sum of paid cobranças (charges)
     const receitaCobranças = studentCharges
       .filter((c) => c.status === "paid")
       .reduce((acc, c) => acc + parseFloat(c.amount || "0"), 0);

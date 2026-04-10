@@ -891,12 +891,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ id: arena.id, name: arena.name, subscriptionPlan: arena.subscriptionPlan });
   });
 
-  // ── Backfill historical financial records on startup ─────────────────────
+  // ── Backfill + migrate historical financial records on startup ───────────
   (async () => {
     try {
       const arenas = await storage.listArenas();
       for (const arena of arenas) {
         await financeService.backfillCheckinFinanceiro(arena.id);
+        await financeService.migrarCheckinsAntigos(arena.id);
       }
     } catch (_e) {}
   })();
