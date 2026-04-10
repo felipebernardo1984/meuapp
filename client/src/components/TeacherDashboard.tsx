@@ -397,7 +397,6 @@ export default function TeacherDashboard({
           const temCheckins = aluno.plano > 0;
           const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-          const alunoCharges = charges.filter((c) => c.studentId === aluno.id && c.status === "pending");
           const alunoPayments = payments.filter((p) => p.studentId === aluno.id);
 
           let mensalistaProgresso = 0;
@@ -462,48 +461,6 @@ export default function TeacherDashboard({
               </CardHeader>
               <CardContent className="space-y-3">
                 {temCheckins && <Progress value={Math.min(progresso, 100)} />}
-
-                {/* Valor a Pagar (cobranças pendentes) */}
-                {alunoCharges.length > 0 && (
-                  <div className="rounded-md bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 px-3 py-2">
-                    <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1 mb-1">
-                      <DollarSign className="h-3 w-3" />
-                      Valor a Pagar
-                    </p>
-                    {alunoCharges.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between text-xs" data-testid={`teacher-charge-${c.id}`}>
-                        <span className="text-muted-foreground truncate mr-2">{c.description}</span>
-                        <span className="font-medium text-orange-700 dark:text-orange-400 shrink-0">R$ {c.amount}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Histórico Financeiro (igual ao painel do aluno) */}
-                {alunoPayments.length > 0 && (
-                  <div className="rounded-md border px-3 py-2 space-y-0">
-                    <p className="text-xs font-semibold flex items-center gap-1 mb-2">
-                      <Receipt className="h-3 w-3" />
-                      Histórico Financeiro
-                    </p>
-                    {alunoPayments.map((p) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between py-1.5 border-b last:border-0"
-                        data-testid={`teacher-payment-${p.id}`}
-                      >
-                        <div>
-                          <p className="text-xs font-medium">Mensalidade — {p.referenceMonth}</p>
-                          <p className="text-xs text-muted-foreground">Venc. {p.dueDate}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                          <span className="text-xs font-medium">R$ {p.amount}</span>
-                          {paymentStatusBadge(p.status)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
 
                 {!temCheckins && (
                   <Progress
