@@ -103,6 +103,7 @@ interface NovoAlunoDados {
   planoId: string;
   integrationType: string;
   integrationPlan: string;
+  mensalistaValor?: string;
 }
 
 interface ManagerDashboardProps {
@@ -131,15 +132,6 @@ interface ManagerDashboardProps {
   onExcluirAluno: (alunoId: string) => void;
 }
 
-function parseValorPlano(input: string): { checkins: number; valorTexto?: string } {
-  const trimmed = input.trim();
-  const num = Number(trimmed);
-  if (trimmed !== "" && !isNaN(num) && num > 0 && /^\d+$/.test(trimmed)) {
-    return { checkins: num };
-  }
-  const formatted = trimmed.startsWith("R$") ? trimmed : `R$ ${trimmed}`;
-  return { checkins: 0, valorTexto: formatted };
-}
 
 export default function ManagerDashboard({
   planos,
@@ -304,28 +296,37 @@ export default function ManagerDashboard({
     planoId: planos[0]?.id ?? "",
     integrationType: "none",
     integrationPlan: "",
+    mensalistaValor: "",
   });
 
   // Plano state
   const [dialogNovoPlano, setDialogNovoPlano] = useState(false);
   const [planoEditando, setPlanoEditando] = useState<Plano | null>(null);
-  const [formPlano, setFormPlano] = useState({ titulo: "", valor: "" });
+  const [formPlano, setFormPlano] = useState({ titulo: "", checkins: "", valorTexto: "" });
 
   // ── Planos ──────────────────────────────────────────────────────────────
-  const getPlanoDescricao = (plano: Plano) =>
-    plano.checkins > 0 ? `${plano.checkins} check-in por ciclo` : (plano.valorTexto ?? "Mensalidade");
-
-  const getPlanoValorInput = (plano: Plano) =>
-    plano.checkins > 0 ? String(plano.checkins) : (plano.valorTexto?.replace("R$ ", "") ?? "");
+  const getPlanoDescricao = (plano: Plano) => {
+    const parts: string[] = [];
+    if (plano.checkins > 0) parts.push(`${plano.checkins} aulas`);
+    if (plano.valorTexto) parts.push(plano.valorTexto);
+    return parts.length > 0 ? parts.join(" · ") : "Sem detalhes";
+  };
 
   const abrirEditarPlano = (plano: Plano) => {
     setPlanoEditando(plano);
-    setFormPlano({ titulo: plano.titulo, valor: getPlanoValorInput(plano) });
+    setFormPlano({
+      titulo: plano.titulo,
+      checkins: plano.checkins > 0 ? String(plano.checkins) : "",
+      valorTexto: plano.valorTexto?.replace("R$ ", "") ?? "",
+    });
   };
 
   const handleSalvarPlano = () => {
-    if (!formPlano.titulo || !formPlano.valor.trim()) return;
-    const { checkins, valorTexto } = parseValorPlano(formPlano.valor);
+    if (!formPlano.titulo || (!formPlano.checkins.trim() && !formPlano.valorTexto.trim())) return;
+    const checkins = formPlano.checkins.trim() ? parseInt(formPlano.checkins, 10) : 0;
+    const valorTexto = formPlano.valorTexto.trim()
+      ? (formPlano.valorTexto.startsWith("R$") ? formPlano.valorTexto.trim() : `R$ ${formPlano.valorTexto.trim()}`)
+      : undefined;
     if (planoEditando) {
       onEditarPlano(planoEditando.id, formPlano.titulo, checkins, valorTexto);
       setPlanoEditando(null);
@@ -333,7 +334,7 @@ export default function ManagerDashboard({
       onCriarPlano(formPlano.titulo, checkins, valorTexto);
       setDialogNovoPlano(false);
     }
-    setFormPlano({ titulo: "", valor: "" });
+    setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
   };
 
   // ── Professores ──────────────────────────────────────────────────────────
@@ -368,7 +369,7 @@ export default function ManagerDashboard({
   const handleCadastrarAluno = () => {
     if (novoAluno.nome && novoAluno.cpf && novoAluno.modalidade && novoAluno.planoId) {
       onCadastrarAluno(novoAluno);
-      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: planos[0]?.id ?? "", integrationType: "none", integrationPlan: "" });
+      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: planos[0]?.id ?? "", integrationType: "none", integrationPlan: "", mensalistaValor: "" });
       setDialogNovoAluno(false);
     }
   };
@@ -617,7 +618,13 @@ export default function ManagerDashboard({
                 <Label>Integração</Label>
                 <Select
                   value={novoAluno.integrationType}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "" })}
+                  onValueChange={(v) => {
+                    const planoSelecionado = planos.find(p => p.id === novoAluno.planoId);
+                    const prefilledValor = v === "mensalista" && planoSelecionado?.valorTexto
+                      ? planoSelecionado.valorTexto.replace("R$ ", "")
+                      : "";
+                    setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "", mensalistaValor: prefilledValor });
+                  }}
                 >
                   <SelectTrigger data-testid="select-manager-student-integration-type">
                     <SelectValue placeholder="Nenhuma" />
@@ -630,6 +637,18 @@ export default function ManagerDashboard({
                   </SelectContent>
                 </Select>
               </div>
+              {novoAluno.integrationType === "mensalista" && (
+                <div className="space-y-1">
+                  <Label>Valor mensal (R$)</Label>
+                  <Input
+                    placeholder="Ex: 200,00"
+                    value={novoAluno.mensalistaValor ?? ""}
+                    onChange={(e) => setNovoAluno({ ...novoAluno, mensalistaValor: e.target.value })}
+                    data-testid="input-manager-student-mensalista-valor"
+                  />
+                  <p className="text-xs text-muted-foreground">Esse valor gerará uma cobrança mensal automática.</p>
+                </div>
+              )}
               {novoAluno.integrationType !== "none" && novoAluno.integrationType !== "mensalista" && (
                 <div className="space-y-1">
                   <Label>Plano da Integração</Label>
@@ -737,7 +756,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Criar Plano</DialogTitle>
             <DialogDescription>
-              No campo valor, escreva um número de check-in (ex: 8) ou um valor em reais (ex: 140,00).
+              Preencha o número de aulas, o valor mensal, ou ambos.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -750,21 +769,34 @@ export default function ManagerDashboard({
                 data-testid="input-plan-title"
               />
             </div>
-            <div className="space-y-1">
-              <Label>Check-in ou valor (R$)</Label>
-              <Input
-                placeholder="Ex: 12  ou  140,00"
-                value={formPlano.valor}
-                onChange={(e) => setFormPlano({ ...formPlano, valor: e.target.value })}
-                data-testid="input-plan-value"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Nº de aulas</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Ex: 8"
+                  value={formPlano.checkins}
+                  onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
+                  data-testid="input-plan-checkins"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Valor mensal (R$)</Label>
+                <Input
+                  placeholder="Ex: 200,00"
+                  value={formPlano.valorTexto}
+                  onChange={(e) => setFormPlano({ ...formPlano, valorTexto: e.target.value })}
+                  data-testid="input-plan-value"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogNovoPlano(false)}>Cancelar</Button>
             <Button
               onClick={handleSalvarPlano}
-              disabled={!formPlano.titulo || !formPlano.valor.trim()}
+              disabled={!formPlano.titulo || (!formPlano.checkins.trim() && !formPlano.valorTexto.trim())}
               data-testid="button-confirm-plan"
             >
               Criar Plano
@@ -779,7 +811,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Editar Plano</DialogTitle>
             <DialogDescription>
-              Alterações serão aplicadas a todos os alunos neste plano. Escreva um número de check-in ou um valor em R$.
+              Alterações serão aplicadas a todos os alunos neste plano.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -792,21 +824,34 @@ export default function ManagerDashboard({
                 data-testid="input-edit-plan-title"
               />
             </div>
-            <div className="space-y-1">
-              <Label>Check-in ou valor (R$)</Label>
-              <Input
-                placeholder="Ex: 8  ou  140,00"
-                value={formPlano.valor}
-                onChange={(e) => setFormPlano({ ...formPlano, valor: e.target.value })}
-                data-testid="input-edit-plan-value"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Nº de aulas</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Ex: 8"
+                  value={formPlano.checkins}
+                  onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
+                  data-testid="input-edit-plan-checkins"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Valor mensal (R$)</Label>
+                <Input
+                  placeholder="Ex: 200,00"
+                  value={formPlano.valorTexto}
+                  onChange={(e) => setFormPlano({ ...formPlano, valorTexto: e.target.value })}
+                  data-testid="input-edit-plan-value"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPlanoEditando(null)}>Cancelar</Button>
             <Button
               onClick={handleSalvarPlano}
-              disabled={!formPlano.titulo || !formPlano.valor.trim()}
+              disabled={!formPlano.titulo || (!formPlano.checkins.trim() && !formPlano.valorTexto.trim())}
               data-testid="button-confirm-edit-plan"
             >
               Salvar

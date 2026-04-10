@@ -57,6 +57,7 @@ interface NovoAlunoDados {
   planoId: string;
   integrationType: string;
   integrationPlan: string;
+  mensalistaValor?: string;
 }
 
 interface Cobranca {
@@ -116,7 +117,7 @@ export default function TeacherDashboard({
   const emptyAluno: NovoAlunoDados = {
     nome: "", cpf: "", email: "", telefone: "",
     login: "", senha: "", modalidade, planoId: planos[0]?.id ?? "",
-    integrationType: "none", integrationPlan: "",
+    integrationType: "none", integrationPlan: "", mensalistaValor: "",
   };
 
   // Diálogos globais
@@ -363,7 +364,7 @@ export default function TeacherDashboard({
                     <TableCell>
                       {aluno.integrationType && aluno.integrationType !== "none" ? (
                         <Badge variant="outline" className="text-xs capitalize">
-                          {aluno.integrationType === "wellhub" ? "Wellhub" : "TotalPass"}
+                          {aluno.integrationType === "wellhub" ? "Wellhub" : aluno.integrationType === "totalpass" ? "TotalPass" : "Mensalista"}
                           {aluno.integrationPlan ? ` · ${aluno.integrationPlan}` : ""}
                         </Badge>
                       ) : (
@@ -655,7 +656,13 @@ export default function TeacherDashboard({
                 <Label>Integração</Label>
                 <Select
                   value={novoAluno.integrationType}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "" })}
+                  onValueChange={(v) => {
+                    const planoSelecionado = planos.find(p => p.id === novoAluno.planoId);
+                    const prefilledValor = v === "mensalista" && planoSelecionado?.valorTexto
+                      ? planoSelecionado.valorTexto.replace("R$ ", "")
+                      : "";
+                    setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "", mensalistaValor: prefilledValor });
+                  }}
                 >
                   <SelectTrigger data-testid="select-new-student-integration-type">
                     <SelectValue placeholder="Nenhuma" />
@@ -668,6 +675,18 @@ export default function TeacherDashboard({
                   </SelectContent>
                 </Select>
               </div>
+              {novoAluno.integrationType === "mensalista" && (
+                <div className="space-y-1">
+                  <Label>Valor mensal (R$)</Label>
+                  <Input
+                    placeholder="Ex: 200,00"
+                    value={novoAluno.mensalistaValor ?? ""}
+                    onChange={(e) => setNovoAluno({ ...novoAluno, mensalistaValor: e.target.value })}
+                    data-testid="input-new-student-mensalista-valor"
+                  />
+                  <p className="text-xs text-muted-foreground">Esse valor gerará uma cobrança mensal automática.</p>
+                </div>
+              )}
               {novoAluno.integrationType !== "none" && novoAluno.integrationType !== "mensalista" && (
                 <div className="space-y-1">
                   <Label>Plano da Integração</Label>

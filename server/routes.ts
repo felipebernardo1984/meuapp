@@ -296,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/alunos", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, modalidade, planoId, email, telefone, integrationType, integrationPlan } = req.body;
+    const { nome, cpf, modalidade, planoId, email, telefone, integrationType, integrationPlan, mensalistaValor } = req.body;
     const plan = await storage.getPlan(planoId);
     if (!plan) return res.status(400).json({ message: "Plano não encontrado" });
     const login = req.body.login?.trim() || gerarLogin(nome);
@@ -309,16 +309,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       integrationPlan: integrationPlan ?? null,
     });
 
-    if (integrationType === "mensalista" && plan.valorTexto) {
-      const now = new Date();
-      const refMonth = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
-      const dueDate = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
-      const amount = plan.valorTexto.replace(/[^0-9,.]/g, "").replace(",", ".");
-      await storage.createPayment({
-        tenantId: arenaId, studentId: student.id, planId: plan.id,
-        description: `Mensalidade ${refMonth}`, amount, referenceMonth: refMonth,
-        dueDate, paymentDate: null, status: "pending", createdBy: "sistema",
-      });
+    if (integrationType === "mensalista") {
+      const valorFonte = plan.valorTexto ?? (mensalistaValor ? `R$ ${mensalistaValor}` : null);
+      if (valorFonte) {
+        const now = new Date();
+        const refMonth = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+        const dueDate = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
+        const amount = valorFonte.replace(/[^0-9,.]/g, "").replace(",", ".");
+        await storage.createPayment({
+          tenantId: arenaId, studentId: student.id, planId: plan.id,
+          description: `Mensalidade ${refMonth}`, amount, referenceMonth: refMonth,
+          dueDate, paymentDate: null, status: "pending", createdBy: "sistema",
+        });
+      }
     }
 
     res.json({ ...student, loginGerado: login, senhaGerada: senha, historico: [] });

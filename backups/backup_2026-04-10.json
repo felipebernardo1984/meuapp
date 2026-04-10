@@ -70,8 +70,8 @@
       "login": "1111",
       "senha": "1111",
       "cpf": "000000000",
-      "email": "",
-      "telefone": "",
+      "email": null,
+      "telefone": null,
       "modalidade": "Beach Tennis",
       "planoId": "52a5ec2a-3885-4dfd-ad1f-5c8f413bf462",
       "planoTitulo": "1x por semana",
@@ -82,8 +82,8 @@
       "aprovado": true,
       "ultimoCheckin": null,
       "photoUrl": null,
-      "integrationType": "none",
-      "integrationPlan": ""
+      "integrationType": "mensalista",
+      "integrationPlan": null
     }
   ],
   "teachers": [
@@ -237,5 +237,5 @@
       "hora": "19:00"
     }
   ],
-  "createdAt": "2026-04-10T03:49:56.743Z"
+  "createdAt": "2026-04-10T04:03:43.464Z"
 }
