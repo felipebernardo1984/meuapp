@@ -1,0 +1,231 @@
+Quero que você faça uma correção criteriosa no meu projeto React/TypeScript, com foco no componente ManagerDashboard e nos handlers relacionados, mas entendendo a lógica do sistema antes de alterar qualquer coisa.
+
+IMPORTANTE:
+- Não quero refatoração estética desnecessária.
+- Não quero “reescrever tudo”.
+- Preserve ao máximo as funções e fluxos que já estão corretos.
+- Antes de alterar, entenda a regra de negócio e rastreie as funções relacionadas no projeto.
+- Corrija os bugs sem quebrar os comportamentos válidos já existentes.
+- Preserve os data-testid atuais sempre que possível.
+- Se houver código morto, remova com segurança.
+- Se houver ambiguidade entre funções, resolva de forma lógica e consistente.
+- Onde algo já estiver funcionando bem, mantenha.
+
+OBJETIVO GERAL:
+Reajustar os bugs do fluxo de alunos, planos e financeiro entendendo a lógica atual do sistema, melhorar o fluxo de pagamento e manter o restante estável.
+
+==================================================
+1) ANALISAR O PROJETO ANTES DE MEXER
+==================================================
+
+Antes de aplicar mudanças, faça uma varredura no projeto inteiro para localizar e entender:
+- ManagerDashboard
+- onEditarAluno
+- onAlterarPlanoAluno
+- onRegistrarPagamento
+- onCriarCobranca
+- integração/integrationType
+- integrationPlan
+- mensalistaValor
+- planos
+- seeds, mocks ou arrays de alunos de teste
+
+Quero que você corrija só depois de entender:
+- qual função realmente persiste planoId
+- qual função realmente registra pagamento
+- como o sistema diferencia mensalista, wellhub e totalpass
+- quais partes da UI já estão corretas e não devem ser quebradas
+
+==================================================
+2) CORRIGIR O FLUXO DE PAGAMENTO
+==================================================
+
+Hoje existe um problema claro no fluxo financeiro:
+- o Dialog “Registrar Pagamento” ainda existe
+- formPagamento ainda existe
+- onRegistrarPagamento ainda existe
+- mas não há mais ação de UI que abra esse dialog
+- no menu do aluno só existe “Validar pagamento”
+
+Quero que você reorganize isso com lógica de negócio, sem duplicidade e sem deixar fluxo morto.
+
+REGRAS OBRIGATÓRIAS:
+1. Manter “Validar pagamento” para cobranças/lançamentos pendentes.
+2. Recriar uma entrada real de UI para “Registrar pagamento manual”.
+3. Garantir que ao abrir “Registrar pagamento manual”, o aluno selecionado seja definido corretamente.
+4. Garantir que onRegistrarPagamento receba sempre o studentId certo.
+5. Revisar alunoFinanceiroId, dialogPagamento e formPagamento para que o fluxo fique consistente.
+6. Se necessário, melhore o menu de ações do aluno para separar claramente:
+   - Validar pagamento
+   - Registrar pagamento manual
+   - Criar cobrança
+7. Se depois da correção existir código morto no fluxo antigo, remova.
+8. Preserve a lógica que já funciona no histórico financeiro e na validação de pagamentos.
+9. Não quebrar:
+   - histórico financeiro
+   - validação de cobrança pendente
+   - criação de cobrança extra
+
+Quero uma melhoria real no fluxo de pagamento, não apenas recolocar um botão perdido.
+
+==================================================
+3) COMPATIBILIDADE COM DADOS LEGADOS DE INTEGRAÇÃO
+==================================================
+
+Hoje o sistema trabalha com:
+- mensalista
+- wellhub
+- totalpass
+
+Mas podem existir alunos antigos com:
+- integrationType = "none"
+
+Quero compatibilidade com legado sem reabrir isso como opção normal para novos cadastros.
+
+REGRAS:
+1. No cadastro de novo aluno, NÃO oferecer “none”.
+2. Na edição de aluno, se vier “none” do backend, a UI deve conseguir exibir esse valor sem quebrar.
+3. Adicione uma opção de edição com label amigável, algo como:
+   - “Sem integração (legado)”
+4. Se o usuário apenas abrir e salvar, preserve o valor legado.
+5. Se o usuário trocar a integração, passe a aplicar apenas as opções válidas novas.
+6. Não forçar mudança de integração em aluno legado sem necessidade.
+
+==================================================
+4) CORRIGIR A VALIDAÇÃO DE PLANO
+==================================================
+
+Hoje há uma falha no salvar plano:
+- se o usuário digita "0" em check-ins e deixa valor vazio, o plano pode ser salvo
+- isso gera plano sem detalhe útil
+
+Quero corrigir isso respeitando a regra de negócio.
+
+REGRAS:
+1. Todo plano deve ter título.
+2. O plano deve ter OU check-ins válido OU valor mensal válido.
+3. Nunca pode ter check-ins e valor ao mesmo tempo.
+4. Se não houver valor mensal, então check-ins deve ser inteiro > 0.
+5. Se houver valor mensal, check-ins deve ser 0.
+6. Não permitir criar/editar plano “sem detalhes”.
+7. Manter a exibição atual dos planos.
+8. Se hoje existe alert(), substitua por um feedback mais consistente com a UI, de preferência toast ou validação amigável, mas sem refatorar demais.
+
+==================================================
+5) RESOLVER A AMBIGUIDADE NA EDIÇÃO DE ALUNO
+==================================================
+
+No fluxo atual de editar aluno, parece haver duplicidade:
+- onEditarAluno(payload)
+- e depois, se o plano mudou, onAlterarPlanoAluno(...)
+
+Quero que você investigue a lógica real no projeto e deixe isso correto.
+
+REGRAS:
+1. Descobrir qual função realmente persiste planoId.
+2. Deve existir apenas UM caminho de persistência para alteração de plano dentro da edição do aluno.
+3. Se onEditarAluno já salva planoId, remova a chamada duplicada de onAlterarPlanoAluno nesse fluxo.
+4. Se onEditarAluno não salva planoId, ajuste a arquitetura com clareza.
+5. O diálogo separado “Alterar plano” pode continuar existindo, desde que não gere duplicidade com “Editar aluno”.
+
+==================================================
+6) LIMPEZA DE CÓDIGO MORTO E SOBRAS
+==================================================
+
+Quero limpeza com cuidado, sem quebrar nada.
+
+Verifique e ajuste:
+- imports não usados, como LayoutGrid e LayoutList
+- estados mortos ou fluxos mortos
+- mensalistaValor em NovoAlunoDados
+
+REGRAS:
+1. Se mensalistaValor não tiver uso real no projeto, remova com segurança.
+2. Se houver uso externo relevante, mantenha somente onde for necessário.
+3. Elimine apenas o que realmente sobrou da implementação antiga.
+
+==================================================
+7) AJUSTAR ALUNOS DE TESTE / EXEMPLOS
+==================================================
+
+IMPORTANTE:
+Os alunos atualmente cadastrados são alunos de teste. Pode remover esses dados de teste antigos e substituir por exemplos coerentes com o método novo, só para não perder a linha de raciocínio do sistema.
+
+Quero que você faça isso com cuidado:
+
+1. Localize onde esses alunos de teste estão definidos:
+   - seed
+   - mock
+   - estado inicial
+   - fixture
+   - backend fake/local
+2. Remova os exemplos antigos que não representam mais a lógica atual.
+3. Coloque 3 exemplos novos, coerentes com o fluxo atual do sistema.
+4. Esses 3 exemplos devem seguir a lógica nova de integração/plano.
+
+Sugestão dos 3 exemplos:
+- 1 aluno mensalista com plano de valor mensal
+- 1 aluno wellhub com plano por check-ins e integrationPlan preenchido
+- 1 aluno totalpass com plano por check-ins e integrationPlan preenchido
+
+REGRAS:
+- Não criar exemplos aleatórios/confusos.
+- Não reintroduzir a lógica antiga sem necessidade.
+- Os exemplos devem servir apenas para manter compreensão do sistema e facilitar testes.
+- Se os dados de teste estiverem em backend/seed, ajuste no local certo.
+- Se não houver seed fixa e os alunos vierem só do banco, então NÃO invente inserção automática sem necessidade; nesse caso apenas remova dependência de dados de teste hardcoded, se existir.
+
+==================================================
+8) PRESERVAR O QUE JÁ ESTÁ OK
+==================================================
+
+Quero que você tenha muito cuidado para não estragar o que já funciona bem.
+
+Preservar, se já estiver correto:
+- cadastro de aluno
+- edição de aluno
+- filtro de modalidade
+- criação de cobrança
+- histórico financeiro
+- validação de pagamento pendente
+- check-in manual
+- histórico de check-ins
+- cadastro e edição de professor
+- exportações
+- assinatura do sistema
+
+Se alguma dessas áreas precisar de ajuste indireto por causa das correções, faça o mínimo necessário.
+
+==================================================
+9) CRITÉRIOS DE ACEITAÇÃO
+==================================================
+
+Ao final, o resultado deve cumprir tudo isso:
+
+1. O menu do aluno deve ter uma ação funcional para “Registrar pagamento manual”.
+2. “Validar pagamento” deve continuar funcionando corretamente.
+3. “Criar cobrança” deve continuar funcionando corretamente.
+4. O fluxo financeiro deve estar mais claro e coerente, sem diálogo órfão.
+5. Alunos legados com integrationType = "none" devem poder ser editados sem quebrar a UI.
+6. Não deve ser possível criar ou editar plano com checkins = 0 e sem valor.
+7. Não deve existir duplicidade de persistência de plano ao editar aluno.
+8. Imports e estados mortos devem ser limpos com segurança.
+9. Se existirem alunos/mock de teste antigos, eles podem ser removidos e substituídos por 3 exemplos coerentes com a lógica nova.
+10. O projeto deve continuar compilando normalmente em TypeScript.
+
+==================================================
+10) ENTREGA QUE EU QUERO DE VOCÊ
+==================================================
+
+Depois de corrigir, quero que você me entregue:
+
+1. Lista dos arquivos alterados.
+2. Resumo objetivo do que foi corrigido.
+3. Explicação curta do motivo de cada mudança.
+4. Destaque de qualquer ponto onde você precisou assumir comportamento por falta de contrato explícito.
+5. Confirmação do que foi preservado sem alteração.
+6. Se possível, um resumo final em formato:
+   - Bugs corrigidos
+   - Melhorias no fluxo
+   - Código morto removido
+   - Pontos que dependem de backend/seed
