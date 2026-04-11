@@ -123,25 +123,11 @@
   ],
   "plans": [
     {
-      "id": "71a63692-f148-4a63-b6a1-4c772f1570d4",
-      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "titulo": "1x Semana",
-      "checkins": 12,
-      "valorTexto": null
-    },
-    {
       "id": "37bc39d4-a42f-4656-b263-0578fc2a78c2",
       "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
       "titulo": "2x semana",
       "checkins": 2,
       "valorTexto": null
-    },
-    {
-      "id": "20526de5-a066-4aa8-a257-6daf54013c84",
-      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "titulo": "1x semana",
-      "checkins": 8,
-      "valorTexto": "R$ 140,00"
     }
   ],
   "checkins": [
@@ -230,5 +216,5 @@
       "hora": "19:00"
     }
   ],
-  "createdAt": "2026-04-11T01:57:48.292Z"
+  "createdAt": "2026-04-11T03:49:35.730Z"
 }

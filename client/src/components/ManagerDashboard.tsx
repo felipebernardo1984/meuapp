@@ -322,22 +322,32 @@ export default function ManagerDashboard({
   };
 
   const handleSalvarPlano = () => {
-    const checkinsVal = (formPlano.checkins ?? "").trim();
-    const valorTextoVal = (formPlano.valorTexto ?? "").trim();
-    if (!formPlano.titulo || (!checkinsVal && !valorTextoVal)) return;
-    const checkins = checkinsVal ? parseInt(checkinsVal, 10) : 0;
-    const valorTexto = valorTextoVal
-      ? (valorTextoVal.startsWith("R$") ? valorTextoVal : `R$ ${valorTextoVal}`)
-      : undefined;
-    if (planoEditando) {
-      onEditarPlano(planoEditando.id, formPlano.titulo, checkins, valorTexto);
-      setPlanoEditando(null);
-    } else {
-      onCriarPlano(formPlano.titulo, checkins, valorTexto);
-      setDialogNovoPlano(false);
-    }
-    setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
-  };
+  // 1. Garantimos que os valores são strings antes de usar .trim()
+  const tituloVal = (formPlano.titulo || "").trim();
+  const checkinsVal = String(formPlano.checkins || "").trim();
+  const valorTextoVal = String(formPlano.valorTexto || "").trim();
+
+  // 2. Verificação de segurança: título é obrigatório 
+  // E deve ter ou checkins ou um valor em dinheiro
+  if (!tituloVal || (!checkinsVal && !valorTextoVal)) return;
+
+  // 3. Conversão segura
+  const checkins = checkinsVal ? parseInt(checkinsVal, 10) : 0;
+  const valorTexto = valorTextoVal
+    ? (valorTextoVal.startsWith("R$") ? valorTextoVal : `R$ ${valorTextoVal}`)
+    : undefined;
+
+  if (planoEditando) {
+    onEditarPlano(planoEditando.id, tituloVal, checkins, valorTexto);
+    setPlanoEditando(null);
+  } else {
+    onCriarPlano(tituloVal, checkins, valorTexto);
+    setDialogNovoPlano(false);
+  }
+
+  // 4. Limpeza do estado
+  setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
+};
 
   // ── Professores ──────────────────────────────────────────────────────────
   const abrirEditarProfessor = (p: ProfessorGestor) => {
@@ -778,7 +788,7 @@ export default function ManagerDashboard({
                   type="number"
                   min={0}
                   placeholder="Ex: 8"
-                  value={formPlano.checkins}
+                  value={formPlano.checkins ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
                   data-testid="input-plan-checkins"
                 />
@@ -787,7 +797,7 @@ export default function ManagerDashboard({
                 <Label>Valor mensal (R$)</Label>
                 <Input
                   placeholder="Ex: 200,00"
-                  value={formPlano.valorTexto}
+                  value={formPlano.valorTexto ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, valorTexto: e.target.value })}
                   data-testid="input-plan-value"
                 />
@@ -798,7 +808,7 @@ export default function ManagerDashboard({
             <Button variant="outline" onClick={() => setDialogNovoPlano(false)}>Cancelar</Button>
             <Button
               onClick={handleSalvarPlano}
-              disabled={!formPlano.titulo || (!formPlano.checkins.trim() && !formPlano.valorTexto.trim())}
+              disabled={!formPlano.titulo || (!(formPlano.checkins ?? "").trim() && !(formPlano.valorTexto ?? "").trim())}
               data-testid="button-confirm-plan"
             >
               Criar Plano
@@ -821,7 +831,7 @@ export default function ManagerDashboard({
               <Label>Título do plano</Label>
               <Input
                 placeholder="Ex: 1x por semana"
-                value={formPlano.titulo}
+                value={formPlano.titulo ?? ""}
                 onChange={(e) => setFormPlano({ ...formPlano, titulo: e.target.value })}
                 data-testid="input-edit-plan-title"
               />
@@ -833,7 +843,7 @@ export default function ManagerDashboard({
                   type="number"
                   min={0}
                   placeholder="Ex: 8"
-                  value={formPlano.checkins}
+                  value={formPlano.checkins ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
                   data-testid="input-edit-plan-checkins"
                 />
@@ -842,7 +852,7 @@ export default function ManagerDashboard({
                 <Label>Valor mensal (R$)</Label>
                 <Input
                   placeholder="Ex: 200,00"
-                  value={formPlano.valorTexto}
+                  value={formPlano.valorTexto ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, valorTexto: e.target.value })}
                   data-testid="input-edit-plan-value"
                 />
@@ -853,7 +863,7 @@ export default function ManagerDashboard({
             <Button variant="outline" onClick={() => setPlanoEditando(null)}>Cancelar</Button>
             <Button
               onClick={handleSalvarPlano}
-              disabled={!formPlano.titulo || (!formPlano.checkins.trim() && !formPlano.valorTexto.trim())}
+              disabled={!formPlano.titulo || (!(formPlano.checkins ?? "").trim() && !(formPlano.valorTexto ?? "").trim())}
               data-testid="button-confirm-edit-plan"
             >
               Salvar
