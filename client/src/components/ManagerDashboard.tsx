@@ -56,8 +56,6 @@ import {
   CreditCard,
   AlertCircle,
   Settings,
-  LayoutGrid,
-  LayoutList,
 } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
@@ -103,7 +101,6 @@ interface NovoAlunoDados {
   planoId: string;
   integrationType: string;
   integrationPlan: string;
-  mensalistaValor?: string;
 }
 
 interface ManagerDashboardProps {
@@ -296,7 +293,6 @@ export default function ManagerDashboard({
     planoId: "",
     integrationType: "",
     integrationPlan: "",
-    mensalistaValor: "",
   });
 
   // Plano state
@@ -337,38 +333,41 @@ export default function ManagerDashboard({
   };
 
   const handleSalvarPlano = () => {
-
-  // 1. Garantimos que os valores são strings antes de usar .trim()
     const tituloVal = (formPlano.titulo || "").trim();
     const checkinsVal = String(formPlano.checkins || "").trim();
     const valorTextoVal = String(formPlano.valorTexto || "").trim();
 
-  // 🔥 BLOQUEIO DE REGRA DE OURO (com mensagem)
-    if (checkinsVal && valorTextoVal) {
-      alert("O plano não pode ter Check-in e Valor ao mesmo tempo");
+    if (!tituloVal) {
+      toast({ title: "Campo obrigatório", description: "O plano precisa ter um título.", variant: "destructive" });
       return;
     }
 
-  // 2. Verificação de segurança (sem repetição)
-    if (!tituloVal || (!checkinsVal && !valorTextoVal)) return;
+    if (checkinsVal && valorTextoVal) {
+      toast({ title: "Configuração inválida", description: "O plano não pode ter Check-ins e Valor Mensal ao mesmo tempo.", variant: "destructive" });
+      return;
+    }
 
-  // 3. Conversão segura
-  const checkins = checkinsVal ? parseInt(checkinsVal, 10) : 0;
-  const valorTexto = valorTextoVal
-    ? (valorTextoVal.startsWith("R$") ? valorTextoVal : `R$ ${valorTextoVal}`)
-    : undefined;
+    const checkinsNum = checkinsVal ? parseInt(checkinsVal, 10) : 0;
 
-  if (planoEditando) {
-    onEditarPlano(planoEditando.id, tituloVal, checkins, valorTexto);
-    setPlanoEditando(null);
-  } else {
-    onCriarPlano(tituloVal, checkins, valorTexto);
-    setDialogNovoPlano(false);
-  }
+    if (!valorTextoVal && checkinsNum <= 0) {
+      toast({ title: "Plano incompleto", description: "Informe um valor mensal OU uma quantidade de check-ins maior que zero.", variant: "destructive" });
+      return;
+    }
 
-  // 4. Limpeza do estado
-  setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
-};
+    const valorTexto = valorTextoVal
+      ? (valorTextoVal.startsWith("R$") ? valorTextoVal : `R$ ${valorTextoVal}`)
+      : undefined;
+
+    if (planoEditando) {
+      onEditarPlano(planoEditando.id, tituloVal, checkinsNum, valorTexto);
+      setPlanoEditando(null);
+    } else {
+      onCriarPlano(tituloVal, checkinsNum, valorTexto);
+      setDialogNovoPlano(false);
+    }
+
+    setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
+  };
 
   // ── Professores ──────────────────────────────────────────────────────────
   const abrirEditarProfessor = (p: ProfessorGestor) => {
@@ -414,7 +413,7 @@ export default function ManagerDashboard({
       (!exigePlanoIntegracao || novoAluno.integrationPlan)
     ) {
       onCadastrarAluno(novoAluno);
-      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", integrationType: "", integrationPlan: "", mensalistaValor: "" });
+      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", integrationType: "", integrationPlan: "" });
       setDialogNovoAluno(false);
     }
   };
@@ -1361,6 +1360,20 @@ export default function ManagerDashboard({
                             onClick={() => {
                               setAlunoFinanceiroId(aluno.id);
                               const now = new Date();
+                              const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+                              const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
+                              setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
+                              setDialogPagamento(true);
+                            }}
+                            data-testid={`menu-manual-payment-${aluno.id}`}
+                          >
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            Registrar pagamento manual
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAlunoFinanceiroId(aluno.id);
+                              const now = new Date();
                               setFormCobranca({
                                 description: "",
                                 amount: "",
@@ -1748,6 +1761,9 @@ export default function ManagerDashboard({
                     <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
+                    {formEditarAluno.integrationType === "none" && (
+                      <SelectItem value="none">Sem integração (legado)</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
