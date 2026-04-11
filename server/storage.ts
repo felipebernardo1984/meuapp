@@ -136,7 +136,11 @@ export class DatabaseStorage {
 
   // STUDENTS
   async listStudents(arenaId: string) {
-    return db.select().from(students).where(eq(students.arenaId, arenaId));
+    return db.select().from(students).where(and(eq(students.arenaId, arenaId), eq(students.ativo, true)));
+  }
+
+  async listInactiveStudents(arenaId: string) {
+    return db.select().from(students).where(and(eq(students.arenaId, arenaId), eq(students.ativo, false)));
   }
 
   async getStudent(id: string) {
@@ -162,13 +166,23 @@ export class DatabaseStorage {
     return student;
   }
 
-  async deleteStudent(id: string) {
-    await db.delete(students).where(eq(students.id, id));
+  async deactivateStudent(id: string) {
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    await db.update(students).set({ ativo: false, desativadoEm: hoje }).where(eq(students.id, id));
+  }
+
+  async reactivateStudent(id: string) {
+    const [student] = await db.update(students).set({ ativo: true, desativadoEm: null }).where(eq(students.id, id)).returning();
+    return student;
   }
 
   // CHECKINS
   async listCheckins(studentId: string) {
     return db.select().from(checkinHistory).where(eq(checkinHistory.studentId, studentId));
+  }
+
+  async listAllCheckins(arenaId: string) {
+    return db.select().from(checkinHistory).where(eq(checkinHistory.arenaId, arenaId));
   }
 
   async addCheckin(data: any) {

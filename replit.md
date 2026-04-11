@@ -17,7 +17,8 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `server/routes.ts` — All API routes
 - `client/src/pages/Admin.tsx` — Super-admin panel (arena CRUD, pricing, payment history)
 - `client/src/pages/ArenaApp.tsx` — Arena-specific app shell
-- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard
+- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard (includes Ativos/Inativos student tabs)
+- `client/src/components/OverviewDashboard.tsx` — Analytics overview (KPIs, student movement, financial, plan distribution)
 - `client/src/components/TeacherDashboard.tsx` — Teacher dashboard
 - `client/src/components/StudentDashboard.tsx` — Student dashboard
 
@@ -31,7 +32,7 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `arena_subscription_payments` — History of arena subscription payments
 - `plans` — Arena-created training plans for students
 - `teachers` — Arena teachers
-- `students` — Arena students with plan/checkin data
+- `students` — Arena students with plan/checkin data; soft-delete via `ativo` bool, `desativadoEm` date, `criadoEm` timestamp
 - `checkin_history` — Student check-in records
 - `checkin_financeiro` — Financial snapshot per check-in (valorUnitario saved at moment of check-in for historical consistency)
 - `payments` — Student monthly payment records

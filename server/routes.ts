@@ -294,6 +294,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(result);
   });
 
+  app.get("/api/alunos/inativos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const lista = await storage.listInactiveStudents(arenaId);
+    res.json(lista);
+  });
+
+  app.put("/api/alunos/:id/reativar", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const student = await storage.reactivateStudent(req.params.id);
+    res.json(student);
+  });
+
   app.post("/api/alunos", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -378,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/alunos/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    await storage.deleteStudent(req.params.id);
+    await storage.deactivateStudent(req.params.id);
     res.json({ ok: true });
   });
 
@@ -873,6 +887,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       habilitado: habilitado ?? false,
     });
     res.json(settings);
+  });
+
+  // ── Analytics ──────────────────────────────────────────────────────────────
+  app.get("/api/analytics", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+
+    const now = new Date();
+    const mesAtual = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+    const haCatorze = new Date(now);
+    haCatorze.setDate(haCatorze.getDate() - 14);
+
+    const [ativos, inativos, allPayments, allCharges, allCheckins] = await Promise.all([
+      storage.listStudents(arenaId),
+      storage.listInactiveStudents(arenaId),
+      storage.listPayments(arenaId),
+      storage.listCharges(arenaId),
+      storage.listAllCheckins(arenaId),
+    ]);
+
+    // Receita do mês (pagamentos + cobranças pagos no mês)
+    const receitaMes = [...allPayments, ...allCharges]
+      .filter((p) => p.status === "paid" && p.paymentDate?.slice(-7) === mesAtual.split("/").reverse().join("/").slice(-7))
+      .reduce((acc, p) => acc + parseFloat((p.amount || "0").replace(",", ".")), 0);
+
+    // Pendentes (apenas pendente ou overdue)
+    const pendentesValor = [...allPayments, ...allCharges]
+      .filter((p) => p.status === "pending" || p.status === "overdue")
+      .reduce((acc, p) => acc + parseFloat((p.amount || "0").replace(",", ".")), 0);
+
+    const cobrancasPendentes = [...allPayments, ...allCharges].filter(
+      (p) => p.status === "pending" || p.status === "overdue"
+    );
+
+    // Novos este mês
+    const novosMes = ativos.filter((s: any) => {
+      if (!s.criadoEm) return false;
+      const d = new Date(s.criadoEm);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+
+    // Desativados este mês
+    const desativadosMes = inativos.filter((s: any) => {
+      if (!s.desativadoEm) return false;
+      const parts = s.desativadoEm.split("/");
+      if (parts.length !== 3) return false;
+      const d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+
+    // Check-ins do mês
+    const checkinsMes = allCheckins.filter((c: any) => {
+      if (!c.data) return false;
+      const parts = c.data.split("/");
+      if (parts.length !== 3) return false;
+      return parts[1] === String(now.getMonth() + 1).padStart(2, "0") && parts[2] === String(now.getFullYear());
+    });
+
+    // Distribuição por plano
+    const porPlano: Record<string, number> = {};
+    ativos.forEach((s: any) => {
+      const titulo = s.planoTitulo || "Sem plano";
+      porPlano[titulo] = (porPlano[titulo] || 0) + 1;
+    });
+
+    // Distribuição por integração
+    const porIntegracao: Record<string, number> = {};
+    ativos.forEach((s: any) => {
+      const tipo = s.integrationType === "none" ? "mensalista" : (s.integrationType || "mensalista");
+      porIntegracao[tipo] = (porIntegracao[tipo] || 0) + 1;
+    });
+
+    // Alunos com baixa frequência (não vieram há mais de 14 dias ou nunca vieram)
+    const baixaFrequencia = ativos.filter((s: any) => {
+      if (!s.ultimoCheckin) return true;
+      const parts = s.ultimoCheckin.split("/");
+      if (parts.length !== 3) return true;
+      const ultimo = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      return ultimo < haCatorze;
+    });
+
+    res.json({
+      alunos: {
+        total: ativos.length,
+        inativos: inativos.length,
+        novosMes: novosMes.length,
+        desativadosMes: desativadosMes.length,
+        baixaFrequencia: baixaFrequencia.length,
+        baixaFrequenciaLista: baixaFrequencia.map((s: any) => ({
+          id: s.id, nome: s.nome, modalidade: s.modalidade,
+          ultimoCheckin: s.ultimoCheckin || null,
+        })),
+      },
+      financeiro: {
+        receitaMes: receitaMes.toFixed(2),
+        pendentesValor: pendentesValor.toFixed(2),
+        cobrancasPendentes: cobrancasPendentes.length,
+        pendentesLista: cobrancasPendentes.map((p: any) => ({
+          id: p.id, tipo: p.referenceMonth ? "pagamento" : "cobranca",
+          studentId: p.studentId, amount: p.amount, status: p.status,
+          dueDate: p.dueDate,
+        })),
+      },
+      checkins: {
+        totalMes: checkinsMes.length,
+      },
+      distribuicao: { porPlano, porIntegracao },
+    });
   });
 
   // ── Modalidade Settings ────────────────────────────────────────────────────

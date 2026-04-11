@@ -127,6 +127,7 @@ interface ManagerDashboardProps {
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onRemoverCheckin: (alunoId: string, index: number) => void;
   onExcluirAluno: (alunoId: string) => void;
+  onReativarAluno: (alunoId: string) => void;
 }
 
 
@@ -154,8 +155,14 @@ export default function ManagerDashboard({
   onCheckinManual,
   onRemoverCheckin,
   onExcluirAluno,
+  onReativarAluno,
 }: ManagerDashboardProps) {
   const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
+  const [abaAlunos, setAbaAlunos] = useState<"ativos" | "inativos">("ativos");
+
+  const { data: alunosInativos = [] } = useQuery<any[]>({
+    queryKey: ["/api/alunos/inativos"],
+  });
 
   // Financial state
   const [dialogPagamento, setDialogPagamento] = useState(false);
@@ -1172,20 +1179,39 @@ export default function ManagerDashboard({
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 flex-wrap">
-            <CardTitle className="text-lg">Alunos</CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-lg">Alunos</CardTitle>
+              <div className="flex rounded-lg border overflow-hidden text-sm">
+                <button
+                  className={`px-3 py-1 transition-colors ${abaAlunos === "ativos" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  onClick={() => setAbaAlunos("ativos")}
+                  data-testid="tab-alunos-ativos"
+                >
+                  Ativos <span className="ml-1 opacity-70">{alunos.length}</span>
+                </button>
+                <button
+                  className={`px-3 py-1 transition-colors ${abaAlunos === "inativos" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  onClick={() => setAbaAlunos("inativos")}
+                  data-testid="tab-alunos-inativos"
+                >
+                  Inativos <span className="ml-1 opacity-70">{alunosInativos.length}</span>
+                </button>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
-              <Select value={filtroModalidade} onValueChange={setFiltroModalidade}>
-                <SelectTrigger className="w-44" data-testid="select-modality">
-                  <SelectValue placeholder="Modalidade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  {todasModalidades.map((mod) => (
-                    <SelectItem key={mod} value={mod}>{mod}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
+              {abaAlunos === "ativos" && (
+                <Select value={filtroModalidade} onValueChange={setFiltroModalidade}>
+                  <SelectTrigger className="w-44" data-testid="select-modality">
+                    <SelectValue placeholder="Modalidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas</SelectItem>
+                    {todasModalidades.map((mod) => (
+                      <SelectItem key={mod} value={mod}>{mod}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button variant="outline" onClick={onExportarPDF} data-testid="button-export-pdf">
                 <Download className="h-4 w-4 mr-2" />PDF
               </Button>
@@ -1209,6 +1235,30 @@ export default function ManagerDashboard({
           </div>
         </CardHeader>
         <CardContent>
+          {abaAlunos === "inativos" ? (
+            <div className="space-y-2">
+              {alunosInativos.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhum aluno inativo.</p>
+              ) : (
+                alunosInativos.map((a: any) => (
+                  <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30" data-testid={`row-inativo-${a.id}`}>
+                    <div>
+                      <p className="font-medium text-sm">{a.nome}</p>
+                      <p className="text-xs text-muted-foreground">{a.modalidade} · {a.planoTitulo || "Sem plano"} · Desativado em {a.desativadoEm ?? "—"}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onReativarAluno(a.id)}
+                      data-testid={`button-reativar-${a.id}`}
+                    >
+                      Reativar
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -1403,6 +1453,7 @@ export default function ManagerDashboard({
               </TableBody>
             </Table>
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1981,9 +2032,9 @@ export default function ManagerDashboard({
       <Dialog open={!!confirmExcluirAluno} onOpenChange={(open) => { if (!open) setConfirmExcluirAluno(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Excluir Aluno</DialogTitle>
+            <DialogTitle>Desativar Aluno</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja remover o aluno <strong>{confirmExcluirAluno?.nome}</strong>? 
+              Tem certeza que deseja desativar o aluno <strong>{confirmExcluirAluno?.nome}</strong>? O aluno será movido para a lista de inativos e poderá ser reativado a qualquer momento.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1998,7 +2049,7 @@ export default function ManagerDashboard({
               }}
               data-testid="button-confirm-delete-student"
             >
-              Excluir
+              Desativar
             </Button>
           </DialogFooter>
         </DialogContent>

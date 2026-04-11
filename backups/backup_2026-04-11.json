@@ -1,8 +1,225 @@
 {
-  "arenas": [],
-  "students": [],
-  "teachers": [],
-  "plans": [],
-  "checkins": [],
-  "createdAt": "2026-04-11T20:48:47.009Z"
+  "arenas": [
+    {
+      "id": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "name": "Arena Padrão",
+      "subscriptionPlan": "premium",
+      "gestorLogin": "333",
+      "gestorSenha": "333",
+      "gestorNome": null,
+      "gestorCpf": null,
+      "gestorEmail": null,
+      "gestorTelefone": null,
+      "subscriptionStartDate": "11/04/2026",
+      "subscriptionValue": "R$ 199,00",
+      "subscriptionStatus": "Ativo",
+      "nextBillingDate": "11/05/2026",
+      "createdAt": "2026-04-11T20:48:47.643Z",
+      "updatedAt": "2026-04-11T20:48:47.643Z"
+    }
+  ],
+  "students": [
+    {
+      "id": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "nome": "Maria Santos",
+      "login": "111",
+      "senha": "111",
+      "cpf": "987.654.321-00",
+      "email": null,
+      "telefone": null,
+      "modalidade": "Beach Tennis",
+      "planoId": "b1c94c2d-50fe-456f-a4ac-da64469b9504",
+      "planoTitulo": "2x por semana",
+      "planoCheckins": 12,
+      "planoValorTexto": null,
+      "checkinsRealizados": 9,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "02/01/2025",
+      "photoUrl": null,
+      "integrationType": "none",
+      "integrationPlan": null,
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-04-11T21:10:48.710Z"
+    },
+    {
+      "id": "95c7c6d0-659d-49b4-8b32-7a5c289467ed",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "nome": "Pedro Oliveira",
+      "login": "pedro",
+      "senha": "admin",
+      "cpf": "456.789.123-00",
+      "email": null,
+      "telefone": null,
+      "modalidade": "Vôlei de Praia",
+      "planoId": "eadf06cc-c1bc-41eb-9ed1-27ab4e7d4c8d",
+      "planoTitulo": "1x por semana",
+      "planoCheckins": 8,
+      "planoValorTexto": null,
+      "checkinsRealizados": 3,
+      "statusMensalidade": "Pendente",
+      "aprovado": true,
+      "ultimoCheckin": "30/12/2024",
+      "photoUrl": null,
+      "integrationType": "none",
+      "integrationPlan": null,
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-04-11T21:10:48.710Z"
+    }
+  ],
+  "teachers": [
+    {
+      "id": "82df60fb-14d6-47e2-a3f0-a61267c288b6",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "nome": "Carlos Mendes",
+      "login": "222",
+      "senha": "222",
+      "cpf": null,
+      "email": null,
+      "telefone": null,
+      "modalidade": "Beach Tennis"
+    },
+    {
+      "id": "45e1ccb9-416f-424d-b58f-a0e184721985",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "nome": "Fernanda Lima",
+      "login": "fernanda",
+      "senha": "admin",
+      "cpf": null,
+      "email": null,
+      "telefone": null,
+      "modalidade": "Vôlei de Praia"
+    },
+    {
+      "id": "88d62f1c-df5d-4bb3-aa23-5054d87c7b27",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "nome": "Ricardo Souza",
+      "login": "ricardo",
+      "senha": "admin",
+      "cpf": null,
+      "email": null,
+      "telefone": null,
+      "modalidade": "Futevôlei"
+    }
+  ],
+  "plans": [
+    {
+      "id": "eadf06cc-c1bc-41eb-9ed1-27ab4e7d4c8d",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "titulo": "1x por semana",
+      "checkins": 8,
+      "valorTexto": null
+    },
+    {
+      "id": "b1c94c2d-50fe-456f-a4ac-da64469b9504",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "titulo": "2x por semana",
+      "checkins": 12,
+      "valorTexto": null
+    },
+    {
+      "id": "e3accf85-5999-4e64-aeb3-21a1a0ec44b4",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "titulo": "Mensalista",
+      "checkins": 0,
+      "valorTexto": "R$ 140,00"
+    },
+    {
+      "id": "b304a777-7486-471e-8a38-facbfb41d672",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "titulo": "5x semana",
+      "checkins": 12,
+      "valorTexto": null
+    }
+  ],
+  "checkins": [
+    {
+      "id": "e40c4135-1e5d-4bd4-911b-f5c012a8c708",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "15/12/2024",
+      "hora": "18:30"
+    },
+    {
+      "id": "2ba03452-0169-4191-a52e-f6a1b0d924f5",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "18/12/2024",
+      "hora": "19:00"
+    },
+    {
+      "id": "5f06a8c6-7e2c-4018-ba4e-90c6bcd95afa",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "22/12/2024",
+      "hora": "18:45"
+    },
+    {
+      "id": "580e472d-7285-4623-8650-0917808254a8",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "25/12/2024",
+      "hora": "19:15"
+    },
+    {
+      "id": "2cb42ce4-67c7-415c-991c-0e7c7ad6a3d7",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "29/12/2024",
+      "hora": "18:20"
+    },
+    {
+      "id": "aa3f8d86-3553-4078-aec0-0b6a8149550d",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "30/12/2024",
+      "hora": "18:00"
+    },
+    {
+      "id": "15603edf-e067-4d06-8957-3746e59e6f04",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "31/12/2024",
+      "hora": "17:45"
+    },
+    {
+      "id": "edaf2b45-67fa-43c8-8631-b0b36eb20163",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "01/01/2025",
+      "hora": "19:30"
+    },
+    {
+      "id": "3938c030-4715-4fc2-86dc-950fabfd0b78",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "02/01/2025",
+      "hora": "18:30"
+    },
+    {
+      "id": "0bcc5bc7-a454-4e5d-8728-15806ddda927",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "95c7c6d0-659d-49b4-8b32-7a5c289467ed",
+      "data": "20/12/2024",
+      "hora": "18:00"
+    },
+    {
+      "id": "189ab171-acc0-4061-8a0c-42907162a5e7",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "95c7c6d0-659d-49b4-8b32-7a5c289467ed",
+      "data": "25/12/2024",
+      "hora": "19:00"
+    },
+    {
+      "id": "61c686c4-d2fc-4bf2-b2a6-4a11260e5909",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "95c7c6d0-659d-49b4-8b32-7a5c289467ed",
+      "data": "30/12/2024",
+      "hora": "19:00"
+    }
+  ],
+  "createdAt": "2026-04-11T21:14:08.776Z"
 }

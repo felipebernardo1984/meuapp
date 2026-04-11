@@ -117,6 +117,10 @@ export const students = pgTable("students", {
   // Integração (fonte única de verdade para cálculo financeiro)
   integrationType: text("integration_type").notNull().default("none"), // 'wellhub' | 'totalpass' | 'none'
   integrationPlan: text("integration_plan"),                           // ex: TP1, TP2, GP1...
+  // Ciclo de vida do aluno
+  ativo: boolean("ativo").notNull().default(true),
+  desativadoEm: text("desativado_em"),
+  criadoEm: timestamp("criado_em").defaultNow(),
 });
 
 export const insertStudentSchema = createInsertSchema(students).omit({ id: true });
