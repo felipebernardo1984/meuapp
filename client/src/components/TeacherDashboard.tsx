@@ -644,9 +644,14 @@ export default function TeacherDashboard({
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {planos.map((p) => (
+                    {(novoAluno.integrationType === "mensalista"
+                      ? planos.filter(p => p.valorTexto)
+                      : planos
+                    ).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.titulo}
+                        {novoAluno.integrationType === "mensalista"
+                          ? `${p.titulo} — ${p.valorTexto}`
+                          : p.titulo}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -820,9 +825,14 @@ export default function TeacherDashboard({
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {planos.map((p) => (
+                    {(dadosEdicao.integrationType === "mensalista"
+                      ? planos.filter(p => p.valorTexto)
+                      : planos
+                    ).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.titulo}
+                        {dadosEdicao.integrationType === "mensalista"
+                          ? `${p.titulo} — ${p.valorTexto}`
+                          : p.titulo}
                       </SelectItem>
                     ))}
                   </SelectContent>

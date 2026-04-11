@@ -618,9 +618,14 @@ export default function ManagerDashboard({
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {planos.map((p) => (
+                    {(novoAluno.integrationType === "mensalista"
+                      ? planos.filter(p => p.valorTexto)
+                      : planos
+                    ).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.titulo} — {getPlanoDescricao(p)}
+                        {novoAluno.integrationType === "mensalista"
+                          ? `${p.titulo} — ${p.valorTexto}`
+                          : `${p.titulo} — ${getPlanoDescricao(p)}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1658,8 +1663,15 @@ export default function ManagerDashboard({
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {planos.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
+                    {(formEditarAluno.integrationType === "mensalista"
+                      ? planos.filter(p => p.valorTexto)
+                      : planos
+                    ).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {formEditarAluno.integrationType === "mensalista"
+                          ? `${p.titulo} — ${p.valorTexto}`
+                          : p.titulo}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
