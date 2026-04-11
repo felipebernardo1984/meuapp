@@ -266,3 +266,12 @@ export const integrationSettings = pgTable("integration_settings", {
 export const insertIntegrationSettingsSchema = createInsertSchema(integrationSettings).omit({ id: true });
 export type InsertIntegrationSettings = z.infer<typeof insertIntegrationSettingsSchema>;
 export type IntegrationSettings = typeof integrationSettings.$inferSelect;
+
+// ── WhatsApp Settings (configuração por tenant) ──────────────────────────────
+export const whatsappSettings = pgTable("whatsapp_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  whatsapp_number: text("whatsapp_number"),
+  default_message: text("default_message"),
+  created_at: timestamp("created_at").defaultNow(),
+});

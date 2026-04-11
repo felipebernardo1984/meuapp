@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import { financeService } from "./financeService";
 import { getFinancialStatus } from "./financialStatusUtils";
 import { automationRouter } from "./automationRoutes";
+import { getWhatsappSettings, saveWhatsappSettings } from "./whatsappSettings";
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -926,6 +927,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (_e) {}
   })();
 
+  // ── WhatsApp Settings ───────────────────────────────────────────────
+  app.get("/api/whatsapp/settings", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+
+    try {
+      const settings = await getWhatsappSettings(arenaId);
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar configurações do WhatsApp" });
+    }
+  });
+
+  app.post("/api/whatsapp/settings", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+
+    const { whatsapp_number, default_message } = req.body;
+
+    try {
+      const saved = await saveWhatsappSettings({
+        arenaId,
+        whatsapp_number,
+        default_message,
+      });
+
+      res.json(saved);
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao salvar configurações do WhatsApp" });
+    }
+  });
+  
   app.use(automationRouter);
 
   return createServer(app);
