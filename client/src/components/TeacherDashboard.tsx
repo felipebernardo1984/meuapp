@@ -715,7 +715,7 @@ export default function TeacherDashboard({
 
       {/* ── Dialog: Editar Aluno ── */}
       <Dialog open={dialogEditarAluno} onOpenChange={setDialogEditarAluno}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar Aluno</DialogTitle>
             <DialogDescription>{alunoEditando?.nome}</DialogDescription>
@@ -948,7 +948,7 @@ export default function TeacherDashboard({
 
       {/* ── Dialog: Alterar Plano ── */}
       <Dialog open={dialogAlterarPlano} onOpenChange={setDialogAlterarPlano}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Alterar Plano: {alunoPlano?.nome}</DialogTitle>
             <DialogDescription>
@@ -1011,7 +1011,7 @@ export default function TeacherDashboard({
 
       {/* ── Dialog: Cobranças e Pagamentos ── */}
       <Dialog open={dialogFinanceiro} onOpenChange={setDialogFinanceiro}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Banknote className="h-5 w-5" />
@@ -1094,7 +1094,7 @@ export default function TeacherDashboard({
             <DialogTitle className="sr-only">Registrar Aula</DialogTitle>
             <DialogDescription asChild>
               <p className="font-bold text-foreground text-sm">
-                Selecione a data e hora da aula que não foi registrada.
+                Selecione a data e hora da aula.
               </p>
             </DialogDescription>
           </DialogHeader>

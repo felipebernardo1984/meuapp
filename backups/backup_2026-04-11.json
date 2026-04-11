@@ -42,28 +42,6 @@
       "integrationPlan": null
     },
     {
-      "id": "f70d6380-dfcc-4598-a5c2-5e81df6dadcb",
-      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
-      "nome": "Maria Santos",
-      "login": "111",
-      "senha": "111",
-      "cpf": "987.654.321-00",
-      "email": null,
-      "telefone": null,
-      "modalidade": "Beach Tennis",
-      "planoId": null,
-      "planoTitulo": "2x por semana",
-      "planoCheckins": 12,
-      "planoValorTexto": null,
-      "checkinsRealizados": 9,
-      "statusMensalidade": "Em dia",
-      "aprovado": true,
-      "ultimoCheckin": "02/01/2025",
-      "photoUrl": null,
-      "integrationType": "none",
-      "integrationPlan": null
-    },
-    {
       "id": "0c092cdd-f3c6-4376-88d9-d7ff5c5fe4d5",
       "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
       "nome": "Felipe",
@@ -84,6 +62,28 @@
       "photoUrl": null,
       "integrationType": "mensalista",
       "integrationPlan": null
+    },
+    {
+      "id": "f70d6380-dfcc-4598-a5c2-5e81df6dadcb",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "nome": "Maria Santos",
+      "login": "111",
+      "senha": "111",
+      "cpf": "987.654.321-00",
+      "email": null,
+      "telefone": null,
+      "modalidade": "Beach Tennis",
+      "planoId": "4da71a04-b0f5-4b15-9e0d-0b51d879fd63",
+      "planoTitulo": "2x semana",
+      "planoCheckins": 0,
+      "planoValorTexto": "R$ 250,00",
+      "checkinsRealizados": 9,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "02/01/2025",
+      "photoUrl": null,
+      "integrationType": "wellhub",
+      "integrationPlan": "SILVER+"
     }
   ],
   "teachers": [
@@ -123,11 +123,46 @@
   ],
   "plans": [
     {
-      "id": "37bc39d4-a42f-4656-b263-0578fc2a78c2",
+      "id": "56e0e9ff-653e-46f7-96a5-91cb1d8801e4",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "titulo": "2x por semana",
+      "checkins": 12,
+      "valorTexto": null
+    },
+    {
+      "id": "1a350da9-4c4d-48d7-bea2-f5672638231b",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "titulo": "1 x por semana",
+      "checkins": 8,
+      "valorTexto": null
+    },
+    {
+      "id": "5b8f2f6d-6061-4500-9da6-cb34bd4932fa",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "titulo": "1x por semana",
+      "checkins": 0,
+      "valorTexto": "R$ 140,00"
+    },
+    {
+      "id": "2f6147e9-c04a-466f-9533-600be0023c95",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "titulo": "2x por semana",
+      "checkins": 0,
+      "valorTexto": "R$ 200,00"
+    },
+    {
+      "id": "e2f6ab05-8f97-4810-8983-f4b3d81dc30f",
+      "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
+      "titulo": "1x semana",
+      "checkins": 0,
+      "valorTexto": "R$ 200,00"
+    },
+    {
+      "id": "4da71a04-b0f5-4b15-9e0d-0b51d879fd63",
       "arenaId": "71bf120b-9027-45f0-83e3-faefe0da0f31",
       "titulo": "2x semana",
-      "checkins": 2,
-      "valorTexto": null
+      "checkins": 0,
+      "valorTexto": "R$ 250,00"
     }
   ],
   "checkins": [
@@ -216,5 +251,5 @@
       "hora": "19:00"
     }
   ],
-  "createdAt": "2026-04-11T03:49:35.730Z"
+  "createdAt": "2026-04-11T14:27:03.617Z"
 }
