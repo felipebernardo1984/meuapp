@@ -661,13 +661,7 @@ export default function TeacherDashboard({
                 <Label>Integração</Label>
                 <Select
                   value={novoAluno.integrationType}
-                  onValueChange={(v) => {
-                    const planoSelecionado = planos.find(p => p.id === novoAluno.planoId);
-                    const prefilledValor = v === "mensalista" && planoSelecionado?.valorTexto
-                      ? planoSelecionado.valorTexto.replace("R$ ", "")
-                      : "";
-                    setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "", mensalistaValor: prefilledValor });
-                  }}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "" })}
                 >
                   <SelectTrigger data-testid="select-new-student-integration-type">
                     <SelectValue placeholder="Nenhuma" />
@@ -680,18 +674,6 @@ export default function TeacherDashboard({
                   </SelectContent>
                 </Select>
               </div>
-              {novoAluno.integrationType === "mensalista" && (
-                <div className="space-y-1">
-                  <Label>Valor mensal (R$)</Label>
-                  <Input
-                    placeholder="Ex: 200,00"
-                    value={novoAluno.mensalistaValor ?? ""}
-                    onChange={(e) => setNovoAluno({ ...novoAluno, mensalistaValor: e.target.value })}
-                    data-testid="input-new-student-mensalista-valor"
-                  />
-                  <p className="text-xs text-muted-foreground">Esse valor gerará uma cobrança mensal automática.</p>
-                </div>
-              )}
               {novoAluno.integrationType !== "none" && novoAluno.integrationType !== "mensalista" && (
                 <div className="space-y-1">
                   <Label>Plano da Integração</Label>
@@ -984,7 +966,10 @@ export default function TeacherDashboard({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-1">
-            {planos.map((p) => (
+            {(alunoPlano?.integrationType === "mensalista"
+              ? planos.filter(p => p.valorTexto)
+              : planos
+            ).map((p) => (
               <Button
                 key={p.id}
                 variant={alunoPlano?.planoId === p.id ? "default" : "outline"}
@@ -997,7 +982,9 @@ export default function TeacherDashboard({
               >
                 <span>{p.titulo}</span>
                 <span className="text-xs opacity-70">
-                  {p.checkins > 0 ? `${p.checkins} check-in` : (p.valorTexto ?? "Mensalidade")}
+                  {alunoPlano?.integrationType === "mensalista"
+                    ? (p.valorTexto ?? "")
+                    : p.checkins > 0 ? `${p.checkins} check-in` : (p.valorTexto ?? "Mensalidade")}
                 </span>
               </Button>
             ))}

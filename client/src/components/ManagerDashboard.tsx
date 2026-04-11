@@ -635,13 +635,7 @@ export default function ManagerDashboard({
                 <Label>Integração</Label>
                 <Select
                   value={novoAluno.integrationType}
-                  onValueChange={(v) => {
-                    const planoSelecionado = planos.find(p => p.id === novoAluno.planoId);
-                    const prefilledValor = v === "mensalista" && planoSelecionado?.valorTexto
-                      ? planoSelecionado.valorTexto.replace("R$ ", "")
-                      : "";
-                    setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "", mensalistaValor: prefilledValor });
-                  }}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "" })}
                 >
                   <SelectTrigger data-testid="select-manager-student-integration-type">
                     <SelectValue placeholder="Nenhuma" />
@@ -654,18 +648,6 @@ export default function ManagerDashboard({
                   </SelectContent>
                 </Select>
               </div>
-              {novoAluno.integrationType === "mensalista" && (
-                <div className="space-y-1">
-                  <Label>Valor mensal (R$)</Label>
-                  <Input
-                    placeholder="Ex: 200,00"
-                    value={novoAluno.mensalistaValor ?? ""}
-                    onChange={(e) => setNovoAluno({ ...novoAluno, mensalistaValor: e.target.value })}
-                    data-testid="input-manager-student-mensalista-valor"
-                  />
-                  <p className="text-xs text-muted-foreground">Esse valor gerará uma cobrança mensal automática.</p>
-                </div>
-              )}
               {novoAluno.integrationType !== "none" && novoAluno.integrationType !== "mensalista" && (
                 <div className="space-y-1">
                   <Label>Plano da Integração</Label>
@@ -1579,7 +1561,7 @@ export default function ManagerDashboard({
 
       {/* Dialog Editar Aluno */}
       <Dialog open={dialogEditarAluno} onOpenChange={(open) => { if (!open) { setDialogEditarAluno(false); setAlunoEditando(null); } }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5" />
