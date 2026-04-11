@@ -179,7 +179,7 @@ export default function ManagerDashboard({
   // Editar aluno state
   const [dialogEditarAluno, setDialogEditarAluno] = useState(false);
   const [alunoEditando, setAlunoEditando] = useState<AlunoGestor | null>(null);
-  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "", integrationType: "none", integrationPlan: "" });
+  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "", integrationType: "", integrationPlan: "" });
 
   // Alterar plano state
   const [dialogAlterarPlano, setDialogAlterarPlano] = useState(false);
@@ -293,8 +293,8 @@ export default function ManagerDashboard({
     login: "",
     senha: "",
     modalidade: "",
-    planoId: planos[0]?.id ?? "",
-    integrationType: "none",
+    planoId: "",
+    integrationType: "",
     integrationPlan: "",
     mensalistaValor: "",
   });
@@ -305,9 +305,24 @@ export default function ManagerDashboard({
   const [formPlano, setFormPlano] = useState({ titulo: "", checkins: "", valorTexto: "" });
 
   // ── Planos ──────────────────────────────────────────────────────────────
+  const getCheckinsLabel = (checkins: number) =>
+    `${checkins} ${checkins === 1 ? "Check-in" : "Check-ins"}`;
+
+  const getPlanosPorIntegracao = (integrationType?: string) => {
+    if (integrationType === "mensalista") {
+      return planos.filter((p) => (p.valorTexto ?? "").trim() !== "");
+    }
+
+    if (integrationType === "wellhub" || integrationType === "totalpass") {
+      return planos.filter((p) => (p.checkins ?? 0) > 0);
+    }
+
+    return planos;
+  };
+
   const getPlanoDescricao = (plano: Plano) => {
     const parts: string[] = [];
-    if (plano.checkins > 0) parts.push(`${plano.checkins} Check-in`);
+    if (plano.checkins > 0) parts.push(getCheckinsLabel(plano.checkins));
     if (plano.valorTexto) parts.push(plano.valorTexto);
     return parts.length > 0 ? parts.join(" · ") : "Sem detalhes";
   };
@@ -322,7 +337,7 @@ export default function ManagerDashboard({
   };
 
   const handleSalvarPlano = () => {
-    
+
   // 1. Garantimos que os valores são strings antes de usar .trim()
     const tituloVal = (formPlano.titulo || "").trim();
     const checkinsVal = String(formPlano.checkins || "").trim();
@@ -385,9 +400,21 @@ export default function ManagerDashboard({
 
   // ── Alunos ───────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
-    if (novoAluno.nome && novoAluno.cpf && novoAluno.modalidade && novoAluno.planoId) {
+    const exigePlanoIntegracao =
+      novoAluno.integrationType === "wellhub" || novoAluno.integrationType === "totalpass";
+
+    if (
+      novoAluno.nome &&
+      novoAluno.cpf &&
+      novoAluno.login &&
+      novoAluno.senha &&
+      novoAluno.modalidade &&
+      novoAluno.planoId &&
+      novoAluno.integrationType &&
+      (!exigePlanoIntegracao || novoAluno.integrationPlan)
+    ) {
       onCadastrarAluno(novoAluno);
-      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: planos[0]?.id ?? "", integrationType: "none", integrationPlan: "", mensalistaValor: "" });
+      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", integrationType: "", integrationPlan: "", mensalistaValor: "" });
       setDialogNovoAluno(false);
     }
   };
@@ -401,6 +428,7 @@ export default function ManagerDashboard({
     (a) => filtroModalidade === "todas" || a.modalidade === filtroModalidade
   );
   const alunosPendentes = alunos.filter((a) => !a.aprovado);
+  const alunoPlanoSelecionado = alunos.find((a) => a.id === alunoPlanoId);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
@@ -605,7 +633,7 @@ export default function ManagerDashboard({
                   onValueChange={(v) => setNovoAluno({ ...novoAluno, modalidade: v })}
                 >
                   <SelectTrigger data-testid="select-manager-student-modality">
-                    <SelectValue placeholder="Escolha a integração primeiro" />
+                    <SelectValue placeholder="Escolha a modalidade" />
                   </SelectTrigger>
                   <SelectContent>
                     {todasModalidades.map((mod) => (
@@ -619,38 +647,24 @@ export default function ManagerDashboard({
                 <Select
                   value={novoAluno.planoId}
                   onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
-                  disabled={!novoAluno.integrationType || novoAluno.integrationType === "none"}
+                  disabled={!novoAluno.integrationType}
                 >
                   <SelectTrigger data-testid="select-manager-student-plan">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {planos.filter((p) => {
-                        const tipo = novoAluno.integrationType;
-
-                        if (!tipo || tipo === "none") return false;
-
-                        if (tipo === "mensalista") {
-                          return (p.valorTexto ?? "").trim() !== "";
-                        }
-
-                        if (tipo === "wellhub" || tipo === "totalpass") {
-                          return (p.checkins ?? 0) > 0;
-                        }
-
-                        return true;
-                      }).map((p) => (
+                    {getPlanosPorIntegracao(novoAluno.integrationType).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {formEditarAluno.integrationType === "mensalista"
+                        {novoAluno.integrationType === "mensalista"
                           ? `${p.titulo} — ${p.valorTexto}`
-                          : `${p.titulo} — ${p.checkins} check-ins`}
+                          : `${p.titulo} — ${getCheckinsLabel(p.checkins)}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Integração</Label>
+                <Label>Integração <span className="text-destructive">*</span></Label>
                   <Select
                     value={novoAluno.integrationType}
                     onValueChange={(v) =>
@@ -658,24 +672,23 @@ export default function ManagerDashboard({
                         ...novoAluno,
                         integrationType: v,
                         integrationPlan: "",
-                        planoId: "" // 🔥 ESSA LINHA É A CORREÇÃO
+                        planoId: ""
                       })
                     }
                   >
                   <SelectTrigger data-testid="select-manager-student-integration-type">
-                    <SelectValue placeholder="Nenhuma" />
+                    <SelectValue placeholder="Selecione a integração" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma</SelectItem>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {novoAluno.integrationType !== "none" && novoAluno.integrationType !== "mensalista" && (
+              {novoAluno.integrationType && novoAluno.integrationType !== "mensalista" && (
                 <div className="space-y-1">
-                  <Label>Plano da Integração</Label>
+                  <Label>Plano da Integração <span className="text-destructive">*</span></Label>
                   {(() => {
                     const opts = Array.from(new Set(
                       modalidadeSettingsList
@@ -713,7 +726,19 @@ export default function ManagerDashboard({
             <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>Cancelar</Button>
             <Button
               onClick={handleCadastrarAluno}
-              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.login || !novoAluno.senha || !novoAluno.modalidade || !novoAluno.planoId}
+              disabled={
+                !novoAluno.nome ||
+                !novoAluno.cpf ||
+                !novoAluno.login ||
+                !novoAluno.senha ||
+                !novoAluno.modalidade ||
+                !novoAluno.integrationType ||
+                !novoAluno.planoId ||
+                (
+                  (novoAluno.integrationType === "wellhub" || novoAluno.integrationType === "totalpass") &&
+                  !novoAluno.integrationPlan
+                )
+              }
               data-testid="button-confirm-manager-student"
             >
               Cadastrar
@@ -764,7 +789,11 @@ export default function ManagerDashboard({
             <Button
               size="lg"
               className="w-full h-14 text-lg mt-2"
-              onClick={() => { setFormPlano({ titulo: "", valor: "" }); setDialogNovoPlano(true); }}
+              onClick={() => {
+                  setPlanoEditando(null);
+                  setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
+                  setDialogNovoPlano(true);
+                }}
               data-testid="button-add-plan"
             >
               <Plus className="mr-2 h-5 w-5" />
@@ -780,7 +809,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Criar Plano</DialogTitle>
             <DialogDescription>
-              Preencha o número de check-in, valor mensal, ou ambos.
+              Preencha o número de check-in ou o valor mensal.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -1243,7 +1272,7 @@ export default function ManagerDashboard({
                                 statusMensalidade: aluno.statusMensalidade,
                                 checkinsRealizados: aluno.checkinsRealizados,
                                 planoId: aluno.planoId,
-                                integrationType: aluno.integrationType ?? "none",
+                                integrationType: aluno.integrationType ?? "",
                                 integrationPlan: aluno.integrationPlan ?? "",
                               });
                               setDialogEditarAluno(true);
@@ -1326,7 +1355,7 @@ export default function ManagerDashboard({
                             data-testid={`menu-payment-${aluno.id}`}
                           >
                             <DollarSign className="h-4 w-4 mr-2" />
-                            Registrar pagamento
+                            Validar pagamento
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
@@ -1661,27 +1690,23 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Plano</Label>
+                <Label>Plano <span className="text-destructive">*</span></Label>
                 <Select
                   value={formEditarAluno.planoId}
                   onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, planoId: v })}
-                  disabled={!formEditarAluno.integrationType || formEditarAluno.integrationType === "none"}
+                  disabled={!formEditarAluno.integrationType}
                 >
                   <SelectTrigger data-testid="select-edit-plano">
                     <SelectValue placeholder="Escolha a integração primeiro" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(formEditarAluno.integrationType === "mensalista"
-                      ? planos.filter(p => (p.valorTexto ?? "").trim() !== "")
-                      : planos
-                    ).map((p) => (
+                    {getPlanosPorIntegracao(formEditarAluno.integrationType).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {formEditarAluno.integrationType === "mensalista"
                           ? `${p.titulo} — ${p.valorTexto}`
-                          : `${p.titulo} — ${p.checkins} check-ins`}
+                          : `${p.titulo} — ${getCheckinsLabel(p.checkins)}`}
                       </SelectItem>
                     ))}
-                                    
                   </SelectContent>
                 </Select>
               </div>
@@ -1711,25 +1736,24 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="col-span-2 space-y-1">
-                <Label>Integração</Label>
+                <Label>Integração <span className="text-destructive">*</span></Label>
                 <Select
                   value={formEditarAluno.integrationType}
-                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationType: v, integrationPlan: "" })}
+                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationType: v, integrationPlan: "", planoId: "" })}
                 >
                   <SelectTrigger data-testid="select-edit-integration-type">
-                    <SelectValue placeholder="Nenhuma" />
+                    <SelectValue placeholder="Selecione a integração" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma</SelectItem>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {formEditarAluno.integrationType !== "none" && formEditarAluno.integrationType !== "mensalista" && (
+              {formEditarAluno.integrationType && formEditarAluno.integrationType !== "mensalista" && (
                 <div className="col-span-2 space-y-1">
-                  <Label>Plano da Integração</Label>
+                  <Label>Plano da Integração <span className="text-destructive">*</span></Label>
                   {(() => {
                     const opts = Array.from(new Set(
                       modalidadeSettingsList
@@ -1767,7 +1791,19 @@ export default function ManagerDashboard({
             <Button variant="outline" onClick={() => { setDialogEditarAluno(false); setAlunoEditando(null); }}>Cancelar</Button>
             <Button
               onClick={() => {
-                if (alunoEditando && formEditarAluno.nome && formEditarAluno.cpf && formEditarAluno.login && formEditarAluno.modalidade) {
+                const exigePlanoIntegracao =
+                  formEditarAluno.integrationType === "wellhub" || formEditarAluno.integrationType === "totalpass";
+
+                if (
+                  alunoEditando &&
+                  formEditarAluno.nome &&
+                  formEditarAluno.cpf &&
+                  formEditarAluno.login &&
+                  formEditarAluno.modalidade &&
+                  formEditarAluno.integrationType &&
+                  formEditarAluno.planoId &&
+                  (!exigePlanoIntegracao || formEditarAluno.integrationPlan)
+                ) {
                   const payload = { id: alunoEditando.id, ...formEditarAluno };
                   if (!payload.senha) delete (payload as any).senha;
                   onEditarAluno(payload);
@@ -1778,7 +1814,18 @@ export default function ManagerDashboard({
                   setAlunoEditando(null);
                 }
               }}
-              disabled={!formEditarAluno.nome || !formEditarAluno.cpf || !formEditarAluno.login || !formEditarAluno.modalidade}
+              disabled={
+                !formEditarAluno.nome ||
+                !formEditarAluno.cpf ||
+                !formEditarAluno.login ||
+                !formEditarAluno.modalidade ||
+                !formEditarAluno.integrationType ||
+                !formEditarAluno.planoId ||
+                (
+                  (formEditarAluno.integrationType === "wellhub" || formEditarAluno.integrationType === "totalpass") &&
+                  !formEditarAluno.integrationPlan
+                )
+              }
               data-testid="button-confirm-edit-student"
             >
               Salvar
@@ -1800,7 +1847,7 @@ export default function ManagerDashboard({
                 <SelectValue placeholder="Selecione o plano" />
               </SelectTrigger>
               <SelectContent>
-                {planos.map((p) => (
+                {getPlanosPorIntegracao(alunoPlanoSelecionado?.integrationType).map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
                 ))}
               </SelectContent>
@@ -2149,6 +2196,6 @@ export default function ManagerDashboard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
+      </div>
+      );
+      }
