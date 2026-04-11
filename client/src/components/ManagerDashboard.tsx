@@ -530,7 +530,7 @@ export default function ManagerDashboard({
 
       {/* Dialog Cadastrar Aluno */}
       <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
           </DialogHeader>

@@ -515,16 +515,6 @@ export default function TeacherDashboard({
                   </Button>
                 )}
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => openAlterarPlano(aluno)}
-                  data-testid={`button-edit-plan-${aluno.id}`}
-                >
-                  Alterar Plano
-                </Button>
-
                 {(getValorPorCheckin(aluno.modalidade ?? modalidade) > 0 || !temCheckins) && (
                   <Button
                     variant="outline"
@@ -563,7 +553,7 @@ export default function TeacherDashboard({
 
       {/* ── Dialog: Cadastrar Aluno ── */}
       <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
           </DialogHeader>
