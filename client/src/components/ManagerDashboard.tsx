@@ -307,7 +307,7 @@ export default function ManagerDashboard({
   // ── Planos ──────────────────────────────────────────────────────────────
   const getPlanoDescricao = (plano: Plano) => {
     const parts: string[] = [];
-    if (plano.checkins > 0) parts.push(`${plano.checkins} aulas`);
+    if (plano.checkins > 0) parts.push(`${plano.checkins} Check-in`);
     if (plano.valorTexto) parts.push(plano.valorTexto);
     return parts.length > 0 ? parts.join(" · ") : "Sem detalhes";
   };
@@ -322,14 +322,20 @@ export default function ManagerDashboard({
   };
 
   const handleSalvarPlano = () => {
+    
   // 1. Garantimos que os valores são strings antes de usar .trim()
-  const tituloVal = (formPlano.titulo || "").trim();
-  const checkinsVal = String(formPlano.checkins || "").trim();
-  const valorTextoVal = String(formPlano.valorTexto || "").trim();
+    const tituloVal = (formPlano.titulo || "").trim();
+    const checkinsVal = String(formPlano.checkins || "").trim();
+    const valorTextoVal = String(formPlano.valorTexto || "").trim();
 
-  // 2. Verificação de segurança: título é obrigatório 
-  // E deve ter ou checkins ou um valor em dinheiro
-  if (!tituloVal || (!checkinsVal && !valorTextoVal)) return;
+  // 🔥 BLOQUEIO DE REGRA DE OURO (com mensagem)
+    if (checkinsVal && valorTextoVal) {
+      alert("O plano não pode ter Check-in e Valor ao mesmo tempo");
+      return;
+    }
+
+  // 2. Verificação de segurança (sem repetição)
+    if (!tituloVal || (!checkinsVal && !valorTextoVal)) return;
 
   // 3. Conversão segura
   const checkins = checkinsVal ? parseInt(checkinsVal, 10) : 0;
@@ -599,7 +605,7 @@ export default function ManagerDashboard({
                   onValueChange={(v) => setNovoAluno({ ...novoAluno, modalidade: v })}
                 >
                   <SelectTrigger data-testid="select-manager-student-modality">
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="Escolha a integração primeiro" />
                   </SelectTrigger>
                   <SelectContent>
                     {todasModalidades.map((mod) => (
@@ -613,19 +619,31 @@ export default function ManagerDashboard({
                 <Select
                   value={novoAluno.planoId}
                   onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
+                  disabled={!novoAluno.integrationType || novoAluno.integrationType === "none"}
                 >
                   <SelectTrigger data-testid="select-manager-student-plan">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(novoAluno.integrationType === "mensalista"
-                      ? planos.filter(p => p.valorTexto)
-                      : planos
-                    ).map((p) => (
+                    {planos.filter((p) => {
+                        const tipo = novoAluno.integrationType;
+
+                        if (!tipo || tipo === "none") return false;
+
+                        if (tipo === "mensalista") {
+                          return (p.valorTexto ?? "").trim() !== "";
+                        }
+
+                        if (tipo === "wellhub" || tipo === "totalpass") {
+                          return (p.checkins ?? 0) > 0;
+                        }
+
+                        return true;
+                      }).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {novoAluno.integrationType === "mensalista"
+                        {formEditarAluno.integrationType === "mensalista"
                           ? `${p.titulo} — ${p.valorTexto}`
-                          : `${p.titulo} — ${getPlanoDescricao(p)}`}
+                          : `${p.titulo} — ${p.checkins} check-ins`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -633,10 +651,17 @@ export default function ManagerDashboard({
               </div>
               <div className="space-y-1">
                 <Label>Integração</Label>
-                <Select
-                  value={novoAluno.integrationType}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "" })}
-                >
+                  <Select
+                    value={novoAluno.integrationType}
+                    onValueChange={(v) =>
+                      setNovoAluno({
+                        ...novoAluno,
+                        integrationType: v,
+                        integrationPlan: "",
+                        planoId: "" // 🔥 ESSA LINHA É A CORREÇÃO
+                      })
+                    }
+                  >
                   <SelectTrigger data-testid="select-manager-student-integration-type">
                     <SelectValue placeholder="Nenhuma" />
                   </SelectTrigger>
@@ -755,14 +780,14 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Criar Plano</DialogTitle>
             <DialogDescription>
-              Preencha o número de aulas, o valor mensal, ou ambos.
+              Preencha o número de check-in, valor mensal, ou ambos.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
               <Label>Título do plano</Label>
               <Input
-                placeholder="Ex: 3x por semana, Intensivo..."
+                placeholder="1x semana, 2x semana..."
                 value={formPlano.titulo}
                 onChange={(e) => setFormPlano({ ...formPlano, titulo: e.target.value })}
                 data-testid="input-plan-title"
@@ -770,20 +795,20 @@ export default function ManagerDashboard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Nº de aulas</Label>
+                <Label>Nº de Check-in</Label>
                 <Input
                   type="number"
                   min={0}
-                  placeholder="Ex: 8"
+                  placeholder="8 ou 12"
                   value={formPlano.checkins ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
                   data-testid="input-plan-checkins"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Valor mensal (R$)</Label>
+                <Label>Valor Mensal (R$)</Label>
                 <Input
-                  placeholder="Ex: 200,00"
+                  placeholder="140,00"
                   value={formPlano.valorTexto ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, valorTexto: e.target.value })}
                   data-testid="input-plan-value"
@@ -825,7 +850,7 @@ export default function ManagerDashboard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Nº de aulas</Label>
+                <Label>Nº de Check-in</Label>
                 <Input
                   type="number"
                   min={0}
@@ -1640,21 +1665,23 @@ export default function ManagerDashboard({
                 <Select
                   value={formEditarAluno.planoId}
                   onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, planoId: v })}
+                  disabled={!formEditarAluno.integrationType || formEditarAluno.integrationType === "none"}
                 >
                   <SelectTrigger data-testid="select-edit-plano">
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="Escolha a integração primeiro" />
                   </SelectTrigger>
                   <SelectContent>
                     {(formEditarAluno.integrationType === "mensalista"
-                      ? planos.filter(p => p.valorTexto)
+                      ? planos.filter(p => (p.valorTexto ?? "").trim() !== "")
                       : planos
                     ).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {formEditarAluno.integrationType === "mensalista"
                           ? `${p.titulo} — ${p.valorTexto}`
-                          : p.titulo}
+                          : `${p.titulo} — ${p.checkins} check-ins`}
                       </SelectItem>
                     ))}
+                                    
                   </SelectContent>
                 </Select>
               </div>
