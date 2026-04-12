@@ -279,3 +279,35 @@ export const whatsappSettings = pgTable("whatsapp_settings", {
   default_message: text("default_message"),
   created_at: timestamp("created_at").defaultNow(),
 });
+
+// ── WhatsApp Automation Config ────────────────────────────────────────────────
+export const whatsappAutomation = pgTable("whatsapp_automation", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  // Cobrança
+  cobranca_ativo: boolean("cobranca_ativo").default(false),
+  cobranca_dias_apos_vencimento: integer("cobranca_dias_apos_vencimento").default(1),
+  cobranca_num_disparos: integer("cobranca_num_disparos").default(3),
+  cobranca_intervalo_dias: integer("cobranca_intervalo_dias").default(3),
+  cobranca_mensagem: text("cobranca_mensagem").default("Olá {{nome}}, sua mensalidade está em atraso. Por favor, regularize o quanto antes."),
+  // Assiduidade
+  assiduidade_ativo: boolean("assiduidade_ativo").default(false),
+  assiduidade_dias_sem_checkin: integer("assiduidade_dias_sem_checkin").default(7),
+  assiduidade_num_disparos: integer("assiduidade_num_disparos").default(3),
+  assiduidade_intervalo_dias: integer("assiduidade_intervalo_dias").default(7),
+  assiduidade_mensagem: text("assiduidade_mensagem").default("Olá {{nome}}, sentimos sua falta! Que tal voltar a treinar essa semana?"),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// ── WhatsApp Dispatch Log ─────────────────────────────────────────────────────
+export const whatsappDispatchLog = pgTable("whatsapp_dispatch_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  alunoId: varchar("aluno_id").references(() => students.id, { onDelete: "cascade" }),
+  tipo: text("tipo").notNull(), // "cobranca" | "assiduidade"
+  mensagem: text("mensagem").notNull(),
+  status: text("status").default("pendente"), // "pendente" | "enviado"
+  disparo_num: integer("disparo_num").default(1),
+  criado_em: timestamp("criado_em").defaultNow(),
+  enviado_em: timestamp("enviado_em"),
+});

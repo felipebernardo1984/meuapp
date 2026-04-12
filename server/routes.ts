@@ -9,6 +9,7 @@ import { financeService } from "./financeService";
 import { getFinancialStatus } from "./financialStatusUtils";
 import { automationRouter } from "./automationRoutes";
 import { getWhatsappSettings, saveWhatsappSettings } from "./whatsappSettings";
+import { getAutomationConfig, saveAutomationConfig, getPendingDispatches, markDispatchSent, markAllDispatchesSent, runWhatsappAutomation } from "./whatsappAutomation";
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -1081,6 +1082,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ── WhatsApp Automation Config ───────────────────────────────────────────
+  app.get("/api/whatsapp/automation", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const config = await getAutomationConfig(arenaId);
+      res.json(config);
+    } catch {
+      res.status(500).json({ message: "Erro ao buscar configuração de automação" });
+    }
+  });
+
+  app.post("/api/whatsapp/automation", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const saved = await saveAutomationConfig(arenaId, req.body);
+      res.json(saved);
+    } catch {
+      res.status(500).json({ message: "Erro ao salvar configuração de automação" });
+    }
+  });
+
+  // ── WhatsApp Dispatch Queue ──────────────────────────────────────────────
+  app.get("/api/whatsapp/dispatches", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const dispatches = await getPendingDispatches(arenaId);
+      res.json(dispatches);
+    } catch {
+      res.status(500).json({ message: "Erro ao buscar fila de disparos" });
+    }
+  });
+
+  app.put("/api/whatsapp/dispatches/:id/sent", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      await markDispatchSent(req.params.id);
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "Erro ao marcar disparo como enviado" });
+    }
+  });
+
+  app.put("/api/whatsapp/dispatches/sent-all", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      await markAllDispatchesSent(arenaId);
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "Erro ao marcar todos como enviado" });
+    }
+  });
+
+  app.post("/api/whatsapp/run-automation", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      await runWhatsappAutomation(arenaId);
+      const dispatches = await getPendingDispatches(arenaId);
+      res.json({ ok: true, novos: dispatches.length });
+    } catch (e) {
+      res.status(500).json({ message: "Erro ao executar automação" });
+    }
+  });
+
   app.use(automationRouter);
 
   return createServer(app);

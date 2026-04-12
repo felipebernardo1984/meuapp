@@ -168,10 +168,34 @@ export default function ManagerDashboard({
 
   // WhatsApp state
   const [dialogWhatsapp, setDialogWhatsapp] = useState(false);
+  const [waTab, setWaTab] = useState<"basico" | "cobranca" | "assiduidade" | "fila">("basico");
   const [formWhatsapp, setFormWhatsapp] = useState({ whatsapp_number: "", default_message: "" });
+  const [formCobrancaAuto, setFormCobrancaAuto] = useState({
+    cobranca_ativo: false,
+    cobranca_dias_apos_vencimento: 1,
+    cobranca_num_disparos: 3,
+    cobranca_intervalo_dias: 3,
+    cobranca_mensagem: "Olá {{nome}}, sua mensalidade está em atraso. Por favor, regularize o quanto antes.",
+  });
+  const [formAssiduidadeAuto, setFormAssiduidadeAuto] = useState({
+    assiduidade_ativo: false,
+    assiduidade_dias_sem_checkin: 7,
+    assiduidade_num_disparos: 3,
+    assiduidade_intervalo_dias: 7,
+    assiduidade_mensagem: "Olá {{nome}}, sentimos sua falta! Que tal voltar a treinar essa semana?",
+  });
 
   const { data: whatsappSettings } = useQuery<{ whatsapp_number?: string; default_message?: string } | null>({
     queryKey: ["/api/whatsapp/settings"],
+  });
+
+  const { data: automationConfig } = useQuery<any>({
+    queryKey: ["/api/whatsapp/automation"],
+  });
+
+  const { data: pendingDispatches = [], refetch: refetchDispatches } = useQuery<any[]>({
+    queryKey: ["/api/whatsapp/dispatches"],
+    enabled: dialogWhatsapp && waTab === "fila",
   });
 
   const qcWa = useQueryClient();
@@ -181,7 +205,36 @@ export default function ManagerDashboard({
     onSuccess: () => {
       qcWa.invalidateQueries({ queryKey: ["/api/whatsapp/settings"] });
       toast({ title: "WhatsApp configurado com sucesso!" });
-      setDialogWhatsapp(false);
+    },
+  });
+
+  const salvarAutomacao = useMutation({
+    mutationFn: (d: any) => apiRequest("POST", "/api/whatsapp/automation", d),
+    onSuccess: () => {
+      qcWa.invalidateQueries({ queryKey: ["/api/whatsapp/automation"] });
+      toast({ title: "Automação salva com sucesso!" });
+    },
+  });
+
+  const marcarEnviado = useMutation({
+    mutationFn: (id: string) => apiRequest("PUT", `/api/whatsapp/dispatches/${id}/sent`),
+    onSuccess: () => qcWa.invalidateQueries({ queryKey: ["/api/whatsapp/dispatches"] }),
+  });
+
+  const marcarTodosEnviados = useMutation({
+    mutationFn: () => apiRequest("PUT", "/api/whatsapp/dispatches/sent-all"),
+    onSuccess: () => {
+      qcWa.invalidateQueries({ queryKey: ["/api/whatsapp/dispatches"] });
+      toast({ title: "Todos os disparos marcados como enviados!" });
+    },
+  });
+
+  const executarAutomacao = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/whatsapp/run-automation"),
+    onSuccess: () => {
+      qcWa.invalidateQueries({ queryKey: ["/api/whatsapp/dispatches"] });
+      toast({ title: "Automação executada! Verifique a fila de disparos." });
+      setWaTab("fila");
     },
   });
 
@@ -1269,6 +1322,23 @@ export default function ManagerDashboard({
                     whatsapp_number: whatsappSettings?.whatsapp_number ?? "",
                     default_message: whatsappSettings?.default_message ?? "Olá {{nome}}, sua mensalidade está {{status}}.",
                   });
+                  if (automationConfig) {
+                    setFormCobrancaAuto({
+                      cobranca_ativo: automationConfig.cobranca_ativo ?? false,
+                      cobranca_dias_apos_vencimento: automationConfig.cobranca_dias_apos_vencimento ?? 1,
+                      cobranca_num_disparos: automationConfig.cobranca_num_disparos ?? 3,
+                      cobranca_intervalo_dias: automationConfig.cobranca_intervalo_dias ?? 3,
+                      cobranca_mensagem: automationConfig.cobranca_mensagem ?? "Olá {{nome}}, sua mensalidade está em atraso.",
+                    });
+                    setFormAssiduidadeAuto({
+                      assiduidade_ativo: automationConfig.assiduidade_ativo ?? false,
+                      assiduidade_dias_sem_checkin: automationConfig.assiduidade_dias_sem_checkin ?? 7,
+                      assiduidade_num_disparos: automationConfig.assiduidade_num_disparos ?? 3,
+                      assiduidade_intervalo_dias: automationConfig.assiduidade_intervalo_dias ?? 7,
+                      assiduidade_mensagem: automationConfig.assiduidade_mensagem ?? "Olá {{nome}}, sentimos sua falta!",
+                    });
+                  }
+                  setWaTab("basico");
                   setDialogWhatsapp(true);
                 }}
                 data-testid="button-whatsapp-settings"
@@ -2087,52 +2157,211 @@ export default function ManagerDashboard({
 
       {/* Dialog Configuração WhatsApp */}
       <Dialog open={dialogWhatsapp} onOpenChange={setDialogWhatsapp}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-green-500" />
-              Configuração WhatsApp
+              WhatsApp
             </DialogTitle>
-            <DialogDescription>
-              Configure o número e a mensagem padrão para envio rápido aos alunos.
-            </DialogDescription>
+            <DialogDescription>Configure o número, mensagens e automações de envio.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label htmlFor="wa-number">Número do WhatsApp da arena</Label>
-              <Input
-                id="wa-number"
-                placeholder="5511999999999"
-                value={formWhatsapp.whatsapp_number}
-                onChange={(e) => setFormWhatsapp((f) => ({ ...f, whatsapp_number: e.target.value }))}
-                data-testid="input-whatsapp-number"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Apenas números com DDI (ex: 5511999999999)</p>
-            </div>
-            <div>
-              <Label htmlFor="wa-message">Mensagem padrão</Label>
-              <Textarea
-                id="wa-message"
-                rows={4}
-                placeholder="Olá {{nome}}, sua mensalidade está {{status}}."
-                value={formWhatsapp.default_message}
-                onChange={(e) => setFormWhatsapp((f) => ({ ...f, default_message: e.target.value }))}
-                data-testid="input-whatsapp-message"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Variáveis disponíveis: <code className="bg-muted px-1 rounded">{"{{nome}}"}</code> <code className="bg-muted px-1 rounded">{"{{status}}"}</code> <code className="bg-muted px-1 rounded">{"{{checkins}}"}</code>
-              </p>
-            </div>
+
+          {/* Tabs */}
+          <div className="flex border-b mb-4 gap-0 overflow-x-auto">
+            {([
+              { key: "basico", label: "Básico" },
+              { key: "cobranca", label: "Cobrança" },
+              { key: "assiduidade", label: "Assiduidade" },
+              { key: "fila", label: `Fila${pendingDispatches.length > 0 ? ` (${pendingDispatches.length})` : ""}` },
+            ] as const).map((t) => (
+              <button
+                key={t.key}
+                className={`px-4 py-2 text-sm whitespace-nowrap border-b-2 transition-colors ${waTab === t.key ? "border-primary text-primary font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                onClick={() => setWaTab(t.key)}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogWhatsapp(false)}>Cancelar</Button>
-            <Button
-              onClick={() => salvarWhatsapp.mutate(formWhatsapp)}
-              disabled={!formWhatsapp.whatsapp_number || salvarWhatsapp.isPending}
-              data-testid="button-save-whatsapp"
-            >
-              {salvarWhatsapp.isPending ? "Salvando..." : "Salvar"}
-            </Button>
+
+          {/* Tab: Básico */}
+          {waTab === "basico" && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="wa-number">Número do WhatsApp da arena</Label>
+                <Input
+                  id="wa-number"
+                  placeholder="5511999999999"
+                  value={formWhatsapp.whatsapp_number}
+                  onChange={(e) => setFormWhatsapp((f) => ({ ...f, whatsapp_number: e.target.value }))}
+                  data-testid="input-whatsapp-number"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Apenas números com DDI (ex: 5511999999999)</p>
+              </div>
+              <div>
+                <Label htmlFor="wa-message">Mensagem padrão (envio manual por aluno)</Label>
+                <Textarea
+                  id="wa-message"
+                  rows={3}
+                  placeholder="Olá {{nome}}, tudo bem?"
+                  value={formWhatsapp.default_message}
+                  onChange={(e) => setFormWhatsapp((f) => ({ ...f, default_message: e.target.value }))}
+                  data-testid="input-whatsapp-message"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Variáveis: <code className="bg-muted px-1 rounded">{"{{nome}}"}</code> <code className="bg-muted px-1 rounded">{"{{status}}"}</code> <code className="bg-muted px-1 rounded">{"{{checkins}}"}</code></p>
+              </div>
+              <Button onClick={() => salvarWhatsapp.mutate(formWhatsapp)} disabled={!formWhatsapp.whatsapp_number || salvarWhatsapp.isPending} data-testid="button-save-whatsapp">
+                {salvarWhatsapp.isPending ? "Salvando..." : "Salvar configuração básica"}
+              </Button>
+            </div>
+          )}
+
+          {/* Tab: Cobrança */}
+          {waTab === "cobranca" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                <div>
+                  <p className="font-medium text-sm">Automação de cobrança</p>
+                  <p className="text-xs text-muted-foreground">Envia mensagem para alunos com mensalidade em atraso</p>
+                </div>
+                <button
+                  className={`w-11 h-6 rounded-full transition-colors relative ${formCobrancaAuto.cobranca_ativo ? "bg-green-500" : "bg-muted-foreground/30"}`}
+                  onClick={() => setFormCobrancaAuto((f) => ({ ...f, cobranca_ativo: !f.cobranca_ativo }))}
+                  data-testid="toggle-cobranca-ativo"
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${formCobrancaAuto.cobranca_ativo ? "left-6" : "left-1"}`} />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Dias após vencimento</Label>
+                  <Input type="number" min={1} value={formCobrancaAuto.cobranca_dias_apos_vencimento}
+                    onChange={(e) => setFormCobrancaAuto((f) => ({ ...f, cobranca_dias_apos_vencimento: Number(e.target.value) }))}
+                    data-testid="input-cobranca-dias" />
+                </div>
+                <div>
+                  <Label className="text-xs">Nº de disparos</Label>
+                  <Input type="number" min={1} max={10} value={formCobrancaAuto.cobranca_num_disparos}
+                    onChange={(e) => setFormCobrancaAuto((f) => ({ ...f, cobranca_num_disparos: Number(e.target.value) }))}
+                    data-testid="input-cobranca-disparos" />
+                </div>
+                <div>
+                  <Label className="text-xs">Intervalo (dias)</Label>
+                  <Input type="number" min={1} value={formCobrancaAuto.cobranca_intervalo_dias}
+                    onChange={(e) => setFormCobrancaAuto((f) => ({ ...f, cobranca_intervalo_dias: Number(e.target.value) }))}
+                    data-testid="input-cobranca-intervalo" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Mensagem de cobrança</Label>
+                <Textarea rows={4} value={formCobrancaAuto.cobranca_mensagem}
+                  onChange={(e) => setFormCobrancaAuto((f) => ({ ...f, cobranca_mensagem: e.target.value }))}
+                  data-testid="input-cobranca-mensagem" />
+                <p className="text-xs text-muted-foreground mt-1">Variável disponível: <code className="bg-muted px-1 rounded">{"{{nome}}"}</code></p>
+              </div>
+              <Button onClick={() => salvarAutomacao.mutate(formCobrancaAuto)} disabled={salvarAutomacao.isPending}>
+                {salvarAutomacao.isPending ? "Salvando..." : "Salvar automação de cobrança"}
+              </Button>
+            </div>
+          )}
+
+          {/* Tab: Assiduidade */}
+          {waTab === "assiduidade" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                <div>
+                  <p className="font-medium text-sm">Automação de assiduidade</p>
+                  <p className="text-xs text-muted-foreground">Envia mensagem para alunos que pararam de fazer check-in</p>
+                </div>
+                <button
+                  className={`w-11 h-6 rounded-full transition-colors relative ${formAssiduidadeAuto.assiduidade_ativo ? "bg-green-500" : "bg-muted-foreground/30"}`}
+                  onClick={() => setFormAssiduidadeAuto((f) => ({ ...f, assiduidade_ativo: !f.assiduidade_ativo }))}
+                  data-testid="toggle-assiduidade-ativo"
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${formAssiduidadeAuto.assiduidade_ativo ? "left-6" : "left-1"}`} />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Dias sem check-in</Label>
+                  <Input type="number" min={1} value={formAssiduidadeAuto.assiduidade_dias_sem_checkin}
+                    onChange={(e) => setFormAssiduidadeAuto((f) => ({ ...f, assiduidade_dias_sem_checkin: Number(e.target.value) }))}
+                    data-testid="input-assiduidade-dias" />
+                </div>
+                <div>
+                  <Label className="text-xs">Nº de disparos</Label>
+                  <Input type="number" min={1} max={10} value={formAssiduidadeAuto.assiduidade_num_disparos}
+                    onChange={(e) => setFormAssiduidadeAuto((f) => ({ ...f, assiduidade_num_disparos: Number(e.target.value) }))}
+                    data-testid="input-assiduidade-disparos" />
+                </div>
+                <div>
+                  <Label className="text-xs">Intervalo (dias)</Label>
+                  <Input type="number" min={1} value={formAssiduidadeAuto.assiduidade_intervalo_dias}
+                    onChange={(e) => setFormAssiduidadeAuto((f) => ({ ...f, assiduidade_intervalo_dias: Number(e.target.value) }))}
+                    data-testid="input-assiduidade-intervalo" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Mensagem de assiduidade</Label>
+                <Textarea rows={4} value={formAssiduidadeAuto.assiduidade_mensagem}
+                  onChange={(e) => setFormAssiduidadeAuto((f) => ({ ...f, assiduidade_mensagem: e.target.value }))}
+                  data-testid="input-assiduidade-mensagem" />
+                <p className="text-xs text-muted-foreground mt-1">Variável disponível: <code className="bg-muted px-1 rounded">{"{{nome}}"}</code></p>
+              </div>
+              <Button onClick={() => salvarAutomacao.mutate(formAssiduidadeAuto)} disabled={salvarAutomacao.isPending}>
+                {salvarAutomacao.isPending ? "Salvando..." : "Salvar automação de assiduidade"}
+              </Button>
+            </div>
+          )}
+
+          {/* Tab: Fila de disparos */}
+          {waTab === "fila" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">{pendingDispatches.length === 0 ? "Nenhum disparo pendente." : `${pendingDispatches.length} disparo(s) pendente(s)`}</p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => executarAutomacao.mutate()} disabled={executarAutomacao.isPending} data-testid="button-run-automation">
+                    {executarAutomacao.isPending ? "Executando..." : "Executar automação"}
+                  </Button>
+                  {pendingDispatches.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => marcarTodosEnviados.mutate()} data-testid="button-mark-all-sent">
+                      Marcar todos enviados
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {pendingDispatches.map((d: any) => {
+                const numero = whatsappSettings?.whatsapp_number ?? "";
+                const link = `https://wa.me/${numero.replace(/\D/g, "")}?text=${encodeURIComponent(d.mensagem)}`;
+                return (
+                  <div key={d.id} className="flex items-start justify-between p-3 rounded-lg border gap-3" data-testid={`dispatch-${d.id}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.tipo === "cobranca" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"}`}>
+                          {d.tipo === "cobranca" ? "Cobrança" : "Assiduidade"} #{d.disparo_num}
+                        </span>
+                        <span className="text-sm font-medium">{d.alunoNome}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{d.mensagem}</p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <a href={link} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" data-testid={`button-send-${d.id}`}>
+                          <MessageCircle className="h-3.5 w-3.5 mr-1" />Enviar
+                        </Button>
+                      </a>
+                      <Button size="sm" variant="outline" onClick={() => marcarEnviado.mutate(d.id)} data-testid={`button-sent-${d.id}`}>
+                        ✓
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDialogWhatsapp(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
