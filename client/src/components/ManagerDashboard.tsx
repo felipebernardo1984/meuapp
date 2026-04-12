@@ -56,7 +56,9 @@ import {
   CreditCard,
   AlertCircle,
   Settings,
+  MessageCircle,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoGestor {
@@ -163,6 +165,35 @@ export default function ManagerDashboard({
   const { data: alunosInativos = [] } = useQuery<any[]>({
     queryKey: ["/api/alunos/inativos"],
   });
+
+  // WhatsApp state
+  const [dialogWhatsapp, setDialogWhatsapp] = useState(false);
+  const [formWhatsapp, setFormWhatsapp] = useState({ whatsapp_number: "", default_message: "" });
+
+  const { data: whatsappSettings } = useQuery<{ whatsapp_number?: string; default_message?: string } | null>({
+    queryKey: ["/api/whatsapp/settings"],
+  });
+
+  const qcWa = useQueryClient();
+  const salvarWhatsapp = useMutation({
+    mutationFn: (d: { whatsapp_number: string; default_message: string }) =>
+      apiRequest("POST", "/api/whatsapp/settings", d),
+    onSuccess: () => {
+      qcWa.invalidateQueries({ queryKey: ["/api/whatsapp/settings"] });
+      toast({ title: "WhatsApp configurado com sucesso!" });
+      setDialogWhatsapp(false);
+    },
+  });
+
+  function buildWhatsappLink(aluno: AlunoGestor) {
+    const numero = whatsappSettings?.whatsapp_number ?? "";
+    const template = whatsappSettings?.default_message ?? "Olá {{nome}}, tudo bem?";
+    const mensagem = template
+      .replace(/\{\{nome\}\}/g, aluno.nome)
+      .replace(/\{\{status\}\}/g, aluno.statusMensalidade)
+      .replace(/\{\{checkins\}\}/g, String(aluno.checkinsRealizados));
+    return `https://wa.me/${numero.replace(/\D/g, "")}?text=${encodeURIComponent(mensagem)}`;
+  }
 
   // Financial state
   const [dialogPagamento, setDialogPagamento] = useState(false);
@@ -1231,6 +1262,19 @@ export default function ManagerDashboard({
                   <Settings className="h-4 w-4 mr-2" />Configurações
                 </Button>
               )}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFormWhatsapp({
+                    whatsapp_number: whatsappSettings?.whatsapp_number ?? "",
+                    default_message: whatsappSettings?.default_message ?? "Olá {{nome}}, sua mensalidade está {{status}}.",
+                  });
+                  setDialogWhatsapp(true);
+                }}
+                data-testid="button-whatsapp-settings"
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />WhatsApp
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -1435,6 +1479,19 @@ export default function ManagerDashboard({
                           >
                             <Receipt className="h-4 w-4 mr-2" />
                             Criar cobrança
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              if (!whatsappSettings?.whatsapp_number) {
+                                toast({ title: "Configure o WhatsApp primeiro", description: "Clique no botão WhatsApp no cabeçalho.", variant: "destructive" });
+                                return;
+                              }
+                              window.open(buildWhatsappLink(aluno), "_blank");
+                            }}
+                            data-testid={`menu-whatsapp-${aluno.id}`}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Enviar WhatsApp
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -2024,6 +2081,58 @@ export default function ManagerDashboard({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setDialogHistorico(false); setAlunoHistorico(null); }}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Configuração WhatsApp */}
+      <Dialog open={dialogWhatsapp} onOpenChange={setDialogWhatsapp}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-green-500" />
+              Configuração WhatsApp
+            </DialogTitle>
+            <DialogDescription>
+              Configure o número e a mensagem padrão para envio rápido aos alunos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="wa-number">Número do WhatsApp da arena</Label>
+              <Input
+                id="wa-number"
+                placeholder="5511999999999"
+                value={formWhatsapp.whatsapp_number}
+                onChange={(e) => setFormWhatsapp((f) => ({ ...f, whatsapp_number: e.target.value }))}
+                data-testid="input-whatsapp-number"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Apenas números com DDI (ex: 5511999999999)</p>
+            </div>
+            <div>
+              <Label htmlFor="wa-message">Mensagem padrão</Label>
+              <Textarea
+                id="wa-message"
+                rows={4}
+                placeholder="Olá {{nome}}, sua mensalidade está {{status}}."
+                value={formWhatsapp.default_message}
+                onChange={(e) => setFormWhatsapp((f) => ({ ...f, default_message: e.target.value }))}
+                data-testid="input-whatsapp-message"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Variáveis disponíveis: <code className="bg-muted px-1 rounded">{"{{nome}}"}</code> <code className="bg-muted px-1 rounded">{"{{status}}"}</code> <code className="bg-muted px-1 rounded">{"{{checkins}}"}</code>
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogWhatsapp(false)}>Cancelar</Button>
+            <Button
+              onClick={() => salvarWhatsapp.mutate(formWhatsapp)}
+              disabled={!formWhatsapp.whatsapp_number || salvarWhatsapp.isPending}
+              data-testid="button-save-whatsapp"
+            >
+              {salvarWhatsapp.isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
