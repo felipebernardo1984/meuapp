@@ -4,7 +4,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
   Users, ClipboardList, DollarSign, Trophy,
-  CheckCircle, Zap, Shield, BarChart3, Smartphone, LogIn
+  CheckCircle, Zap, Shield, BarChart3, Smartphone, LogIn, Mail
 } from "lucide-react";
 
 const features = [
@@ -39,6 +39,13 @@ export default function LandingPage() {
   const planFeatures = planInfo?.planFeatures
     ? planInfo.planFeatures.split("|").filter(Boolean)
     : DEFAULT_FEATURES;
+
+  const { data: publicSettings } = useQuery<{
+    suporteEmail: string;
+    suporteWhatsapp: string;
+  }>({
+    queryKey: ["/api/platform-settings/public"],
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -226,8 +233,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-400 py-6">
-        Seven Sports · Sistema de Gestão Esportiva
+      <footer className="bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-400 py-6 space-y-1">
+        <p>Seven Sports · Sistema de Gestão Esportiva</p>
+        {publicSettings?.suporteEmail && (
+          <p className="flex items-center justify-center gap-1.5">
+            <Mail className="h-3 w-3" />
+            <a
+              href={`mailto:${publicSettings.suporteEmail}`}
+              className="hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              data-testid="link-footer-email"
+            >
+              {publicSettings.suporteEmail}
+            </a>
+          </p>
+        )}
       </footer>
     </div>
   );
