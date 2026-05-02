@@ -13,8 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, LogOut, Zap } from "lucide-react";
-import { Link } from "wouter";
+import { LogIn, LogOut, KeyRound } from "lucide-react";
 import type { Plano } from "./Home";
 
 export default function ArenaApp() {
@@ -22,6 +21,8 @@ export default function ArenaApp() {
   const qc = useQueryClient();
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [lembrarDados, setLembrarDados] = useState(false);
+  const [esqueceuSenha, setEsqueceuSenha] = useState(false);
   const [gestorTab, setGestorTab] = useState<"dashboard" | "financeiro" | "configuracoes" | "integracoes" | "alertas">("dashboard");
 
   // ── Arena info ────────────────────────────────────────────────────────────
@@ -43,7 +44,7 @@ export default function ArenaApp() {
   });
 
   const loginMutation = useMutation({
-    mutationFn: (creds: { login: string; senha: string }) =>
+    mutationFn: (creds: { login: string; senha: string; lembrarDados?: boolean }) =>
       apiRequest("POST", "/api/login", creds).then((r) => r.json()),
     onSuccess: () => {
       setLoginError(null);
@@ -212,57 +213,101 @@ export default function ArenaApp() {
               <p className="text-sm text-muted-foreground">Informe Seus Dados de Acesso</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="usuario">Login</Label>
-                <Input
-                  id="usuario"
-                  placeholder="Digite seu login"
-                  value={loginData.usuario}
-                  onChange={(e) => setLoginData({ ...loginData, usuario: e.target.value })}
-                  onKeyPress={(e) => { if (e.key === "Enter" && loginData.usuario && loginData.senha) loginMutation.mutate({ login: loginData.usuario, senha: loginData.senha }); }}
-                  data-testid="input-username"
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="senha">Senha</Label>
-                <Input
-                  id="senha"
-                  type="password"
-                  placeholder="Digite sua senha"
-                  value={loginData.senha}
-                  onChange={(e) => setLoginData({ ...loginData, senha: e.target.value })}
-                  onKeyPress={(e) => { if (e.key === "Enter" && loginData.usuario && loginData.senha) loginMutation.mutate({ login: loginData.usuario, senha: loginData.senha }); }}
-                  data-testid="input-password"
-                  className="h-11"
-                />
-              </div>
-              {loginError && (
-                <p className="text-sm text-destructive text-center" data-testid="text-login-error">{loginError}</p>
-              )}
-              <Button
-                className="w-full h-11"
-                onClick={() => loginMutation.mutate({ login: loginData.usuario, senha: loginData.senha })}
-                disabled={!loginData.usuario || !loginData.senha || loginMutation.isPending}
-                data-testid="button-login"
-              >
-                <LogIn className="mr-2 h-4 w-4" />
-                Entrar
-              </Button>
-              <p className="text-xs text-center text-muted-foreground pt-1">
-                Receba seu login e senha com seu professor ou na recepção
-              </p>
+              {!esqueceuSenha ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="usuario">Login</Label>
+                    <Input
+                      id="usuario"
+                      placeholder="Digite seu login"
+                      value={loginData.usuario}
+                      onChange={(e) => setLoginData({ ...loginData, usuario: e.target.value })}
+                      onKeyPress={(e) => { if (e.key === "Enter" && loginData.usuario && loginData.senha) loginMutation.mutate({ login: loginData.usuario, senha: loginData.senha, lembrarDados }); }}
+                      data-testid="input-username"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="senha">Senha</Label>
+                    <Input
+                      id="senha"
+                      type="password"
+                      placeholder="Digite sua senha"
+                      value={loginData.senha}
+                      onChange={(e) => setLoginData({ ...loginData, senha: e.target.value })}
+                      onKeyPress={(e) => { if (e.key === "Enter" && loginData.usuario && loginData.senha) loginMutation.mutate({ login: loginData.usuario, senha: loginData.senha, lembrarDados }); }}
+                      data-testid="input-password"
+                      className="h-11"
+                    />
+                  </div>
 
-              <div className="border-t pt-4">
-                <Link
-                  href="/cadastro"
-                  className="flex items-center justify-center gap-2 w-full h-10 rounded-md border border-primary/30 text-sm text-primary hover:bg-primary/5 transition-colors font-medium"
-                  data-testid="link-criar-conta-arena"
-                >
-                  <Zap className="h-4 w-4" />
-                  Criar conta grátis · 5 dias de teste
-                </Link>
-              </div>
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer select-none" data-testid="label-lembrar">
+                      <input
+                        type="checkbox"
+                        checked={lembrarDados}
+                        onChange={(e) => setLembrarDados(e.target.checked)}
+                        className="w-4 h-4 accent-primary rounded"
+                        data-testid="checkbox-lembrar"
+                      />
+                      <span className="text-sm text-muted-foreground">Lembrar meus dados</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setEsqueceuSenha(true)}
+                      className="text-sm text-primary hover:underline"
+                      data-testid="button-esqueci-senha"
+                    >
+                      Esqueci a senha
+                    </button>
+                  </div>
+
+                  {loginError && (
+                    <p className="text-sm text-destructive text-center" data-testid="text-login-error">{loginError}</p>
+                  )}
+                  <Button
+                    className="w-full h-11"
+                    onClick={() => loginMutation.mutate({ login: loginData.usuario, senha: loginData.senha, lembrarDados })}
+                    disabled={!loginData.usuario || !loginData.senha || loginMutation.isPending}
+                    data-testid="button-login"
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    {loginMutation.isPending ? "Entrando..." : "Entrar"}
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground pt-1">
+                    Receba seu login e senha com seu professor ou na recepção
+                  </p>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center gap-3 py-2">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <KeyRound className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-center space-y-1">
+                      <p className="font-semibold text-sm">Redefinição de senha</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Para redefinir sua senha como gestor, entre em contato com o suporte do Seven Sports informando o nome da sua arena e o login cadastrado.
+                      </p>
+                    </div>
+                    <div className="w-full rounded-md bg-muted/60 px-4 py-3 text-xs text-center text-muted-foreground space-y-1">
+                      <p className="font-medium text-foreground">suporte@sevensports.com.br</p>
+                      <p>Resposta em até 1 dia útil</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Em breve: redefinição automática por e-mail.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setEsqueceuSenha(false)}
+                    data-testid="button-voltar-login"
+                  >
+                    ← Voltar ao login
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

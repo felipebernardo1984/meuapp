@@ -170,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/login", async (req, res) => {
-    const { login, senha } = req.body as { login: string; senha: string };
+    const { login, senha, lembrarDados } = req.body as { login: string; senha: string; lembrarDados?: boolean };
     if (!login || !senha) return res.status(400).json({ message: "Credenciais inválidas" });
 
     const allArenas = await storage.listArenas();
@@ -192,6 +192,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.arenaId = arena.id;
         req.session.userType = "gestor";
         req.session.userId = arena.id;
+        if (lembrarDados) {
+          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+        }
         return res.json({ tipo: "gestor", arenaId: arena.id, arenaName: arena.name });
       }
       const teacher = await storage.getTeacherByLogin(arena.id, login);
