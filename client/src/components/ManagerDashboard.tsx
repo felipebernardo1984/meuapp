@@ -183,7 +183,14 @@ export default function ManagerDashboard({
   // WhatsApp state
   const [dialogWhatsapp, setDialogWhatsapp] = useState(false);
   const [waTab, setWaTab] = useState<"basico" | "cobranca" | "assiduidade" | "fila">("basico");
-  const [formWhatsapp, setFormWhatsapp] = useState({ whatsapp_number: "", default_message: "" });
+  const [formWhatsapp, setFormWhatsapp] = useState({
+    whatsapp_number: "",
+    default_message: "",
+    provider: "manual",
+    apiKey: "",
+    instanceId: "",
+    apiUrl: "",
+  });
   const [formCobrancaAuto, setFormCobrancaAuto] = useState({
     cobranca_ativo: false,
     cobranca_dias_apos_vencimento: 1,
@@ -199,7 +206,14 @@ export default function ManagerDashboard({
     assiduidade_mensagem: "Olá {{nome}}, sentimos sua falta! Que tal voltar a treinar essa semana?",
   });
 
-  const { data: whatsappSettings } = useQuery<{ whatsapp_number?: string; default_message?: string } | null>({
+  const { data: whatsappSettings } = useQuery<{
+    whatsapp_number?: string;
+    default_message?: string;
+    provider?: string;
+    apiKey?: string;
+    instanceId?: string;
+    apiUrl?: string;
+  } | null>({
     queryKey: ["/api/whatsapp/settings"],
   });
 
@@ -288,11 +302,46 @@ export default function ManagerDashboard({
 
   const qcWa = useQueryClient();
   const salvarWhatsapp = useMutation({
-    mutationFn: (d: { whatsapp_number: string; default_message: string }) =>
-      apiRequest("POST", "/api/whatsapp/settings", d),
+    mutationFn: (d: any) => apiRequest("POST", "/api/whatsapp/settings", d),
     onSuccess: () => {
       qcWa.invalidateQueries({ queryKey: ["/api/whatsapp/settings"] });
       toast({ title: "WhatsApp configurado com sucesso!" });
+    },
+  });
+
+  const enviarWhatsappAvulso = useMutation({
+    mutationFn: (d: { telefone: string; mensagem: string }) =>
+      apiRequest("POST", "/api/whatsapp/send", d).then((r) => r.json()),
+    onSuccess: (data: any) => {
+      if (data.mode === "api") {
+        toast({ title: "Mensagem enviada com sucesso!" });
+      } else if (data.mode === "manual") {
+        window.open(data.link, "_blank");
+      } else if (data.mode === "no_phone") {
+        toast({ title: "Aluno sem telefone cadastrado", description: "Edite o aluno e adicione o número de telefone.", variant: "destructive" });
+      }
+    },
+    onError: () => {
+      toast({ title: "Erro ao enviar mensagem", variant: "destructive" });
+    },
+  });
+
+  const enviarDispatch = useMutation({
+    mutationFn: (d: any) =>
+      apiRequest("POST", "/api/whatsapp/send", { telefone: d.alunoTelefone, mensagem: d.mensagem }).then((r) => r.json()),
+    onSuccess: (data: any, variables: any) => {
+      if (data.mode === "api") {
+        marcarEnviado.mutate(variables.id);
+        qcWa.invalidateQueries({ queryKey: ["/api/whatsapp/dispatches"] });
+        toast({ title: `Mensagem enviada para ${variables.alunoNome}!` });
+      } else if (data.mode === "manual") {
+        window.open(data.link, "_blank");
+      } else if (data.mode === "no_phone") {
+        toast({ title: "Aluno sem telefone cadastrado", description: "Edite o aluno e adicione o número de telefone.", variant: "destructive" });
+      }
+    },
+    onError: () => {
+      toast({ title: "Erro ao enviar mensagem", variant: "destructive" });
     },
   });
 
@@ -326,14 +375,12 @@ export default function ManagerDashboard({
     },
   });
 
-  function buildWhatsappLink(aluno: AlunoGestor) {
-    const numero = whatsappSettings?.whatsapp_number ?? "";
+  function buildWhatsappMessage(aluno: AlunoGestor) {
     const template = whatsappSettings?.default_message ?? "Olá {{nome}}, tudo bem?";
-    const mensagem = template
+    return template
       .replace(/\{\{nome\}\}/g, aluno.nome)
-      .replace(/\{\{status\}\}/g, aluno.statusMensalidade)
+      .replace(/\{\{status\}\}/g, aluno.statusMensalidade ?? "")
       .replace(/\{\{checkins\}\}/g, String(aluno.checkinsRealizados));
-    return `https://wa.me/${numero.replace(/\D/g, "")}?text=${encodeURIComponent(mensagem)}`;
   }
 
   // Financial state
@@ -691,6 +738,10 @@ export default function ManagerDashboard({
       setFormWhatsapp({
         whatsapp_number: whatsappSettings?.whatsapp_number ?? "",
         default_message: whatsappSettings?.default_message ?? "Olá {{nome}}, sua mensalidade está {{status}}.",
+        provider: whatsappSettings?.provider ?? "manual",
+        apiKey: whatsappSettings?.apiKey ?? "",
+        instanceId: whatsappSettings?.instanceId ?? "",
+        apiUrl: whatsappSettings?.apiUrl ?? "",
       });
       if (automationConfig) {
         setFormCobrancaAuto({
@@ -2423,10 +2474,10 @@ export default function ManagerDashboard({
                           <DropdownMenuItem
                             onClick={() => {
                               if (!whatsappSettings?.whatsapp_number) {
-                                toast({ title: "Configure o WhatsApp primeiro", description: "Clique no botão WhatsApp no cabeçalho.", variant: "destructive" });
+                                toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
                                 return;
                               }
-                              window.open(buildWhatsappLink(aluno), "_blank");
+                              enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
                             }}
                             data-testid={`menu-whatsapp-${aluno.id}`}
                           >
@@ -3068,31 +3119,112 @@ export default function ManagerDashboard({
           {/* Tab: Básico */}
           {waTab === "basico" && (
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="wa-number">Número do WhatsApp da arena</Label>
-                <Input
-                  id="wa-number"
-                  placeholder="5511999999999"
-                  value={formWhatsapp.whatsapp_number}
-                  onChange={(e) => setFormWhatsapp((f) => ({ ...f, whatsapp_number: e.target.value }))}
-                  data-testid="input-whatsapp-number"
-                />
-                <p className="text-xs text-muted-foreground mt-1">Apenas números com DDI (ex: 5511999999999)</p>
+              {/* Número e mensagem padrão */}
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="wa-number">Número do WhatsApp da arena (remetente)</Label>
+                  <Input
+                    id="wa-number"
+                    placeholder="5511999999999"
+                    value={formWhatsapp.whatsapp_number}
+                    onChange={(e) => setFormWhatsapp((f) => ({ ...f, whatsapp_number: e.target.value }))}
+                    data-testid="input-whatsapp-number"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Número com DDI (ex: 5511999999999) — é o número que envia as mensagens</p>
+                </div>
+                <div>
+                  <Label htmlFor="wa-message">Mensagem padrão (envio manual por aluno)</Label>
+                  <Textarea
+                    id="wa-message"
+                    rows={3}
+                    placeholder="Olá {{nome}}, tudo bem?"
+                    value={formWhatsapp.default_message}
+                    onChange={(e) => setFormWhatsapp((f) => ({ ...f, default_message: e.target.value }))}
+                    data-testid="input-whatsapp-message"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Variáveis: <code className="bg-muted px-1 rounded">{"{{nome}}"}</code> <code className="bg-muted px-1 rounded">{"{{status}}"}</code> <code className="bg-muted px-1 rounded">{"{{checkins}}"}</code>
+                  </p>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="wa-message">Mensagem padrão (envio manual por aluno)</Label>
-                <Textarea
-                  id="wa-message"
-                  rows={3}
-                  placeholder="Olá {{nome}}, tudo bem?"
-                  value={formWhatsapp.default_message}
-                  onChange={(e) => setFormWhatsapp((f) => ({ ...f, default_message: e.target.value }))}
-                  data-testid="input-whatsapp-message"
-                />
-                <p className="text-xs text-muted-foreground mt-1">Variáveis: <code className="bg-muted px-1 rounded">{"{{nome}}"}</code> <code className="bg-muted px-1 rounded">{"{{status}}"}</code> <code className="bg-muted px-1 rounded">{"{{checkins}}"}</code></p>
+
+              {/* Modo de envio / API */}
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="text-sm font-semibold">Modo de envio</h4>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${formWhatsapp.provider === "manual" ? "bg-muted text-muted-foreground" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>
+                    {formWhatsapp.provider === "manual" ? "Manual" : "API Ativa"}
+                  </span>
+                </div>
+                <div>
+                  <Label htmlFor="wa-provider">Provedor</Label>
+                  <Select
+                    value={formWhatsapp.provider}
+                    onValueChange={(v) => setFormWhatsapp((f) => ({ ...f, provider: v }))}
+                  >
+                    <SelectTrigger id="wa-provider" data-testid="select-whatsapp-provider">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Manual — link WhatsApp Web</SelectItem>
+                      <SelectItem value="evolution">Evolution API</SelectItem>
+                      <SelectItem value="zapi">Z-API</SelectItem>
+                      <SelectItem value="360dialog">360dialog (Meta)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formWhatsapp.provider === "manual"
+                      ? "Modo manual: você clica num link para abrir o WhatsApp Web e enviar a mensagem."
+                      : "Modo API: as mensagens são enviadas automaticamente pelo provedor configurado."}
+                  </p>
+                </div>
+
+                {formWhatsapp.provider !== "manual" && (
+                  <div className="space-y-3 p-3 rounded-lg bg-muted/30 border">
+                    {formWhatsapp.provider === "evolution" && (
+                      <div>
+                        <Label className="text-xs">URL da Evolution API</Label>
+                        <Input
+                          placeholder="https://api.meuservidor.com"
+                          value={formWhatsapp.apiUrl}
+                          onChange={(e) => setFormWhatsapp((f) => ({ ...f, apiUrl: e.target.value }))}
+                          data-testid="input-whatsapp-api-url"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-xs">
+                        API Key{formWhatsapp.provider === "360dialog" ? " (D360-API-KEY)" : ""}
+                      </Label>
+                      <Input
+                        type="password"
+                        placeholder="Chave de API fornecida pelo provedor"
+                        value={formWhatsapp.apiKey}
+                        onChange={(e) => setFormWhatsapp((f) => ({ ...f, apiKey: e.target.value }))}
+                        data-testid="input-whatsapp-api-key"
+                      />
+                    </div>
+                    {(formWhatsapp.provider === "evolution" || formWhatsapp.provider === "zapi") && (
+                      <div>
+                        <Label className="text-xs">ID da Instância</Label>
+                        <Input
+                          placeholder={formWhatsapp.provider === "evolution" ? "nome-da-instancia" : "INSTANCE_ID"}
+                          value={formWhatsapp.instanceId}
+                          onChange={(e) => setFormWhatsapp((f) => ({ ...f, instanceId: e.target.value }))}
+                          data-testid="input-whatsapp-instance-id"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <Button onClick={() => salvarWhatsapp.mutate(formWhatsapp)} disabled={!formWhatsapp.whatsapp_number || salvarWhatsapp.isPending} data-testid="button-save-whatsapp">
-                {salvarWhatsapp.isPending ? "Salvando..." : "Salvar configuração básica"}
+
+              <Button
+                onClick={() => salvarWhatsapp.mutate(formWhatsapp)}
+                disabled={!formWhatsapp.whatsapp_number || salvarWhatsapp.isPending}
+                data-testid="button-save-whatsapp"
+              >
+                {salvarWhatsapp.isPending ? "Salvando..." : "Salvar configurações"}
               </Button>
             </div>
           )}
@@ -3198,8 +3330,15 @@ export default function ManagerDashboard({
           {/* Tab: Fila de disparos */}
           {waTab === "fila" && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{pendingDispatches.length === 0 ? "Nenhum disparo pendente." : `${pendingDispatches.length} disparo(s) pendente(s)`}</p>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    {pendingDispatches.length === 0 ? "Nenhum disparo pendente." : `${pendingDispatches.length} disparo(s) pendente(s)`}
+                  </p>
+                  {whatsappSettings?.provider && whatsappSettings.provider !== "manual" && (
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">API ativa — envios automáticos via {whatsappSettings.provider}</p>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => executarAutomacao.mutate()} disabled={executarAutomacao.isPending} data-testid="button-run-automation">
                     {executarAutomacao.isPending ? "Executando..." : "Executar automação"}
@@ -3212,25 +3351,35 @@ export default function ManagerDashboard({
                 </div>
               </div>
               {pendingDispatches.map((d: any) => {
-                const numero = whatsappSettings?.whatsapp_number ?? "";
-                const link = `https://wa.me/${numero.replace(/\D/g, "")}?text=${encodeURIComponent(d.mensagem)}`;
+                const temTelefone = !!(d.alunoTelefone?.replace(/\D/g, ""));
+                const isApi = whatsappSettings?.provider && whatsappSettings.provider !== "manual";
                 return (
                   <div key={d.id} className="flex items-start justify-between p-3 rounded-lg border gap-3" data-testid={`dispatch-${d.id}`}>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.tipo === "cobranca" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"}`}>
                           {d.tipo === "cobranca" ? "Cobrança" : "Assiduidade"} #{d.disparo_num}
                         </span>
                         <span className="text-sm font-medium">{d.alunoNome}</span>
+                        {d.alunoTelefone
+                          ? <span className="text-xs text-muted-foreground">({d.alunoTelefone})</span>
+                          : <span className="text-xs font-medium text-destructive">sem telefone</span>
+                        }
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{d.mensagem}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{d.mensagem}</p>
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      <a href={link} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" data-testid={`button-send-${d.id}`}>
-                          <MessageCircle className="h-3.5 w-3.5 mr-1" />Enviar
-                        </Button>
-                      </a>
+                      <Button
+                        size="sm"
+                        className={temTelefone ? "bg-green-500 hover:bg-green-600 text-white" : ""}
+                        variant={temTelefone ? "default" : "outline"}
+                        disabled={!temTelefone || enviarDispatch.isPending}
+                        onClick={() => enviarDispatch.mutate(d)}
+                        data-testid={`button-send-${d.id}`}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                        {isApi ? "Enviar API" : "Enviar"}
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => marcarEnviado.mutate(d.id)} data-testid={`button-sent-${d.id}`}>
                         ✓
                       </Button>

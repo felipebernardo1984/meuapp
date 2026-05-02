@@ -9,6 +9,7 @@ import { financeService } from "./financeService";
 import { getFinancialStatus } from "./financialStatusUtils";
 import { automationRouter } from "./automationRoutes";
 import { getWhatsappSettings, saveWhatsappSettings } from "./whatsappSettings";
+import { sendWhatsappMessage } from "./whatsappApi";
 import { getAutomationConfig, saveAutomationConfig, getPendingDispatches, markDispatchSent, markAllDispatchesSent, runWhatsappAutomation } from "./whatsappAutomation";
 import { calcularComissao, getResumoPorProfessor } from "./commissionService";
 
@@ -1164,18 +1165,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
 
-    const { whatsapp_number, default_message } = req.body;
+    const { whatsapp_number, default_message, provider, apiKey, instanceId, apiUrl, webhookToken } = req.body;
 
     try {
       const saved = await saveWhatsappSettings({
         arenaId,
         whatsapp_number,
         default_message,
+        provider,
+        apiKey,
+        instanceId,
+        apiUrl,
+        webhookToken,
       });
 
       res.json(saved);
     } catch (error) {
       res.status(500).json({ message: "Erro ao salvar configurações do WhatsApp" });
+    }
+  });
+
+  // ── WhatsApp Send (manual link ou API) ────────────────────────────────────
+  app.post("/api/whatsapp/send", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const { telefone, mensagem } = req.body;
+      const settings = await getWhatsappSettings(arenaId);
+      const result = await sendWhatsappMessage(settings, telefone, mensagem);
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message ?? "Erro ao enviar mensagem" });
     }
   });
   

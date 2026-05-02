@@ -68,7 +68,7 @@ export async function runWhatsappAutomation(arenaId: string) {
       .where(and(eq(students.arenaId, arenaId), eq(students.statusMensalidade, "Pendente"), eq(students.ativo, true)));
 
     for (const aluno of inadimplentes) {
-      // Conta quantos disparos de cobrança já foram feitos para este aluno
+      // Conta quantos disparos de cobrança já foram ENVIADOS para este aluno
       const [{ value: totalEnviados }] = await db
         .select({ value: count() })
         .from(whatsappDispatchLog)
@@ -76,6 +76,7 @@ export async function runWhatsappAutomation(arenaId: string) {
           eq(whatsappDispatchLog.arenaId, arenaId),
           eq(whatsappDispatchLog.alunoId, aluno.id),
           eq(whatsappDispatchLog.tipo, "cobranca"),
+          eq(whatsappDispatchLog.status, "enviado"),
         ));
 
       if (Number(totalEnviados) >= maxDisparos) continue;
@@ -115,7 +116,10 @@ export async function runWhatsappAutomation(arenaId: string) {
         // Simplificado: apenas gera na primeira execução se já não existe nenhum disparo
       }
 
-      const mensagem = template.replace(/\{\{nome\}\}/g, aluno.nome);
+      const mensagem = template
+        .replace(/\{\{nome\}\}/g, aluno.nome)
+        .replace(/\{\{status\}\}/g, aluno.statusMensalidade ?? "Pendente")
+        .replace(/\{\{checkins\}\}/g, String(aluno.checkinsRealizados ?? 0));
       await db.insert(whatsappDispatchLog).values({
         arenaId,
         alunoId: aluno.id,
@@ -154,6 +158,7 @@ export async function runWhatsappAutomation(arenaId: string) {
           eq(whatsappDispatchLog.arenaId, arenaId),
           eq(whatsappDispatchLog.alunoId, aluno.id),
           eq(whatsappDispatchLog.tipo, "assiduidade"),
+          eq(whatsappDispatchLog.status, "enviado"),
         ));
 
       if (Number(totalEnviados) >= maxDisparos) continue;
@@ -187,7 +192,10 @@ export async function runWhatsappAutomation(arenaId: string) {
         if (diffDias < intervalo) continue;
       }
 
-      const mensagem = template.replace(/\{\{nome\}\}/g, aluno.nome);
+      const mensagem = template
+        .replace(/\{\{nome\}\}/g, aluno.nome)
+        .replace(/\{\{status\}\}/g, aluno.statusMensalidade ?? "")
+        .replace(/\{\{checkins\}\}/g, String(aluno.checkinsRealizados ?? 0));
       await db.insert(whatsappDispatchLog).values({
         arenaId,
         alunoId: aluno.id,

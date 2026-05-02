@@ -16,6 +16,11 @@ export async function saveWhatsappSettings(data: {
   arenaId: string;
   whatsapp_number?: string;
   default_message?: string;
+  provider?: string;
+  apiKey?: string;
+  instanceId?: string;
+  apiUrl?: string;
+  webhookToken?: string;
 }) {
   const existing = await getWhatsappSettings(data.arenaId);
 
@@ -25,6 +30,11 @@ export async function saveWhatsappSettings(data: {
       .set({
         whatsapp_number: data.whatsapp_number,
         default_message: data.default_message,
+        provider: data.provider ?? "manual",
+        apiKey: data.apiKey ?? null,
+        instanceId: data.instanceId ?? null,
+        apiUrl: data.apiUrl ?? null,
+        webhookToken: data.webhookToken ?? null,
       })
       .where(eq(whatsappSettings.arenaId, data.arenaId));
 
@@ -33,7 +43,16 @@ export async function saveWhatsappSettings(data: {
 
   const inserted = await db
     .insert(whatsappSettings)
-    .values(data)
+    .values({
+      arenaId: data.arenaId,
+      whatsapp_number: data.whatsapp_number,
+      default_message: data.default_message,
+      provider: data.provider ?? "manual",
+      apiKey: data.apiKey ?? null,
+      instanceId: data.instanceId ?? null,
+      apiUrl: data.apiUrl ?? null,
+      webhookToken: data.webhookToken ?? null,
+    })
     .returning();
 
   return inserted[0];

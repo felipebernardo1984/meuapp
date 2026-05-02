@@ -315,6 +315,12 @@ export const whatsappSettings = pgTable("whatsapp_settings", {
   arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
   whatsapp_number: text("whatsapp_number"),
   default_message: text("default_message"),
+  // Modo de envio: "manual" | "evolution" | "zapi" | "360dialog"
+  provider: text("provider").default("manual"),
+  apiKey: text("api_key"),
+  instanceId: text("instance_id"),
+  apiUrl: text("api_url"),
+  webhookToken: text("webhook_token"),
   created_at: timestamp("created_at").defaultNow(),
 });
 
