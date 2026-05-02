@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PhotoCropModal } from "./PhotoCropModal";
 import HelpDialog from "@/components/HelpDialog";
 import ManagerSidebar from "@/components/ManagerSidebar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -685,23 +686,14 @@ export default function ManagerDashboard({
     setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade, percentualComissao: p.percentualComissao || "", photoUrl: p.photoUrl || "" });
   };
 
-  const compressImage = (file: File, maxSize = 220): Promise<string> =>
-    new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", 0.82));
-        };
-        img.src = e.target!.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
+  const [cropSrcProfessor, setCropSrcProfessor] = useState<string | null>(null);
+  const [cropSrcAluno, setCropSrcAluno] = useState<string | null>(null);
+
+  const openCropForFile = (file: File, setter: (src: string) => void) => {
+    const reader = new FileReader();
+    reader.onload = (e) => setter(e.target!.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSalvarProfessor = () => {
     if (!formProfessor.nome || !formProfessor.modalidade) return;
@@ -2409,17 +2401,27 @@ export default function ManagerDashboard({
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={async (e) => {
+                    onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        const b64 = await compressImage(file);
-                        setFormProfessor(prev => ({ ...prev, photoUrl: b64 }));
-                      }
+                      if (file) openCropForFile(file, setCropSrcProfessor);
+                      e.target.value = "";
                     }}
                   />
                 </label>
               </div>
-              <p className="text-xs text-muted-foreground">Foto do professor (opcional)</p>
+              {formProfessor.photoUrl ? (
+                <button type="button" className="text-xs text-destructive hover:underline" onClick={() => setFormProfessor(prev => ({ ...prev, photoUrl: "" }))}>Remover foto</button>
+              ) : (
+                <p className="text-xs text-muted-foreground">Foto do professor (opcional)</p>
+              )}
+              {cropSrcProfessor && (
+                <PhotoCropModal
+                  imageSrc={cropSrcProfessor}
+                  onConfirm={(b64) => { setFormProfessor(prev => ({ ...prev, photoUrl: b64 })); setCropSrcProfessor(null); }}
+                  onRemove={() => { setFormProfessor(prev => ({ ...prev, photoUrl: "" })); setCropSrcProfessor(null); }}
+                  onCancel={() => setCropSrcProfessor(null)}
+                />
+              )}
             </div>
             <div className="space-y-1">
               <Label>Nome do Professor <span className="text-destructive">*</span></Label>
@@ -2538,17 +2540,27 @@ export default function ManagerDashboard({
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={async (e) => {
+                    onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        const b64 = await compressImage(file);
-                        setFormProfessor(prev => ({ ...prev, photoUrl: b64 }));
-                      }
+                      if (file) openCropForFile(file, setCropSrcProfessor);
+                      e.target.value = "";
                     }}
                   />
                 </label>
               </div>
-              <p className="text-xs text-muted-foreground">Foto do professor (opcional)</p>
+              {formProfessor.photoUrl ? (
+                <button type="button" className="text-xs text-destructive hover:underline" onClick={() => setFormProfessor(prev => ({ ...prev, photoUrl: "" }))}>Remover foto</button>
+              ) : (
+                <p className="text-xs text-muted-foreground">Foto do professor (opcional)</p>
+              )}
+              {cropSrcProfessor && (
+                <PhotoCropModal
+                  imageSrc={cropSrcProfessor}
+                  onConfirm={(b64) => { setFormProfessor(prev => ({ ...prev, photoUrl: b64 })); setCropSrcProfessor(null); }}
+                  onRemove={() => { setFormProfessor(prev => ({ ...prev, photoUrl: "" })); setCropSrcProfessor(null); }}
+                  onCancel={() => setCropSrcProfessor(null)}
+                />
+              )}
             </div>
             <div className="space-y-1">
               <Label>Nome Completo *</Label>
@@ -3217,17 +3229,27 @@ export default function ManagerDashboard({
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={async (e) => {
+                    onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        const b64 = await compressImage(file);
-                        setFormEditarAluno(prev => ({ ...prev, photoUrl: b64 }));
-                      }
+                      if (file) openCropForFile(file, setCropSrcAluno);
+                      e.target.value = "";
                     }}
                   />
                 </label>
               </div>
-              <p className="text-xs text-muted-foreground">Foto do aluno (opcional)</p>
+              {formEditarAluno.photoUrl ? (
+                <button type="button" className="text-xs text-destructive hover:underline" onClick={() => setFormEditarAluno(prev => ({ ...prev, photoUrl: "" }))}>Remover foto</button>
+              ) : (
+                <p className="text-xs text-muted-foreground">Foto do aluno (opcional)</p>
+              )}
+              {cropSrcAluno && (
+                <PhotoCropModal
+                  imageSrc={cropSrcAluno}
+                  onConfirm={(b64) => { setFormEditarAluno(prev => ({ ...prev, photoUrl: b64 })); setCropSrcAluno(null); }}
+                  onRemove={() => { setFormEditarAluno(prev => ({ ...prev, photoUrl: "" })); setCropSrcAluno(null); }}
+                  onCancel={() => setCropSrcAluno(null)}
+                />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">

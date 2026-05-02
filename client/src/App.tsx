@@ -6,12 +6,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Admin from "@/pages/Admin";
 import ArenaApp from "@/pages/ArenaApp";
 import Cadastro from "@/pages/Cadastro";
+import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Admin} />
+      <Route path="/" component={LandingPage} />
+      <Route path="/admin" component={Admin} />
       <Route path="/cadastro" component={Cadastro} />
       <Route path="/arena/:id" component={ArenaApp} />
       <Route component={NotFound} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PhotoCropModal } from "./PhotoCropModal";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -119,33 +120,12 @@ export default function TeacherDashboard({
   onUpdatePhoto,
 }: TeacherDashboardProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-  const compressImage = (file: File, maxSize = 220): Promise<string> =>
-    new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", 0.82));
-        };
-        img.src = e.target!.result as string;
-      };
-      reader.readAsDataURL(file);
-    });
-
-  const handlePhotoChange = async (file: File) => {
-    setUploadingPhoto(true);
-    try {
-      const b64 = await compressImage(file);
-      onUpdatePhoto?.(b64);
-    } finally {
-      setUploadingPhoto(false);
-    }
+  const handlePhotoSelect = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => setCropSrc(e.target!.result as string);
+    reader.readAsDataURL(file);
   };
 
   const teacherInitials = teacherName
@@ -322,22 +302,26 @@ export default function TeacherDashboard({
               title="Alterar foto"
               data-testid="label-teacher-photo-upload"
             >
-              {uploadingPhoto ? (
-                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Camera className="h-3 w-3" />
-              )}
+              <Camera className="h-3 w-3" />
               <input
                 type="file"
                 accept="image/*"
                 className="hidden"
-                disabled={uploadingPhoto}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handlePhotoChange(file);
+                  if (file) handlePhotoSelect(file);
+                  e.target.value = "";
                 }}
               />
             </label>
+          )}
+          {cropSrc && onUpdatePhoto && (
+            <PhotoCropModal
+              imageSrc={cropSrc}
+              onConfirm={(b64) => { onUpdatePhoto(b64); setCropSrc(null); }}
+              onRemove={() => { onUpdatePhoto(""); setCropSrc(null); }}
+              onCancel={() => setCropSrc(null)}
+            />
           )}
         </div>
         <div>
