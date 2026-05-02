@@ -10,6 +10,7 @@ import { getFinancialStatus } from "./financialStatusUtils";
 import { automationRouter } from "./automationRoutes";
 import { getWhatsappSettings, saveWhatsappSettings } from "./whatsappSettings";
 import { getAutomationConfig, saveAutomationConfig, getPendingDispatches, markDispatchSent, markAllDispatchesSent, runWhatsappAutomation } from "./whatsappAutomation";
+import { calcularComissao, getResumoPorProfessor } from "./commissionService";
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -256,23 +257,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/professores", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, modalidade, cpf, email, telefone } = req.body;
+    const { nome, modalidade, cpf, email, telefone, percentualComissao } = req.body;
     const login = req.body.login?.trim() || gerarLogin(nome);
     const senha = req.body.senha?.trim() || "admin";
-    const teacher = await storage.createTeacher({ arenaId, nome, login, senha, cpf: cpf ?? null, email: email ?? null, telefone: telefone ?? null, modalidade });
+    const teacher = await storage.createTeacher({ arenaId, nome, login, senha, cpf: cpf ?? null, email: email ?? null, telefone: telefone ?? null, modalidade, percentualComissao: percentualComissao ?? "0.00" });
     res.json({ ...teacher, senha: undefined, loginGerado: login, senhaGerada: senha });
   });
 
   app.put("/api/professores/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, email, telefone, login, senha, modalidade } = req.body;
+    const { nome, cpf, email, telefone, login, senha, modalidade, percentualComissao } = req.body;
     const updateData: Record<string, any> = { nome, modalidade };
     if (cpf !== undefined) updateData.cpf = cpf || null;
     if (email !== undefined) updateData.email = email || null;
     if (telefone !== undefined) updateData.telefone = telefone || null;
     if (login !== undefined) updateData.login = login;
     if (senha) updateData.senha = senha;
+    if (percentualComissao !== undefined) updateData.percentualComissao = percentualComissao;
     const teacher = await storage.updateTeacher(req.params.id, updateData);
     res.json(teacher);
   });
@@ -462,6 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const checkinToRemove = allCheckins[index];
     if (checkinToRemove?.id) {
       try { await storage.cancelCheckinFinanceiro(checkinToRemove.id); } catch (_e) {}
+      try { await storage.cancelCommissionByCheckinId(checkinToRemove.id); } catch (_e) {}
     }
 
     await storage.removeCheckinByIndex(student.id, index);
@@ -471,6 +474,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ultimoCheckin: historico.length > 0 ? historico[historico.length - 1].data : null,
     });
     res.json({ ...updated, historico });
+  });
+
+  // ── Check-in Log (todos os check-ins da arena, enriquecido) ──────────────
+  app.get("/api/checkins/log", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const checkins = await storage.listAllCheckinsByArena(arenaId);
+    const students = await storage.listStudents(arenaId);
+    const teachers = await storage.listTeachers(arenaId);
+    const studentMap = new Map(students.map(s => [s.id, s]));
+    const teacherMap = new Map(teachers.map(t => [t.id, t]));
+    const result = checkins.map(c => ({
+      ...c,
+      alunoNome: studentMap.get(c.studentId ?? "")?.nome ?? "—",
+      alunoModalidade: studentMap.get(c.studentId ?? "")?.modalidade ?? "—",
+      professorNome: c.professorId ? (teacherMap.get(c.professorId)?.nome ?? "—") : null,
+    }));
+    res.json(result);
+  });
+
+  // ── Atribuir check-in (tipo + professor) ─────────────────────────────────
+  app.put("/api/checkins/:id/atribuir", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { tipo, professorId } = req.body;
+    if (!tipo) return res.status(400).json({ message: "tipo é obrigatório" });
+
+    const checkin = await storage.getCheckinById(req.params.id);
+    if (!checkin) return res.status(404).json({ message: "Check-in não encontrado" });
+
+    const updated = await storage.atribuirCheckin(req.params.id, tipo, professorId ?? null);
+
+    if (tipo === "aula" && professorId) {
+      try {
+        const finEntry = await storage.getCheckinFinanceiroByCheckinId(req.params.id);
+        const valorCheckin = finEntry?.valorTotal ?? "0.00";
+        await calcularComissao(arenaId, req.params.id, professorId, checkin.studentId ?? "", valorCheckin, checkin.data);
+      } catch (_e) {}
+    } else {
+      try { await storage.cancelCommissionByCheckinId(req.params.id); } catch (_e) {}
+    }
+
+    res.json(updated);
+  });
+
+  // ── Comissões ─────────────────────────────────────────────────────────────
+  app.get("/api/finance/comissao/resumo", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const resumo = await getResumoPorProfessor(arenaId);
+    res.json(resumo);
+  });
+
+  app.get("/api/finance/comissao/professor/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const commissions = await storage.listCommissionsByTeacher(req.params.id);
+    const students = await storage.listStudents(arenaId);
+    const studentMap = new Map(students.map(s => [s.id, s]));
+    const result = commissions.map(c => ({
+      ...c,
+      alunoNome: studentMap.get(c.studentId ?? "")?.nome ?? "—",
+    }));
+    res.json(result);
+  });
+
+  app.get("/api/finance/comissoes", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const commissions = await storage.listCommissionsByArena(arenaId);
+    const teachers = await storage.listTeachers(arenaId);
+    const students = await storage.listStudents(arenaId);
+    const teacherMap = new Map(teachers.map(t => [t.id, t]));
+    const studentMap = new Map(students.map(s => [s.id, s]));
+    const result = commissions.map(c => ({
+      ...c,
+      professorNome: teacherMap.get(c.teacherId ?? "")?.nome ?? "—",
+      alunoNome: studentMap.get(c.studentId ?? "")?.nome ?? "—",
+    }));
+    res.json(result);
+  });
+
+  app.put("/api/finance/comissao/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { valorComissao, status, observacao } = req.body;
+    const updated = await storage.updateCommission(req.params.id, { valorComissao, status, observacao });
+    res.json(updated);
   });
 
   // ── Arena subscription info (for gestor) ──────────────────────────────────

@@ -1,10 +1,11 @@
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, desc } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, arenas, plans, teachers, students, checkinHistory,
   payments, charges, messageSettings, paymentSettings,
   platformPlans, arenaSubscriptionPayments, modalidadeSettings,
   checkinFinanceiro, integrationPlans, integrationSettings,
+  teacherCommissions,
 } from "@shared/schema";
 
 export class DatabaseStorage {
@@ -291,6 +292,51 @@ export class DatabaseStorage {
       .update(checkinFinanceiro)
       .set({ tipoPlanoNoMomento, valorOriginal })
       .where(eq(checkinFinanceiro.id, id));
+  }
+
+  // CHECKIN ATTRIBUTION
+  async atribuirCheckin(checkinId: string, tipo: string, professorId: string | null) {
+    const data: Record<string, any> = { tipo };
+    if (professorId !== undefined) data.professorId = professorId;
+    const [row] = await db.update(checkinHistory).set(data).where(eq(checkinHistory.id, checkinId)).returning();
+    return row;
+  }
+
+  async getCheckinById(id: string) {
+    const [row] = await db.select().from(checkinHistory).where(eq(checkinHistory.id, id));
+    return row;
+  }
+
+  async listAllCheckinsByArena(arenaId: string) {
+    return db.select().from(checkinHistory).where(eq(checkinHistory.arenaId, arenaId)).orderBy(desc(checkinHistory.id));
+  }
+
+  // TEACHER COMMISSIONS
+  async createCommission(data: any) {
+    const [row] = await db.insert(teacherCommissions).values(data).returning();
+    return row;
+  }
+
+  async listCommissionsByArena(arenaId: string) {
+    return db.select().from(teacherCommissions).where(eq(teacherCommissions.arenaId, arenaId)).orderBy(desc(teacherCommissions.createdAt));
+  }
+
+  async listCommissionsByTeacher(teacherId: string) {
+    return db.select().from(teacherCommissions).where(eq(teacherCommissions.teacherId, teacherId)).orderBy(desc(teacherCommissions.createdAt));
+  }
+
+  async updateCommission(id: string, data: { valorComissao?: string; status?: string; observacao?: string }) {
+    const [row] = await db.update(teacherCommissions).set({ ...data, updatedAt: new Date() }).where(eq(teacherCommissions.id, id)).returning();
+    return row;
+  }
+
+  async getCommissionByCheckinId(checkinId: string) {
+    const [row] = await db.select().from(teacherCommissions).where(eq(teacherCommissions.checkinId, checkinId));
+    return row;
+  }
+
+  async cancelCommissionByCheckinId(checkinId: string) {
+    await db.update(teacherCommissions).set({ status: "cancelado", updatedAt: new Date() }).where(eq(teacherCommissions.checkinId, checkinId));
   }
 
   // PAYMENTS

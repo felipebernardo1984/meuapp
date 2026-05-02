@@ -57,6 +57,9 @@ import {
   AlertCircle,
   Settings,
   MessageCircle,
+  PercentCircle,
+  ListChecks,
+  ChevronDown,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -90,6 +93,7 @@ interface ProfessorGestor {
   telefone?: string;
   login?: string;
   modalidade: string;
+  percentualComissao?: string;
 }
 
 interface NovoAlunoDados {
@@ -110,8 +114,8 @@ interface ManagerDashboardProps {
   alunos: AlunoGestor[];
   professores: ProfessorGestor[];
   onAprovarAluno: (alunoId: string) => void;
-  onCadastrarProfessor: (dados: { nome: string; cpf: string; email: string; telefone: string; login: string; senha: string; modalidade: string }) => void;
-  onEditarProfessor: (id: string, dados: { nome: string; cpf?: string; email?: string; telefone?: string; login?: string; senha?: string; modalidade: string }) => void;
+  onCadastrarProfessor: (dados: { nome: string; cpf: string; email: string; telefone: string; login: string; senha: string; modalidade: string; percentualComissao?: string }) => void;
+  onEditarProfessor: (id: string, dados: { nome: string; cpf?: string; email?: string; telefone?: string; login?: string; senha?: string; modalidade: string; percentualComissao?: string }) => void;
   onExcluirProfessor: (id: string) => void;
   onCadastrarAluno: (dados: NovoAlunoDados) => void;
   onCriarPlano: (titulo: string, checkins: number, valorTexto?: string) => void;
@@ -196,6 +200,52 @@ export default function ManagerDashboard({
   const { data: pendingDispatches = [], refetch: refetchDispatches } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/dispatches"],
     enabled: dialogWhatsapp && waTab === "fila",
+  });
+
+  // Commission queries
+  const { data: resumoComissoes = [], refetch: refetchComissoes } = useQuery<any[]>({
+    queryKey: ["/api/finance/comissao/resumo"],
+    enabled: dialogComissoes,
+  });
+
+  const { data: todasComissoes = [], refetch: refetchTodasComissoes } = useQuery<any[]>({
+    queryKey: ["/api/finance/comissoes"],
+    enabled: dialogComissoes,
+  });
+
+  const { data: logCheckins = [], refetch: refetchLog } = useQuery<any[]>({
+    queryKey: ["/api/checkins/log"],
+    enabled: dialogLogCheckins,
+  });
+
+  const [filtroTipoLog, setFiltroTipoLog] = useState<"todos" | "pendente" | "aula" | "dayuse" | "avulso">("todos");
+  const [atribuindoCheckin, setAtribuindoCheckin] = useState<string | null>(null);
+  const [atribuirForm, setAtribuirForm] = useState<{ tipo: string; professorId: string }>({ tipo: "aula", professorId: "" });
+  const [editandoComissao, setEditandoComissao] = useState<any | null>(null);
+  const [editComissaoForm, setEditComissaoForm] = useState({ valorComissao: "", status: "", observacao: "" });
+
+  const qcComissao = useQueryClient();
+
+  const atribuirCheckin = useMutation({
+    mutationFn: ({ id, tipo, professorId }: { id: string; tipo: string; professorId?: string }) =>
+      apiRequest("PUT", `/api/checkins/${id}/atribuir`, { tipo, professorId: professorId || null }),
+    onSuccess: () => {
+      qcComissao.invalidateQueries({ queryKey: ["/api/checkins/log"] });
+      qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissoes"] });
+      qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissao/resumo"] });
+      setAtribuindoCheckin(null);
+      toast({ title: "Check-in referenciado com sucesso!" });
+    },
+  });
+
+  const salvarComissao = useMutation({
+    mutationFn: ({ id, ...d }: any) => apiRequest("PUT", `/api/finance/comissao/${id}`, d),
+    onSuccess: () => {
+      qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissoes"] });
+      qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissao/resumo"] });
+      setEditandoComissao(null);
+      toast({ title: "Comissão atualizada!" });
+    },
   });
 
   const qcWa = useQueryClient();
@@ -369,7 +419,9 @@ export default function ManagerDashboard({
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
   const [professorEditando, setProfessorEditando] = useState<ProfessorGestor | null>(null);
-  const [formProfessor, setFormProfessor] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "" });
+  const [formProfessor, setFormProfessor] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "" });
+  const [dialogComissoes, setDialogComissoes] = useState(false);
+  const [dialogLogCheckins, setDialogLogCheckins] = useState(false);
 
   // Aluno state
   const [dialogNovoAluno, setDialogNovoAluno] = useState(false);
@@ -463,29 +515,33 @@ export default function ManagerDashboard({
   // ── Professores ──────────────────────────────────────────────────────────
   const abrirEditarProfessor = (p: ProfessorGestor) => {
     setProfessorEditando(p);
-    setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade });
+    setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade, percentualComissao: p.percentualComissao || "" });
   };
 
   const handleSalvarProfessor = () => {
     if (!formProfessor.nome || !formProfessor.modalidade) return;
+    const percentualComissao = formProfessor.percentualComissao
+      ? parseFloat(formProfessor.percentualComissao.replace(",", ".")).toFixed(2)
+      : "0.00";
     if (professorEditando) {
-      const dados: { nome: string; cpf?: string; email?: string; telefone?: string; login?: string; senha?: string; modalidade: string } = {
+      const dados: { nome: string; cpf?: string; email?: string; telefone?: string; login?: string; senha?: string; modalidade: string; percentualComissao?: string } = {
         nome: formProfessor.nome,
         cpf: formProfessor.cpf || undefined,
         email: formProfessor.email || undefined,
         telefone: formProfessor.telefone || undefined,
         login: formProfessor.login || undefined,
         modalidade: formProfessor.modalidade,
+        percentualComissao,
       };
       if (formProfessor.senha) dados.senha = formProfessor.senha;
       onEditarProfessor(professorEditando.id, dados);
       setProfessorEditando(null);
     } else {
       if (!formProfessor.login || !formProfessor.senha) return;
-      onCadastrarProfessor({ nome: formProfessor.nome, cpf: formProfessor.cpf, email: formProfessor.email, telefone: formProfessor.telefone, login: formProfessor.login, senha: formProfessor.senha, modalidade: formProfessor.modalidade });
+      onCadastrarProfessor({ nome: formProfessor.nome, cpf: formProfessor.cpf, email: formProfessor.email, telefone: formProfessor.telefone, login: formProfessor.login, senha: formProfessor.senha, modalidade: formProfessor.modalidade, percentualComissao });
       setDialogProfessor(false);
     }
-    setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "" });
+    setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "" });
   };
 
   // ── Alunos ───────────────────────────────────────────────────────────────
@@ -1019,6 +1075,11 @@ export default function ManagerDashboard({
                 <div>
                   <p className="font-medium">{professor.nome}</p>
                   <p className="text-sm text-muted-foreground">{professor.modalidade}</p>
+                  {parseFloat(professor.percentualComissao ?? "0") > 0 && (
+                    <Badge variant="secondary" className="text-xs mt-1">
+                      Comissão: {professor.percentualComissao}%
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
@@ -1045,12 +1106,32 @@ export default function ManagerDashboard({
             <Button
               size="lg"
               className="w-full h-14 text-lg mt-2"
-              onClick={() => { setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "" }); setDialogProfessor(true); }}
+              onClick={() => { setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "" }); setDialogProfessor(true); }}
               data-testid="button-add-teacher"
             >
               <UserPlus className="mr-2 h-5 w-5" />
               Cadastrar Professor
             </Button>
+            <div className="flex gap-2 mt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setDialogLogCheckins(true)}
+                data-testid="button-log-checkins"
+              >
+                <ListChecks className="mr-2 h-4 w-4" />
+                Log de Check-ins
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setDialogComissoes(true)}
+                data-testid="button-comissoes"
+              >
+                <PercentCircle className="mr-2 h-4 w-4" />
+                Comissões
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1126,6 +1207,20 @@ export default function ManagerDashboard({
                 onChange={(e) => setFormProfessor({ ...formProfessor, modalidade: e.target.value })}
                 data-testid="input-teacher-modality"
               />
+            </div>
+            <div className="space-y-1">
+              <Label>Comissão (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="Ex: 30"
+                value={formProfessor.percentualComissao}
+                onChange={(e) => setFormProfessor({ ...formProfessor, percentualComissao: e.target.value })}
+                data-testid="input-teacher-comissao"
+              />
+              <p className="text-xs text-muted-foreground">Percentual sobre a receita gerada por check-ins atribuídos a este professor</p>
             </div>
           </div>
           <DialogFooter>
@@ -1213,6 +1308,20 @@ export default function ManagerDashboard({
                 onChange={(e) => setFormProfessor({ ...formProfessor, modalidade: e.target.value })}
                 data-testid="input-edit-teacher-modality"
               />
+            </div>
+            <div className="space-y-1">
+              <Label>Comissão (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="Ex: 30"
+                value={formProfessor.percentualComissao}
+                onChange={(e) => setFormProfessor({ ...formProfessor, percentualComissao: e.target.value })}
+                data-testid="input-edit-teacher-comissao"
+              />
+              <p className="text-xs text-muted-foreground">Percentual sobre a receita gerada por check-ins atribuídos a este professor</p>
             </div>
           </div>
           <DialogFooter>
@@ -2601,6 +2710,318 @@ export default function ManagerDashboard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Dialog Log de Check-ins ── */}
+      <Dialog open={dialogLogCheckins} onOpenChange={setDialogLogCheckins}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListChecks className="h-5 w-5" />
+              Log de Check-ins — Referenciamento
+            </DialogTitle>
+            <DialogDescription>
+              Visualize todos os check-ins e atribua-os a uma aula ou day-use. A comissão do professor é calculada automaticamente ao referenciar como "Aula".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 mb-3">
+            {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
+              <Button
+                key={t}
+                size="sm"
+                variant={filtroTipoLog === t ? "default" : "outline"}
+                onClick={() => setFiltroTipoLog(t)}
+                className="capitalize"
+              >
+                {t === "todos" ? "Todos" : t === "pendente" ? "Pendentes" : t === "aula" ? "Aula" : t === "dayuse" ? "Day-use" : "Avulso"}
+              </Button>
+            ))}
+          </div>
+          <div className="overflow-y-auto flex-1 min-h-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data/Hora</TableHead>
+                  <TableHead>Aluno</TableHead>
+                  <TableHead>Modalidade</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Professor</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(logCheckins as any[])
+                  .filter((c) => filtroTipoLog === "todos" || c.tipo === filtroTipoLog)
+                  .map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="text-xs whitespace-nowrap">{c.data} {c.hora}</TableCell>
+                    <TableCell className="font-medium text-sm">{c.alunoNome}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{c.alunoModalidade}</TableCell>
+                    <TableCell>
+                      {c.tipo === "pendente" ? (
+                        <Badge variant="outline" className="text-orange-600 border-orange-300">Pendente</Badge>
+                      ) : c.tipo === "aula" ? (
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Aula</Badge>
+                      ) : c.tipo === "dayuse" ? (
+                        <Badge variant="secondary">Day-use</Badge>
+                      ) : (
+                        <Badge variant="secondary">Avulso</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">{c.professorNome ?? "—"}</TableCell>
+                    <TableCell>
+                      {atribuindoCheckin === c.id ? (
+                        <div className="flex flex-col gap-1 min-w-[220px]">
+                          <Select value={atribuirForm.tipo} onValueChange={(v) => setAtribuirForm({ ...atribuirForm, tipo: v, professorId: v !== "aula" ? "" : atribuirForm.professorId })}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="aula">Aula</SelectItem>
+                              <SelectItem value="dayuse">Day-use</SelectItem>
+                              <SelectItem value="avulso">Avulso</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {atribuirForm.tipo === "aula" && (
+                            <Select value={atribuirForm.professorId} onValueChange={(v) => setAtribuirForm({ ...atribuirForm, professorId: v })}>
+                              <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecionar professor" /></SelectTrigger>
+                              <SelectContent>
+                                {professores.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs flex-1"
+                              disabled={atribuirCheckin.isPending || (atribuirForm.tipo === "aula" && !atribuirForm.professorId)}
+                              onClick={() => atribuirCheckin.mutate({ id: c.id, tipo: atribuirForm.tipo, professorId: atribuirForm.tipo === "aula" ? atribuirForm.professorId : undefined })}
+                              data-testid={`button-confirmar-atribuir-${c.id}`}
+                            >
+                              Confirmar
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAtribuindoCheckin(null)}>✕</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => { setAtribuindoCheckin(c.id); setAtribuirForm({ tipo: c.tipo !== "pendente" ? c.tipo : "aula", professorId: c.professorId ?? "" }); }}
+                          data-testid={`button-atribuir-${c.id}`}
+                        >
+                          {c.tipo === "pendente" ? "Referenciar" : "Alterar"}
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {logCheckins.filter((c: any) => filtroTipoLog === "todos" || c.tipo === filtroTipoLog).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum check-in encontrado</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogLogCheckins(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog Comissões ── */}
+      <Dialog open={dialogComissoes} onOpenChange={setDialogComissoes}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PercentCircle className="h-5 w-5" />
+              Gestão de Comissões
+            </DialogTitle>
+            <DialogDescription>
+              Resumo de comissões por professor e histórico de check-ins referenciados. O gestor pode aprovar, ajustar o valor e adicionar observações.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-1 min-h-0 space-y-6">
+            {/* Resumo por professor */}
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Resumo por Professor</p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Professor</TableHead>
+                    <TableHead>Comissão (%)</TableHead>
+                    <TableHead>Check-ins</TableHead>
+                    <TableHead>Receita Gerada</TableHead>
+                    <TableHead>Comissão Total</TableHead>
+                    <TableHead>Pendentes</TableHead>
+                    <TableHead>Aprovados</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(resumoComissoes as any[]).map((r) => (
+                    <TableRow key={r.teacherId} data-testid={`comissao-resumo-${r.teacherId}`}>
+                      <TableCell className="font-medium">{r.nome}</TableCell>
+                      <TableCell>{r.percentual}%</TableCell>
+                      <TableCell>{r.totalCheckins}</TableCell>
+                      <TableCell>R$ {r.totalReceita.toFixed(2)}</TableCell>
+                      <TableCell className="font-semibold text-green-700 dark:text-green-400">R$ {r.totalComissao.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {r.pendente > 0 ? <Badge variant="outline" className="text-orange-600 border-orange-300">{r.pendente}</Badge> : <span className="text-muted-foreground">0</span>}
+                      </TableCell>
+                      <TableCell>
+                        {r.aprovado > 0 ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{r.aprovado}</Badge> : <span className="text-muted-foreground">0</span>}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {resumoComissoes.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-6">Nenhuma comissão registrada. Referencie check-ins como "Aula" para gerar comissões.</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Detalhe de comissões */}
+            {todasComissoes.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico Detalhado</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Professor</TableHead>
+                      <TableHead>Aluno</TableHead>
+                      <TableHead>Valor Check-in</TableHead>
+                      <TableHead>%</TableHead>
+                      <TableHead>Comissão</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(todasComissoes as any[]).map((c) => (
+                      <TableRow key={c.id} data-testid={`comissao-${c.id}`}>
+                        <TableCell className="text-xs whitespace-nowrap">{c.data}</TableCell>
+                        <TableCell className="text-sm">{c.professorNome}</TableCell>
+                        <TableCell className="text-sm">{c.alunoNome}</TableCell>
+                        <TableCell className="text-sm">R$ {c.valorCheckin}</TableCell>
+                        <TableCell className="text-sm">{c.percentual}%</TableCell>
+                        <TableCell className="font-medium text-sm">
+                          {editandoComissao?.id === c.id ? (
+                            <Input
+                              className="h-7 w-24 text-xs"
+                              value={editComissaoForm.valorComissao}
+                              onChange={(e) => setEditComissaoForm({ ...editComissaoForm, valorComissao: e.target.value })}
+                            />
+                          ) : (
+                            `R$ ${c.valorComissao}`
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {c.status === "aprovado" || c.status === "editado" ? (
+                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
+                              {c.status === "editado" ? "Editado" : "Aprovado"}
+                            </Badge>
+                          ) : c.status === "cancelado" ? (
+                            <Badge variant="destructive" className="text-xs">Cancelado</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">Pendente</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {editandoComissao?.id === c.id ? (
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs"
+                                disabled={salvarComissao.isPending}
+                                onClick={() => salvarComissao.mutate({ id: c.id, valorComissao: editComissaoForm.valorComissao, status: "editado", observacao: editComissaoForm.observacao })}
+                                data-testid={`button-salvar-comissao-${c.id}`}
+                              >
+                                Salvar
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditandoComissao(null)}>✕</Button>
+                            </div>
+                          ) : c.status !== "cancelado" ? (
+                            <div className="flex gap-1">
+                              {(c.status === "pendente") && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs text-green-700 border-green-300 hover:bg-green-50"
+                                  disabled={salvarComissao.isPending}
+                                  onClick={() => salvarComissao.mutate({ id: c.id, status: "aprovado" })}
+                                  data-testid={`button-aprovar-comissao-${c.id}`}
+                                >
+                                  Aprovar
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() => { setEditandoComissao(c); setEditComissaoForm({ valorComissao: c.valorComissao, status: c.status, observacao: c.observacao ?? "" }); }}
+                                data-testid={`button-editar-comissao-${c.id}`}
+                              >
+                                Editar
+                              </Button>
+                            </div>
+                          ) : null}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogComissoes(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog Editar Comissão (observação) ── */}
+      <Dialog open={!!editandoComissao} onOpenChange={(open) => { if (!open) setEditandoComissao(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Comissão</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Valor da Comissão (R$)</Label>
+              <Input
+                value={editComissaoForm.valorComissao}
+                onChange={(e) => setEditComissaoForm({ ...editComissaoForm, valorComissao: e.target.value })}
+                placeholder="0.00"
+                data-testid="input-edit-comissao-valor"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Observação</Label>
+              <Input
+                value={editComissaoForm.observacao}
+                onChange={(e) => setEditComissaoForm({ ...editComissaoForm, observacao: e.target.value })}
+                placeholder="Ex: ajuste por duplicidade"
+                data-testid="input-edit-comissao-obs"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditandoComissao(null)}>Cancelar</Button>
+            <Button
+              disabled={salvarComissao.isPending}
+              onClick={() => salvarComissao.mutate({ id: editandoComissao?.id, valorComissao: editComissaoForm.valorComissao, status: "editado", observacao: editComissaoForm.observacao })}
+              data-testid="button-confirm-edit-comissao"
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       </div>
       );
       }

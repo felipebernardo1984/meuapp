@@ -88,6 +88,7 @@ export const teachers = pgTable("teachers", {
   email: text("email"),
   telefone: text("telefone"),
   modalidade: text("modalidade").notNull(),
+  percentualComissao: text("percentual_comissao").notNull().default("0.00"),
 });
 
 export const insertTeacherSchema = createInsertSchema(teachers).omit({ id: true });
@@ -218,11 +219,37 @@ export const checkinHistory = pgTable("checkin_history", {
   studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
   data: text("data").notNull(),
   hora: text("hora").notNull(),
+  // Referência: pendente | aula | dayuse | avulso
+  tipo: text("tipo").notNull().default("pendente"),
+  // Professor responsável (quando tipo = 'aula')
+  professorId: varchar("professor_id").references(() => teachers.id, { onDelete: "set null" }),
 });
 
 export const insertCheckinSchema = createInsertSchema(checkinHistory).omit({ id: true });
 export type InsertCheckin = z.infer<typeof insertCheckinSchema>;
 export type CheckinEntry = typeof checkinHistory.$inferSelect;
+
+// ── Teacher Commissions (Comissões de Professores) ────────────────────────────
+export const teacherCommissions = pgTable("teacher_commissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  teacherId: varchar("teacher_id").references(() => teachers.id, { onDelete: "cascade" }),
+  checkinId: varchar("checkin_id").references(() => checkinHistory.id, { onDelete: "set null" }),
+  studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
+  valorCheckin: text("valor_checkin").notNull().default("0.00"),
+  percentual: text("percentual").notNull().default("0.00"),
+  valorComissao: text("valor_comissao").notNull().default("0.00"),
+  // pendente | aprovado | editado | cancelado
+  status: text("status").notNull().default("pendente"),
+  data: text("data").notNull(),
+  observacao: text("observacao"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTeacherCommissionSchema = createInsertSchema(teacherCommissions).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTeacherCommission = z.infer<typeof insertTeacherCommissionSchema>;
+export type TeacherCommission = typeof teacherCommissions.$inferSelect;
 
 // ── Checkin Financeiro (receita por check-in) ─────────────────────────────────
 export const checkinFinanceiro = pgTable("checkin_financeiro", {

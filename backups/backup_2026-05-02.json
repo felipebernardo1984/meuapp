@@ -130,7 +130,8 @@
       "cpf": null,
       "email": null,
       "telefone": null,
-      "modalidade": "Beach Tennis"
+      "modalidade": "Beach Tennis",
+      "percentualComissao": "0.00"
     },
     {
       "id": "45e1ccb9-416f-424d-b58f-a0e184721985",
@@ -141,7 +142,8 @@
       "cpf": null,
       "email": null,
       "telefone": null,
-      "modalidade": "Vôlei de Praia"
+      "modalidade": "Vôlei de Praia",
+      "percentualComissao": "0.00"
     },
     {
       "id": "88d62f1c-df5d-4bb3-aa23-5054d87c7b27",
@@ -152,7 +154,8 @@
       "cpf": null,
       "email": null,
       "telefone": null,
-      "modalidade": "Futevôlei"
+      "modalidade": "Futevôlei",
+      "percentualComissao": "0.00"
     }
   ],
   "plans": [
@@ -184,50 +187,64 @@
       "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
       "studentId": "95c7c6d0-659d-49b4-8b32-7a5c289467ed",
       "data": "20/12/2024",
-      "hora": "18:00"
+      "hora": "18:00",
+      "tipo": "pendente",
+      "professorId": null
     },
     {
       "id": "189ab171-acc0-4061-8a0c-42907162a5e7",
       "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
       "studentId": "95c7c6d0-659d-49b4-8b32-7a5c289467ed",
       "data": "25/12/2024",
-      "hora": "19:00"
+      "hora": "19:00",
+      "tipo": "pendente",
+      "professorId": null
     },
     {
       "id": "61c686c4-d2fc-4bf2-b2a6-4a11260e5909",
       "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
       "studentId": "95c7c6d0-659d-49b4-8b32-7a5c289467ed",
       "data": "30/12/2024",
-      "hora": "19:00"
+      "hora": "19:00",
+      "tipo": "pendente",
+      "professorId": null
     },
     {
       "id": "53f5d51e-2310-47ba-b8dc-1214685c6c84",
       "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
       "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
       "data": "11/04/2026",
-      "hora": "21:24"
+      "hora": "21:24",
+      "tipo": "pendente",
+      "professorId": null
     },
     {
       "id": "34592516-f337-4c12-a317-3245f7974d5e",
       "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
       "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
       "data": "12/04/2026",
-      "hora": "15:39"
+      "hora": "15:39",
+      "tipo": "pendente",
+      "professorId": null
     },
     {
       "id": "a1e72bac-2cba-4773-a6bc-837d1cd7865a",
       "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
       "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
       "data": "14/04/2026",
-      "hora": "13:37"
+      "hora": "13:37",
+      "tipo": "pendente",
+      "professorId": null
     },
     {
       "id": "51e8d7d1-e8b0-43ae-8eda-26da7d3772e4",
       "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
       "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
       "data": "14/04/2026",
-      "hora": "13:37"
+      "hora": "13:37",
+      "tipo": "pendente",
+      "professorId": null
     }
   ],
-  "createdAt": "2026-05-02T17:08:43.195Z"
+  "createdAt": "2026-05-02T17:26:14.035Z"
 }
