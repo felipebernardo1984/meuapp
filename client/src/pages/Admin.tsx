@@ -867,7 +867,7 @@ export default function Admin() {
 
           {/* Plan pricing display */}
           <Card className="mb-4 border-primary/10">
-            <CardContent className="pt-4 pb-4">
+            <CardContent className="pt-4 pb-4 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
@@ -884,6 +884,17 @@ export default function Admin() {
                 <Button size="sm" variant="outline" onClick={openPlanPrices} data-testid="button-edit-prices">
                   <Pencil className="h-3.5 w-3.5 mr-1.5" />Editar valores
                 </Button>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar arena por nome ou login do gestor..."
+                  value={arenaSearch}
+                  onChange={(e) => setArenaSearch(e.target.value)}
+                  className="w-full h-9 pl-9 pr-3 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  data-testid="input-search-arenas"
+                />
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </div>
             </CardContent>
           </Card>
@@ -904,39 +915,26 @@ export default function Admin() {
           </Card>
         </div>
 
-        {/* Section header: search + count + toggle */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-3">
-          <div className="relative flex-1 w-full">
-            <input
-              type="text"
-              placeholder="Buscar arena por nome ou login do gestor..."
-              value={arenaSearch}
-              onChange={(e) => setArenaSearch(e.target.value)}
-              className="w-full h-9 pl-9 pr-3 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              data-testid="input-search-arenas"
-            />
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <p className="text-sm text-muted-foreground whitespace-nowrap">
-              {arenaSearch
-                ? `${arenas.filter(a => a.name.toLowerCase().includes(arenaSearch.toLowerCase()) || a.gestorLogin.toLowerCase().includes(arenaSearch.toLowerCase())).length} de ${arenas.length}`
-                : `${arenas.length} arenas`}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => setMinimized((m) => !m)}
-              data-testid="button-minimize-arenas"
-            >
-              {minimized ? (
-                <><ChevronDown className="h-4 w-4 mr-1" />Mostrar</>
-              ) : (
-                <><ChevronUp className="h-4 w-4 mr-1" />Minimizar</>
-              )}
-            </Button>
-          </div>
+        {/* Section header: count + toggle */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm text-muted-foreground">
+            {arenaSearch
+              ? `${arenas.filter(a => a.name.toLowerCase().includes(arenaSearch.toLowerCase()) || a.gestorLogin.toLowerCase().includes(arenaSearch.toLowerCase())).length} de ${arenas.length} arenas`
+              : `${arenas.length} arenas`}
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => setMinimized((m) => !m)}
+            data-testid="button-minimize-arenas"
+          >
+            {minimized ? (
+              <><ChevronDown className="h-4 w-4 mr-1" />Mostrar</>
+            ) : (
+              <><ChevronUp className="h-4 w-4 mr-1" />Minimizar</>
+            )}
+          </Button>
         </div>
 
         {isLoading ? (
