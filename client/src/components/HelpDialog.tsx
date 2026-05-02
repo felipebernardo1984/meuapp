@@ -23,6 +23,8 @@ import {
   BarChart2,
   CalendarClock,
   Landmark,
+  Camera,
+  Rocket,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -417,6 +419,80 @@ const secoes: HelpSection[] = [
       },
     ],
   },
+  {
+    id: "fotos-perfil",
+    icon: Camera,
+    title: "Fotos de Perfil",
+    badge: "Novo",
+    content: [
+      {
+        titulo: "Como alunos atualizam a própria foto",
+        descricao: "No dashboard do aluno, um ícone de câmera aparece permanentemente no canto inferior direito do avatar (visível em qualquer dispositivo, incluindo celular).",
+        passos: [
+          "Toque ou clique no badge de câmera no canto do avatar",
+          "Selecione uma imagem da galeria ou câmera do dispositivo",
+          "A imagem é comprimida automaticamente e salva no banco",
+          "A foto aparece instantaneamente no perfil do aluno e na lista do gestor/professor",
+        ],
+        dica: "A imagem é redimensionada para no máximo 220×220 pixels em JPEG para não sobrecarregar o banco de dados.",
+      },
+      {
+        titulo: "Como professores atualizam a própria foto",
+        descricao: "No dashboard do professor, o mesmo badge de câmera aparece no canto do avatar no topo da página.",
+        passos: [
+          "Clique no badge de câmera no avatar do perfil",
+          "Escolha a imagem desejada",
+          "A foto é salva e fica visível em todos os cards de turma e na lista do gestor",
+        ],
+        dica: "Após atualizar a foto, a sessão é recarregada automaticamente para refletir a nova imagem.",
+      },
+      {
+        titulo: "Como o gestor atualiza fotos",
+        descricao: "O gestor pode atualizar a foto de qualquer aluno ou professor diretamente nos formulários de edição.",
+        passos: [
+          "Para alunos: clique em ⋯ → Editar → toque no avatar circular no topo do formulário",
+          "Para professores: clique no lápis ao lado do professor → toque no avatar no topo do formulário",
+          "A câmera aparece ao passar o mouse sobre o avatar (desktop) ou ao tocar nele (mobile)",
+        ],
+      },
+    ],
+  },
+  {
+    id: "proximos-passos",
+    icon: Rocket,
+    title: "Próximas Funcionalidades",
+    badge: "Roadmap",
+    content: [
+      {
+        titulo: "Cadastro self-service (em breve)",
+        descricao: "Em breve qualquer gestor poderá criar sua própria conta e arena diretamente pelo site, sem depender de aprovação manual.",
+        passos: [
+          "Cliente acessa a página pública de cadastro",
+          "Informa nome, e-mail, senha e nome da arena",
+          "Arena é criada automaticamente com 5 dias de teste grátis",
+          "Acesso liberado imediatamente após o cadastro",
+        ],
+        dica: "O fluxo segue o padrão de SaaS como Nextfit e Tecnofit: conta + arena criadas em um único passo.",
+      },
+      {
+        titulo: "Trial e controle de acesso por plano",
+        descricao: "O sistema passará a controlar o período de teste de cada arena:",
+        passos: [
+          "Trial ativo (5 dias) → acesso completo liberado",
+          "Trial expirado → acesso bloqueado com aviso para assinar",
+          "Plano ativo → acesso liberado sem restrição",
+        ],
+      },
+      {
+        titulo: "Criação de arena pelo admin com usuário owner",
+        descricao: "O painel administrativo permitirá criar uma arena completa em um único fluxo, já vinculando um usuário responsável (owner) que poderá acessar o sistema imediatamente.",
+      },
+      {
+        titulo: "Múltiplos planos de assinatura",
+        descricao: "Suporte a planos Básico, Premium e personalizados, com controle de funcionalidades por plano.",
+      },
+    ],
+  },
 ];
 
 interface HelpDialogProps {
@@ -435,7 +511,7 @@ export default function HelpDialog({ open, onClose }: HelpDialogProps) {
           <DialogTitle className="flex items-center gap-2 text-xl">
             <BookOpen className="h-5 w-5 text-primary" />
             Manual do Sistema — Seven Sports
-            <Badge variant="secondary" className="ml-2 text-xs">v2.5</Badge>
+            <Badge variant="secondary" className="ml-2 text-xs">v2.6</Badge>
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1 pb-3 border-b">
             Guia completo de configuração e uso do painel do gestor.
