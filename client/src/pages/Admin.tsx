@@ -22,9 +22,10 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye,
+  LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye, EyeOff,
   CheckCircle, XCircle, ArrowLeft, ClipboardList, ExternalLink, LogIn as LogInIcon, KeyRound,
   ChevronDown, ChevronUp, DollarSign, CreditCard, History, Settings, Mail, Phone, MessageSquare, Key,
+  Clock, AlertCircle,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -38,12 +39,23 @@ interface ArenaCard {
   subscriptionStartDate?: string;
   nextBillingDate?: string;
   gestorLogin: string;
+  gestorSenha?: string;
   gestorNome?: string;
   gestorCpf?: string;
   gestorEmail?: string;
   gestorTelefone?: string;
   createdAt: string;
   stats: { professores: number; alunos: number; planos: number; alunosAtivos: number };
+}
+
+interface PasswordResetHistoryItem {
+  id: string;
+  arenaId: string | null;
+  arenaName: string | null;
+  gestorEmail: string | null;
+  expiresAt: string;
+  used: boolean;
+  createdAt: string;
 }
 
 interface ArenaDetail extends ArenaCard {
@@ -103,6 +115,8 @@ export default function Admin() {
   const [planPrices, setPlanPrices] = useState<Record<string, string>>({});
   const [editingPrices, setEditingPrices] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPasswordHistory, setShowPasswordHistory] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [platformSettingsForm, setPlatformSettingsForm] = useState({
     suporte_email: "",
     suporte_telefone: "",
@@ -169,6 +183,11 @@ export default function Admin() {
 
   const { data: rawPlatformSettings } = useQuery<Record<string, string>>({
     queryKey: ["/api/admin/platform-settings"],
+    enabled: !!adminSession?.isAdmin,
+  });
+
+  const { data: passwordResetHistory = [] } = useQuery<PasswordResetHistoryItem[]>({
+    queryKey: ["/api/admin/password-reset-history"],
     enabled: !!adminSession?.isAdmin,
   });
 
@@ -807,6 +826,81 @@ export default function Admin() {
           </Button>
         </div>
 
+        {/* Password Reset History toggle */}
+        <div className="flex items-center justify-between mb-3 mt-2">
+          <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Histórico de Redefinição de Senha ({passwordResetHistory.length})
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => setShowPasswordHistory((v) => !v)}
+            data-testid="button-toggle-password-history"
+          >
+            {showPasswordHistory ? (
+              <><ChevronUp className="h-4 w-4 mr-1" />Ocultar</>
+            ) : (
+              <><ChevronDown className="h-4 w-4 mr-1" />Ver histórico</>
+            )}
+          </Button>
+        </div>
+
+        {showPasswordHistory && (
+          <Card className="mb-6">
+            {passwordResetHistory.length === 0 ? (
+              <CardContent className="text-center py-8 text-muted-foreground text-sm">
+                Nenhuma solicitação de redefinição de senha registrada.
+              </CardContent>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Arena</TableHead>
+                    <TableHead>E-mail do Gestor</TableHead>
+                    <TableHead>Solicitado em</TableHead>
+                    <TableHead>Expira em</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...passwordResetHistory].reverse().map((item) => {
+                    const expired = new Date(item.expiresAt) < new Date();
+                    return (
+                      <TableRow key={item.id} data-testid={`row-reset-${item.id}`}>
+                        <TableCell className="font-medium">{item.arenaName ?? "—"}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{item.gestorEmail ?? "—"}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {item.createdAt ? new Date(item.createdAt).toLocaleString("pt-BR") : "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {new Date(item.expiresAt).toLocaleString("pt-BR")}
+                        </TableCell>
+                        <TableCell>
+                          {item.used ? (
+                            <Badge variant="default" className="text-xs flex items-center gap-1 w-fit">
+                              <CheckCircle className="h-3 w-3" />Usado
+                            </Badge>
+                          ) : expired ? (
+                            <Badge variant="secondary" className="text-xs flex items-center gap-1 w-fit">
+                              <AlertCircle className="h-3 w-3" />Expirado
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs flex items-center gap-1 w-fit">
+                              <Clock className="h-3 w-3" />Pendente
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </Card>
+        )}
+
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando arenas...</div>
         ) : arenas.length === 0 ? (
@@ -891,6 +985,31 @@ export default function Admin() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Próx. cobrança</span>
                       <span className="font-medium">{arena.nextBillingDate ?? "—"}</span>
+                    </div>
+                  </div>
+                  {/* Gestor credentials */}
+                  <div className="bg-muted/20 border border-border/60 rounded-md p-2 text-xs space-y-1.5">
+                    <div className="text-muted-foreground font-medium text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
+                      <KeyRound className="h-3 w-3" />Acesso do Gestor
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Login</span>
+                      <span className="font-mono font-semibold">{arena.gestorLogin}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-muted-foreground">Senha</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono font-semibold">
+                          {visiblePasswords[arena.id] ? (arena.gestorSenha ?? "—") : "••••••••"}
+                        </span>
+                        <button
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => setVisiblePasswords((v) => ({ ...v, [arena.id]: !v[arena.id] }))}
+                          data-testid={`button-toggle-password-${arena.id}`}
+                        >
+                          {visiblePasswords[arena.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">

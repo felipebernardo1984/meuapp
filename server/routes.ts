@@ -693,6 +693,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(result);
   });
 
+  app.get("/api/admin/password-reset-history", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const history = await storage.listPasswordResetTokens();
+      res.json(history);
+    } catch {
+      res.status(500).json({ message: "Erro ao buscar histórico" });
+    }
+  });
+
   app.get("/api/admin/arenas/:id", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const arena = await storage.getArena(req.params.id);

@@ -505,6 +505,23 @@ export class DatabaseStorage {
     await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, id));
   }
 
+  async listPasswordResetTokens() {
+    const tokens = await db
+      .select({
+        id: passwordResetTokens.id,
+        arenaId: passwordResetTokens.arenaId,
+        arenaName: arenas.name,
+        gestorEmail: arenas.gestorEmail,
+        expiresAt: passwordResetTokens.expiresAt,
+        used: passwordResetTokens.used,
+        createdAt: passwordResetTokens.createdAt,
+      })
+      .from(passwordResetTokens)
+      .leftJoin(arenas, eq(passwordResetTokens.arenaId, arenas.id))
+      .orderBy(passwordResetTokens.createdAt);
+    return tokens;
+  }
+
   // INTEGRATION SETTINGS
   async getIntegrationSettings(arenaId: string, provider: string) {
     const [settings] = await db
