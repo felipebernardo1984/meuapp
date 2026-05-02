@@ -7,6 +7,7 @@ import Admin from "@/pages/Admin";
 import ArenaApp from "@/pages/ArenaApp";
 import Cadastro from "@/pages/Cadastro";
 import LandingPage from "@/pages/LandingPage";
+import ResetSenha from "@/pages/ResetSenha";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/cadastro" component={Cadastro} />
       <Route path="/arena/:id" component={ArenaApp} />
+      <Route path="/reset-senha" component={ResetSenha} />
       <Route component={NotFound} />
     </Switch>
   );

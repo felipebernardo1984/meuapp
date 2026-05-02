@@ -5,7 +5,7 @@ import {
   payments, charges, messageSettings, paymentSettings,
   platformPlans, arenaSubscriptionPayments, modalidadeSettings,
   checkinFinanceiro, integrationPlans, integrationSettings,
-  teacherCommissions,
+  teacherCommissions, platformSettings, passwordResetTokens,
 } from "@shared/schema";
 
 export class DatabaseStorage {
@@ -468,6 +468,41 @@ export class DatabaseStorage {
 
   async deleteIntegrationPlan(id: string) {
     await db.delete(integrationPlans).where(eq(integrationPlans.id, id));
+  }
+
+  // PLATFORM SETTINGS
+  async getPlatformSetting(key: string): Promise<string | null> {
+    const [row] = await db.select().from(platformSettings).where(eq(platformSettings.key, key));
+    return row?.value ?? null;
+  }
+
+  async setPlatformSetting(key: string, value: string): Promise<void> {
+    await db
+      .insert(platformSettings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: platformSettings.key, set: { value } });
+  }
+
+  async getAllPlatformSettings(): Promise<Record<string, string>> {
+    const rows = await db.select().from(platformSettings);
+    const result: Record<string, string> = {};
+    for (const row of rows) result[row.key] = row.value;
+    return result;
+  }
+
+  // PASSWORD RESET TOKENS
+  async createPasswordResetToken(arenaId: string, token: string, expiresAt: Date) {
+    const [row] = await db.insert(passwordResetTokens).values({ arenaId, token, expiresAt }).returning();
+    return row;
+  }
+
+  async getPasswordResetToken(token: string) {
+    const [row] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+    return row;
+  }
+
+  async markPasswordResetTokenUsed(id: string) {
+    await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, id));
   }
 
   // INTEGRATION SETTINGS

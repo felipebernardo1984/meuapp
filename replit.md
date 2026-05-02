@@ -24,12 +24,17 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `client/src/components/StudentDashboard.tsx` — Student dashboard
 
 ### Routes
-- `/` — Admin panel (superadmin login)
+- `/` — Public landing page (marketing)
+- `/admin` — Super-admin panel (arena CRUD, pricing, support settings)
 - `/arena/:id` — Arena-specific login + dashboard
+- `/reset-senha?token=...` — Password reset confirmation page
+- `/cadastro` — Arena registration page
 
 ## Database Tables
 - `arenas` — Tenants with subscription info (plan, value, start date, next billing, status)
 - `platform_plans` — Admin-defined pricing per plan type (basic/premium)
+- `platform_settings` — Global platform key/value settings (suporte_email, suporte_telefone, suporte_whatsapp, sac_texto, resend_api_key)
+- `password_reset_tokens` — Gestor password reset tokens with expiry (2h TTL)
 - `arena_subscription_payments` — History of arena subscription payments
 - `plans` — Arena-created training plans for students
 - `teachers` — Arena teachers; includes `percentualComissao` (commission %) field
@@ -46,6 +51,12 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `whatsapp_settings` — WhatsApp number + default message per arena
 - `whatsapp_automation` — WhatsApp automation config (cobrança + assiduidade)
 - `whatsapp_dispatch_log` — Pending/sent WhatsApp dispatches queue
+
+## Email / Password Reset
+- Password reset uses Resend (npm package installed). When `resend_api_key` is set in platform_settings, reset e-mails are sent automatically.
+- When no API key is set, the "Esqueci a senha" screen shows the support contact (email/phone/whatsapp) configured in platform_settings.
+- Reset token expires in 2 hours. Tokens are stored in `password_reset_tokens`.
+- NOTE: Resend integration was dismissed in Replit connector flow — API key must be added manually via Admin → Configurações → API Key do Resend.
 
 ## Finance Module
 - `server/financeService.ts` — Central finance service with:

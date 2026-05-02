@@ -16,6 +16,14 @@ import { Label } from "@/components/ui/label";
 import { LogIn, LogOut, KeyRound } from "lucide-react";
 import type { Plano } from "./Home";
 
+interface PublicSettings {
+  suporteEmail: string;
+  suporteTelefone: string;
+  suporteWhatsapp: string;
+  sacTexto: string;
+  resendApiKey: string;
+}
+
 export default function ArenaApp() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
@@ -24,6 +32,27 @@ export default function ArenaApp() {
   const [lembrarDados, setLembrarDados] = useState(false);
   const [esqueceuSenha, setEsqueceuSenha] = useState(false);
   const [gestorTab, setGestorTab] = useState<"dashboard" | "financeiro" | "configuracoes" | "integracoes" | "alertas">("dashboard");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetEnviado, setResetEnviado] = useState(false);
+
+  // ── Platform settings (public) ────────────────────────────────────────────
+  const { data: publicSettings } = useQuery<PublicSettings>({
+    queryKey: ["/api/platform-settings/public"],
+    queryFn: () => fetch("/api/platform-settings/public").then((r) => r.json()),
+  });
+
+  const solicitarReset = useMutation({
+    mutationFn: (email: string) =>
+      fetch("/api/password-reset/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ arenaId: id, gestorEmail: email }),
+      }).then((r) => r.json()),
+    onSuccess: (data) => {
+      if (data.ok) setResetEnviado(true);
+      else alert(data.message ?? "Erro ao solicitar redefinição.");
+    },
+  });
 
   // ── Arena info ────────────────────────────────────────────────────────────
   const { data: arena, isLoading: arenaLoading } = useQuery<{ id: string; name: string }>({
@@ -287,21 +316,59 @@ export default function ArenaApp() {
                     <div className="text-center space-y-1">
                       <p className="font-semibold text-sm">Redefinição de senha</p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        Para redefinir sua senha como gestor, entre em contato com o suporte do Seven Sports informando o nome da sua arena e o login cadastrado.
+                        {publicSettings?.resendApiKey
+                          ? "Informe o e-mail cadastrado para o gestor desta arena. Você receberá um link para redefinir a senha."
+                          : "Entre em contato com o suporte informando o nome da sua arena e o login cadastrado."}
                       </p>
                     </div>
-                    <div className="w-full rounded-md bg-muted/60 px-4 py-3 text-xs text-center text-muted-foreground space-y-1">
-                      <p className="font-medium text-foreground">suporte@sevensports.com.br</p>
-                      <p>Resposta em até 1 dia útil</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Em breve: redefinição automática por e-mail.
-                    </p>
+
+                    {resetEnviado ? (
+                      <div className="w-full rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-4 py-3 text-xs text-center space-y-1">
+                        <p className="font-medium text-green-700 dark:text-green-400">E-mail enviado!</p>
+                        <p className="text-muted-foreground">Verifique sua caixa de entrada e siga as instruções.</p>
+                      </div>
+                    ) : publicSettings?.resendApiKey ? (
+                      <div className="w-full space-y-2">
+                        <Label className="text-xs">E-mail do gestor</Label>
+                        <Input
+                          type="email"
+                          placeholder="gestor@email.com"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          data-testid="input-reset-email"
+                          className="h-9"
+                        />
+                        <Button
+                          className="w-full h-9 text-sm"
+                          disabled={!resetEmail || solicitarReset.isPending}
+                          onClick={() => solicitarReset.mutate(resetEmail)}
+                          data-testid="button-solicitar-reset"
+                        >
+                          {solicitarReset.isPending ? "Enviando..." : "Enviar link de redefinição"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="w-full rounded-md bg-muted/60 px-4 py-3 text-xs text-center text-muted-foreground space-y-1.5">
+                        {publicSettings?.suporteEmail && (
+                          <p><span className="font-medium text-foreground">{publicSettings.suporteEmail}</span></p>
+                        )}
+                        {publicSettings?.suporteTelefone && (
+                          <p>Tel: <span className="font-medium text-foreground">{publicSettings.suporteTelefone}</span></p>
+                        )}
+                        {publicSettings?.suporteWhatsapp && (
+                          <p>WhatsApp: <span className="font-medium text-foreground">{publicSettings.suporteWhatsapp}</span></p>
+                        )}
+                        {!publicSettings?.suporteEmail && !publicSettings?.suporteTelefone && !publicSettings?.suporteWhatsapp && (
+                          <p className="font-medium text-foreground">suporte@sevensports.com.br</p>
+                        )}
+                        <p className="pt-0.5">{publicSettings?.sacTexto || "Resposta em até 1 dia útil"}</p>
+                      </div>
+                    )}
                   </div>
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => setEsqueceuSenha(false)}
+                    onClick={() => { setEsqueceuSenha(false); setResetEnviado(false); setResetEmail(""); }}
                     data-testid="button-voltar-login"
                   >
                     ← Voltar ao login

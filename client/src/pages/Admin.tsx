@@ -24,7 +24,7 @@ import {
 import {
   LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye,
   CheckCircle, XCircle, ArrowLeft, ClipboardList, ExternalLink, LogIn as LogInIcon, KeyRound,
-  ChevronDown, ChevronUp, DollarSign, CreditCard, History,
+  ChevronDown, ChevronUp, DollarSign, CreditCard, History, Settings, Mail, Phone, MessageSquare, Key,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -102,6 +102,14 @@ export default function Admin() {
   const [minimized, setMinimized] = useState(false);
   const [planPrices, setPlanPrices] = useState<Record<string, string>>({});
   const [editingPrices, setEditingPrices] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [platformSettingsForm, setPlatformSettingsForm] = useState({
+    suporte_email: "",
+    suporte_telefone: "",
+    suporte_whatsapp: "",
+    sac_texto: "",
+    resend_api_key: "",
+  });
 
   // ── Admin session ─────────────────────────────────────────────────────────
   const { data: adminSession } = useQuery<{ isAdmin: boolean }>({
@@ -158,6 +166,24 @@ export default function Admin() {
     queryKey: ["/api/admin/subscription-payments"],
     enabled: !!adminSession?.isAdmin,
   });
+
+  const { data: rawPlatformSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/admin/platform-settings"],
+    enabled: !!adminSession?.isAdmin,
+  });
+
+  // Populate form when settings are loaded
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  if (rawPlatformSettings && !settingsLoaded) {
+    setPlatformSettingsForm({
+      suporte_email: rawPlatformSettings["suporte_email"] ?? "",
+      suporte_telefone: rawPlatformSettings["suporte_telefone"] ?? "",
+      suporte_whatsapp: rawPlatformSettings["suporte_whatsapp"] ?? "",
+      sac_texto: rawPlatformSettings["sac_texto"] ?? "",
+      resend_api_key: rawPlatformSettings["resend_api_key"] ?? "",
+    });
+    setSettingsLoaded(true);
+  }
 
   // ── CRUD mutations ────────────────────────────────────────────────────────
   const criarArena = useMutation({
@@ -218,6 +244,17 @@ export default function Admin() {
       toast({ title: "Valores salvos!", description: "Os valores dos planos foram atualizados." });
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível salvar os valores.", variant: "destructive" }),
+  });
+
+  const salvarPlatformSettings = useMutation({
+    mutationFn: (data: typeof platformSettingsForm) => apiRequest("PUT", "/api/admin/platform-settings", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/platform-settings"] });
+      setShowSettings(false);
+      setSettingsLoaded(false);
+      toast({ title: "Configurações salvas!", description: "As informações de suporte foram atualizadas." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível salvar as configurações.", variant: "destructive" }),
   });
 
   function resetForm() {
@@ -533,10 +570,13 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-background">
       <div className="fixed top-4 right-4 z-50 flex gap-2">
-        <Button variant="outline" size="icon" onClick={() => { setCredForm({ login: "", senha: "" }); setShowCredentials(true); }} data-testid="button-change-credentials">
+        <Button variant="outline" size="icon" onClick={() => { setSettingsLoaded(false); setShowSettings(true); }} data-testid="button-platform-settings" title="Configurações de suporte">
+          <Settings className="h-5 w-5" />
+        </Button>
+        <Button variant="outline" size="icon" onClick={() => { setCredForm({ login: "", senha: "" }); setShowCredentials(true); }} data-testid="button-change-credentials" title="Trocar credenciais">
           <KeyRound className="h-5 w-5" />
         </Button>
-        <Button variant="outline" size="icon" onClick={() => logoutAdmin.mutate()} data-testid="button-admin-logout">
+        <Button variant="outline" size="icon" onClick={() => logoutAdmin.mutate()} data-testid="button-admin-logout" title="Sair">
           <LogOut className="h-5 w-5" />
         </Button>
         <ThemeToggle />
@@ -577,6 +617,81 @@ export default function Admin() {
               data-testid="button-save-credentials"
             >
               Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog configurações de suporte / SAC */}
+      <Dialog open={showSettings} onOpenChange={(o) => { if (!o) setShowSettings(false); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Settings className="h-5 w-5" />Configurações da Plataforma</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2 max-h-[65vh] overflow-y-auto pr-1">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b">Contato & Suporte</div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" />E-mail de suporte</Label>
+              <Input
+                placeholder="suporte@sevensports.com.br"
+                value={platformSettingsForm.suporte_email}
+                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_email: e.target.value })}
+                data-testid="input-suporte-email"
+              />
+              <p className="text-xs text-muted-foreground">Exibido na tela "Esqueci a senha" das arenas</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />Telefone de suporte</Label>
+              <Input
+                placeholder="(11) 99999-9999"
+                value={platformSettingsForm.suporte_telefone}
+                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_telefone: e.target.value })}
+                data-testid="input-suporte-telefone"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" />WhatsApp de suporte</Label>
+              <Input
+                placeholder="(11) 99999-9999"
+                value={platformSettingsForm.suporte_whatsapp}
+                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_whatsapp: e.target.value })}
+                data-testid="input-suporte-whatsapp"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Texto do SAC / mensagem de suporte</Label>
+              <textarea
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-none"
+                placeholder="Ex: Nossa equipe responde em até 1 dia útil via e-mail ou WhatsApp."
+                value={platformSettingsForm.sac_texto}
+                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, sac_texto: e.target.value })}
+                data-testid="input-sac-texto"
+              />
+            </div>
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b pt-2">E-mail automático (Resend)</div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" />API Key do Resend</Label>
+              <Input
+                type="password"
+                placeholder="re_..."
+                value={platformSettingsForm.resend_api_key}
+                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, resend_api_key: e.target.value })}
+                data-testid="input-resend-api-key"
+              />
+              <p className="text-xs text-muted-foreground">
+                Opcional. Quando configurada, gestores recebem e-mail automático ao redefinir a senha.{" "}
+                <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Criar conta gratuita →</a>
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSettings(false)}>Cancelar</Button>
+            <Button
+              onClick={() => salvarPlatformSettings.mutate(platformSettingsForm)}
+              disabled={salvarPlatformSettings.isPending}
+              data-testid="button-save-platform-settings"
+            >
+              {salvarPlatformSettings.isPending ? "Salvando..." : "Salvar configurações"}
             </Button>
           </DialogFooter>
         </DialogContent>

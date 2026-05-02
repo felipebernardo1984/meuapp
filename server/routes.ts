@@ -1391,6 +1391,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ id: arena.id, name: arena.name, subscriptionPlan: arena.subscriptionPlan });
   });
 
+  // ── Platform Settings (admin) ──────────────────────────────────────────────
+  app.get("/api/admin/platform-settings", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const settings = await storage.getAllPlatformSettings();
+      res.json(settings);
+    } catch {
+      res.status(500).json({ message: "Erro ao buscar configurações" });
+    }
+  });
+
+  app.put("/api/admin/platform-settings", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const updates: Record<string, string> = req.body;
+      for (const [key, value] of Object.entries(updates)) {
+        if (typeof value === "string") await storage.setPlatformSetting(key, value);
+      }
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "Erro ao salvar configurações" });
+    }
+  });
+
+  // ── Public platform settings (for login pages) ────────────────────────────
+  app.get("/api/platform-settings/public", async (_req, res) => {
+    try {
+      const settings = await storage.getAllPlatformSettings();
+      res.json({
+        suporteEmail: settings["suporte_email"] ?? "",
+        suporteTelefone: settings["suporte_telefone"] ?? "",
+        suporteWhatsapp: settings["suporte_whatsapp"] ?? "",
+        sacTexto: settings["sac_texto"] ?? "",
+        resendApiKey: settings["resend_api_key"] ?? "",
+      });
+    } catch {
+      res.status(500).json({ message: "Erro ao buscar configurações públicas" });
+    }
+  });
+
+  // ── Password Reset ─────────────────────────────────────────────────────────
+  app.post("/api/password-reset/request", async (req, res) => {
+    const { arenaId, gestorEmail } = req.body;
+    if (!arenaId || !gestorEmail) return res.status(400).json({ message: "Dados incompletos" });
+    try {
+      const arena = await storage.getArena(arenaId);
+      if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
+      if (!arena.gestorEmail || arena.gestorEmail.toLowerCase() !== gestorEmail.toLowerCase()) {
+        return res.status(400).json({ message: "E-mail não corresponde ao cadastrado nesta arena" });
+      }
+      const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      await storage.createPasswordResetToken(arenaId, token, expiresAt);
+
+      const resendApiKey = await storage.getPlatformSetting("resend_api_key");
+      const suporteEmail = (await storage.getPlatformSetting("suporte_email")) ?? "noreply@sevensports.com.br";
+      const resetUrl = `${process.env.APP_URL || `https://${process.env.REPLIT_DEV_DOMAIN}`}/reset-senha?token=${token}`;
+
+      if (resendApiKey) {
+        const { Resend } = await import("resend");
+        const resend = new Resend(resendApiKey);
+        await resend.emails.send({
+          from: `Seven Sports <${suporteEmail}>`,
+          to: gestorEmail,
+          subject: "Redefinição de senha — Seven Sports",
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+              <h2 style="color:#1d4ed8">Seven Sports</h2>
+              <p>Olá! Recebemos uma solicitação para redefinir a senha da arena <strong>${arena.name}</strong>.</p>
+              <p>Clique no botão abaixo para redefinir sua senha. O link é válido por 2 horas.</p>
+              <a href="${resetUrl}" style="display:inline-block;background:#1d4ed8;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;margin:16px 0">Redefinir minha senha</a>
+              <p style="color:#6b7280;font-size:12px">Se você não solicitou isso, ignore este e-mail.</p>
+            </div>
+          `,
+        });
+        res.json({ ok: true, emailEnviado: true });
+      } else {
+        res.json({ ok: true, emailEnviado: false, token });
+      }
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro ao processar solicitação: " + (e?.message ?? "") });
+    }
+  });
+
+  app.post("/api/password-reset/confirm", async (req, res) => {
+    const { token, novaSenha } = req.body;
+    if (!token || !novaSenha) return res.status(400).json({ message: "Dados incompletos" });
+    try {
+      const record = await storage.getPasswordResetToken(token);
+      if (!record) return res.status(400).json({ message: "Token inválido" });
+      if (record.used) return res.status(400).json({ message: "Token já utilizado" });
+      if (new Date() > record.expiresAt) return res.status(400).json({ message: "Token expirado" });
+      await storage.updateArena(record.arenaId!, { gestorSenha: novaSenha });
+      await storage.markPasswordResetTokenUsed(record.id);
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ message: "Erro ao redefinir senha" });
+    }
+  });
+
   // ── Backfill + migrate historical financial records on startup ───────────
   (async () => {
     try {

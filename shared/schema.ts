@@ -328,6 +328,22 @@ export const whatsappSettings = pgTable("whatsapp_settings", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+// ── Platform Settings (configurações globais do super admin) ─────────────────
+export const platformSettings = pgTable("platform_settings", {
+  key: varchar("key").primaryKey(),
+  value: text("value").notNull().default(""),
+});
+
+// ── Password Reset Tokens ─────────────────────────────────────────────────────
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  token: text("token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // ── WhatsApp Automation Config ────────────────────────────────────────────────
 export const whatsappAutomation = pgTable("whatsapp_automation", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
