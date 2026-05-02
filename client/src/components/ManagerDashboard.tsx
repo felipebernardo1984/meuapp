@@ -1,5 +1,6 @@
 import { useState } from "react";
 import HelpDialog from "@/components/HelpDialog";
+import ManagerSidebar from "@/components/ManagerSidebar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -49,19 +50,16 @@ import {
   Plus,
   DollarSign,
   Receipt,
-  TrendingUp,
   MoreHorizontal,
   History,
   CalendarClock,
   CheckCircle2,
   CreditCard,
   AlertCircle,
-  Settings,
   MessageCircle,
   PercentCircle,
   ListChecks,
   ChevronDown,
-  BookOpen,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -581,22 +579,70 @@ export default function ManagerDashboard({
   const alunosPendentes = alunos.filter((a) => !a.aprovado);
   const alunoPlanoSelecionado = alunos.find((a) => a.id === alunoPlanoId);
 
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold" data-testid="text-manager-title">Painel do Gestor</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowHelp(true)}
-          data-testid="button-open-help"
-          className="shrink-0"
-        >
-          <BookOpen className="h-4 w-4 mr-2" />
-          Ajuda
-        </Button>
-      </div>
+  const [activeSection, setActiveSection] = useState("alunos");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const handleSidebarAction = (section: string) => {
+    if (section === "financeiro") { onIrFinanceiro(); return; }
+    if (section === "alertas") { onIrAlertas?.(); return; }
+    if (section === "configuracoes" || section === "integracoes") { onIrConfiguracoes?.(); return; }
+    if (section === "whatsapp") {
+      setFormWhatsapp({
+        whatsapp_number: whatsappSettings?.whatsapp_number ?? "",
+        default_message: whatsappSettings?.default_message ?? "Olá {{nome}}, sua mensalidade está {{status}}.",
+      });
+      if (automationConfig) {
+        setFormCobrancaAuto({
+          cobranca_ativo: automationConfig.cobranca_ativo ?? false,
+          cobranca_dias_apos_vencimento: automationConfig.cobranca_dias_apos_vencimento ?? 1,
+          cobranca_num_disparos: automationConfig.cobranca_num_disparos ?? 3,
+          cobranca_intervalo_dias: automationConfig.cobranca_intervalo_dias ?? 3,
+          cobranca_mensagem: automationConfig.cobranca_mensagem ?? "Olá {{nome}}, sua mensalidade está em atraso.",
+        });
+        setFormAssiduidadeAuto({
+          assiduidade_ativo: automationConfig.assiduidade_ativo ?? false,
+          assiduidade_dias_sem_checkin: automationConfig.assiduidade_dias_sem_checkin ?? 7,
+          assiduidade_num_disparos: automationConfig.assiduidade_num_disparos ?? 3,
+          assiduidade_intervalo_dias: automationConfig.assiduidade_intervalo_dias ?? 7,
+          assiduidade_mensagem: automationConfig.assiduidade_mensagem ?? "Olá {{nome}}, sentimos sua falta!",
+        });
+      }
+      setWaTab("basico");
+      setDialogWhatsapp(true);
+      return;
+    }
+    if (section === "comissoes") { refetchComissoes(); setDialogComissoes(true); return; }
+    if (section === "checkins") { setDialogLogCheckins(true); return; }
+    if (section === "ajuda") { setShowHelp(true); return; }
+    setActiveSection(section);
+  };
+
+  const sectionTitle: Record<string, string> = {
+    dashboard: "Dashboard",
+    alunos: "Alunos",
+    professores: "Professores",
+    planos: "Planos",
+  };
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background" data-testid="manager-layout">
+      <ManagerSidebar
+        activeSection={activeSection}
+        onSectionChange={handleSidebarAction}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        pendingCount={alunosPendentes.length}
+      />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex items-center px-6 py-4 border-b shrink-0">
+          <h1 className="text-xl font-semibold" data-testid="text-manager-title">
+            {sectionTitle[activeSection] ?? "Painel do Gestor"}
+          </h1>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+
+      {activeSection === "dashboard" && (
+      <>
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card>
@@ -671,6 +717,8 @@ export default function ManagerDashboard({
           </CardContent>
         </Card>
       )}
+      </>
+      )}
 
       {/* Dialog Pagar Assinatura */}
       <Dialog open={showPayDialog} onOpenChange={setShowPayDialog}>
@@ -708,7 +756,7 @@ export default function ManagerDashboard({
         </DialogContent>
       </Dialog>
 
-      {/* ── Cadastrar Aluno — botão grande igual ao Check-in ── */}
+      {activeSection === "alunos" && (
       <Card className="mb-6">
         <CardContent className="pt-6">
           <Button
@@ -722,6 +770,7 @@ export default function ManagerDashboard({
           </Button>
         </CardContent>
       </Card>
+      )}
 
       {/* Dialog Cadastrar Aluno */}
       <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
@@ -908,7 +957,7 @@ export default function ManagerDashboard({
         </DialogContent>
       </Dialog>
 
-      {/* ── Planos ── */}
+      {activeSection === "planos" && (
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">Planos</CardTitle>
@@ -963,6 +1012,7 @@ export default function ManagerDashboard({
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Dialog criar plano */}
       <Dialog open={dialogNovoPlano} onOpenChange={setDialogNovoPlano}>
@@ -1074,7 +1124,7 @@ export default function ManagerDashboard({
         </DialogContent>
       </Dialog>
 
-      {/* ── Professores ── */}
+      {activeSection === "professores" && (
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">Professores</CardTitle>
@@ -1150,6 +1200,7 @@ export default function ManagerDashboard({
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Dialog cadastrar professor */}
       <Dialog open={dialogProfessor} onOpenChange={setDialogProfessor}>
@@ -1352,6 +1403,8 @@ export default function ManagerDashboard({
         </DialogContent>
       </Dialog>
 
+      {activeSection === "alunos" && (
+      <>
       {/* ── Aprovações pendentes ── */}
       {alunosPendentes.length > 0 && (
         <Card className="mb-6 border-orange-200 dark:border-orange-900">
@@ -1425,49 +1478,6 @@ export default function ManagerDashboard({
               </Button>
               <Button variant="outline" onClick={onExportarExcel} data-testid="button-export-excel">
                 <Download className="h-4 w-4 mr-2" />Excel
-              </Button>
-              <Button variant="outline" onClick={onIrFinanceiro} data-testid="button-go-financial">
-                <TrendingUp className="h-4 w-4 mr-2" />Financeiro
-              </Button>
-              {onIrAlertas && (
-                <Button variant="outline" onClick={onIrAlertas} data-testid="button-go-alerts">
-                  <AlertCircle className="h-4 w-4 mr-2" />Alertas
-                </Button>
-              )}
-              {onIrConfiguracoes && (
-                <Button variant="outline" onClick={onIrConfiguracoes} data-testid="button-go-settings">
-                  <Settings className="h-4 w-4 mr-2" />Configurações
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setFormWhatsapp({
-                    whatsapp_number: whatsappSettings?.whatsapp_number ?? "",
-                    default_message: whatsappSettings?.default_message ?? "Olá {{nome}}, sua mensalidade está {{status}}.",
-                  });
-                  if (automationConfig) {
-                    setFormCobrancaAuto({
-                      cobranca_ativo: automationConfig.cobranca_ativo ?? false,
-                      cobranca_dias_apos_vencimento: automationConfig.cobranca_dias_apos_vencimento ?? 1,
-                      cobranca_num_disparos: automationConfig.cobranca_num_disparos ?? 3,
-                      cobranca_intervalo_dias: automationConfig.cobranca_intervalo_dias ?? 3,
-                      cobranca_mensagem: automationConfig.cobranca_mensagem ?? "Olá {{nome}}, sua mensalidade está em atraso.",
-                    });
-                    setFormAssiduidadeAuto({
-                      assiduidade_ativo: automationConfig.assiduidade_ativo ?? false,
-                      assiduidade_dias_sem_checkin: automationConfig.assiduidade_dias_sem_checkin ?? 7,
-                      assiduidade_num_disparos: automationConfig.assiduidade_num_disparos ?? 3,
-                      assiduidade_intervalo_dias: automationConfig.assiduidade_intervalo_dias ?? 7,
-                      assiduidade_mensagem: automationConfig.assiduidade_mensagem ?? "Olá {{nome}}, sentimos sua falta!",
-                    });
-                  }
-                  setWaTab("basico");
-                  setDialogWhatsapp(true);
-                }}
-                data-testid="button-whatsapp-settings"
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />WhatsApp
               </Button>
             </div>
           </div>
@@ -1707,6 +1717,8 @@ export default function ManagerDashboard({
           )}
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/* Dialog Registrar Pagamento */}
       <Dialog open={dialogPagamento} onOpenChange={setDialogPagamento}>
@@ -3039,6 +3051,8 @@ export default function ManagerDashboard({
 
       <HelpDialog open={showHelp} onClose={() => setShowHelp(false)} />
 
+        </div>
       </div>
-      );
-      }
+    </div>
+  );
+}

@@ -17,7 +17,8 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `server/routes.ts` — All API routes
 - `client/src/pages/Admin.tsx` — Super-admin panel (arena CRUD, pricing, payment history)
 - `client/src/pages/ArenaApp.tsx` — Arena-specific app shell
-- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard (includes Ativos/Inativos student tabs)
+- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard with collapsible sidebar navigation (sections: Dashboard, Alunos, Professores, Planos, Financeiro, WhatsApp, Configurações, Alertas, Ajuda)
+- `client/src/components/ManagerSidebar.tsx` — Dark collapsible sidebar component for the gestor panel (expand/collapse, nav groups, pending badges)
 - `client/src/components/OverviewDashboard.tsx` — Analytics overview (KPIs, student movement, financial, plan distribution)
 - `client/src/components/TeacherDashboard.tsx` — Teacher dashboard
 - `client/src/components/StudentDashboard.tsx` — Student dashboard
