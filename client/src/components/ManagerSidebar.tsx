@@ -18,6 +18,7 @@ import {
   Moon,
   Sun,
   Landmark,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,8 @@ interface ManagerSidebarProps {
   onToggleCollapse: () => void;
   pendingCount: number;
   onLogout?: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 const NAV_GROUPS: NavGroup[] = [
@@ -92,6 +95,8 @@ export default function ManagerSidebar({
   onToggleCollapse,
   pendingCount,
   onLogout,
+  mobileOpen = false,
+  onMobileClose,
 }: ManagerSidebarProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -114,126 +119,157 @@ export default function ManagerSidebar({
     return undefined;
   };
 
+  const handleNavClick = (id: string) => {
+    onSectionChange(id);
+    onMobileClose?.();
+  };
+
   return (
-    <aside
-      data-testid="manager-sidebar"
-      className={cn(
-        "flex flex-col h-full bg-[#111827] text-gray-300 border-r border-white/5 transition-all duration-300 shrink-0",
-        collapsed ? "w-[60px]" : "w-[220px]"
+    <>
+      {/* Mobile overlay backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          onClick={onMobileClose}
+        />
       )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-4 border-b border-white/10 shrink-0">
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-white truncate">Seven Sports</p>
-            <p className="text-xs text-gray-500 truncate">Gestor</p>
-          </div>
+
+      <aside
+        data-testid="manager-sidebar"
+        className={cn(
+          "flex flex-col h-full bg-[#111827] text-gray-300 border-r border-white/5 transition-all duration-300 shrink-0",
+          // Desktop: relative, collapses in place
+          "md:relative md:translate-x-0 md:z-auto",
+          // Mobile: fixed drawer off-screen by default
+          "fixed inset-y-0 left-0 z-50",
+          "transition-transform",
+          mobileOpen ? "translate-x-0" : "max-md:-translate-x-full",
+          // Width
+          collapsed ? "md:w-[60px] w-[240px]" : "w-[240px]"
         )}
-        <button
-          onClick={onToggleCollapse}
-          className="ml-auto p-1.5 rounded-md hover:bg-white/10 transition-colors text-gray-400 hover:text-white shrink-0"
-          data-testid="button-toggle-sidebar"
-          title={collapsed ? "Expandir sidebar" : "Recolher sidebar"}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-4 border-b border-white/10 shrink-0">
+          {(!collapsed || mobileOpen) && (
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white truncate">Seven Sports</p>
+              <p className="text-xs text-gray-500 truncate">Gestor</p>
+            </div>
           )}
-        </button>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 space-y-4">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.title}>
-            {!collapsed && (
-              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
-                {group.title}
-              </p>
-            )}
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const badge = getBadge(item.id);
-                const isActive = activeSection === item.id;
-
-                return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => onSectionChange(item.id)}
-                      data-testid={`sidebar-item-${item.id}`}
-                      title={collapsed ? item.label : undefined}
-                      className={cn(
-                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
-                        isActive
-                          ? "bg-white/10 text-white"
-                          : "hover:bg-white/5 hover:text-white text-gray-400"
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1 text-left truncate">{item.label}</span>
-                          {badge !== undefined && badge > 0 && (
-                            <Badge
-                              variant="destructive"
-                              className="h-4 min-w-4 px-1 text-[10px] rounded-full"
-                            >
-                              {badge}
-                            </Badge>
-                          )}
-                        </>
-                      )}
-                      {collapsed && badge !== undefined && badge > 0 && (
-                        <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
-
-      {/* Footer — tema + sair */}
-      <div className="shrink-0 border-t border-white/10 p-2 space-y-0.5">
-        <button
-          onClick={toggleTheme}
-          data-testid="button-sidebar-theme"
-          title={collapsed ? (theme === "light" ? "Modo escuro" : "Modo claro") : undefined}
-          className={cn(
-            "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors",
-            collapsed && "justify-center"
-          )}
-        >
-          {theme === "light" ? (
-            <Moon className="h-4 w-4 shrink-0" />
-          ) : (
-            <Sun className="h-4 w-4 shrink-0" />
-          )}
-          {!collapsed && (
-            <span>{theme === "light" ? "Modo escuro" : "Modo claro"}</span>
-          )}
-        </button>
-
-        {onLogout && (
+          {/* Mobile close button */}
           <button
-            onClick={onLogout}
-            data-testid="button-sidebar-logout"
-            className={cn(
-              "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors",
-              collapsed && "justify-center"
-            )}
-            title={collapsed ? "Sair" : undefined}
+            onClick={onMobileClose}
+            className="md:hidden ml-auto p-1.5 rounded-md hover:bg-white/10 transition-colors text-gray-400 hover:text-white shrink-0"
+            data-testid="button-close-mobile-sidebar"
           >
-            <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Sair</span>}
+            <X className="h-4 w-4" />
           </button>
-        )}
-      </div>
-    </aside>
+          {/* Desktop collapse button */}
+          <button
+            onClick={onToggleCollapse}
+            className="hidden md:flex ml-auto p-1.5 rounded-md hover:bg-white/10 transition-colors text-gray-400 hover:text-white shrink-0"
+            data-testid="button-toggle-sidebar"
+            title={collapsed ? "Expandir sidebar" : "Recolher sidebar"}
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-3 space-y-4">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.title}>
+              {(!collapsed || mobileOpen) && (
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
+                  {group.title}
+                </p>
+              )}
+              <ul className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const badge = getBadge(item.id);
+                  const isActive = activeSection === item.id;
+
+                  return (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => handleNavClick(item.id)}
+                        data-testid={`sidebar-item-${item.id}`}
+                        title={collapsed && !mobileOpen ? item.label : undefined}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm transition-colors",
+                          isActive
+                            ? "bg-white/10 text-white"
+                            : "hover:bg-white/5 hover:text-white text-gray-400"
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {(!collapsed || mobileOpen) && (
+                          <>
+                            <span className="flex-1 text-left truncate">{item.label}</span>
+                            {badge !== undefined && badge > 0 && (
+                              <Badge
+                                variant="destructive"
+                                className="h-4 min-w-4 px-1 text-[10px] rounded-full"
+                              >
+                                {badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                        {collapsed && !mobileOpen && badge !== undefined && badge > 0 && (
+                          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="shrink-0 border-t border-white/10 p-2 space-y-0.5">
+          <button
+            onClick={toggleTheme}
+            data-testid="button-sidebar-theme"
+            title={collapsed && !mobileOpen ? (theme === "light" ? "Modo escuro" : "Modo claro") : undefined}
+            className={cn(
+              "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors",
+              collapsed && !mobileOpen && "justify-center"
+            )}
+          >
+            {theme === "light" ? (
+              <Moon className="h-4 w-4 shrink-0" />
+            ) : (
+              <Sun className="h-4 w-4 shrink-0" />
+            )}
+            {(!collapsed || mobileOpen) && (
+              <span>{theme === "light" ? "Modo escuro" : "Modo claro"}</span>
+            )}
+          </button>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              data-testid="button-sidebar-logout"
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors",
+                collapsed && !mobileOpen && "justify-center"
+              )}
+              title={collapsed && !mobileOpen ? "Sair" : undefined}
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              {(!collapsed || mobileOpen) && <span>Sair</span>}
+            </button>
+          )}
+        </div>
+      </aside>
+    </>
   );
 }

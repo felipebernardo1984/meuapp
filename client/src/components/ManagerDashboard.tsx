@@ -73,6 +73,9 @@ import {
   ArrowUpRight,
   Star,
   Zap,
+  Camera,
+  UserCircle,
+  Menu,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -97,6 +100,7 @@ interface AlunoGestor {
   integrationType?: string;
   integrationPlan?: string;
   professorId?: string;
+  photoUrl?: string | null;
 }
 
 interface ProfessorGestor {
@@ -108,6 +112,7 @@ interface ProfessorGestor {
   login?: string;
   modalidade: string;
   percentualComissao?: string;
+  photoUrl?: string | null;
 }
 
 interface NovoAlunoDados {
@@ -431,7 +436,7 @@ export default function ManagerDashboard({
   // Editar aluno state
   const [dialogEditarAluno, setDialogEditarAluno] = useState(false);
   const [alunoEditando, setAlunoEditando] = useState<AlunoGestor | null>(null);
-  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "", integrationType: "", integrationPlan: "" });
+  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "", integrationType: "", integrationPlan: "", photoUrl: "" });
 
   // Alterar plano state
   const [dialogAlterarPlano, setDialogAlterarPlano] = useState(false);
@@ -579,7 +584,7 @@ export default function ManagerDashboard({
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
   const [professorEditando, setProfessorEditando] = useState<ProfessorGestor | null>(null);
-  const [formProfessor, setFormProfessor] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "" });
+  const [formProfessor, setFormProfessor] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "" });
 
   // Aluno state
   const [dialogNovoAluno, setDialogNovoAluno] = useState(false);
@@ -673,8 +678,26 @@ export default function ManagerDashboard({
   // ── Professores ──────────────────────────────────────────────────────────
   const abrirEditarProfessor = (p: ProfessorGestor) => {
     setProfessorEditando(p);
-    setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade, percentualComissao: p.percentualComissao || "" });
+    setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade, percentualComissao: p.percentualComissao || "", photoUrl: p.photoUrl || "" });
   };
+
+  const compressImage = (file: File, maxSize = 220): Promise<string> =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = e.target!.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
 
   const handleSalvarProfessor = () => {
     if (!formProfessor.nome || !formProfessor.modalidade) return;
@@ -692,6 +715,7 @@ export default function ManagerDashboard({
         percentualComissao,
       };
       if (formProfessor.senha) dados.senha = formProfessor.senha;
+      if (formProfessor.photoUrl) (dados as any).photoUrl = formProfessor.photoUrl;
       onEditarProfessor(professorEditando.id, dados);
       setProfessorEditando(null);
     } else {
@@ -699,7 +723,7 @@ export default function ManagerDashboard({
       onCadastrarProfessor({ nome: formProfessor.nome, cpf: formProfessor.cpf, email: formProfessor.email, telefone: formProfessor.telefone, login: formProfessor.login, senha: formProfessor.senha, modalidade: formProfessor.modalidade, percentualComissao });
       setDialogProfessor(false);
     }
-    setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "" });
+    setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "" });
   };
 
   // ── Alunos ───────────────────────────────────────────────────────────────
@@ -736,6 +760,7 @@ export default function ManagerDashboard({
 
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const handleSidebarAction = (section: string) => {
     if (section === "financeiro") { onIrFinanceiro(); return; }
@@ -856,10 +881,20 @@ export default function ManagerDashboard({
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         pendingCount={alunosPendentes.length}
         onLogout={onLogout}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
       />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center px-6 py-4 border-b shrink-0">
-          <h1 className="text-xl font-semibold" data-testid="text-manager-title">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className="flex items-center gap-3 px-4 md:px-6 py-4 border-b shrink-0">
+          <button
+            className="md:hidden p-1.5 rounded-md hover:bg-muted transition-colors shrink-0"
+            onClick={() => setMobileSidebarOpen(true)}
+            data-testid="button-mobile-menu"
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <h1 className="text-xl font-semibold truncate" data-testid="text-manager-title">
             {sectionTitle[activeSection] ?? "Painel do Gestor"}
           </h1>
         </div>
@@ -868,6 +903,42 @@ export default function ManagerDashboard({
       {activeSection === "dashboard" && (
       <>
         {/* ── Saudação ── */}
+        {/* ── Assinatura compacta no topo ── */}
+        {subscription && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl border border-primary/20 bg-primary/5 mb-5" data-testid="card-subscription-compact">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <CreditCard className="h-4 w-4 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold leading-tight truncate">
+                  {subscription.subscriptionPlan === "basic" ? "Plano Básico" : subscription.subscriptionPlan === "premium" ? "Plano Premium" : subscription.subscriptionPlan}
+                  {subscription.subscriptionValue ? ` · ${subscription.subscriptionValue}` : ""}
+                </p>
+                <p className="text-xs text-muted-foreground leading-tight">
+                  Próx. cobrança: {subscription.nextBillingDate ?? "—"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Badge
+                variant={subscription.subscriptionStatus === "Ativo" ? "default" : "destructive"}
+                className="text-xs"
+                data-testid="badge-subscription-status"
+              >
+                {subscription.subscriptionStatus}
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowPayDialog(true)}
+                className="h-7 text-xs px-2.5"
+                data-testid="button-pay-subscription-compact"
+              >
+                Pagar
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6 flex items-start justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-2xl font-bold text-foreground" data-testid="text-home-greeting">
@@ -1069,8 +1140,12 @@ export default function ManagerDashboard({
                       onClick={() => setActiveSection("professores")}
                       data-testid={`prof-card-${prof.id}`}
                     >
-                      <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center shadow-md`}>
-                        <span className="text-white text-2xl font-bold">{prof.nome.charAt(0).toUpperCase()}</span>
+                      <div className={`w-14 h-14 rounded-full overflow-hidden ${prof.photoUrl ? "" : `bg-gradient-to-br ${gradients[i % gradients.length]}`} flex items-center justify-center shadow-md shrink-0`}>
+                        {prof.photoUrl ? (
+                          <img src={prof.photoUrl} alt={prof.nome} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-white text-2xl font-bold">{prof.nome.charAt(0).toUpperCase()}</span>
+                        )}
                       </div>
                       <div>
                         <p className="font-semibold text-sm leading-tight">{prof.nome.split(" ")[0]}</p>
@@ -1187,50 +1262,6 @@ export default function ManagerDashboard({
           )}
         </div>
 
-        {/* ── Assinatura do Sistema ── */}
-        {subscription && (
-          <Card className="mb-6 border-primary/20">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />Assinatura do Sistema
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-4">
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Plano contratado</p>
-                  <p className="font-semibold capitalize">
-                    {subscription.subscriptionPlan === "basic" ? "Plano Básico" : subscription.subscriptionPlan === "premium" ? "Plano Premium" : subscription.subscriptionPlan}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Valor mensal</p>
-                  <p className="font-semibold">{subscription.subscriptionValue ?? "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Status</p>
-                  <Badge variant={subscription.subscriptionStatus === "Ativo" ? "default" : subscription.subscriptionStatus === "Em atraso" ? "destructive" : "secondary"} data-testid="badge-subscription-status">
-                    {subscription.subscriptionStatus === "Ativo"
-                      ? <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />{subscription.subscriptionStatus}</span>
-                      : <span className="flex items-center gap-1"><AlertCircle className="h-3 w-3" />{subscription.subscriptionStatus}</span>}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Data de início</p>
-                  <p className="font-semibold">{subscription.subscriptionStartDate ?? "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Próxima cobrança</p>
-                  <p className="font-semibold">{subscription.nextBillingDate ?? "—"}</p>
-                </div>
-              </div>
-              <Button size="sm" onClick={() => setShowPayDialog(true)} data-testid="button-pay-subscription">
-                <CreditCard className="h-3.5 w-3.5 mr-1.5" />
-                Pagar assinatura
-              </Button>
-            </CardContent>
-          </Card>
-        )}
       </>
       )}
 
@@ -2259,20 +2290,31 @@ export default function ManagerDashboard({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {professores.map((professor) => (
+            {professores.map((professor, idx) => {
+              const profGradients = ["from-blue-400 to-blue-600","from-violet-400 to-purple-600","from-emerald-400 to-emerald-600","from-orange-400 to-orange-600","from-pink-400 to-rose-600","from-cyan-400 to-cyan-600"];
+              return (
               <div
                 key={professor.id}
-                className="flex items-center justify-between p-3 bg-muted rounded-md"
+                className="flex items-center justify-between p-3 bg-muted rounded-xl gap-3"
                 data-testid={`teacher-${professor.id}`}
               >
-                <div>
-                  <p className="font-medium">{professor.nome}</p>
-                  <p className="text-sm text-muted-foreground">{professor.modalidade}</p>
-                  {parseFloat(professor.percentualComissao ?? "0") > 0 && (
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      Comissão: {professor.percentualComissao}%
-                    </Badge>
-                  )}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center shadow-sm ${professor.photoUrl ? "" : `bg-gradient-to-br ${profGradients[idx % profGradients.length]}`}`}>
+                    {professor.photoUrl ? (
+                      <img src={professor.photoUrl} alt={professor.nome} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white font-bold text-base">{professor.nome.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{professor.nome}</p>
+                    <p className="text-sm text-muted-foreground truncate">{professor.modalidade}</p>
+                    {parseFloat(professor.percentualComissao ?? "0") > 0 && (
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        Comissão: {professor.percentualComissao}%
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
@@ -2294,12 +2336,13 @@ export default function ManagerDashboard({
                   </Button>
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             <Button
               size="lg"
               className="w-full h-14 text-lg mt-2"
-              onClick={() => { setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "" }); setDialogProfessor(true); }}
+              onClick={() => { setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "" }); setDialogProfessor(true); }}
               data-testid="button-add-teacher"
             >
               <UserPlus className="mr-2 h-5 w-5" />
@@ -2317,6 +2360,34 @@ export default function ManagerDashboard({
             <DialogTitle>Cadastrar Professor</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            {/* Photo upload */}
+            <div className="flex flex-col items-center gap-1.5 pb-1">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center">
+                  {formProfessor.photoUrl ? (
+                    <img src={formProfessor.photoUrl} alt="Foto" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserCircle className="h-10 w-10 text-muted-foreground/40" />
+                  )}
+                </div>
+                <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
+                  <Camera className="h-3 w-3" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const b64 = await compressImage(file);
+                        setFormProfessor(prev => ({ ...prev, photoUrl: b64 }));
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">Foto do professor (opcional)</p>
+            </div>
             <div className="space-y-1">
               <Label>Nome do Professor <span className="text-destructive">*</span></Label>
               <Input
@@ -2418,6 +2489,34 @@ export default function ManagerDashboard({
             <DialogDescription>Atualize os dados do professor.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
+            {/* Photo upload */}
+            <div className="flex flex-col items-center gap-1.5 pb-1">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center">
+                  {formProfessor.photoUrl ? (
+                    <img src={formProfessor.photoUrl} alt="Foto" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserCircle className="h-10 w-10 text-muted-foreground/40" />
+                  )}
+                </div>
+                <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
+                  <Camera className="h-3 w-3" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const b64 = await compressImage(file);
+                        setFormProfessor(prev => ({ ...prev, photoUrl: b64 }));
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">Foto do professor (opcional)</p>
+            </div>
             <div className="space-y-1">
               <Label>Nome Completo *</Label>
               <Input
@@ -2679,6 +2778,7 @@ export default function ManagerDashboard({
                                 planoId: aluno.planoId,
                                 integrationType: aluno.integrationType ?? "",
                                 integrationPlan: aluno.integrationPlan ?? "",
+                                photoUrl: aluno.photoUrl ?? "",
                               });
                               setDialogEditarAluno(true);
                             }}
@@ -3068,6 +3168,34 @@ export default function ManagerDashboard({
             <DialogDescription>{alunoEditando?.nome}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
+            {/* Photo upload */}
+            <div className="flex flex-col items-center gap-1.5 pb-1">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center">
+                  {formEditarAluno.photoUrl ? (
+                    <img src={formEditarAluno.photoUrl} alt="Foto" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserCircle className="h-10 w-10 text-muted-foreground/40" />
+                  )}
+                </div>
+                <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
+                  <Camera className="h-3 w-3" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const b64 = await compressImage(file);
+                        setFormEditarAluno(prev => ({ ...prev, photoUrl: b64 }));
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">Foto do aluno (opcional)</p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
                 <Label>Nome do Aluno <span className="text-destructive">*</span></Label>

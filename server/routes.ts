@@ -276,6 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (login !== undefined) updateData.login = login;
     if (senha) updateData.senha = senha;
     if (percentualComissao !== undefined) updateData.percentualComissao = percentualComissao;
+    if (req.body.photoUrl !== undefined) updateData.photoUrl = req.body.photoUrl || null;
     const teacher = await storage.updateTeacher(req.params.id, updateData);
     res.json(teacher);
   });
@@ -368,6 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (integrationType !== undefined) updates.integrationType = integrationType;
     if (integrationPlan !== undefined) updates.integrationPlan = integrationPlan || null;
     if (professorId !== undefined) updates.professorId = professorId || null;
+    if (req.body.photoUrl !== undefined) updates.photoUrl = req.body.photoUrl || null;
     const student = await storage.updateStudent(req.params.id, updates);
     const integrationChanged =
       (integrationType !== undefined && integrationType !== studentBefore?.integrationType) ||

@@ -135,7 +135,8 @@
       "email": null,
       "telefone": null,
       "modalidade": "Beach Tennis",
-      "percentualComissao": "0.00"
+      "percentualComissao": "0.00",
+      "photoUrl": null
     },
     {
       "id": "45e1ccb9-416f-424d-b58f-a0e184721985",
@@ -147,7 +148,8 @@
       "email": null,
       "telefone": null,
       "modalidade": "Vôlei de Praia",
-      "percentualComissao": "0.00"
+      "percentualComissao": "0.00",
+      "photoUrl": null
     },
     {
       "id": "88d62f1c-df5d-4bb3-aa23-5054d87c7b27",
@@ -159,7 +161,8 @@
       "email": null,
       "telefone": null,
       "modalidade": "Futevôlei",
-      "percentualComissao": "0.00"
+      "percentualComissao": "0.00",
+      "photoUrl": null
     }
   ],
   "plans": [
@@ -250,5 +253,5 @@
       "professorId": null
     }
   ],
-  "createdAt": "2026-05-02T19:18:26.008Z"
+  "createdAt": "2026-05-02T19:39:17.724Z"
 }
