@@ -17,7 +17,7 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `server/routes.ts` — All API routes
 - `client/src/pages/Admin.tsx` — Super-admin panel (arena CRUD, pricing, payment history)
 - `client/src/pages/ArenaApp.tsx` — Arena-specific app shell
-- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard with collapsible sidebar navigation (sections: Dashboard, Alunos, Professores, Planos, Financeiro, WhatsApp, Configurações, Alertas, Ajuda)
+- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard with collapsible sidebar navigation (sections: Dashboard, Alunos, Mensalidades, Professores, Planos, Financeiro, WhatsApp, Configurações, Alertas, Ajuda)
 - `client/src/components/ManagerSidebar.tsx` — Dark collapsible sidebar component for the gestor panel (expand/collapse, nav groups, pending badges)
 - `client/src/components/OverviewDashboard.tsx` — Analytics overview (KPIs, student movement, financial, plan distribution)
 - `client/src/components/TeacherDashboard.tsx` — Teacher dashboard
@@ -37,7 +37,7 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `checkin_history` — Student check-in records; includes `tipo` (pendente/aula/dayuse/avulso) and `professorId` for attribution
 - `teacher_commissions` — Commission records per attributed check-in (valorCheckin, percentual, valorComissao, status: pendente/aprovado/editado/cancelado)
 - `checkin_financeiro` — Financial snapshot per check-in (valorUnitario saved at moment of check-in for historical consistency)
-- `payments` — Student monthly payment records
+- `payments` — Student monthly payment records; includes `paymentMethod` field (cartao/pix/dinheiro)
 - `charges` — Ad-hoc charges for students
 - `payment_settings` — Arena PIX payment configuration
 - `modalidade_settings` — Per-modality value per check-in and integration toggles

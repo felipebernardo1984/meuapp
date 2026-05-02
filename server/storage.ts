@@ -353,10 +353,12 @@ export class DatabaseStorage {
     return p;
   }
 
-  async updatePaymentStatus(id: string, status: string, paymentDate?: string) {
+  async updatePaymentStatus(id: string, status: string, paymentDate?: string, paymentMethod?: string) {
+    const updateData: any = { status, paymentDate };
+    if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
     const [p] = await db
       .update(payments)
-      .set({ status, paymentDate })
+      .set(updateData)
       .where(eq(payments.id, id))
       .returning();
     return p;

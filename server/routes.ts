@@ -762,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/finance/payments", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { studentId, planId, amount, referenceMonth, dueDate, status, description } = req.body;
+    const { studentId, planId, amount, referenceMonth, dueDate, status, description, paymentMethod } = req.body;
     if (!studentId || !amount || !referenceMonth || !dueDate) {
       return res.status(400).json({ message: "Campos obrigatórios faltando" });
     }
@@ -772,6 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       amount, referenceMonth, dueDate,
       paymentDate: status === "paid" ? new Date().toLocaleDateString("pt-BR") : null,
       status: status ?? "pending",
+      paymentMethod: paymentMethod ?? "dinheiro",
       createdBy: req.session.userType ?? "gestor",
     });
     res.json(payment);
@@ -780,8 +781,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/finance/payments/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { status, paymentDate } = req.body;
-    const payment = await storage.updatePaymentStatus(req.params.id, status, paymentDate);
+    const { status, paymentDate, paymentMethod } = req.body;
+    const payment = await storage.updatePaymentStatus(req.params.id, status, paymentDate, paymentMethod);
     if (status === "paid" && payment?.studentId) {
       const today = paymentDate || new Date().toLocaleDateString("pt-BR");
       await storage.updateStudent(payment.studentId, { ultimoCheckin: today });

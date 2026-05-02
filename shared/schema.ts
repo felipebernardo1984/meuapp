@@ -140,6 +140,7 @@ export const payments = pgTable("payments", {
   dueDate: text("due_date").notNull(),
   paymentDate: text("payment_date"),
   status: text("status").notNull().default("pending"),
+  paymentMethod: text("payment_method").default("dinheiro"), // 'cartao' | 'pix' | 'dinheiro'
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: text("created_by"),
 });
