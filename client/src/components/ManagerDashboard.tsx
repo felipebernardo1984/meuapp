@@ -1183,26 +1183,6 @@ export default function ManagerDashboard({
               <UserPlus className="mr-2 h-5 w-5" />
               Cadastrar Professor
             </Button>
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setDialogLogCheckins(true)}
-                data-testid="button-log-checkins"
-              >
-                <ListChecks className="mr-2 h-4 w-4" />
-                Log de Check-ins
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setDialogComissoes(true)}
-                data-testid="button-comissoes"
-              >
-                <PercentCircle className="mr-2 h-4 w-4" />
-                Comissões
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
