@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2, Camera } from "lucide-react";
 
 interface Payment {
   id: string;
@@ -69,6 +69,7 @@ interface StudentDashboardProps {
   onRemoverCheckin: (index: number) => void;
   onCheckinRetroativo: (data: string, hora: string) => void;
   onEditarCheckin?: (index: number, data: string, hora: string) => void;
+  onUpdatePhoto?: (photoUrl: string) => void;
 }
 
 function paymentStatusBadge(status: string) {
@@ -102,7 +103,38 @@ export default function StudentDashboard({
   onRemoverCheckin,
   onCheckinRetroativo,
   onEditarCheckin,
+  onUpdatePhoto,
 }: StudentDashboardProps) {
+  const [uploading, setUploading] = useState(false);
+
+  const compressImage = (file: File, maxSize = 220): Promise<string> =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = e.target!.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const handlePhotoChange = async (file: File) => {
+    setUploading(true);
+    try {
+      const b64 = await compressImage(file);
+      onUpdatePhoto?.(b64);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const [confirmarIndex, setConfirmarIndex] = useState<number | null>(null);
   const [dialogRetroativo, setDialogRetroativo] = useState(false);
   const [dataRetroativa, setDataRetroativa] = useState("");
@@ -176,17 +208,41 @@ export default function StudentDashboard({
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={photoUrl} alt={studentName} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative group shrink-0">
+            <Avatar className="h-14 w-14">
+              <AvatarImage src={photoUrl} alt={studentName} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {onUpdatePhoto && (
+              <label
+                className={`absolute inset-0 rounded-full flex items-center justify-center cursor-pointer bg-black/0 group-hover:bg-black/40 transition-colors ${uploading ? "bg-black/40" : ""}`}
+                title="Alterar foto"
+                data-testid="label-student-photo-upload"
+              >
+                <Camera className={`h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity ${uploading ? "opacity-100 animate-pulse" : ""}`} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoChange(file);
+                  }}
+                />
+              </label>
+            )}
+          </div>
           <div>
             <h1 className="text-xl font-semibold" data-testid="text-student-name">
               {studentName}
             </h1>
             <p className="text-sm text-muted-foreground">{modalidade}</p>
+            {onUpdatePhoto && (
+              <p className="text-xs text-muted-foreground/60 mt-0.5">Toque na foto para alterar</p>
+            )}
           </div>
         </div>
         {statusMensalidade === "Pendente" && (

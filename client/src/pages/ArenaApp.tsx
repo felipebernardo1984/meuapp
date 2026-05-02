@@ -271,6 +271,7 @@ export default function ArenaApp() {
       {sessao.tipo === "aluno" && alunoAtual && (
         <StudentDashboard
           studentName={alunoAtual.nome}
+          photoUrl={alunoAtual.photoUrl ?? undefined}
           modalidade={alunoAtual.modalidade}
           plano={alunoAtual.planoCheckins}
           planoTitulo={alunoAtual.planoTitulo}
@@ -286,6 +287,7 @@ export default function ArenaApp() {
           onCheckin={() => checkinManual.mutate({ id: alunoAtual.id })}
           onRemoverCheckin={(index: number) => removerCheckin.mutate({ id: alunoAtual.id, index })}
           onCheckinRetroativo={(data: string, hora: string) => checkinManual.mutate({ id: alunoAtual.id, data, hora })}
+          onUpdatePhoto={(photoUrl: string) => editarAluno.mutate({ id: alunoAtual.id, photoUrl })}
         />
       )}
 
