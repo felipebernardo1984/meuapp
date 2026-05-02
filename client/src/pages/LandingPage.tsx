@@ -44,12 +44,17 @@ export default function LandingPage() {
       <section className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-gray-50 dark:bg-gray-950">
         <div className="mb-8 select-none">
           <h1
-            className="text-[5rem] sm:text-[7rem] md:text-[9rem] leading-none tracking-widest text-gray-900 dark:text-white"
-            style={{ fontFamily: "'Bebas Neue', 'Impact', sans-serif" }}
+            className="text-[5rem] sm:text-[7rem] md:text-[9rem] leading-none tracking-widest font-bold"
+            style={{
+              fontFamily: "'Bebas Neue', 'Impact', sans-serif",
+              background: "linear-gradient(90deg, #1565C0 0%, #1E88E5 40%, #29B6F6 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
           >
             SEVEN SPORTS
           </h1>
-          <div className="h-1 w-24 mx-auto mt-2 rounded-full bg-[#e91e8c]" />
         </div>
 
         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4 max-w-3xl">
