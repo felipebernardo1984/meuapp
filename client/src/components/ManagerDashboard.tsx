@@ -855,21 +855,6 @@ export default function ManagerDashboard({
         </DialogContent>
       </Dialog>
 
-      {activeSection === "alunos" && (
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <Button
-            size="lg"
-            className="w-full h-14 text-lg"
-            onClick={() => setDialogNovoAluno(true)}
-            data-testid="button-add-student-manager"
-          >
-            <UserPlus className="mr-2 h-5 w-5" />
-            Cadastrar Aluno
-          </Button>
-        </CardContent>
-      </Card>
-      )}
 
       {/* Dialog Cadastrar Aluno */}
       <Dialog open={dialogNovoAluno} onOpenChange={setDialogNovoAluno}>
@@ -1297,16 +1282,6 @@ export default function ManagerDashboard({
                   >
                     <Receipt className="w-4 h-4 mr-1" /> Registrar Pagamento
                   </Button>
-                  <Button
-                    size="sm"
-                    data-testid="button-novo-mensalista"
-                    onClick={() => {
-                      setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
-                      setDialogNovoMensalista(true);
-                    }}
-                  >
-                    <UserPlus className="w-4 h-4 mr-1" /> Novo Mensalista
-                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -1457,6 +1432,18 @@ export default function ManagerDashboard({
                   </TableBody>
                 </Table>
               )}
+              <Button
+                size="lg"
+                className="w-full h-14 text-lg mt-4"
+                data-testid="button-novo-mensalista"
+                onClick={() => {
+                  setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+                  setDialogNovoMensalista(true);
+                }}
+              >
+                <UserPlus className="mr-2 h-5 w-5" />
+                Cadastrar Mensalista
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -2421,6 +2408,15 @@ export default function ManagerDashboard({
             </Table>
           </div>
           )}
+          <Button
+            size="lg"
+            className="w-full h-14 text-lg mt-4"
+            onClick={() => setDialogNovoAluno(true)}
+            data-testid="button-add-student-manager"
+          >
+            <UserPlus className="mr-2 h-5 w-5" />
+            Cadastrar Aluno
+          </Button>
         </CardContent>
       </Card>
       </>
