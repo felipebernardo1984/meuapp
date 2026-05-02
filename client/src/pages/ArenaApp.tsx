@@ -93,7 +93,10 @@ export default function ArenaApp() {
   });
   const editarProfessor = useMutation({
     mutationFn: ({ id: profId, ...d }: any) => apiRequest("PUT", `/api/professores/${profId}`, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/professores"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/professores"] });
+      qc.invalidateQueries({ queryKey: ["/api/session"] });
+    },
   });
   const excluirProfessor = useMutation({
     mutationFn: (profId: string) => apiRequest("DELETE", `/api/professores/${profId}`),
@@ -294,6 +297,7 @@ export default function ArenaApp() {
       {sessao.tipo === "professor" && (
         <TeacherDashboard
           teacherName={sessao.professor.nome}
+          photoUrl={sessao.professor.photoUrl ?? undefined}
           modalidade={sessao.professor.modalidade}
           planos={planosAdaptados}
           alunos={alunos
@@ -324,6 +328,7 @@ export default function ArenaApp() {
           onEditarAluno={(alunoId: string, dados: any) => editarAluno.mutate({ id: alunoId, ...dados })}
           onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
           onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
+          onUpdatePhoto={(photoUrl: string) => editarProfessor.mutate({ id: sessao.professor.id, photoUrl })}
         />
       )}
 

@@ -1,0 +1,175 @@
+Crie melhorias em um sistema SaaS de gestão de quadras esportivas já existente, adicionando criação estruturada de arenas com usuários vinculados, permitindo escalabilidade e mantendo controle administrativo.
+
+---
+
+### OBJETIVO
+
+Permitir que o sistema funcione em dois modos:
+
+1. Criação automática (self-service) — cliente cria sua conta e arena sozinho
+2. Criação manual (admin) — administrador cria arena + usuário ao visitar clientes ou fazer demonstrações
+
+O sistema deve seguir padrões de SaaS profissionais como Evo, Nextfit e Tecnofit.
+
+---
+
+### 1. MODELAGEM DE DADOS
+
+Garantir as seguintes estruturas:
+
+#### Tabela: usuarios
+
+* id
+* nome
+* email (único)
+* senha (criptografada)
+* role ("super_admin", "owner")
+* status ("trial", "ativo", "vencido")
+* data_criacao
+* data_expiracao_trial
+* data_vencimento_plano
+
+---
+
+#### Tabela: arenas
+
+* id
+* nome
+* owner_id (referência ao usuário dono)
+* data_criacao
+
+---
+
+### 2. CRIAÇÃO DE ARENA PELO ADMIN (ATUAL BOTÃO “NOVA ARENA”)
+
+Ao clicar em “Nova Arena”, abrir um formulário com:
+
+Campos:
+
+* Nome da Arena (obrigatório)
+* Nome do Responsável (obrigatório)
+* Email do Responsável (obrigatório e único)
+* Senha inicial (obrigatória)
+
+Ao enviar:
+
+1. Criar usuário com role = "owner"
+2. Criar arena com:
+
+   * nome definido no formulário
+   * owner_id vinculado ao usuário criado
+3. Definir:
+
+   * status = "trial"
+   * data_expiracao_trial = data atual + 5 dias
+
+Resultado:
+
+* Arena criada pronta para uso
+* Usuário já pode acessar o sistema
+
+---
+
+### 3. CRIAÇÃO AUTOMÁTICA (SELF-SERVICE)
+
+Criar fluxo de cadastro público:
+
+Campos:
+
+* Nome
+* Email
+* Senha
+* Nome da Arena
+
+Ao cadastrar:
+
+1. Criar usuário (role = owner)
+2. Criar arena automaticamente com o nome informado
+3. Vincular arena ao usuário
+4. Ativar trial de 5 dias
+
+---
+
+### 4. COMPORTAMENTO DO SISTEMA
+
+Regras:
+
+* Usuário "trial" dentro do prazo → acesso liberado
+* Trial expirado → status = "vencido" e bloquear acesso
+* Usuário "ativo" → acesso liberado
+
+---
+
+### 5. INTERFACE (UX)
+
+No dashboard da arena:
+
+Exibir:
+
+* Nome da arena (definido no cadastro)
+* Status do plano (trial, ativo, vencido)
+* Data de expiração ou vencimento
+
+Adicionar:
+
+* Indicador: "Teste grátis até XX/XX"
+* Botão: "Assinar plano"
+
+---
+
+### 6. PAINEL ADMIN
+
+Manter e melhorar painel do super_admin:
+
+Funções:
+
+* Listar todas as arenas
+* Criar arena manualmente (formulário acima)
+* Editar arena
+* Acessar como gestor (impersonação)
+* Visualizar dados do cliente
+
+---
+
+### 7. IMPERSONAÇÃO
+
+Permitir que o super_admin:
+
+* Acesse qualquer arena como se fosse o dono
+* Sem precisar de senha
+* Criando uma sessão temporária segura
+
+---
+
+### 8. SEGURANÇA
+
+* Senhas criptografadas
+* Email único
+* Validação de dados no backend
+* Rotas protegidas por autenticação
+* Separação clara entre frontend e backend
+
+---
+
+### 9. ESCALABILIDADE
+
+Estrutura deve permitir no futuro:
+
+* Múltiplas arenas por usuário
+* Planos diferentes (básico, premium)
+* Integração com pagamentos
+* Controle de permissões
+
+---
+
+### 10. RESULTADO ESPERADO
+
+* Admin consegue criar arena + usuário em um único fluxo
+* Cliente consegue entrar sozinho e já ter sua arena
+* Nome da arena é a identidade principal do cliente no sistema
+* Sistema preparado para venda em escala
+* Código limpo, organizado e comentado
+
+---
+
+Implementar mantendo compatibilidade com o sistema atual e sem quebrar funcionalidades existentes.

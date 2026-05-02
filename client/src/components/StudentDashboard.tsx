@@ -208,7 +208,7 @@ export default function StudentDashboard({
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="relative group shrink-0">
+          <div className="relative shrink-0">
             <Avatar className="h-14 w-14">
               <AvatarImage src={photoUrl} alt={studentName} />
               <AvatarFallback className="bg-primary text-primary-foreground text-lg">
@@ -217,11 +217,15 @@ export default function StudentDashboard({
             </Avatar>
             {onUpdatePhoto && (
               <label
-                className={`absolute inset-0 rounded-full flex items-center justify-center cursor-pointer bg-black/0 group-hover:bg-black/40 transition-colors ${uploading ? "bg-black/40" : ""}`}
+                className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-md"
                 title="Alterar foto"
                 data-testid="label-student-photo-upload"
               >
-                <Camera className={`h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity ${uploading ? "opacity-100 animate-pulse" : ""}`} />
+                {uploading ? (
+                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Camera className="h-3 w-3" />
+                )}
                 <input
                   type="file"
                   accept="image/*"
@@ -240,9 +244,6 @@ export default function StudentDashboard({
               {studentName}
             </h1>
             <p className="text-sm text-muted-foreground">{modalidade}</p>
-            {onUpdatePhoto && (
-              <p className="text-xs text-muted-foreground/60 mt-0.5">Toque na foto para alterar</p>
-            )}
           </div>
         </div>
         {statusMensalidade === "Pendente" && (

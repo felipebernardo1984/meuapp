@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, ChevronUp, ChevronDown, Eye } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, ChevronUp, ChevronDown, Eye, Camera } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -87,6 +87,7 @@ function paymentStatusBadge(status: string) {
 
 interface TeacherDashboardProps {
   teacherName: string;
+  photoUrl?: string;
   modalidade: string;
   planos: Plano[];
   alunos: AlunoView[];
@@ -98,10 +99,12 @@ interface TeacherDashboardProps {
   onEditarAluno: (alunoId: string, dados: Partial<NovoAlunoDados & { senha?: string }>) => void;
   onExcluirAluno: (alunoId: string) => void;
   onRemoverCheckin: (alunoId: string, index: number) => void;
+  onUpdatePhoto?: (photoUrl: string) => void;
 }
 
 export default function TeacherDashboard({
   teacherName,
+  photoUrl,
   modalidade,
   planos,
   alunos,
@@ -113,7 +116,44 @@ export default function TeacherDashboard({
   onEditarAluno,
   onExcluirAluno,
   onRemoverCheckin,
+  onUpdatePhoto,
 }: TeacherDashboardProps) {
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const compressImage = (file: File, maxSize = 220): Promise<string> =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = e.target!.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const handlePhotoChange = async (file: File) => {
+    setUploadingPhoto(true);
+    try {
+      const b64 = await compressImage(file);
+      onUpdatePhoto?.(b64);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const teacherInitials = teacherName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
   const emptyAluno: NovoAlunoDados = {
     nome: "", cpf: "", email: "", telefone: "",
     login: "", senha: "", modalidade, planoId: planos[0]?.id ?? "",
@@ -268,11 +308,44 @@ export default function TeacherDashboard({
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-1" data-testid="text-teacher-name">
-          Professor {teacherName}
-        </h1>
-        <p className="text-muted-foreground">{modalidade}</p>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="relative shrink-0">
+          <Avatar className="h-14 w-14">
+            <AvatarImage src={photoUrl} alt={teacherName} />
+            <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+              {teacherInitials}
+            </AvatarFallback>
+          </Avatar>
+          {onUpdatePhoto && (
+            <label
+              className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-md"
+              title="Alterar foto"
+              data-testid="label-teacher-photo-upload"
+            >
+              {uploadingPhoto ? (
+                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Camera className="h-3 w-3" />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingPhoto}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePhotoChange(file);
+                }}
+              />
+            </label>
+          )}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold leading-tight" data-testid="text-teacher-name">
+            {teacherName}
+          </h1>
+          <p className="text-muted-foreground">{modalidade}</p>
+        </div>
       </div>
 
       {/* Botão Cadastrar Aluno */}
