@@ -117,6 +117,7 @@ export default function Admin() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPasswordHistory, setShowPasswordHistory] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [arenaSearch, setArenaSearch] = useState("");
   const [platformSettingsForm, setPlatformSettingsForm] = useState({
     suporte_email: "",
     suporte_telefone: "",
@@ -800,30 +801,39 @@ export default function Admin() {
           </Card>
         </div>
 
-        {/* Section header: count + toggle */}
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-muted-foreground">
-            Arenas ({arenas.length})
-          </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => setMinimized((m) => !m)}
-            data-testid="button-minimize-arenas"
-          >
-            {minimized ? (
-              <>
-                <ChevronDown className="h-4 w-4 mr-1" />
-                Mostrar Arenas
-              </>
-            ) : (
-              <>
-                <ChevronUp className="h-4 w-4 mr-1" />
-                Minimizar Arenas
-              </>
-            )}
-          </Button>
+        {/* Section header: search + count + toggle */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-3">
+          <div className="relative flex-1 w-full">
+            <input
+              type="text"
+              placeholder="Buscar arena por nome ou login do gestor..."
+              value={arenaSearch}
+              onChange={(e) => setArenaSearch(e.target.value)}
+              className="w-full h-9 pl-9 pr-3 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              data-testid="input-search-arenas"
+            />
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <p className="text-sm text-muted-foreground whitespace-nowrap">
+              {arenaSearch
+                ? `${arenas.filter(a => a.name.toLowerCase().includes(arenaSearch.toLowerCase()) || a.gestorLogin.toLowerCase().includes(arenaSearch.toLowerCase())).length} de ${arenas.length}`
+                : `${arenas.length} arenas`}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setMinimized((m) => !m)}
+              data-testid="button-minimize-arenas"
+            >
+              {minimized ? (
+                <><ChevronDown className="h-4 w-4 mr-1" />Mostrar</>
+              ) : (
+                <><ChevronUp className="h-4 w-4 mr-1" />Minimizar</>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Password Reset History toggle */}
@@ -923,7 +933,12 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {arenas.map((arena) => (
+                {arenas
+                  .filter((a) => {
+                    const q = arenaSearch.toLowerCase();
+                    return !q || a.name.toLowerCase().includes(q) || a.gestorLogin.toLowerCase().includes(q);
+                  })
+                  .map((arena) => (
                   <TableRow key={arena.id} data-testid={`row-arena-minimized-${arena.id}`}>
                     <TableCell className="font-medium">{arena.name}</TableCell>
                     <TableCell>
@@ -958,7 +973,12 @@ export default function Admin() {
         ) : (
           /* Expanded view */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {arenas.map((arena) => (
+            {arenas
+              .filter((a) => {
+                const q = arenaSearch.toLowerCase();
+                return !q || a.name.toLowerCase().includes(q) || a.gestorLogin.toLowerCase().includes(q);
+              })
+              .map((arena) => (
               <Card key={arena.id} data-testid={`card-arena-${arena.id}`} className="flex flex-col">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
