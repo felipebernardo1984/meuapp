@@ -1,4 +1,5 @@
 import { useState } from "react";
+import HelpDialog from "@/components/HelpDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +61,7 @@ import {
   PercentCircle,
   ListChecks,
   ChevronDown,
+  BookOpen,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -201,6 +203,11 @@ export default function ManagerDashboard({
     queryKey: ["/api/whatsapp/dispatches"],
     enabled: dialogWhatsapp && waTab === "fila",
   });
+
+  // Commission/log dialog state — declared BEFORE the queries that depend on them
+  const [dialogComissoes, setDialogComissoes] = useState(false);
+  const [dialogLogCheckins, setDialogLogCheckins] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Commission queries
   const { data: resumoComissoes = [], refetch: refetchComissoes } = useQuery<any[]>({
@@ -420,8 +427,6 @@ export default function ManagerDashboard({
   const [dialogProfessor, setDialogProfessor] = useState(false);
   const [professorEditando, setProfessorEditando] = useState<ProfessorGestor | null>(null);
   const [formProfessor, setFormProfessor] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "" });
-  const [dialogComissoes, setDialogComissoes] = useState(false);
-  const [dialogLogCheckins, setDialogLogCheckins] = useState(false);
 
   // Aluno state
   const [dialogNovoAluno, setDialogNovoAluno] = useState(false);
@@ -578,8 +583,18 @@ export default function ManagerDashboard({
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-1" data-testid="text-manager-title">Painel do Gestor</h1>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold" data-testid="text-manager-title">Painel do Gestor</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowHelp(true)}
+          data-testid="button-open-help"
+          className="shrink-0"
+        >
+          <BookOpen className="h-4 w-4 mr-2" />
+          Ajuda
+        </Button>
       </div>
 
       {/* Stats */}
@@ -3021,6 +3036,8 @@ export default function ManagerDashboard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <HelpDialog open={showHelp} onClose={() => setShowHelp(false)} />
 
       </div>
       );
