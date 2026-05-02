@@ -60,6 +60,11 @@ import {
   PercentCircle,
   ListChecks,
   ChevronDown,
+  Landmark,
+  Building2,
+  Save,
+  Key,
+  Webhook,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -211,6 +216,29 @@ export default function ManagerDashboard({
   const [dialogComissoes, setDialogComissoes] = useState(false);
   const [dialogLogCheckins, setDialogLogCheckins] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+
+  // Conta Bancária dialog state
+  const [dialogContaBancaria, setDialogContaBancaria] = useState(false);
+  const [formContaBancaria, setFormContaBancaria] = useState({
+    receiverName: "",
+    pixKey: "",
+    banco: "",
+    agencia: "",
+    numeroConta: "",
+    tipoConta: "corrente",
+    cpfCnpj: "",
+    bankApiKey: "",
+    bankWebhookUrl: "",
+  });
+
+  // Conta Bancária query + mutation
+  const { data: contaBancariaData } = useQuery<any>({
+    queryKey: ["/api/finance/settings"],
+    enabled: dialogContaBancaria,
+  });
+  const salvarContaBancaria = useMutation({
+    mutationFn: (data: any) => apiRequest("PUT", "/api/finance/settings", data).then((r) => r.json()),
+  });
 
   // Commission queries
   const { data: resumoComissoes = [], refetch: refetchComissoes } = useQuery<any[]>({
@@ -687,6 +715,21 @@ export default function ManagerDashboard({
     if (section === "comissoes") { refetchComissoes(); setDialogComissoes(true); return; }
     if (section === "checkins") { setDialogLogCheckins(true); return; }
     if (section === "ajuda") { setShowHelp(true); return; }
+    if (section === "conta") {
+      setFormContaBancaria({
+        receiverName: contaBancariaData?.receiverName ?? "",
+        pixKey: contaBancariaData?.pixKey ?? "",
+        banco: contaBancariaData?.banco ?? "",
+        agencia: contaBancariaData?.agencia ?? "",
+        numeroConta: contaBancariaData?.numeroConta ?? "",
+        tipoConta: contaBancariaData?.tipoConta ?? "corrente",
+        cpfCnpj: contaBancariaData?.cpfCnpj ?? "",
+        bankApiKey: contaBancariaData?.bankApiKey ?? "",
+        bankWebhookUrl: contaBancariaData?.bankWebhookUrl ?? "",
+      });
+      setDialogContaBancaria(true);
+      return;
+    }
     setActiveSection(section);
   };
 
@@ -3752,6 +3795,179 @@ export default function ManagerDashboard({
       </Dialog>
 
       <HelpDialog open={showHelp} onClose={() => setShowHelp(false)} />
+
+      {/* Dialog Conta Bancária */}
+      <Dialog open={dialogContaBancaria} onOpenChange={setDialogContaBancaria}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Landmark className="h-5 w-5 text-primary" />
+              Configuração da Conta
+            </DialogTitle>
+            <DialogDescription>
+              Configure os dados bancários e chave PIX para recebimento de mensalidades.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-2">
+            {/* Dados do recebedor */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Dados do Recebedor
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="conta-receiverName">Nome do Recebedor</Label>
+                  <Input
+                    id="conta-receiverName"
+                    value={formContaBancaria.receiverName}
+                    onChange={(e) => setFormContaBancaria({ ...formContaBancaria, receiverName: e.target.value })}
+                    placeholder="Nome completo ou razão social"
+                    data-testid="input-conta-receiverName"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="conta-cpfCnpj">CPF / CNPJ</Label>
+                  <Input
+                    id="conta-cpfCnpj"
+                    value={formContaBancaria.cpfCnpj}
+                    onChange={(e) => setFormContaBancaria({ ...formContaBancaria, cpfCnpj: e.target.value })}
+                    placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                    data-testid="input-conta-cpfCnpj"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Dados bancários */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+                <Landmark className="h-4 w-4" />
+                Dados Bancários
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="conta-banco">Banco</Label>
+                  <Input
+                    id="conta-banco"
+                    value={formContaBancaria.banco}
+                    onChange={(e) => setFormContaBancaria({ ...formContaBancaria, banco: e.target.value })}
+                    placeholder="Ex: Itaú, Bradesco, Nubank…"
+                    data-testid="input-conta-banco"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="conta-tipoConta">Tipo de Conta</Label>
+                  <Select
+                    value={formContaBancaria.tipoConta}
+                    onValueChange={(v) => setFormContaBancaria({ ...formContaBancaria, tipoConta: v })}
+                  >
+                    <SelectTrigger id="conta-tipoConta" data-testid="select-conta-tipoConta">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="corrente">Conta Corrente</SelectItem>
+                      <SelectItem value="poupanca">Conta Poupança</SelectItem>
+                      <SelectItem value="pagamento">Conta de Pagamento</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="conta-agencia">Agência</Label>
+                  <Input
+                    id="conta-agencia"
+                    value={formContaBancaria.agencia}
+                    onChange={(e) => setFormContaBancaria({ ...formContaBancaria, agencia: e.target.value })}
+                    placeholder="Ex: 1234"
+                    data-testid="input-conta-agencia"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="conta-numeroConta">Número da Conta</Label>
+                  <Input
+                    id="conta-numeroConta"
+                    value={formContaBancaria.numeroConta}
+                    onChange={(e) => setFormContaBancaria({ ...formContaBancaria, numeroConta: e.target.value })}
+                    placeholder="Ex: 12345-6"
+                    data-testid="input-conta-numeroConta"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Chave PIX */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                Chave PIX
+              </h3>
+              <div className="space-y-1.5">
+                <Label htmlFor="conta-pixKey">Chave PIX</Label>
+                <Input
+                  id="conta-pixKey"
+                  value={formContaBancaria.pixKey}
+                  onChange={(e) => setFormContaBancaria({ ...formContaBancaria, pixKey: e.target.value })}
+                  placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                  data-testid="input-conta-pixKey"
+                />
+                <p className="text-xs text-muted-foreground">Esta chave é usada para gerar o QR Code de pagamento das mensalidades.</p>
+              </div>
+            </div>
+
+            {/* Credenciais de API (avançado) */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+                <Webhook className="h-4 w-4" />
+                Integração de API (Opcional)
+              </h3>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="conta-bankApiKey">API Key do Banco / Gateway</Label>
+                  <Input
+                    id="conta-bankApiKey"
+                    type="password"
+                    value={formContaBancaria.bankApiKey}
+                    onChange={(e) => setFormContaBancaria({ ...formContaBancaria, bankApiKey: e.target.value })}
+                    placeholder="Chave de API fornecida pelo banco ou gateway de pagamento"
+                    data-testid="input-conta-bankApiKey"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="conta-bankWebhookUrl">URL de Webhook</Label>
+                  <Input
+                    id="conta-bankWebhookUrl"
+                    value={formContaBancaria.bankWebhookUrl}
+                    onChange={(e) => setFormContaBancaria({ ...formContaBancaria, bankWebhookUrl: e.target.value })}
+                    placeholder="https://meubank.com/webhook/confirmacao"
+                    data-testid="input-conta-bankWebhookUrl"
+                  />
+                  <p className="text-xs text-muted-foreground">URL para receber confirmações automáticas de pagamento.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogContaBancaria(false)} data-testid="button-conta-cancelar">
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => salvarContaBancaria.mutate(formContaBancaria, {
+                onSuccess: () => {
+                  qc.invalidateQueries({ queryKey: ["/api/finance/settings"] });
+                  setDialogContaBancaria(false);
+                },
+              })}
+              disabled={salvarContaBancaria.isPending}
+              data-testid="button-conta-salvar"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {salvarContaBancaria.isPending ? "Salvando…" : "Salvar Configurações"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
         </div>
       </div>

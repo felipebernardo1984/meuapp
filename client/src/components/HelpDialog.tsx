@@ -21,6 +21,8 @@ import {
   UserCheck,
   Receipt,
   BarChart2,
+  CalendarClock,
+  Landmark,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -316,6 +318,83 @@ const secoes: HelpSection[] = [
           "Distribuição por plano e por tipo de integração (Mensalista, Wellhub, TotalPass)",
           "Lista financeira dos alunos com receita gerada por cada um",
         ],
+      },
+    ],
+  },
+  {
+    id: "mensalidades",
+    icon: CalendarClock,
+    title: "Mensalidades",
+    content: [
+      {
+        titulo: "O que é um mensalista?",
+        descricao: "Mensalistas são alunos com integração do tipo 'Mensalista' — pagam um valor fixo por mês e têm acesso ilimitado à arena. O sistema controla o status do pagamento e bloqueia o check-in de inadimplentes.",
+      },
+      {
+        titulo: "Cadastrar um mensalista",
+        descricao: "Na seção 'Mensalidades', clique em 'Cadastrar Mensalista'. Preencha os dados do aluno:",
+        passos: [
+          "Nome completo, CPF, login e senha de acesso",
+          "Modalidade praticada (ex: Beach Tennis)",
+          "Professor responsável (opcional)",
+          "Plano mensalista — deve ter valor fixo (R$) configurado",
+          "Status inicial da mensalidade: Pago, Pendente ou Atrasado",
+          "Data de vencimento da mensalidade",
+        ],
+        dica: "Apenas planos com valor em R$ aparecerão na seleção. Configure planos mensalistas em 'Planos' antes de cadastrar.",
+      },
+      {
+        titulo: "Acompanhar status das mensalidades",
+        descricao: "A tabela de mensalidades exibe todos os mensalistas com seu status naquele mês. Use os filtros para ver apenas Pagos, Pendentes ou Atrasados.",
+        passos: [
+          "Verde (Pago): mensalidade confirmada para o mês",
+          "Amarelo (Pendente): mensalidade não registrada ainda",
+          "Vermelho (Atrasado): venceu sem pagamento",
+        ],
+      },
+      {
+        titulo: "Registrar pagamento de mensalidade",
+        descricao: "Clique no ícone ⋯ ao lado do aluno na tabela e selecione 'Registrar Pagamento'. Informe o valor, data de pagamento e mês de referência.",
+        dica: "O status é atualizado instantaneamente e o aluno volta a ter acesso ao check-in.",
+      },
+      {
+        titulo: "Alterar plano de um mensalista",
+        descricao: "No menu ⋯ do aluno, clique em 'Alterar Plano'. Selecione o novo plano mensalista. A alteração vale a partir do próximo registro de pagamento.",
+      },
+    ],
+  },
+  {
+    id: "conta-bancaria",
+    icon: Landmark,
+    title: "Conta Bancária",
+    content: [
+      {
+        titulo: "Por que configurar a conta bancária?",
+        descricao: "As informações bancárias são usadas para identificar a conta de destino dos pagamentos de mensalidades e gerar o QR Code PIX para os alunos. São dados de referência — o sistema não realiza transferências automáticas.",
+      },
+      {
+        titulo: "Acessar a configuração",
+        descricao: "No menu lateral, clique em 'Conta Bancária' (ícone de banco) no grupo 'Configurações'. O painel de configuração abrirá com quatro seções:",
+        passos: [
+          "Dados do Recebedor: nome e CPF/CNPJ do titular da conta",
+          "Dados Bancários: banco, tipo de conta (corrente, poupança ou pagamento), agência e número da conta",
+          "Chave PIX: CPF, CNPJ, e-mail, telefone ou chave aleatória — usada para gerar o QR Code de pagamento",
+          "Integração de API (opcional): API Key e URL de Webhook para recebimento automático de confirmações de pagamento via gateway",
+        ],
+      },
+      {
+        titulo: "Configurar a Chave PIX",
+        descricao: "Insira a chave PIX cadastrada na conta bancária. Ela pode ser: CPF (000.000.000-00), CNPJ, e-mail, número de telefone com DDI (ex: +5511999999999) ou chave aleatória gerada pelo banco.",
+        dica: "A chave PIX configurada aqui é a mesma exibida no histórico financeiro dos alunos para referência de pagamento.",
+      },
+      {
+        titulo: "Integração via API (avançado)",
+        descricao: "Para gateways de pagamento como Asaas, Pagar.me ou bancos com API aberta, você pode configurar:",
+        passos: [
+          "API Key: chave de autenticação fornecida pelo banco/gateway — trate como senha, não compartilhe",
+          "URL de Webhook: endereço para receber notificações automáticas quando um PIX for confirmado",
+        ],
+        dica: "Esta funcionalidade é opcional e voltada para integrações futuras com automação de baixa de pagamentos.",
       },
     ],
   },

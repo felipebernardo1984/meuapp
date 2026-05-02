@@ -407,7 +407,18 @@ export class DatabaseStorage {
       .values(data)
       .onConflictDoUpdate({
         target: paymentSettings.tenantId,
-        set: { receiverName: data.receiverName, pixKey: data.pixKey, pixQrcodeImage: data.pixQrcodeImage },
+        set: {
+          receiverName: data.receiverName,
+          pixKey: data.pixKey,
+          pixQrcodeImage: data.pixQrcodeImage,
+          banco: data.banco,
+          agencia: data.agencia,
+          numeroConta: data.numeroConta,
+          tipoConta: data.tipoConta,
+          cpfCnpj: data.cpfCnpj,
+          bankApiKey: data.bankApiKey,
+          bankWebhookUrl: data.bankWebhookUrl,
+        },
       })
       .returning();
     return settings;

@@ -17,6 +17,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  Landmark,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
       { id: "integracoes", label: "Integrações", icon: Link2 },
       { id: "configuracoes", label: "Configurações", icon: Settings },
+      { id: "conta", label: "Conta Bancária", icon: Landmark },
     ],
   },
   {

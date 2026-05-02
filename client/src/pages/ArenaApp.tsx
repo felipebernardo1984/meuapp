@@ -145,6 +145,10 @@ export default function ArenaApp() {
     mutationFn: (alunoId: string) => apiRequest("DELETE", `/api/alunos/${alunoId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
   });
+  const reativarAluno = useMutation({
+    mutationFn: (alunoId: string) => apiRequest("PUT", `/api/alunos/${alunoId}/reativar`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+  });
 
   // ── Financial queries ─────────────────────────────────────────────────────
   const { data: allCharges = [] } = useQuery<any[]>({
@@ -345,8 +349,9 @@ export default function ArenaApp() {
                 historico: a.historico ?? [],
                 integrationType: a.integrationType ?? "none",
                 integrationPlan: a.integrationPlan ?? "",
+                professorId: a.professorId ?? undefined,
               }))}
-              professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade }))}
+              professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade, percentualComissao: p.percentualComissao }))}
               onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
               onCadastrarProfessor={(dados: any) => cadastrarProfessor.mutate(dados)}
               onEditarProfessor={(profId: string, dados: any) => editarProfessor.mutate({ id: profId, ...dados })}
@@ -369,6 +374,7 @@ export default function ArenaApp() {
               onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
               onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
               onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
+              onReativarAluno={(alunoId: string) => reativarAluno.mutate(alunoId)}
             />
           )}
           {gestorTab === "financeiro" && (

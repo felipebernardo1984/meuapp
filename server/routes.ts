@@ -869,8 +869,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/finance/settings", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { receiverName, pixKey, pixQrcodeImage } = req.body;
-    const settings = await storage.upsertPaymentSettings({ tenantId: arenaId, receiverName, pixKey, pixQrcodeImage });
+    const { receiverName, pixKey, pixQrcodeImage, banco, agencia, numeroConta, tipoConta, cpfCnpj, bankApiKey, bankWebhookUrl } = req.body;
+    const settings = await storage.upsertPaymentSettings({ tenantId: arenaId, receiverName, pixKey, pixQrcodeImage, banco, agencia, numeroConta, tipoConta, cpfCnpj, bankApiKey, bankWebhookUrl });
     res.json(settings);
   });
 

@@ -180,12 +180,21 @@ export const insertMessageSettingsSchema = createInsertSchema(messageSettings);
 export type InsertMessageSettings = z.infer<typeof insertMessageSettingsSchema>;
 export type MessageSettings = typeof messageSettings.$inferSelect;
 
-// ── Payment Settings (Configurações PIX) ─────────────────────────────────────
+// ── Payment Settings (Configurações PIX / Conta Bancária) ────────────────────
 export const paymentSettings = pgTable("payment_settings", {
   tenantId: varchar("tenant_id").primaryKey().references(() => arenas.id, { onDelete: "cascade" }),
   receiverName: text("receiver_name"),
   pixKey: text("pix_key"),
   pixQrcodeImage: text("pix_qrcode_image"),
+  // Dados bancários
+  banco: text("banco"),
+  agencia: text("agencia"),
+  numeroConta: text("numero_conta"),
+  tipoConta: text("tipo_conta"),
+  cpfCnpj: text("cpf_cnpj"),
+  // API do banco (integrações futuras)
+  bankApiKey: text("bank_api_key"),
+  bankWebhookUrl: text("bank_webhook_url"),
 });
 
 export const insertPaymentSettingsSchema = createInsertSchema(paymentSettings);
