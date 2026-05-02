@@ -47,7 +47,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Principal",
     items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { id: "dashboard", label: "Home", icon: LayoutDashboard },
     ],
   },
   {

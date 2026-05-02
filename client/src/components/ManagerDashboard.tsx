@@ -65,6 +65,14 @@ import {
   Save,
   Key,
   Webhook,
+  TrendingUp,
+  Users,
+  Activity,
+  BarChart3,
+  GraduationCap,
+  ArrowUpRight,
+  Star,
+  Zap,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -726,7 +734,7 @@ export default function ManagerDashboard({
   const alunosPendentes = alunos.filter((a) => !a.aprovado);
   const alunoPlanoSelecionado = alunos.find((a) => a.id === alunoPlanoId);
 
-  const [activeSection, setActiveSection] = useState("alunos");
+  const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleSidebarAction = (section: string) => {
@@ -808,8 +816,31 @@ export default function ManagerDashboard({
     .filter((r) => r.pagMes?.status === "paid")
     .reduce((acc, r) => acc + parseFloat((r.pagMes?.amount ?? "0").replace(",", ".")), 0);
 
+  // ── Home computed values ──────────────────────────────────────────────────
+  const today = new Date().toLocaleDateString("pt-BR");
+  const horaAtual = new Date().getHours();
+  const saudacao = horaAtual < 12 ? "Bom dia" : horaAtual < 18 ? "Boa tarde" : "Boa noite";
+  const dataHojeStr = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const alunosAprovados = alunos.filter(a => a.aprovado);
+  const checkinsHoje = alunosAprovados.filter(a => a.ultimoCheckin === today).length;
+  const adimplPct = mensalistas.length > 0 ? totalPagosMes / mensalistas.length : 0;
+  const fmtBRL = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
+  const porPlanoMap: Record<string, number> = {};
+  alunosAprovados.forEach(a => { const k = a.planoTitulo || "Sem plano"; porPlanoMap[k] = (porPlanoMap[k] || 0) + 1; });
+  const porPlano = Object.entries(porPlanoMap).sort((a, b) => b[1] - a[1]);
+  const maxPlano = Math.max(...porPlano.map(([, v]) => v), 1);
+  const porModMap: Record<string, number> = {};
+  alunosAprovados.forEach(a => { const m = a.modalidade || "Outros"; porModMap[m] = (porModMap[m] || 0) + 1; });
+  const porMod = Object.entries(porModMap).sort((a, b) => b[1] - a[1]);
+  const maxMod = Math.max(...porMod.map(([, v]) => v), 1);
+  const alunosPorProfMap = new Map<string, number>();
+  alunosAprovados.forEach(a => { if (a.professorId) alunosPorProfMap.set(a.professorId, (alunosPorProfMap.get(a.professorId) || 0) + 1); });
+  const toDateNum = (s: string) => { const [d, m, y] = (s ?? "").split("/"); return parseInt((y ?? "0") + (m ?? "0").padStart(2, "0") + (d ?? "0").padStart(2, "0")); };
+  const recentCheckins = [...alunosAprovados].filter(a => a.ultimoCheckin).sort((a, b) => toDateNum(b.ultimoCheckin!) - toDateNum(a.ultimoCheckin!)).slice(0, 6);
+  const circ42 = 2 * Math.PI * 42;
+
   const sectionTitle: Record<string, string> = {
-    dashboard: "Dashboard",
+    dashboard: "Home",
     alunos: "Alunos",
     mensalidades: "Mensalidades",
     professores: "Professores",
@@ -836,80 +867,370 @@ export default function ManagerDashboard({
 
       {activeSection === "dashboard" && (
       <>
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Alunos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold" data-testid="text-total-students">{alunos.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Alunos Pendentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-orange-600" data-testid="text-pending-students">
-              {alunosPendentes.length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Professores Ativos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold" data-testid="text-total-teachers">{professores.length}</p>
-          </CardContent>
-        </Card>
-      </div>
+        {/* ── Saudação ── */}
+        <div className="mb-6 flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground" data-testid="text-home-greeting">
+              {saudacao}!
+            </h2>
+            <p className="text-muted-foreground text-sm capitalize">{dataHojeStr}</p>
+          </div>
+          {alunosPendentes.length > 0 && (
+            <button
+              onClick={() => setActiveSection("alunos")}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-sm font-medium hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
+              data-testid="alert-pending-home"
+            >
+              <AlertCircle className="h-4 w-4" />
+              {alunosPendentes.length} aguardando aprovação →
+            </button>
+          )}
+        </div>
 
-      {/* ── Assinatura do Sistema ── */}
-      {subscription && (
-        <Card className="mb-6 border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />Assinatura do Sistema
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-4">
-              <div>
-                <p className="text-muted-foreground text-xs mb-0.5">Plano contratado</p>
-                <p className="font-semibold capitalize">
-                  {subscription.subscriptionPlan === "basic" ? "Plano Básico" : subscription.subscriptionPlan === "premium" ? "Plano Premium" : subscription.subscriptionPlan}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs mb-0.5">Valor mensal</p>
-                <p className="font-semibold">{subscription.subscriptionValue ?? "—"}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs mb-0.5">Status</p>
-                <Badge variant={subscription.subscriptionStatus === "Ativo" ? "default" : subscription.subscriptionStatus === "Em atraso" ? "destructive" : "secondary"} data-testid="badge-subscription-status">
-                  {subscription.subscriptionStatus === "Ativo"
-                    ? <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />{subscription.subscriptionStatus}</span>
-                    : <span className="flex items-center gap-1"><AlertCircle className="h-3 w-3" />{subscription.subscriptionStatus}</span>}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs mb-0.5">Data de início</p>
-                <p className="font-semibold">{subscription.subscriptionStartDate ?? "—"}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs mb-0.5">Próxima cobrança</p>
-                <p className="font-semibold">{subscription.nextBillingDate ?? "—"}</p>
-              </div>
+        {/* ── 4 Metric Cards ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 text-white shadow-md" data-testid="card-total-alunos">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-blue-100 text-xs font-semibold uppercase tracking-wider">Alunos Ativos</span>
+              <Users className="h-5 w-5 text-blue-200" />
             </div>
-            <Button size="sm" onClick={() => setShowPayDialog(true)} data-testid="button-pay-subscription">
-              <CreditCard className="h-3.5 w-3.5 mr-1.5" />
-              Pagar assinatura
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+            <p className="text-4xl font-bold leading-none" data-testid="text-total-students">{alunosAprovados.length}</p>
+            <p className="text-xs text-blue-200 mt-2">
+              {alunosPendentes.length > 0 ? `+${alunosPendentes.length} pendente(s)` : "todos aprovados"}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-4 text-white shadow-md" data-testid="card-checkins-hoje">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-orange-100 text-xs font-semibold uppercase tracking-wider">Check-ins Hoje</span>
+              <Zap className="h-5 w-5 text-orange-100" />
+            </div>
+            <p className="text-4xl font-bold leading-none" data-testid="text-checkins-hoje">{checkinsHoje}</p>
+            <p className="text-xs text-orange-100 mt-2">{today}</p>
+          </div>
+
+          <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-4 text-white shadow-md" data-testid="card-mensalidades">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-emerald-100 text-xs font-semibold uppercase tracking-wider">Mensalidades</span>
+              <CheckCircle2 className="h-5 w-5 text-emerald-200" />
+            </div>
+            <p className="text-4xl font-bold leading-none" data-testid="text-mensalidades-pagas">
+              {totalPagosMes}
+              <span className="text-xl text-emerald-200 font-normal">/{mensalistas.length}</span>
+            </p>
+            <p className="text-xs text-emerald-200 mt-2">
+              {totalPendentesMes > 0 ? `${totalPendentesMes} pendente(s)` : "todas em dia"}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 p-4 text-white shadow-md" data-testid="card-receita">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-purple-100 text-xs font-semibold uppercase tracking-wider">Receita do Mês</span>
+              <DollarSign className="h-5 w-5 text-purple-200" />
+            </div>
+            <p className="text-2xl font-bold leading-none" data-testid="text-receita-mes">{fmtBRL(receitaMes)}</p>
+            <p className="text-xs text-purple-200 mt-2">mensalidades pagas</p>
+          </div>
+        </div>
+
+        {/* ── Adimplência + Distribuição por Plano ── */}
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* Adimplência Ring */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                Adimplência do Mês
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-6">
+                <div className="relative shrink-0 w-28 h-28">
+                  <svg width="112" height="112" viewBox="0 0 112 112">
+                    <circle cx="56" cy="56" r="42" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted opacity-30" />
+                    {adimplPct > 0 && (
+                      <circle
+                        cx="56" cy="56" r="42" fill="none"
+                        stroke={adimplPct >= 0.8 ? "#10b981" : adimplPct >= 0.5 ? "#f59e0b" : "#ef4444"}
+                        strokeWidth="12"
+                        strokeDasharray={`${circ42 * adimplPct} ${circ42 * (1 - adimplPct)}`}
+                        strokeLinecap="round"
+                        transform="rotate(-90 56 56)"
+                        style={{ transition: "stroke-dasharray 0.7s ease" }}
+                      />
+                    )}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <p className="text-xl font-bold leading-none">{Math.round(adimplPct * 100)}%</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">em dia</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3 flex-1">
+                  <div className="flex justify-between items-center">
+                    <span className="flex items-center gap-2 text-sm">
+                      <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shrink-0" />
+                      Em dia
+                    </span>
+                    <span className="font-bold text-emerald-600 text-sm">{totalPagosMes}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="flex items-center gap-2 text-sm">
+                      <span className="w-3 h-3 rounded-full bg-amber-400 inline-block shrink-0" />
+                      Pendente
+                    </span>
+                    <span className="font-bold text-amber-600 text-sm">{totalPendentesMes}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-sm text-muted-foreground">Total mensalistas</span>
+                    <span className="font-bold text-sm">{mensalistas.length}</span>
+                  </div>
+                  <button
+                    onClick={() => setActiveSection("mensalidades")}
+                    className="text-xs text-primary flex items-center gap-1 hover:underline mt-1"
+                    data-testid="link-ver-mensalidades"
+                  >
+                    Ver mensalidades <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Distribuição por Plano */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-blue-500" />
+                Distribuição por Plano
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {porPlano.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-6">Nenhum plano cadastrado</p>
+              )}
+              {porPlano.slice(0, 5).map(([titulo, count], i) => {
+                const barColors = ["bg-blue-500", "bg-violet-500", "bg-emerald-500", "bg-orange-500", "bg-cyan-500"];
+                const textColors = ["text-blue-600", "text-violet-600", "text-emerald-600", "text-orange-600", "text-cyan-600"];
+                const pct = alunosAprovados.length > 0 ? Math.round((count / alunosAprovados.length) * 100) : 0;
+                return (
+                  <div key={titulo} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-medium truncate max-w-[160px]">{titulo}</span>
+                      <span className={`ml-2 font-semibold ${textColors[i % textColors.length]}`}>{count} ({pct}%)</span>
+                    </div>
+                    <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${barColors[i % barColors.length]} transition-all duration-700`}
+                        style={{ width: `${(count / maxPlano) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              <button
+                onClick={() => setActiveSection("planos")}
+                className="text-xs text-primary flex items-center gap-1 hover:underline pt-1"
+                data-testid="link-ver-planos"
+              >
+                Gerenciar planos <ArrowUpRight className="h-3 w-3" />
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Equipe de Professores ── */}
+        {professores.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-violet-500" />
+                Equipe de Professores
+                <span className="ml-auto text-xs font-normal text-muted-foreground">{professores.length} ativo(s)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+                {professores.map((prof, i) => {
+                  const gradients = [
+                    "from-blue-400 to-blue-600",
+                    "from-violet-400 to-purple-600",
+                    "from-emerald-400 to-emerald-600",
+                    "from-orange-400 to-orange-600",
+                    "from-pink-400 to-rose-600",
+                    "from-cyan-400 to-cyan-600",
+                  ];
+                  const alunosCount = alunosPorProfMap.get(prof.id) ?? 0;
+                  return (
+                    <div
+                      key={prof.id}
+                      className="shrink-0 snap-start w-40 rounded-2xl border bg-card hover:shadow-md hover:border-primary/30 transition-all p-4 flex flex-col items-center text-center gap-2 cursor-pointer"
+                      onClick={() => setActiveSection("professores")}
+                      data-testid={`prof-card-${prof.id}`}
+                    >
+                      <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center shadow-md`}>
+                        <span className="text-white text-2xl font-bold">{prof.nome.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm leading-tight">{prof.nome.split(" ")[0]}</p>
+                        {prof.modalidade && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 font-medium mt-1 inline-block">
+                            {prof.modalidade}
+                          </span>
+                        )}
+                      </div>
+                      <div className="w-full space-y-1 text-xs border-t pt-2 mt-1">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Alunos</span>
+                          <span className="font-bold">{alunosCount}</span>
+                        </div>
+                        {prof.percentualComissao && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Comissão</span>
+                            <span className="font-bold text-emerald-600">{prof.percentualComissao}%</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── Bottom Row: Modalidades + Últimas Presenças ── */}
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* Alunos por Modalidade */}
+          {porMod.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-orange-500" />
+                  Alunos por Modalidade
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {porMod.map(([mod, count], i) => {
+                  const modColors = ["bg-orange-500", "bg-blue-500", "bg-violet-500", "bg-emerald-500", "bg-cyan-500", "bg-pink-500", "bg-amber-500"];
+                  const modText = ["text-orange-600", "text-blue-600", "text-violet-600", "text-emerald-600", "text-cyan-600", "text-pink-600", "text-amber-600"];
+                  const pct = alunosAprovados.length > 0 ? Math.round((count / alunosAprovados.length) * 100) : 0;
+                  return (
+                    <div key={mod} className="flex items-center gap-3">
+                      <span className={`w-3 h-3 rounded-full shrink-0 ${modColors[i % modColors.length]}`} />
+                      <div className="flex-1">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="font-medium">{mod}</span>
+                          <span className={`font-semibold ${modText[i % modText.length]}`}>{count} · {pct}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${modColors[i % modColors.length]} transition-all duration-700`}
+                            style={{ width: `${(count / maxMod) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Últimas Presenças */}
+          {recentCheckins.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <History className="h-4 w-4 text-blue-500" />
+                  Últimas Presenças
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                {recentCheckins.map((aluno, i) => {
+                  const avatarGrads = [
+                    "from-blue-400 to-blue-600",
+                    "from-violet-400 to-purple-600",
+                    "from-emerald-400 to-emerald-600",
+                    "from-orange-400 to-orange-600",
+                    "from-pink-400 to-rose-600",
+                    "from-cyan-400 to-cyan-600",
+                  ];
+                  return (
+                    <div key={aluno.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors">
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${avatarGrads[i % avatarGrads.length]} flex items-center justify-center shrink-0 shadow-sm`}>
+                        <span className="text-white text-sm font-bold">{aluno.nome.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate leading-tight">{aluno.nome}</p>
+                        <p className="text-xs text-muted-foreground truncate">{aluno.modalidade || aluno.planoTitulo}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-muted-foreground">{aluno.ultimoCheckin}</p>
+                        <span className={`text-xs font-semibold ${aluno.statusMensalidade === "Em dia" ? "text-emerald-600" : "text-orange-500"}`}>
+                          {aluno.statusMensalidade}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                <button
+                  onClick={() => setActiveSection("alunos")}
+                  className="text-xs text-primary flex items-center gap-1 hover:underline pt-2 pl-2"
+                  data-testid="link-ver-alunos"
+                >
+                  Ver todos os alunos <ArrowUpRight className="h-3 w-3" />
+                </button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* ── Assinatura do Sistema ── */}
+        {subscription && (
+          <Card className="mb-6 border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />Assinatura do Sistema
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-4">
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Plano contratado</p>
+                  <p className="font-semibold capitalize">
+                    {subscription.subscriptionPlan === "basic" ? "Plano Básico" : subscription.subscriptionPlan === "premium" ? "Plano Premium" : subscription.subscriptionPlan}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Valor mensal</p>
+                  <p className="font-semibold">{subscription.subscriptionValue ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Status</p>
+                  <Badge variant={subscription.subscriptionStatus === "Ativo" ? "default" : subscription.subscriptionStatus === "Em atraso" ? "destructive" : "secondary"} data-testid="badge-subscription-status">
+                    {subscription.subscriptionStatus === "Ativo"
+                      ? <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />{subscription.subscriptionStatus}</span>
+                      : <span className="flex items-center gap-1"><AlertCircle className="h-3 w-3" />{subscription.subscriptionStatus}</span>}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Data de início</p>
+                  <p className="font-semibold">{subscription.subscriptionStartDate ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Próxima cobrança</p>
+                  <p className="font-semibold">{subscription.nextBillingDate ?? "—"}</p>
+                </div>
+              </div>
+              <Button size="sm" onClick={() => setShowPayDialog(true)} data-testid="button-pay-subscription">
+                <CreditCard className="h-3.5 w-3.5 mr-1.5" />
+                Pagar assinatura
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </>
       )}
 
