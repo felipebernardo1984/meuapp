@@ -935,6 +935,202 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ receitaWellhub, receitaTotalpass, receitaNormal });
   });
 
+  // ── Relatórios Financeiros ────────────────────────────────────────────────
+
+  function parsePtBRDate(dateStr: string): Date | null {
+    const parts = dateStr.split("/");
+    if (parts.length === 3) return new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00Z`);
+    return null;
+  }
+
+  // Visão Geral Mensal
+  app.get("/api/finance/relatorio/visao-geral", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const now = new Date();
+      const mesSel = req.query.mes ? parseInt(req.query.mes as string) : now.getMonth() + 1;
+      const anoSel = req.query.ano ? parseInt(req.query.ano as string) : now.getFullYear();
+      const referenceMonth = `${String(mesSel).padStart(2, "0")}/${anoSel}`;
+
+      const [allPayments, allCheckins, allCheckinFin, students] = await Promise.all([
+        storage.listPayments(arenaId),
+        storage.listAllCheckinsByArena(arenaId),
+        storage.listCheckinFinanceiro(arenaId),
+        storage.listStudents(arenaId),
+      ]);
+
+      const studentMap = new Map(students.map(s => [s.id, s]));
+      const monthPayments = allPayments.filter(p => p.referenceMonth === referenceMonth);
+      const monthCheckins = allCheckins.filter(c => {
+        const parts = c.data.split("/");
+        return parts.length === 3 && parseInt(parts[1]) === mesSel && parseInt(parts[2]) === anoSel;
+      });
+      const checkinIds = new Set(monthCheckins.map(c => c.id));
+      const monthCF = allCheckinFin.filter(cf => cf.checkinId && checkinIds.has(cf.checkinId));
+      const cfMap = new Map(monthCF.map(cf => [cf.checkinId, cf]));
+
+      const receitaMensalidades = monthPayments.filter(p => p.status === "paid").reduce((a, p) => a + parseFloat(p.amount?.replace(/[^0-9.]/g, "") || "0"), 0);
+      const receitaCheckins = monthCF.reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
+      const receitaWellhub = monthCF.filter(cf => cf.integrationType === "wellhub").reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
+      const receitaTotalpass = monthCF.filter(cf => cf.integrationType === "totalpass").reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
+
+      const porTipo: Record<string, { count: number; receita: number }> = {};
+      const porModalidade: Record<string, { count: number; receita: number; visitantes: Set<string> }> = {};
+      const porDia: Record<string, { count: number; receita: number }> = {};
+
+      for (const c of monthCheckins) {
+        const tipo = c.tipo || "pendente";
+        porTipo[tipo] = porTipo[tipo] || { count: 0, receita: 0 };
+        porTipo[tipo].count++;
+        const fin = cfMap.get(c.id);
+        if (fin) porTipo[tipo].receita += parseFloat(fin.valorTotal || "0");
+
+        const student = studentMap.get(c.studentId ?? "");
+        const mod = student?.modalidade ?? "Outros";
+        porModalidade[mod] = porModalidade[mod] || { count: 0, receita: 0, visitantes: new Set() };
+        porModalidade[mod].count++;
+        if (c.studentId) porModalidade[mod].visitantes.add(c.studentId);
+        if (fin) porModalidade[mod].receita += parseFloat(fin.valorTotal || "0");
+
+        const dia = c.data.split("/")[0] || "0";
+        porDia[dia] = porDia[dia] || { count: 0, receita: 0 };
+        porDia[dia].count++;
+        if (fin) porDia[dia].receita += parseFloat(fin.valorTotal || "0");
+      }
+
+      const visitantesUnicos = new Set(monthCheckins.map(c => c.studentId).filter(Boolean)).size;
+      const pagas = monthPayments.filter(p => p.status === "paid").length;
+      const pendentes = monthPayments.filter(p => p.status === "pending").length;
+      const atrasadas = monthPayments.filter(p => p.status === "overdue").length;
+
+      res.json({
+        mes: mesSel, ano: anoSel, referenceMonth,
+        totalCheckins: monthCheckins.length,
+        visitantesUnicos,
+        receitaMensalidades, receitaCheckins, receitaWellhub, receitaTotalpass,
+        receitaTotal: receitaMensalidades + receitaCheckins,
+        mensalidadesPagas: pagas, mensalidadesPendentes: pendentes, mensalidadesAtrasadas: atrasadas,
+        totalMensalidades: monthPayments.length,
+        porTipo: Object.entries(porTipo).map(([tipo, d]) => ({ tipo, ...d })),
+        porModalidade: Object.entries(porModalidade).map(([modalidade, d]) => ({ modalidade, count: d.count, receita: d.receita, visitantes: d.visitantes.size })),
+        porDia: Object.entries(porDia).sort((a, b) => parseInt(a[0]) - parseInt(b[0])).map(([dia, d]) => ({ dia: parseInt(dia), ...d })),
+      });
+    } catch (e: any) { res.status(500).json({ message: e?.message }); }
+  });
+
+  // Pagamento por Visitante
+  app.get("/api/finance/relatorio/por-visitante", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const { dataInicio, dataFim, busca } = req.query as Record<string, string>;
+      const inicio = dataInicio ? new Date(dataInicio + "T00:00:00Z") : null;
+      const fim = dataFim ? new Date(dataFim + "T23:59:59Z") : null;
+
+      const [allCheckins, students, allCF] = await Promise.all([
+        storage.listAllCheckinsByArena(arenaId),
+        storage.listStudents(arenaId),
+        storage.listCheckinFinanceiro(arenaId),
+      ]);
+
+      const studentMap = new Map(students.map(s => [s.id, s]));
+      const cfMap = new Map(allCF.map(cf => [cf.checkinId, cf]));
+
+      const filtered = allCheckins.filter(c => {
+        const d = parsePtBRDate(c.data);
+        if (!d) return true;
+        if (inicio && d < inicio) return false;
+        if (fim && d > fim) return false;
+        return true;
+      });
+
+      const porVisitante: Record<string, any> = {};
+      for (const c of filtered) {
+        const sid = c.studentId ?? "unknown";
+        const student = studentMap.get(sid);
+        if (!porVisitante[sid]) {
+          porVisitante[sid] = { studentId: sid, nome: student?.nome ?? "—", cpf: student?.cpf ?? null, totalCheckins: 0, receita: 0, porTipo: {} as Record<string, number>, porModalidade: {} as Record<string, number>, ultimoCheckin: c.data };
+        }
+        const v = porVisitante[sid];
+        v.totalCheckins++;
+        v.ultimoCheckin = c.data;
+        const tipo = c.tipo || "pendente";
+        v.porTipo[tipo] = (v.porTipo[tipo] || 0) + 1;
+        const mod = student?.modalidade ?? "Outros";
+        v.porModalidade[mod] = (v.porModalidade[mod] || 0) + 1;
+        const fin = cfMap.get(c.id);
+        if (fin) v.receita += parseFloat(fin.valorTotal || "0");
+      }
+
+      let result = Object.values(porVisitante).map((v: any) => ({
+        ...v,
+        porTipo: Object.entries(v.porTipo).map(([tipo, count]) => ({ tipo, count })),
+        porModalidade: Object.entries(v.porModalidade).map(([modalidade, count]) => ({ modalidade, count })),
+      }));
+
+      if (busca) {
+        const q = busca.toLowerCase();
+        result = result.filter((v: any) => v.nome.toLowerCase().includes(q) || (v.cpf ?? "").replace(/\D/g, "").includes(q.replace(/\D/g, "")));
+      }
+
+      result.sort((a: any, b: any) => b.totalCheckins - a.totalCheckins);
+      res.json(result);
+    } catch (e: any) { res.status(500).json({ message: e?.message }); }
+  });
+
+  // Detalhes de Check-ins
+  app.get("/api/finance/relatorio/detalhes-checkins", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const { dataInicio, dataFim } = req.query as Record<string, string>;
+      const inicio = dataInicio ? new Date(dataInicio + "T00:00:00Z") : null;
+      const fim = dataFim ? new Date(dataFim + "T23:59:59Z") : null;
+
+      const [allCheckins, students, teachers, allCF] = await Promise.all([
+        storage.listAllCheckinsByArena(arenaId),
+        storage.listStudents(arenaId),
+        storage.listTeachers(arenaId),
+        storage.listCheckinFinanceiro(arenaId),
+      ]);
+
+      const studentMap = new Map(students.map(s => [s.id, s]));
+      const teacherMap = new Map(teachers.map(t => [t.id, t]));
+      const cfMap = new Map(allCF.map(cf => [cf.checkinId, cf]));
+
+      const filtered = allCheckins.filter(c => {
+        const d = parsePtBRDate(c.data);
+        if (!d) return true;
+        if (inicio && d < inicio) return false;
+        if (fim && d > fim) return false;
+        return true;
+      });
+
+      const result = filtered.map(c => {
+        const student = studentMap.get(c.studentId ?? "");
+        const teacher = c.professorId ? teacherMap.get(c.professorId) : null;
+        const fin = cfMap.get(c.id);
+        return {
+          id: c.id, data: c.data, hora: c.hora, tipo: c.tipo,
+          alunoNome: student?.nome ?? "—", alunoCpf: student?.cpf ?? null,
+          modalidade: student?.modalidade ?? "—", integrationType: student?.integrationType ?? "none",
+          professorNome: teacher?.nome ?? null,
+          valor: parseFloat(fin?.valorTotal || "0"),
+          integracao: fin?.integrationType ?? null,
+        };
+      });
+
+      result.sort((a, b) => {
+        const da = parsePtBRDate(a.data), db = parsePtBRDate(b.data);
+        if (da && db && da.getTime() !== db.getTime()) return db.getTime() - da.getTime();
+        return b.hora.localeCompare(a.hora);
+      });
+
+      res.json(result);
+    } catch (e: any) { res.status(500).json({ message: e?.message }); }
+  });
+
   // ── Integration Plans ──────────────────────────────────────────────────────
   app.get("/api/integracoes/planos", async (req, res) => {
     const arenaId = requireArena(req, res);

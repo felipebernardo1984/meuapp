@@ -22,7 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft, Upload, CalendarRange } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft, Upload, CalendarRange, BarChart3 } from "lucide-react";
+import FinancialReports from "./FinancialReports";
 
 interface ModalidadeSetting {
   id: string;
@@ -56,6 +57,7 @@ interface ReceitaSummary {
 
 export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashboardProps) {
   const qc = useQueryClient();
+  const [activeView, setActiveView] = useState<"dashboard" | "relatorios">("dashboard");
   const [dialogPix, setDialogPix] = useState(false);
   const [pixType, setPixType] = useState<"chave" | "qrcode">("chave");
   const [pixForm, setPixForm] = useState({ receiverName: "", pixKey: "", pixQrcodeImage: "" });
@@ -169,13 +171,54 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold" data-testid="text-financial-title">Dashboard Financeiro</h1>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          {onVoltar && (
+            <Button variant="ghost" size="sm" onClick={onVoltar} data-testid="button-voltar">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          <h1 className="text-2xl font-bold" data-testid="text-financial-title">Financeiro</h1>
+        </div>
         <Button variant="outline" size="sm" onClick={() => setDialogPix(true)} data-testid="button-pix-settings">
           <Settings className="h-4 w-4 mr-2" />
-          Configurar recebimento via Pix
+          Configurar Pix
         </Button>
       </div>
+
+      {/* Switcher Dashboard / Relatórios */}
+      <div className="flex gap-0 border-b mb-6">
+        <button
+          onClick={() => setActiveView("dashboard")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            activeView === "dashboard"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+          }`}
+          data-testid="tab-dashboard"
+        >
+          <DollarSign className="h-3.5 w-3.5" />
+          Dashboard
+        </button>
+        <button
+          onClick={() => setActiveView("relatorios")}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            activeView === "relatorios"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+          }`}
+          data-testid="tab-relatorios"
+        >
+          <BarChart3 className="h-3.5 w-3.5" />
+          Relatórios
+        </button>
+      </div>
+
+      {/* Vista Relatórios */}
+      {activeView === "relatorios" && <FinancialReports />}
+
+      {/* Vista Dashboard (existing content) */}
+      {activeView === "dashboard" && (<>
 
       {/* Summary cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-6">
@@ -651,6 +694,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </>)}
     </div>
   );
 }
