@@ -132,6 +132,8 @@ interface ManagerDashboardProps {
   planos: Plano[];
   alunos: AlunoGestor[];
   professores: ProfessorGestor[];
+  statusConta?: string;
+  trialExpiraEm?: string | null;
   onAprovarAluno: (alunoId: string) => void;
   onCadastrarProfessor: (dados: { nome: string; cpf: string; email: string; telefone: string; login: string; senha: string; modalidade: string; percentualComissao?: string }) => void;
   onEditarProfessor: (id: string, dados: { nome: string; cpf?: string; email?: string; telefone?: string; login?: string; senha?: string; modalidade: string; percentualComissao?: string }) => void;
@@ -162,6 +164,8 @@ export default function ManagerDashboard({
   planos,
   alunos,
   professores,
+  statusConta,
+  trialExpiraEm,
   onAprovarAluno,
   onCadastrarProfessor,
   onEditarProfessor,
@@ -902,7 +906,36 @@ export default function ManagerDashboard({
 
       {activeSection === "dashboard" && (
       <>
-        {/* ── Saudação ── */}
+        {/* ── Banner de Trial ── */}
+        {statusConta === "trial" && trialExpiraEm && (() => {
+          const expira = new Date(trialExpiraEm);
+          expira.setHours(23, 59, 59);
+          const diasRestantes = Math.max(0, Math.ceil((expira.getTime() - Date.now()) / 86400000));
+          return (
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 mb-4" data-testid="banner-trial">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 leading-tight">
+                    Teste grátis — {diasRestantes === 0 ? "último dia!" : `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} restante${diasRestantes !== 1 ? "s" : ""}`}
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 leading-tight">
+                    Expira em {expira.toLocaleDateString("pt-BR")} · Assine para continuar
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="h-8 text-xs px-3 bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                onClick={() => handleSidebarAction("assinatura")}
+                data-testid="button-assinar-trial"
+              >
+                Assinar plano
+              </Button>
+            </div>
+          );
+        })()}
+
         {/* ── Assinatura compacta no topo ── */}
         {subscription && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl border border-primary/20 bg-primary/5 mb-5" data-testid="card-subscription-compact">

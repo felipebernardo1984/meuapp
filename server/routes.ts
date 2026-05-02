@@ -135,6 +135,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Auth ──────────────────────────────────────────────────────────────────
+  // ── Self-service registration ─────────────────────────────────────────────
+  app.post("/api/registro", async (req, res) => {
+    const { nome, email, login, senha, nomeArena } = req.body;
+    if (!nome?.trim() || !email?.trim() || !login?.trim() || !senha?.trim() || !nomeArena?.trim()) {
+      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+    }
+    if (senha.length < 4) {
+      return res.status(400).json({ message: "A senha deve ter pelo menos 4 caracteres" });
+    }
+    const existing = await storage.getArenaByGestorLogin(login.trim());
+    if (existing) {
+      return res.status(409).json({ message: "Este login já está em uso. Escolha outro." });
+    }
+    const today = new Date();
+    const trialExpira = new Date(today);
+    trialExpira.setDate(trialExpira.getDate() + 5);
+    const trialExpiraEm = trialExpira.toISOString().split("T")[0];
+    const arena = await storage.createArena({
+      name: nomeArena.trim(),
+      subscriptionPlan: "basic",
+      gestorLogin: login.trim(),
+      gestorSenha: senha,
+      gestorNome: nome.trim(),
+      gestorEmail: email.trim(),
+      subscriptionStartDate: today.toLocaleDateString("pt-BR"),
+      subscriptionValue: "R$ 0,00",
+      subscriptionStatus: "Trial",
+      nextBillingDate: calcNextBillingDate(today.toLocaleDateString("pt-BR")),
+      statusConta: "trial",
+      trialExpiraEm,
+    });
+    res.json({ ok: true, arenaId: arena.id, arenaName: arena.name });
+  });
+
   app.post("/api/login", async (req, res) => {
     const { login, senha } = req.body as { login: string; senha: string };
     if (!login || !senha) return res.status(400).json({ message: "Credenciais inválidas" });
@@ -143,6 +177,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     for (const arena of allArenas) {
       if (arena.gestorLogin === login && arena.gestorSenha === senha) {
+        // Verifica status do trial / conta
+        if (arena.statusConta === "vencido") {
+          return res.status(403).json({ message: "Acesso bloqueado. Assine um plano para continuar usando o Seven Sports." });
+        }
+        if (arena.statusConta === "trial" && arena.trialExpiraEm) {
+          const expira = new Date(arena.trialExpiraEm);
+          expira.setHours(23, 59, 59);
+          if (expira < new Date()) {
+            await storage.updateArena(arena.id, { statusConta: "vencido" });
+            return res.status(403).json({ message: "Seu período de teste expirou. Assine um plano para continuar acessando." });
+          }
+        }
         req.session.arenaId = arena.id;
         req.session.userType = "gestor";
         req.session.userId = arena.id;
@@ -177,7 +223,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { arenaId, userType, userId } = req.session;
     if (userType === "gestor") {
       const arena = await storage.getArena(arenaId!);
-      return res.json({ authenticated: true, tipo: "gestor", arenaId, arenaName: arena?.name });
+      return res.json({
+        authenticated: true,
+        tipo: "gestor",
+        arenaId,
+        arenaName: arena?.name,
+        statusConta: arena?.statusConta ?? "ativo",
+        trialExpiraEm: arena?.trialExpiraEm ?? null,
+      });
     }
     if (userType === "professor") {
       const teacher = await storage.getTeacher(userId!);

@@ -29,6 +29,9 @@ export const arenas = pgTable("arenas", {
   subscriptionValue: text("subscription_value"),
   subscriptionStatus: text("subscription_status").notNull().default("Ativo"),
   nextBillingDate: text("next_billing_date"),
+  // SaaS lifecycle: 'trial' | 'ativo' | 'vencido'
+  statusConta: text("status_conta").notNull().default("ativo"),
+  trialExpiraEm: text("trial_expira_em"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

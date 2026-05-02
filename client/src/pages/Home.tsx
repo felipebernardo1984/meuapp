@@ -19,8 +19,8 @@ export interface Plano {
 
 type SessaoAtiva =
   | { tipo: "aluno"; aluno: AlunoCompleto }
-  | { tipo: "professor"; professor: { id: string; nome: string; modalidade: string } }
-  | { tipo: "gestor"; arenaId: string; arenaName: string }
+  | { tipo: "professor"; professor: { id: string; nome: string; modalidade: string; photoUrl?: string } }
+  | { tipo: "gestor"; arenaId: string; arenaName: string; statusConta?: string; trialExpiraEm?: string | null }
   | null;
 
 interface AlunoCompleto {
@@ -52,7 +52,7 @@ export default function Home() {
     queryKey: ["/api/session"],
     select: (data: any) => {
       if (!data?.authenticated) return null;
-      if (data.tipo === "gestor") return { tipo: "gestor", arenaId: data.arenaId, arenaName: data.arenaName };
+      if (data.tipo === "gestor") return { tipo: "gestor", arenaId: data.arenaId, arenaName: data.arenaName, statusConta: data.statusConta, trialExpiraEm: data.trialExpiraEm };
       if (data.tipo === "professor") return { tipo: "professor", professor: data.professor };
       if (data.tipo === "aluno") return { tipo: "aluno", aluno: data.aluno };
       return null;
@@ -66,7 +66,14 @@ export default function Home() {
       setLoginError(null);
       qc.invalidateQueries({ queryKey: ["/api/session"] });
     },
-    onError: () => setLoginError("Usuário ou senha incorretos"),
+    onError: (error: any) => {
+      try {
+        const parsed = JSON.parse(error.message);
+        setLoginError(parsed.message ?? "Usuário ou senha incorretos");
+      } catch {
+        setLoginError("Usuário ou senha incorretos");
+      }
+    },
   });
 
   const logoutMutation = useMutation({
@@ -370,6 +377,8 @@ export default function Home() {
               onRegistrarPagamento={(dados) => apiRequest("POST", "/api/finance/payments", dados)}
               onCriarCobranca={(dados) => apiRequest("POST", "/api/finance/charges", dados)}
               onIrFinanceiro={() => {}}
+              statusConta={sessao.statusConta}
+              trialExpiraEm={sessao.trialExpiraEm}
             />
           )}
         </>

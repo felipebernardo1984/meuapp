@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, Shield } from "lucide-react";
+import { LogIn, Shield, Zap } from "lucide-react";
 
 interface LoginPageProps {
   onLogin: (login: string, senha: string) => void;
@@ -85,6 +85,17 @@ export default function LoginPage({ onLogin, error }: LoginPageProps) {
             <p className="text-xs text-center text-muted-foreground pt-1">
               Receba seu login e senha com seu professor ou na recepção
             </p>
+
+            <div className="border-t pt-4">
+              <Link
+                href="/cadastro"
+                className="flex items-center justify-center gap-2 w-full h-10 rounded-md border border-primary/30 text-sm text-primary hover:bg-primary/5 transition-colors font-medium"
+                data-testid="link-criar-conta"
+              >
+                <Zap className="h-4 w-4" />
+                Criar conta grátis · 5 dias de teste
+              </Link>
+            </div>
           </CardContent>
         </Card>
 
