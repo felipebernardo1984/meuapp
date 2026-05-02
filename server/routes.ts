@@ -806,10 +806,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ── Public platform plan (single plan for landing page) ────────────────────
   app.get("/api/platform-plans/public", async (_req, res) => {
     try {
-      const plans = await storage.listPlatformPlans();
+      const [plans, settings] = await Promise.all([
+        storage.listPlatformPlans(),
+        storage.getAllPlatformSettings(),
+      ]);
       const plan = plans.find((p) => p.planType === "premium") ?? plans[0];
-      if (!plan) return res.json({ monthlyValue: "—", planName: "Seven Sports" });
-      res.json({ monthlyValue: plan.monthlyValue, planName: "Seven Sports" });
+      res.json({
+        monthlyValue: plan?.monthlyValue ?? "—",
+        planNome: settings["plan_nome"] || "Seven Sports",
+        planDescricao: settings["plan_descricao"] || "Tudo incluído em um único plano.",
+        planFeatures: settings["plan_features"] || "Check-ins digitais ilimitados|Gestão completa de alunos|Financeiro e mensalidades|Professores e comissões|Relatórios e alertas|Acesso pelo celular|Suporte incluso",
+      });
     } catch {
       res.status(500).json({ message: "Erro" });
     }

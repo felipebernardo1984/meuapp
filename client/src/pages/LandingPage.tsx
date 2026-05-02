@@ -16,7 +16,7 @@ const features = [
   { icon: Smartphone, title: "Acesso pelo celular", desc: "Plataforma responsiva — funciona em qualquer dispositivo, sem instalar nada." },
 ];
 
-const planFeatures = [
+const DEFAULT_FEATURES = [
   "Check-ins digitais ilimitados",
   "Gestão completa de alunos",
   "Financeiro e mensalidades",
@@ -27,9 +27,18 @@ const planFeatures = [
 ];
 
 export default function LandingPage() {
-  const { data: planInfo } = useQuery<{ monthlyValue: string; planName: string }>({
+  const { data: planInfo } = useQuery<{
+    monthlyValue: string;
+    planNome: string;
+    planDescricao: string;
+    planFeatures: string;
+  }>({
     queryKey: ["/api/platform-plans/public"],
   });
+
+  const planFeatures = planInfo?.planFeatures
+    ? planInfo.planFeatures.split("|").filter(Boolean)
+    : DEFAULT_FEATURES;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -134,9 +143,12 @@ export default function LandingPage() {
             Plano
           </span>
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-10">
-            Um plano. Tudo incluído.
+            {planInfo?.planDescricao ?? "Um plano. Tudo incluído."}
           </h2>
           <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl p-8 shadow-sm text-left">
+            <p className="text-base font-bold text-gray-900 dark:text-white mb-3">
+              {planInfo?.planNome ?? "Seven Sports"}
+            </p>
             <div className="flex items-end gap-1 mb-1">
               <span className="text-4xl font-black text-gray-900 dark:text-white">
                 {planInfo?.monthlyValue ?? "—"}

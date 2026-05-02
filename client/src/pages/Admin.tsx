@@ -124,6 +124,9 @@ export default function Admin() {
     suporte_whatsapp: "",
     sac_texto: "",
     resend_api_key: "",
+    plan_nome: "",
+    plan_descricao: "",
+    plan_features: "",
   });
 
   // ── Admin session ─────────────────────────────────────────────────────────
@@ -201,6 +204,9 @@ export default function Admin() {
       suporte_whatsapp: rawPlatformSettings["suporte_whatsapp"] ?? "",
       sac_texto: rawPlatformSettings["sac_texto"] ?? "",
       resend_api_key: rawPlatformSettings["resend_api_key"] ?? "",
+      plan_nome: rawPlatformSettings["plan_nome"] ?? "",
+      plan_descricao: rawPlatformSettings["plan_descricao"] ?? "",
+      plan_features: rawPlatformSettings["plan_features"] ?? "",
     });
     setSettingsLoaded(true);
   }
@@ -762,6 +768,43 @@ export default function Admin() {
                 Opcional. Quando configurada, gestores recebem e-mail automático ao redefinir a senha.{" "}
                 <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Criar conta gratuita →</a>
               </p>
+            </div>
+
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b pt-2">Página de Vendas — Card do Plano</div>
+            <div className="space-y-2">
+              <Label>Nome do plano</Label>
+              <Input
+                placeholder="Ex: Seven Sports"
+                value={platformSettingsForm.plan_nome}
+                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, plan_nome: e.target.value })}
+                data-testid="input-plan-nome"
+              />
+              <p className="text-xs text-muted-foreground">Título exibido no card de plano da landing page.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição do plano</Label>
+              <Input
+                placeholder="Ex: Tudo incluído em um único plano."
+                value={platformSettingsForm.plan_descricao}
+                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, plan_descricao: e.target.value })}
+                data-testid="input-plan-descricao"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Benefícios (um por linha)</Label>
+              <textarea
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[120px] resize-none"
+                placeholder={"Check-ins digitais ilimitados\nGestão completa de alunos\nFinanceiro e mensalidades"}
+                value={(platformSettingsForm.plan_features || "").replace(/\|/g, "\n")}
+                onChange={(e) =>
+                  setPlatformSettingsForm({
+                    ...platformSettingsForm,
+                    plan_features: e.target.value.split("\n").filter(Boolean).join("|"),
+                  })
+                }
+                data-testid="input-plan-features"
+              />
+              <p className="text-xs text-muted-foreground">Cada linha vira um item com ✓ no card da landing page.</p>
             </div>
           </div>
           <DialogFooter>
