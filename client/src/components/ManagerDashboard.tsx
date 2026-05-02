@@ -83,6 +83,7 @@ interface AlunoGestor {
   historico: Array<{ data: string; hora: string }>;
   integrationType?: string;
   integrationPlan?: string;
+  professorId?: string;
 }
 
 interface ProfessorGestor {
@@ -330,6 +331,14 @@ export default function ManagerDashboard({
   const [histMensAlunoId, setHistMensAlunoId] = useState<string>("");
   const [histMensAlunoNome, setHistMensAlunoNome] = useState<string>("");
 
+  // Novo Mensalista state
+  const [dialogNovoMensalista, setDialogNovoMensalista] = useState(false);
+  const [novoMensalista, setNovoMensalista] = useState({
+    nome: "", cpf: "", email: "", telefone: "", login: "", senha: "",
+    modalidade: "", planoId: "", professorId: "", diaVencimento: "10",
+  });
+  const [credenciaisMensalista, setCredenciaisMensalista] = useState<{ login: string; senha: string } | null>(null);
+
   // Histórico financeiro state
   const [dialogHistFinanceiro, setDialogHistFinanceiro] = useState(false);
   const [alunoHistFinanceiroId, setAlunoHistFinanceiroId] = useState<string>("");
@@ -444,6 +453,19 @@ export default function ManagerDashboard({
       toast({ title: "Pagamento removido." });
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível remover.", variant: "destructive" }),
+  });
+
+  const criarMensalista = useMutation({
+    mutationFn: (dados: any) =>
+      apiRequest("POST", "/api/alunos", dados).then((r) => r.json()),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      setDialogNovoMensalista(false);
+      setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+      setCredenciaisMensalista({ login: data.loginGerado, senha: data.senhaGerada });
+    },
+    onError: () => toast({ title: "Erro ao cadastrar", description: "Verifique os dados e tente novamente.", variant: "destructive" }),
   });
 
   const handleConfirmDeleteFinanceiro = () => {
@@ -671,12 +693,15 @@ export default function ManagerDashboard({
   // Mensalidades computed
   const currentMonthKey = new Date().toISOString().slice(0, 7); // "YYYY-MM"
   const mensalistas = alunos.filter((a) => a.integrationType === "mensalista");
+  const todasModalidadesMens = Array.from(new Set(alunos.map((a) => a.modalidade).filter(Boolean)));
+  const planosMensalistas = planos.filter((p) => (p.valorTexto ?? "").trim() !== "");
   const mensalidadeRows = mensalistas.map((a) => {
     const pagMes = allPayments
       .filter((p) => p.studentId === a.id && p.referenceMonth === currentMonthKey)
       .sort((x: any, y: any) => (x.createdAt < y.createdAt ? 1 : -1))[0];
     const plano = planos.find((p) => p.id === a.planoId);
-    return { ...a, pagMes, plano };
+    const professor = professores.find((p) => p.id === a.professorId);
+    return { ...a, pagMes, plano, professor };
   });
   const mensalidadesFiltradas = mensalidadeRows.filter((row) => {
     if (filtroStatusMens === "paid") return row.pagMes?.status === "paid";
@@ -1236,7 +1261,7 @@ export default function ManagerDashboard({
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="text-lg">Alunos Mensalistas</CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex rounded-md border overflow-hidden text-sm">
                     {(["todos", "paid", "pending"] as const).map((f) => (
                       <button
@@ -1251,6 +1276,7 @@ export default function ManagerDashboard({
                   </div>
                   <Button
                     size="sm"
+                    variant="outline"
                     data-testid="button-registrar-pagamento-mens"
                     onClick={() => {
                       setMensAlunoId("");
@@ -1269,25 +1295,49 @@ export default function ManagerDashboard({
                       setDialogRegistrarMens(true);
                     }}
                   >
-                    <Plus className="w-4 h-4 mr-1" /> Registrar Pagamento
+                    <Receipt className="w-4 h-4 mr-1" /> Registrar Pagamento
+                  </Button>
+                  <Button
+                    size="sm"
+                    data-testid="button-novo-mensalista"
+                    onClick={() => {
+                      setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+                      setDialogNovoMensalista(true);
+                    }}
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" /> Novo Mensalista
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
               {mensalidadesFiltradas.length === 0 ? (
-                <div className="py-10 text-center text-muted-foreground text-sm">
-                  {mensalistas.length === 0
-                    ? "Nenhum aluno mensalista cadastrado. Adicione alunos com tipo de integração \"Mensalista\"."
-                    : "Nenhum resultado para o filtro selecionado."}
+                <div className="py-12 text-center">
+                  {mensalistas.length === 0 ? (
+                    <div className="space-y-3">
+                      <p className="text-muted-foreground text-sm">Nenhum mensalista cadastrado ainda.</p>
+                      <Button
+                        size="sm"
+                        data-testid="button-novo-mensalista-empty"
+                        onClick={() => {
+                          setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+                          setDialogNovoMensalista(true);
+                        }}
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" /> Cadastrar Primeiro Mensalista
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">Nenhum resultado para o filtro selecionado.</p>
+                  )}
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Aluno</TableHead>
-                      <TableHead className="hidden md:table-cell">Plano</TableHead>
-                      <TableHead className="hidden md:table-cell">Valor</TableHead>
+                      <TableHead className="hidden lg:table-cell">Professor</TableHead>
+                      <TableHead className="hidden md:table-cell">Plano / Valor</TableHead>
                       <TableHead>Status do Mês</TableHead>
                       <TableHead className="hidden md:table-cell">Método</TableHead>
                       <TableHead className="hidden md:table-cell">Data Pgto.</TableHead>
@@ -1301,12 +1351,20 @@ export default function ManagerDashboard({
                       const metodoLabel: Record<string, string> = { cartao: "Cartão", pix: "PIX", dinheiro: "Dinheiro" };
                       return (
                         <TableRow key={row.id} data-testid={`row-mensalidade-${row.id}`}>
-                          <TableCell className="font-medium">{row.nome}</TableCell>
-                          <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                            {row.plano?.titulo ?? "-"}
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{row.nome}</p>
+                              {row.telefone && <p className="text-xs text-muted-foreground">{row.telefone}</p>}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                            {row.professor?.nome ?? <span className="italic text-xs">Sem professor</span>}
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-sm">
-                            {row.plano?.valorTexto ? `R$ ${row.plano.valorTexto}` : "-"}
+                            <div>
+                              <p>{row.plano?.titulo ?? "-"}</p>
+                              {row.plano?.valorTexto && <p className="text-xs text-muted-foreground">R$ {row.plano.valorTexto}</p>}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -1602,6 +1660,192 @@ export default function ManagerDashboard({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogHistMens(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Novo Mensalista */}
+      <Dialog open={dialogNovoMensalista} onOpenChange={setDialogNovoMensalista}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Mensalista</DialogTitle>
+            <DialogDescription>Preencha os dados do aluno mensalista. O primeiro pagamento será criado automaticamente como pendente.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1">
+                <Label>Nome completo <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Nome do aluno"
+                  value={novoMensalista.nome}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, nome: e.target.value })}
+                  data-testid="input-nm-nome"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>CPF <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="000.000.000-00"
+                  value={novoMensalista.cpf}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, cpf: e.target.value })}
+                  data-testid="input-nm-cpf"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Telefone (WhatsApp)</Label>
+                <Input
+                  placeholder="(00) 00000-0000"
+                  value={novoMensalista.telefone}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, telefone: e.target.value })}
+                  data-testid="input-nm-telefone"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={novoMensalista.email}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, email: e.target.value })}
+                  data-testid="input-nm-email"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="login de acesso"
+                  value={novoMensalista.login}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, login: e.target.value })}
+                  data-testid="input-nm-login"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Senha <span className="text-destructive">*</span></Label>
+                <Input
+                  type="password"
+                  placeholder="senha de acesso"
+                  value={novoMensalista.senha}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, senha: e.target.value })}
+                  data-testid="input-nm-senha"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Modalidade <span className="text-destructive">*</span></Label>
+                <Select value={novoMensalista.modalidade} onValueChange={(v) => setNovoMensalista({ ...novoMensalista, modalidade: v })}>
+                  <SelectTrigger data-testid="select-nm-modalidade">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {todasModalidadesMens.length > 0
+                      ? todasModalidadesMens.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)
+                      : ["Beach Tennis", "Vôlei", "Natação", "Musculação", "Funcional"].map((m) => (
+                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Plano <span className="text-destructive">*</span></Label>
+                <Select value={novoMensalista.planoId} onValueChange={(v) => setNovoMensalista({ ...novoMensalista, planoId: v })}>
+                  <SelectTrigger data-testid="select-nm-plano">
+                    <SelectValue placeholder="Selecione um plano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {planosMensalistas.length > 0
+                      ? planosMensalistas.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.titulo} — R$ {p.valorTexto}
+                          </SelectItem>
+                        ))
+                      : <SelectItem value="__nenhum__" disabled>Nenhum plano com valor mensal cadastrado</SelectItem>}
+                  </SelectContent>
+                </Select>
+                {planosMensalistas.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Crie um plano com valor mensal (R$) na seção Planos antes de cadastrar mensalistas.</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <Label>Professor responsável</Label>
+                <Select value={novoMensalista.professorId || "__none__"} onValueChange={(v) => setNovoMensalista({ ...novoMensalista, professorId: v === "__none__" ? "" : v })}>
+                  <SelectTrigger data-testid="select-nm-professor">
+                    <SelectValue placeholder="Selecionar professor (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
+                    {professores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome} — {p.modalidade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Dia de vencimento</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={28}
+                  placeholder="Ex: 10"
+                  value={novoMensalista.diaVencimento}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, diaVencimento: e.target.value })}
+                  data-testid="input-nm-dia-venc"
+                />
+                <p className="text-xs text-muted-foreground">Dia do mês para vencimento (1–28)</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogNovoMensalista(false)}>Cancelar</Button>
+            <Button
+              data-testid="button-confirm-novo-mensalista"
+              disabled={
+                !novoMensalista.nome || !novoMensalista.cpf || !novoMensalista.login ||
+                !novoMensalista.senha || !novoMensalista.modalidade || !novoMensalista.planoId ||
+                planosMensalistas.length === 0 || criarMensalista.isPending
+              }
+              onClick={() =>
+                criarMensalista.mutate({
+                  nome: novoMensalista.nome,
+                  cpf: novoMensalista.cpf,
+                  email: novoMensalista.email || null,
+                  telefone: novoMensalista.telefone || null,
+                  login: novoMensalista.login,
+                  senha: novoMensalista.senha,
+                  modalidade: novoMensalista.modalidade,
+                  planoId: novoMensalista.planoId,
+                  professorId: novoMensalista.professorId || null,
+                  diaVencimento: novoMensalista.diaVencimento || "10",
+                  integrationType: "mensalista",
+                })
+              }
+            >
+              {criarMensalista.isPending ? "Cadastrando..." : "Cadastrar Mensalista"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Credenciais do Novo Mensalista */}
+      <Dialog open={!!credenciaisMensalista} onOpenChange={() => setCredenciaisMensalista(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Mensalista Cadastrado!</DialogTitle>
+            <DialogDescription>Guarde as credenciais de acesso do aluno.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="bg-muted rounded-md p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Login:</span>
+                <span className="font-mono text-sm" data-testid="text-cred-login">{credenciaisMensalista?.login}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Senha:</span>
+                <span className="font-mono text-sm" data-testid="text-cred-senha">{credenciaisMensalista?.senha}</span>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">O primeiro pagamento foi registrado como <strong>pendente</strong>. Acesse a lista de mensalistas para registrar o pagamento.</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setCredenciaisMensalista(null)} data-testid="button-close-credenciais">Entendido</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -116,8 +116,9 @@ export const students = pgTable("students", {
   ultimoCheckin: text("ultimo_checkin"),
   photoUrl: text("photo_url"),
   // Integração (fonte única de verdade para cálculo financeiro)
-  integrationType: text("integration_type").notNull().default("none"), // 'wellhub' | 'totalpass' | 'none'
+  integrationType: text("integration_type").notNull().default("none"), // 'wellhub' | 'totalpass' | 'none' | 'mensalista'
   integrationPlan: text("integration_plan"),                           // ex: TP1, TP2, GP1...
+  professorId: varchar("professor_id").references(() => teachers.id, { onDelete: "set null" }),
   // Ciclo de vida do aluno
   ativo: boolean("ativo").notNull().default(true),
   desativadoEm: text("desativado_em"),

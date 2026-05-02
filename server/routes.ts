@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/alunos", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, modalidade, planoId, email, telefone, integrationType, integrationPlan, mensalistaValor } = req.body;
+    const { nome, cpf, modalidade, planoId, email, telefone, integrationType, integrationPlan, mensalistaValor, professorId } = req.body;
     const plan = await storage.getPlan(planoId);
     if (!plan) return res.status(400).json({ message: "Plano não encontrado" });
     const login = req.body.login?.trim() || gerarLogin(nome);
@@ -325,19 +325,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       checkinsRealizados: 0, statusMensalidade: "Em dia", aprovado: true, ultimoCheckin: null, photoUrl: null,
       integrationType: integrationType ?? "none",
       integrationPlan: integrationPlan ?? null,
+      professorId: professorId ?? null,
     });
 
     if (integrationType === "mensalista") {
       const valorFonte = plan.valorTexto ?? (mensalistaValor ? `R$ ${mensalistaValor}` : null);
       if (valorFonte) {
         const now = new Date();
-        const refMonth = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
-        const dueDate = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
-        const amount = valorFonte.replace(/[^0-9,.]/g, "").replace(",", ".");
+        const refMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const dueDay = req.body.diaVencimento ? String(req.body.diaVencimento).padStart(2, "0") : "10";
+        const dueDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${dueDay}`;
+        const amount = valorFonte.replace(/[^0-9,]/g, "").replace(",", ".");
         await storage.createPayment({
           tenantId: arenaId, studentId: student.id, planId: plan.id,
           description: `Mensalidade ${refMonth}`, amount, referenceMonth: refMonth,
-          dueDate, paymentDate: null, status: "pending", createdBy: "sistema",
+          dueDate, paymentDate: null, status: "pending",
+          paymentMethod: req.body.paymentMethod ?? "dinheiro",
+          createdBy: "sistema",
         });
       }
     }
@@ -348,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/alunos/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, email, telefone, login, senha, modalidade, statusMensalidade, checkinsRealizados, integrationType, integrationPlan } = req.body;
+    const { nome, cpf, email, telefone, login, senha, modalidade, statusMensalidade, checkinsRealizados, integrationType, integrationPlan, professorId } = req.body;
     const studentBefore = await storage.getStudent(req.params.id);
     const updates: Record<string, any> = {};
     if (nome !== undefined) updates.nome = nome;
@@ -362,6 +366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (checkinsRealizados !== undefined) updates.checkinsRealizados = Number(checkinsRealizados);
     if (integrationType !== undefined) updates.integrationType = integrationType;
     if (integrationPlan !== undefined) updates.integrationPlan = integrationPlan || null;
+    if (professorId !== undefined) updates.professorId = professorId || null;
     const student = await storage.updateStudent(req.params.id, updates);
     const integrationChanged =
       (integrationType !== undefined && integrationType !== studentBefore?.integrationType) ||
