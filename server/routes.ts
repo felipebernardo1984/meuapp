@@ -803,6 +803,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true, arenaId: arena.id, arenaName: arena.name });
   });
 
+  // ── Public platform plan (single plan for landing page) ────────────────────
+  app.get("/api/platform-plans/public", async (_req, res) => {
+    try {
+      const plans = await storage.listPlatformPlans();
+      const plan = plans.find((p) => p.planType === "premium") ?? plans[0];
+      if (!plan) return res.json({ monthlyValue: "—", planName: "Seven Sports" });
+      res.json({ monthlyValue: plan.monthlyValue, planName: "Seven Sports" });
+    } catch {
+      res.status(500).json({ message: "Erro" });
+    }
+  });
+
   // ── Platform Plans ─────────────────────────────────────────────────────────
   app.get("/api/admin/platform-plans", async (req, res) => {
     if (!requireAdmin(req, res)) return;

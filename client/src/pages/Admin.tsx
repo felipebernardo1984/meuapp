@@ -463,6 +463,7 @@ export default function Admin() {
                   <TabsTrigger value="alunos" data-testid="tab-alunos">Alunos ({arenaDetail.stats.alunos})</TabsTrigger>
                   <TabsTrigger value="professores" data-testid="tab-professores">Professores ({arenaDetail.stats.professores})</TabsTrigger>
                   <TabsTrigger value="planos" data-testid="tab-planos">Planos ({arenaDetail.stats.planos})</TabsTrigger>
+                  <TabsTrigger value="redefinicoessenha" data-testid="tab-reset">Redefinições de Senha</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="alunos">
@@ -558,6 +559,65 @@ export default function Admin() {
                       </TableBody>
                     </Table>
                   </Card>
+                </TabsContent>
+
+                <TabsContent value="redefinicoessenha">
+                  {(() => {
+                    const arenaResets = [...passwordResetHistory]
+                      .filter((item) => item.arenaId === detailId)
+                      .reverse();
+                    return (
+                      <Card>
+                        {arenaResets.length === 0 ? (
+                          <CardContent className="text-center py-8 text-muted-foreground text-sm">
+                            Nenhuma solicitação de redefinição de senha para esta arena.
+                          </CardContent>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>E-mail</TableHead>
+                                <TableHead>Solicitado em</TableHead>
+                                <TableHead>Expira em</TableHead>
+                                <TableHead>Status</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {arenaResets.map((item) => {
+                                const expired = new Date(item.expiresAt) < new Date();
+                                return (
+                                  <TableRow key={item.id} data-testid={`row-reset-detail-${item.id}`}>
+                                    <TableCell className="text-sm">{item.gestorEmail ?? "—"}</TableCell>
+                                    <TableCell className="text-muted-foreground text-sm">
+                                      {item.createdAt ? new Date(item.createdAt).toLocaleString("pt-BR") : "—"}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground text-sm">
+                                      {new Date(item.expiresAt).toLocaleString("pt-BR")}
+                                    </TableCell>
+                                    <TableCell>
+                                      {item.used ? (
+                                        <Badge variant="default" className="text-xs flex items-center gap-1 w-fit">
+                                          <CheckCircle className="h-3 w-3" />Usado
+                                        </Badge>
+                                      ) : expired ? (
+                                        <Badge variant="secondary" className="text-xs flex items-center gap-1 w-fit">
+                                          <AlertCircle className="h-3 w-3" />Expirado
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="destructive" className="text-xs flex items-center gap-1 w-fit">
+                                          <Clock className="h-3 w-3" />Pendente
+                                        </Badge>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </Card>
+                    );
+                  })()}
                 </TabsContent>
               </Tabs>
             </>
@@ -835,81 +895,6 @@ export default function Admin() {
             </Button>
           </div>
         </div>
-
-        {/* Password Reset History toggle */}
-        <div className="flex items-center justify-between mb-3 mt-2">
-          <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Histórico de Redefinição de Senha ({passwordResetHistory.length})
-          </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => setShowPasswordHistory((v) => !v)}
-            data-testid="button-toggle-password-history"
-          >
-            {showPasswordHistory ? (
-              <><ChevronUp className="h-4 w-4 mr-1" />Ocultar</>
-            ) : (
-              <><ChevronDown className="h-4 w-4 mr-1" />Ver histórico</>
-            )}
-          </Button>
-        </div>
-
-        {showPasswordHistory && (
-          <Card className="mb-6">
-            {passwordResetHistory.length === 0 ? (
-              <CardContent className="text-center py-8 text-muted-foreground text-sm">
-                Nenhuma solicitação de redefinição de senha registrada.
-              </CardContent>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Arena</TableHead>
-                    <TableHead>E-mail do Gestor</TableHead>
-                    <TableHead>Solicitado em</TableHead>
-                    <TableHead>Expira em</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[...passwordResetHistory].reverse().map((item) => {
-                    const expired = new Date(item.expiresAt) < new Date();
-                    return (
-                      <TableRow key={item.id} data-testid={`row-reset-${item.id}`}>
-                        <TableCell className="font-medium">{item.arenaName ?? "—"}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{item.gestorEmail ?? "—"}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {item.createdAt ? new Date(item.createdAt).toLocaleString("pt-BR") : "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {new Date(item.expiresAt).toLocaleString("pt-BR")}
-                        </TableCell>
-                        <TableCell>
-                          {item.used ? (
-                            <Badge variant="default" className="text-xs flex items-center gap-1 w-fit">
-                              <CheckCircle className="h-3 w-3" />Usado
-                            </Badge>
-                          ) : expired ? (
-                            <Badge variant="secondary" className="text-xs flex items-center gap-1 w-fit">
-                              <AlertCircle className="h-3 w-3" />Expirado
-                            </Badge>
-                          ) : (
-                            <Badge variant="destructive" className="text-xs flex items-center gap-1 w-fit">
-                              <Clock className="h-3 w-3" />Pendente
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </Card>
-        )}
 
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando arenas...</div>

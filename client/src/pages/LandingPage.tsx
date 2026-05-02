@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,20 +16,32 @@ const features = [
   { icon: Smartphone, title: "Acesso pelo celular", desc: "Plataforma responsiva — funciona em qualquer dispositivo, sem instalar nada." },
 ];
 
+const planFeatures = [
+  "Check-ins digitais ilimitados",
+  "Gestão completa de alunos",
+  "Financeiro e mensalidades",
+  "Professores e comissões",
+  "Relatórios e alertas",
+  "Acesso pelo celular",
+  "Suporte incluso",
+];
+
 export default function LandingPage() {
+  const { data: planInfo } = useQuery<{ monthlyValue: string; planName: string }>({
+    queryKey: ["/api/platform-plans/public"],
+  });
+
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
       <div className="fixed top-4 left-4 z-50">
-        <a href="/admin" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
+        <a href="/admin" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
           <LogIn className="h-3.5 w-3.5" />Admin
         </a>
       </div>
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-white dark:bg-gray-950">
-
-        {/* Brand name */}
+      <section className="min-h-screen flex flex-col items-center justify-center px-6 text-center bg-gray-50 dark:bg-gray-950">
         <div className="mb-8 select-none">
           <h1
             className="text-[5rem] sm:text-[7rem] md:text-[9rem] leading-none tracking-widest text-gray-900 dark:text-white"
@@ -39,17 +52,14 @@ export default function LandingPage() {
           <div className="h-1 w-24 mx-auto mt-2 rounded-full bg-[#e91e8c]" />
         </div>
 
-        {/* Headline */}
         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4 max-w-3xl">
           Plataforma completa para box e arenas esportivas
         </p>
 
-        {/* Sub */}
         <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-10">
           Check-in · Alunos · Professores · Financeiro · em um único sistema.
         </p>
 
-        {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link href="/cadastro">
             <Button
@@ -64,7 +74,7 @@ export default function LandingPage() {
             <Button
               variant="outline"
               size="lg"
-              className="h-12 px-10 text-sm font-semibold"
+              className="h-12 px-10 text-sm font-semibold bg-white dark:bg-transparent"
               data-testid="button-acessar-conta-landing"
             >
               Acessar minha arena
@@ -112,8 +122,46 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Pricing ───────────────────────────────────────────────────────── */}
+      <section className="bg-white dark:bg-gray-950 py-20 px-6">
+        <div className="max-w-md mx-auto text-center">
+          <span className="inline-block bg-[#1a1d4e]/8 text-[#1a1d4e] dark:bg-blue-900/30 dark:text-blue-300 text-xs font-bold px-4 py-1.5 rounded-full mb-4 tracking-widest uppercase">
+            Plano
+          </span>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-10">
+            Um plano. Tudo incluído.
+          </h2>
+          <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl p-8 shadow-sm text-left">
+            <div className="flex items-end gap-1 mb-1">
+              <span className="text-4xl font-black text-gray-900 dark:text-white">
+                {planInfo?.monthlyValue ?? "—"}
+              </span>
+              <span className="text-gray-400 text-sm mb-1">/mês</span>
+            </div>
+            <p className="text-xs text-[#8bc34a] font-semibold mb-6">5 dias grátis · sem cartão de crédito</p>
+            <ul className="space-y-3 mb-8">
+              {planFeatures.map((f) => (
+                <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
+                  <CheckCircle className="h-4 w-4 text-[#8bc34a] flex-shrink-0" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Link href="/cadastro">
+              <Button
+                size="lg"
+                className="w-full h-12 text-sm font-bold bg-[#8bc34a] hover:bg-[#7cb33b] text-[#1a1d4e] border-0 shadow-md"
+                data-testid="button-plano-cta"
+              >
+                Criar conta gratuita
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── Trust bar ─────────────────────────────────────────────────────── */}
-      <section className="bg-white dark:bg-gray-950 border-y border-gray-100 dark:border-gray-800 py-10 px-6">
+      <section className="bg-gray-50 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800 py-10 px-6">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-8">
           {[
             { icon: CheckCircle, text: "Sem contrato de fidelidade", color: "text-[#8bc34a]" },
@@ -134,13 +182,9 @@ export default function LandingPage() {
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-3">
             Pronto para transformar sua gestão?
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
             Crie sua conta e comece a usar hoje mesmo.
           </p>
-          <div className="inline-flex items-center gap-2 bg-[#8bc34a]/10 border border-[#8bc34a]/30 text-[#5d8a1c] dark:text-[#8bc34a] px-5 py-2 rounded-full text-sm font-semibold mb-8">
-            <Zap className="h-4 w-4" />
-            5 dias grátis · sem cartão de crédito
-          </div>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/cadastro">
               <Button
@@ -155,7 +199,7 @@ export default function LandingPage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-12 px-10 text-sm font-semibold"
+                className="h-12 px-10 text-sm font-semibold bg-white dark:bg-transparent"
                 data-testid="button-cta-bottom-login"
               >
                 Acessar minha arena
@@ -165,7 +209,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-400 py-6">
+      <footer className="bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 text-center text-xs text-gray-400 py-6">
         Seven Sports · Sistema de Gestão Esportiva
       </footer>
     </div>
