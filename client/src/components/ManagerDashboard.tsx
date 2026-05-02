@@ -127,6 +127,7 @@ interface ManagerDashboardProps {
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
   onIrFinanceiro: () => void;
   onIrConfiguracoes?: () => void;
+  onIrIntegracoes?: () => void;
   onIrAlertas?: () => void;
   onEditarAluno: (dados: { id: string; nome: string; cpf: string; email: string; telefone: string; login: string; senha?: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number; planoId: string; integrationType: string; integrationPlan: string }) => void;
   onAlterarPlanoAluno: (alunoId: string, planoId: string) => void;
@@ -155,6 +156,7 @@ export default function ManagerDashboard({
   onCriarCobranca,
   onIrFinanceiro,
   onIrConfiguracoes,
+  onIrIntegracoes,
   onIrAlertas,
   onEditarAluno,
   onAlterarPlanoAluno,
@@ -585,7 +587,8 @@ export default function ManagerDashboard({
   const handleSidebarAction = (section: string) => {
     if (section === "financeiro") { onIrFinanceiro(); return; }
     if (section === "alertas") { onIrAlertas?.(); return; }
-    if (section === "configuracoes" || section === "integracoes") { onIrConfiguracoes?.(); return; }
+    if (section === "configuracoes") { onIrConfiguracoes?.(); return; }
+    if (section === "integracoes") { onIrIntegracoes?.(); return; }
     if (section === "whatsapp") {
       setFormWhatsapp({
         whatsapp_number: whatsappSettings?.whatsapp_number ?? "",

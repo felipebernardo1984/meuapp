@@ -32,9 +32,10 @@ interface LocalEdit {
 
 interface SystemSettingsProps {
   onVoltar: () => void;
+  section?: "integracoes" | "configuracoes";
 }
 
-export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
+export default function SystemSettings({ onVoltar, section }: SystemSettingsProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -116,208 +117,219 @@ export default function SystemSettings({ onVoltar }: SystemSettingsProps) {
     });
   };
 
+  const showConfiguracoes = !section || section === "configuracoes";
+  const showIntegracoes = !section || section === "integracoes";
+
+  const headingIcon = section === "integracoes" ? <Zap className="h-6 w-6" /> : <Settings className="h-6 w-6" />;
+  const headingTitle = section === "integracoes" ? "Integrações" : "Configurações por Modalidade";
+  const headingDesc = section === "integracoes"
+    ? "Configure as integrações TotalPass e Wellhub (Gympass)"
+    : "Gerencie valores por check-in por integração e modalidade";
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Settings className="h-6 w-6" />
-          Configurações do Sistema
+          {headingIcon}
+          {headingTitle}
         </h1>
-        <p className="text-sm text-muted-foreground">Gerencie valores por check-in por integração e modalidade</p>
+        <p className="text-sm text-muted-foreground">{headingDesc}</p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <DollarSign className="h-5 w-5" />
-              Valor por Check-in por Modalidade
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => setModalidadesMinimizado(!modalidadesMinimizado)}
-              data-testid="button-toggle-modalidades"
-            >
-              {modalidadesMinimizado ? (
-                <>
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                  Mostrar modalidades
-                </>
-              ) : (
-                <>
-                  <ChevronUp className="h-4 w-4 mr-1" />
-                  Minimizar modalidades
-                </>
-              )}
-            </Button>
-          </div>
+      {showConfiguracoes && (
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <DollarSign className="h-5 w-5" />
+                Valor por Check-in por Modalidade
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => setModalidadesMinimizado(!modalidadesMinimizado)}
+                data-testid="button-toggle-modalidades"
+              >
+                {modalidadesMinimizado ? (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    Mostrar modalidades
+                  </>
+                ) : (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1" />
+                    Minimizar modalidades
+                  </>
+                )}
+              </Button>
+            </div>
+            {!modalidadesMinimizado && (
+              <CardDescription>
+                Configure os valores separados por integração (Wellhub e TotalPass) para cada modalidade. Esses valores são usados para calcular a receita gerada automaticamente.
+              </CardDescription>
+            )}
+          </CardHeader>
           {!modalidadesMinimizado && (
+            <CardContent>
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Carregando...</p>
+              ) : allModalidades.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Nenhuma modalidade cadastrada. Cadastre professores ou alunos primeiro.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {allModalidades.map((modalidade) => {
+                    const local = getLocal(modalidade);
+                    const isDirty = !!editando[modalidade];
+                    return (
+                      <div
+                        key={modalidade}
+                        className="border rounded-lg p-4 space-y-4"
+                        data-testid={`card-modalidade-settings-${modalidade}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-base">{modalidade}</h3>
+                          <div className="flex items-center gap-2">
+                            {isDirty && <Badge variant="outline" className="text-orange-600 border-orange-300">Alterado</Badge>}
+                            <Button
+                              size="sm"
+                              onClick={() => handleSalvar(modalidade)}
+                              disabled={salvarMutation.isPending}
+                              data-testid={`button-salvar-settings-${modalidade}`}
+                            >
+                              <Save className="h-4 w-4 mr-1" />
+                              Salvar
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="border rounded-md p-3 space-y-3 bg-muted/30">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-foreground">Wellhub</span>
+                              <Badge variant="secondary" className="text-xs">Gympass</Badge>
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor={`wh-plano-${modalidade}`} className="text-xs text-muted-foreground">
+                                Plano Mínimo
+                              </Label>
+                              <Input
+                                id={`wh-plano-${modalidade}`}
+                                placeholder="Ex: GP1, GP2..."
+                                value={local.wellhubPlanoMinimo}
+                                onChange={(e) => setLocal(modalidade, "wellhubPlanoMinimo", e.target.value)}
+                                data-testid={`input-wellhub-plano-${modalidade}`}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor={`wh-valor-${modalidade}`} className="text-xs text-muted-foreground">
+                                Valor por Check-in (R$)
+                              </Label>
+                              <Input
+                                id={`wh-valor-${modalidade}`}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                value={local.wellhubValorCheckin}
+                                onChange={(e) => setLocal(modalidade, "wellhubValorCheckin", e.target.value)}
+                                data-testid={`input-wellhub-valor-${modalidade}`}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="border rounded-md p-3 space-y-3 bg-muted/30">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-foreground">TotalPass</span>
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor={`tp-plano-${modalidade}`} className="text-xs text-muted-foreground">
+                                Plano Mínimo
+                              </Label>
+                              <Input
+                                id={`tp-plano-${modalidade}`}
+                                placeholder="Ex: TP1, TP2..."
+                                value={local.totalpassPlanoMinimo}
+                                onChange={(e) => setLocal(modalidade, "totalpassPlanoMinimo", e.target.value)}
+                                data-testid={`input-totalpass-plano-${modalidade}`}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor={`tp-valor-${modalidade}`} className="text-xs text-muted-foreground">
+                                Valor por Check-in (R$)
+                              </Label>
+                              <Input
+                                id={`tp-valor-${modalidade}`}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                value={local.totalpassValorCheckin}
+                                onChange={(e) => setLocal(modalidade, "totalpassValorCheckin", e.target.value)}
+                                data-testid={`input-totalpass-valor-${modalidade}`}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      )}
+
+      {showIntegracoes && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Zap className="h-5 w-5" />
+              Integrações
+            </CardTitle>
             <CardDescription>
-              Configure os valores separados por integração (Wellhub e TotalPass) para cada modalidade. Esses valores são usados para calcular a receita gerada automaticamente.
+              Configurações de API para TotalPass e Wellhub (Gympass).
             </CardDescription>
-          )}
-        </CardHeader>
-        {!modalidadesMinimizado && (
-        <CardContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Carregando...</p>
-          ) : allModalidades.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              Nenhuma modalidade cadastrada. Cadastre professores ou alunos primeiro.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {allModalidades.map((modalidade) => {
-                const local = getLocal(modalidade);
-                const isDirty = !!editando[modalidade];
-                return (
-                  <div
-                    key={modalidade}
-                    className="border rounded-lg p-4 space-y-4"
-                    data-testid={`card-modalidade-settings-${modalidade}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-base">{modalidade}</h3>
-                      <div className="flex items-center gap-2">
-                        {isDirty && <Badge variant="outline" className="text-orange-600 border-orange-300">Alterado</Badge>}
-                        <Button
-                          size="sm"
-                          onClick={() => handleSalvar(modalidade)}
-                          disabled={salvarMutation.isPending}
-                          data-testid={`button-salvar-settings-${modalidade}`}
-                        >
-                          <Save className="h-4 w-4 mr-1" />
-                          Salvar
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Wellhub block */}
-                      <div className="border rounded-md p-3 space-y-3 bg-muted/30">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">Wellhub</span>
-                          <Badge variant="secondary" className="text-xs">Gympass</Badge>
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`wh-plano-${modalidade}`} className="text-xs text-muted-foreground">
-                            Plano Mínimo
-                          </Label>
-                          <Input
-                            id={`wh-plano-${modalidade}`}
-                            placeholder="Ex: GP1, GP2..."
-                            value={local.wellhubPlanoMinimo}
-                            onChange={(e) => setLocal(modalidade, "wellhubPlanoMinimo", e.target.value)}
-                            data-testid={`input-wellhub-plano-${modalidade}`}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`wh-valor-${modalidade}`} className="text-xs text-muted-foreground">
-                            Valor por Check-in (R$)
-                          </Label>
-                          <Input
-                            id={`wh-valor-${modalidade}`}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={local.wellhubValorCheckin}
-                            onChange={(e) => setLocal(modalidade, "wellhubValorCheckin", e.target.value)}
-                            data-testid={`input-wellhub-valor-${modalidade}`}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      {/* TotalPass block */}
-                      <div className="border rounded-md p-3 space-y-3 bg-muted/30">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">TotalPass</span>
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`tp-plano-${modalidade}`} className="text-xs text-muted-foreground">
-                            Plano Mínimo
-                          </Label>
-                          <Input
-                            id={`tp-plano-${modalidade}`}
-                            placeholder="Ex: TP1, TP2..."
-                            value={local.totalpassPlanoMinimo}
-                            onChange={(e) => setLocal(modalidade, "totalpassPlanoMinimo", e.target.value)}
-                            data-testid={`input-totalpass-plano-${modalidade}`}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`tp-valor-${modalidade}`} className="text-xs text-muted-foreground">
-                            Valor por Check-in (R$)
-                          </Label>
-                          <Input
-                            id={`tp-valor-${modalidade}`}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={local.totalpassValorCheckin}
-                            onChange={(e) => setLocal(modalidade, "totalpassValorCheckin", e.target.value)}
-                            data-testid={`input-totalpass-valor-${modalidade}`}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-        )}
-      </Card>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Zap className="h-5 w-5" />
-            Integrações
-          </CardTitle>
-          <CardDescription>
-            Configurações de API para TotalPass e Wellhub (Gympass). Os valores por plano e modalidade são configurados acima.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">TotalPass</h3>
-                <Badge variant="outline" className="text-muted-foreground">Em breve</Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">TotalPass</h3>
+                  <Badge variant="outline" className="text-muted-foreground">Em breve</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Integração com TotalPass para check-ins automáticos e faturamento por plano (TP1, TP2, TP3...).
+                </p>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Chave de API</Label>
+                  <Input placeholder="Disponível em breve" disabled className="text-xs" />
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Integração com TotalPass para check-ins automáticos e faturamento por plano (TP1, TP2, TP3...).
-              </p>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Chave de API</Label>
-                <Input placeholder="Disponível em breve" disabled className="text-xs" />
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Wellhub (Gympass)</h3>
+                  <Badge variant="outline" className="text-muted-foreground">Em breve</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Integração com Wellhub para check-ins automáticos e controle de beneficiários.
+                </p>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Chave de API</Label>
+                  <Input placeholder="Disponível em breve" disabled className="text-xs" />
+                </div>
               </div>
             </div>
-            <div className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Wellhub (Gympass)</h3>
-                <Badge variant="outline" className="text-muted-foreground">Em breve</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Integração com Wellhub para check-ins automáticos e controle de beneficiários.
-              </p>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Chave de API</Label>
-                <Input placeholder="Disponível em breve" disabled className="text-xs" />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex justify-start pb-8">
         <Button variant="outline" onClick={onVoltar} data-testid="button-voltar-settings-bottom">

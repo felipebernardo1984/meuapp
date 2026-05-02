@@ -21,7 +21,7 @@ export default function ArenaApp() {
   const qc = useQueryClient();
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [gestorTab, setGestorTab] = useState<"dashboard" | "financeiro" | "configuracoes" | "alertas">("dashboard");
+  const [gestorTab, setGestorTab] = useState<"dashboard" | "financeiro" | "configuracoes" | "integracoes" | "alertas">("dashboard");
 
   // ── Arena info ────────────────────────────────────────────────────────────
   const { data: arena, isLoading: arenaLoading } = useQuery<{ id: string; name: string }>({
@@ -358,6 +358,7 @@ export default function ArenaApp() {
               onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
               onIrFinanceiro={() => setGestorTab("financeiro")}
               onIrConfiguracoes={() => setGestorTab("configuracoes")}
+              onIrIntegracoes={() => setGestorTab("integracoes")}
               onIrAlertas={() => setGestorTab("alertas")}
               onEditarAluno={(dados: any) => editarAluno.mutate(dados)}
               onAlterarPlanoAluno={(alunoId: string, planoId: string) => alterarPlanoAluno2.mutate({ alunoId, planoId })}
@@ -373,7 +374,10 @@ export default function ArenaApp() {
             />
           )}
           {gestorTab === "configuracoes" && (
-            <SystemSettings onVoltar={() => setGestorTab("dashboard")} />
+            <SystemSettings onVoltar={() => setGestorTab("dashboard")} section="configuracoes" />
+          )}
+          {gestorTab === "integracoes" && (
+            <SystemSettings onVoltar={() => setGestorTab("dashboard")} section="integracoes" />
           )}
           {gestorTab === "alertas" && (
             <AlertPanel arenaId={id!} onVoltar={() => setGestorTab("dashboard")} />
