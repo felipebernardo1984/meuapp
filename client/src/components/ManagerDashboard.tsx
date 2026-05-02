@@ -129,6 +129,7 @@ interface ManagerDashboardProps {
   onIrConfiguracoes?: () => void;
   onIrIntegracoes?: () => void;
   onIrAlertas?: () => void;
+  onLogout?: () => void;
   onEditarAluno: (dados: { id: string; nome: string; cpf: string; email: string; telefone: string; login: string; senha?: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number; planoId: string; integrationType: string; integrationPlan: string }) => void;
   onAlterarPlanoAluno: (alunoId: string, planoId: string) => void;
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
@@ -158,6 +159,7 @@ export default function ManagerDashboard({
   onIrConfiguracoes,
   onIrIntegracoes,
   onIrAlertas,
+  onLogout,
   onEditarAluno,
   onAlterarPlanoAluno,
   onCheckinManual,
@@ -635,6 +637,7 @@ export default function ManagerDashboard({
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         pendingCount={alunosPendentes.length}
+        onLogout={onLogout}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center px-6 py-4 border-b shrink-0">

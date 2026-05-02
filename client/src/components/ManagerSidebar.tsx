@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
-  BarChart3,
   Users,
   GraduationCap,
   ClipboardList,
@@ -16,6 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,22 @@ export default function ManagerSidebar({
   pendingCount,
   onLogout,
 }: ManagerSidebarProps) {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") as "light" | "dark" | null;
+    const initial = saved || "light";
+    setTheme(initial);
+    document.documentElement.classList.toggle("dark", initial === "dark");
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+  };
+
   const getBadge = (id: string): number | undefined => {
     if (id === "alunos" && pendingCount > 0) return pendingCount;
     return undefined;
@@ -178,9 +195,28 @@ export default function ManagerSidebar({
         ))}
       </nav>
 
-      {/* Footer */}
-      {onLogout && (
-        <div className="shrink-0 border-t border-white/10 p-2">
+      {/* Footer — tema + sair */}
+      <div className="shrink-0 border-t border-white/10 p-2 space-y-0.5">
+        <button
+          onClick={toggleTheme}
+          data-testid="button-sidebar-theme"
+          title={collapsed ? (theme === "light" ? "Modo escuro" : "Modo claro") : undefined}
+          className={cn(
+            "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors",
+            collapsed && "justify-center"
+          )}
+        >
+          {theme === "light" ? (
+            <Moon className="h-4 w-4 shrink-0" />
+          ) : (
+            <Sun className="h-4 w-4 shrink-0" />
+          )}
+          {!collapsed && (
+            <span>{theme === "light" ? "Modo escuro" : "Modo claro"}</span>
+          )}
+        </button>
+
+        {onLogout && (
           <button
             onClick={onLogout}
             data-testid="button-sidebar-logout"
@@ -193,8 +229,8 @@ export default function ManagerSidebar({
             <LogOut className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Sair</span>}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   );
 }

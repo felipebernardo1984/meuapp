@@ -54,6 +54,7 @@ export default function ArenaApp() {
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/logout"),
     onSuccess: () => {
+      setGestorTab("dashboard");
       qc.invalidateQueries({ queryKey: ["/api/session"] });
       qc.clear();
     },
@@ -254,12 +255,14 @@ export default function ArenaApp() {
 
   return (
     <>
-      <div className="fixed top-4 right-4 z-50 flex gap-2">
-        <Button variant="outline" size="icon" onClick={() => logoutMutation.mutate()} data-testid="button-logout">
-          <LogOut className="h-5 w-5" />
-        </Button>
-        <ThemeToggle />
-      </div>
+      {sessao.tipo !== "gestor" && (
+        <div className="fixed top-4 right-4 z-50 flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => logoutMutation.mutate()} data-testid="button-logout">
+            <LogOut className="h-5 w-5" />
+          </Button>
+          <ThemeToggle />
+        </div>
+      )}
 
       {sessao.tipo === "aluno" && alunoAtual && (
         <StudentDashboard
@@ -360,6 +363,7 @@ export default function ArenaApp() {
               onIrConfiguracoes={() => setGestorTab("configuracoes")}
               onIrIntegracoes={() => setGestorTab("integracoes")}
               onIrAlertas={() => setGestorTab("alertas")}
+              onLogout={() => logoutMutation.mutate()}
               onEditarAluno={(dados: any) => editarAluno.mutate(dados)}
               onAlterarPlanoAluno={(alunoId: string, planoId: string) => alterarPlanoAluno2.mutate({ alunoId, planoId })}
               onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
