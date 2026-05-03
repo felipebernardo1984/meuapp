@@ -26,8 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2, Camera, CalendarDays, GraduationCap, LogOut } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
+import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2, Camera, CalendarDays, GraduationCap } from "lucide-react";
 
 interface Payment {
   id: string;
@@ -74,7 +73,6 @@ interface StudentDashboardProps {
   onEditarCheckin?: (index: number, data: string, hora: string) => void;
   onUpdatePhoto?: (photoUrl: string) => void;
   onIrAgenda?: () => void;
-  onLogout?: () => void;
 }
 
 function paymentStatusBadge(status: string) {
@@ -110,7 +108,6 @@ export default function StudentDashboard({
   onEditarCheckin,
   onUpdatePhoto,
   onIrAgenda,
-  onLogout,
 }: StudentDashboardProps) {
   const [uploading, setUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -196,7 +193,7 @@ export default function StudentDashboard({
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex flex-col items-center text-center sm:text-left sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-        <div className="flex flex-col items-center sm:items-start sm:flex-row sm:items-center gap-4 min-w-0 w-full">
+        <div className="flex flex-col items-center sm:items-start sm:flex-row sm:items-center gap-4 min-w-0">
           <div className="relative shrink-0 flex flex-col items-center gap-1 rounded-2xl border bg-card px-2 py-2 shadow-sm overflow-hidden w-[130px] h-[120px] sm:w-[170px] sm:h-[150px]">
             <Avatar className="h-20 w-20 sm:h-28 sm:w-28 mt-1">
               <AvatarImage src={photoUrl} alt={studentName} />
@@ -239,26 +236,18 @@ export default function StudentDashboard({
             <span className="text-muted-foreground hidden sm:inline">|</span>
             <p className="text-xl sm:text-2xl font-semibold text-foreground break-words">{modalidade}</p>
           </div>
-          <div className="w-full sm:w-auto sm:ml-auto flex justify-center sm:justify-end gap-2">
-            {onIrAgenda && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-fit"
-                onClick={onIrAgenda}
-                data-testid="button-agenda-aluno"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Agenda
-              </Button>
-            )}
-            {onLogout && (
-              <Button variant="outline" size="icon" onClick={onLogout} data-testid="button-logout-aluno">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            )}
-            <ThemeToggle />
-          </div>
+          {onIrAgenda && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-fit sm:ml-2"
+              onClick={onIrAgenda}
+              data-testid="button-agenda-aluno"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Agenda
+            </Button>
+          )}
         </div>
         {statusMensalidade === "Pendente" && (
           <Badge variant="destructive" data-testid="badge-payment-status">

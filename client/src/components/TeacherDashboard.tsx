@@ -24,8 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight, ChevronDown, ChevronUp, LogOut } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -103,7 +102,6 @@ interface TeacherDashboardProps {
   onRemoverCheckin: (alunoId: string, index: number) => void;
   onUpdatePhoto?: (photoUrl: string) => void;
   onIrAgenda?: () => void;
-  onLogout?: () => void;
 }
 
 export default function TeacherDashboard({
@@ -122,7 +120,6 @@ export default function TeacherDashboard({
   onRemoverCheckin,
   onUpdatePhoto,
   onIrAgenda,
-  onLogout,
 }: TeacherDashboardProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -293,7 +290,7 @@ export default function TeacherDashboard({
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex flex-col items-center text-center sm:text-left sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-        <div className="flex flex-col items-center sm:items-start sm:flex-row sm:items-center gap-4 min-w-0 w-full">
+        <div className="flex flex-col items-center sm:items-start sm:flex-row sm:items-center gap-4 min-w-0">
           <div className="relative shrink-0 flex flex-col items-center gap-1 rounded-2xl border bg-card px-2 py-2 shadow-sm overflow-hidden w-[130px] h-[120px] sm:w-[170px] sm:h-[150px]">
             <Avatar className="h-20 w-20 sm:h-28 sm:w-28">
               <AvatarImage src={photoUrl} alt={teacherName} />
@@ -336,26 +333,18 @@ export default function TeacherDashboard({
             <span className="text-muted-foreground hidden sm:inline">|</span>
             <p className="text-xl sm:text-2xl font-semibold text-foreground break-words">{modalidade}</p>
           </div>
-          <div className="w-full sm:w-auto sm:ml-auto flex justify-center sm:justify-end gap-2">
-            {onIrAgenda && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onIrAgenda}
-                data-testid="button-ir-agenda"
-                className="w-full sm:w-fit"
-              >
-                <CalendarDays className="h-4 w-4 mr-2" />
-                Agenda
-              </Button>
-            )}
-            {onLogout && (
-              <Button variant="outline" size="icon" onClick={onLogout} data-testid="button-logout-teacher">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            )}
-            <ThemeToggle />
-          </div>
+          {onIrAgenda && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onIrAgenda}
+              data-testid="button-ir-agenda"
+              className="w-full sm:w-fit sm:ml-2"
+            >
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Agenda
+            </Button>
+          )}
         </div>
       </div>
 
