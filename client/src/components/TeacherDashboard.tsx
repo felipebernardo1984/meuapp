@@ -335,6 +335,20 @@ export default function TeacherDashboard({
       </div>
 
       <>
+      {onIrAgenda && (
+        <div className="flex justify-end mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onIrAgenda}
+            data-testid="button-ir-agenda"
+            className="gap-2"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Agenda
+          </Button>
+        </div>
+      )}
       {/* Botão Cadastrar Aluno */}
       <Card className="mb-6">
         <CardContent className="pt-6">
