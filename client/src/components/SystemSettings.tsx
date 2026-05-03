@@ -218,11 +218,11 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                             </div>
                             <div className="space-y-1">
                               <Label htmlFor={`wh-plano-${modalidade}`} className="text-xs text-muted-foreground">
-                                ID da Academia no Wellhub
+                                Plano Mínimo
                               </Label>
                               <Input
                                 id={`wh-plano-${modalidade}`}
-                                placeholder="Ex: ID 12345"
+                                placeholder="Ex: GP1, GP2..."
                                 value={local.wellhubPlanoMinimo}
                                 onChange={(e) => setLocal(modalidade, "wellhubPlanoMinimo", e.target.value)}
                                 data-testid={`input-wellhub-plano-${modalidade}`}
@@ -253,11 +253,11 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                             </div>
                             <div className="space-y-1">
                               <Label htmlFor={`tp-plano-${modalidade}`} className="text-xs text-muted-foreground">
-                                Código do Provedor
+                                Plano Mínimo
                               </Label>
                               <Input
                                 id={`tp-plano-${modalidade}`}
-                                placeholder="Ex: COD-9876"
+                                placeholder="Ex: TP1, TP2..."
                                 value={local.totalpassPlanoMinimo}
                                 onChange={(e) => setLocal(modalidade, "totalpassPlanoMinimo", e.target.value)}
                                 data-testid={`input-totalpass-plano-${modalidade}`}
@@ -314,8 +314,8 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                   Integração com TotalPass para check-ins automáticos e faturamento por plano (TP1, TP2, TP3...).
                 </p>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Código do Provedor</Label>
-                  <Input placeholder="Ex: COD-9876" disabled className="text-xs" />
+                  <Label className="text-xs text-muted-foreground">Chave de API</Label>
+                  <Input placeholder="Disponível em breve" disabled className="text-xs" />
                 </div>
               </div>
               <div className="border rounded-lg p-4 space-y-3">
@@ -327,8 +327,8 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                   Integração com Wellhub para check-ins automáticos e controle de beneficiários.
                 </p>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">ID da Academia no Wellhub</Label>
-                  <Input placeholder="Ex: ID 12345" disabled className="text-xs" />
+                  <Label className="text-xs text-muted-foreground">Chave de API</Label>
+                  <Input placeholder="Disponível em breve" disabled className="text-xs" />
                 </div>
               </div>
             </div>
