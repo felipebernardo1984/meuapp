@@ -6,6 +6,7 @@ import {
   platformPlans, arenaSubscriptionPayments, modalidadeSettings,
   checkinFinanceiro, integrationPlans, integrationSettings,
   teacherCommissions, platformSettings, passwordResetTokens,
+  turmas, turmaAlunos,
 } from "@shared/schema";
 
 export class DatabaseStorage {
@@ -488,6 +489,59 @@ export class DatabaseStorage {
     const result: Record<string, string> = {};
     for (const row of rows) result[row.key] = row.value;
     return result;
+  }
+
+  // TURMAS
+  async listTurmas(arenaId: string) {
+    return db.select().from(turmas).where(eq(turmas.arenaId, arenaId));
+  }
+
+  async getTurma(id: string) {
+    const [turma] = await db.select().from(turmas).where(eq(turmas.id, id));
+    return turma;
+  }
+
+  async createTurma(data: any) {
+    const [turma] = await db.insert(turmas).values(data).returning();
+    return turma;
+  }
+
+  async updateTurma(id: string, data: any) {
+    const [turma] = await db.update(turmas).set(data).where(eq(turmas.id, id)).returning();
+    return turma;
+  }
+
+  async deleteTurma(id: string) {
+    await db.delete(turmaAlunos).where(eq(turmaAlunos.turmaId, id));
+    await db.delete(turmas).where(eq(turmas.id, id));
+  }
+
+  async listTurmasByProfessor(professorId: string) {
+    return db.select().from(turmas).where(and(eq(turmas.professorId, professorId), eq(turmas.ativo, true)));
+  }
+
+  // TURMA ALUNOS (Enrollments)
+  async listTurmaAlunos(turmaId: string) {
+    return db.select().from(turmaAlunos).where(and(eq(turmaAlunos.turmaId, turmaId), eq(turmaAlunos.ativo, true)));
+  }
+
+  async getAlunoTurma(alunoId: string) {
+    const [enrollment] = await db.select().from(turmaAlunos).where(and(eq(turmaAlunos.alunoId, alunoId), eq(turmaAlunos.ativo, true)));
+    return enrollment;
+  }
+
+  async enrollAluno(data: any) {
+    const existing = await db.select().from(turmaAlunos).where(and(eq(turmaAlunos.turmaId, data.turmaId), eq(turmaAlunos.alunoId, data.alunoId)));
+    if (existing.length > 0) {
+      const [updated] = await db.update(turmaAlunos).set({ ativo: true, dataMatricula: data.dataMatricula }).where(eq(turmaAlunos.id, existing[0].id)).returning();
+      return updated;
+    }
+    const [enrollment] = await db.insert(turmaAlunos).values(data).returning();
+    return enrollment;
+  }
+
+  async unenrollAluno(turmaId: string, alunoId: string) {
+    await db.update(turmaAlunos).set({ ativo: false }).where(and(eq(turmaAlunos.turmaId, turmaId), eq(turmaAlunos.alunoId, alunoId)));
   }
 
   // PASSWORD RESET TOKENS

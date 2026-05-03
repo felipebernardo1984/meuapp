@@ -363,6 +363,40 @@ export const whatsappAutomation = pgTable("whatsapp_automation", {
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
+// ── Turmas (Classes / Schedule) ───────────────────────────────────────────────
+export const turmas = pgTable("turmas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  professorId: varchar("professor_id").references(() => teachers.id, { onDelete: "set null" }),
+  nome: text("nome").notNull(),
+  modalidade: text("modalidade").notNull(),
+  diasSemana: text("dias_semana").notNull().default(""),
+  horarioInicio: text("horario_inicio").notNull(),
+  horarioFim: text("horario_fim").notNull(),
+  capacidadeMaxima: integer("capacidade_maxima").notNull().default(20),
+  cor: text("cor").notNull().default("#1565C0"),
+  ativo: boolean("ativo").notNull().default(true),
+  criadaEm: timestamp("criada_em").defaultNow(),
+});
+
+export const insertTurmaSchema = createInsertSchema(turmas).omit({ id: true, criadaEm: true });
+export type InsertTurma = z.infer<typeof insertTurmaSchema>;
+export type Turma = typeof turmas.$inferSelect;
+
+// ── Turma Alunos (Enrollments) ────────────────────────────────────────────────
+export const turmaAlunos = pgTable("turma_alunos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  turmaId: varchar("turma_id").references(() => turmas.id, { onDelete: "cascade" }),
+  alunoId: varchar("aluno_id").references(() => students.id, { onDelete: "cascade" }),
+  dataMatricula: text("data_matricula").notNull(),
+  ativo: boolean("ativo").notNull().default(true),
+});
+
+export const insertTurmaAlunoSchema = createInsertSchema(turmaAlunos).omit({ id: true });
+export type InsertTurmaAluno = z.infer<typeof insertTurmaAlunoSchema>;
+export type TurmaAluno = typeof turmaAlunos.$inferSelect;
+
 // ── WhatsApp Dispatch Log ─────────────────────────────────────────────────────
 export const whatsappDispatchLog = pgTable("whatsapp_dispatch_log", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

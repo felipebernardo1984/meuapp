@@ -19,6 +19,7 @@ import {
   Sun,
   Landmark,
   X,
+  CalendarDays,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "alunos", label: "Alunos", icon: Users },
       { id: "professores", label: "Professores", icon: GraduationCap },
+      { id: "turmas", label: "Turmas", icon: CalendarDays },
       { id: "planos", label: "Planos", icon: ClipboardList },
       { id: "mensalidades", label: "Mensalidades", icon: CreditCard },
       { id: "checkins", label: "Log Check-ins", icon: CheckSquare },

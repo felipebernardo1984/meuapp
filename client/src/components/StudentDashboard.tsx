@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PhotoCropModal } from "./PhotoCropModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2, Camera } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2, Camera, CalendarDays, GraduationCap } from "lucide-react";
 
 interface Payment {
   id: string;
@@ -126,6 +127,8 @@ export default function StudentDashboard({
   const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
   const [dataEditar, setDataEditar] = useState("");
   const [horaEditar, setHoraEditar] = useState("");
+
+  const { data: minhaTurma } = useQuery<any | null>({ queryKey: ["/api/aluno/turma"] });
 
   const abrirEditar = (index: number) => {
     const item = historico[index];
@@ -236,6 +239,34 @@ export default function StudentDashboard({
           </Badge>
         )}
       </div>
+
+      {minhaTurma && (
+        <Card className="mb-4 border-l-4" style={{ borderLeftColor: minhaTurma.cor ?? "#1565C0" }} data-testid="card-minha-turma">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start gap-3">
+              <CalendarDays className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="font-semibold text-sm">{minhaTurma.nome}</p>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {(minhaTurma.diasSemana as string).split("|").filter(Boolean)
+                      .map((d: string) => ({ seg: "Seg", ter: "Ter", qua: "Qua", qui: "Qui", sex: "Sex", sab: "Sáb", dom: "Dom" } as Record<string,string>)[d] ?? d)
+                      .join(" · ")}
+                    {" "}• {minhaTurma.horarioInicio}–{minhaTurma.horarioFim}
+                  </span>
+                  {minhaTurma.professorNome && (
+                    <span className="flex items-center gap-1">
+                      <GraduationCap className="h-3 w-3" />
+                      {minhaTurma.professorNome}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-6">
         <CardContent className="pt-6">

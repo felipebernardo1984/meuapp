@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, ChevronUp, ChevronDown, Eye, Camera } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, ChevronUp, ChevronDown, Eye, Camera, CalendarDays, Clock } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -171,8 +171,10 @@ export default function TeacherDashboard({
   const [alunoReceita, setAlunoReceita] = useState<AlunoView | null>(null);
 
   const [alunosMinimizado, setAlunosMinimizado] = useState(false);
+  const [teacherTab, setTeacherTab] = useState<"alunos" | "agenda">("alunos");
 
   const { data: modalidadeSettings = [] } = useQuery<any[]>({ queryKey: ["/api/configuracoes/modalidades"] });
+  const { data: minhasTurmas = [] } = useQuery<any[]>({ queryKey: ["/api/professor/turmas"] });
 
   const getValorPorCheckin = (mod: string) => {
     const cfg = modalidadeSettings.find((s: any) => s.modalidade === mod);
@@ -332,6 +334,79 @@ export default function TeacherDashboard({
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-border mb-5 gap-6">
+        <button
+          data-testid="tab-teacher-alunos"
+          onClick={() => setTeacherTab("alunos")}
+          className={`pb-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${teacherTab === "alunos" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Meus Alunos ({alunos.length})
+        </button>
+        <button
+          data-testid="tab-teacher-agenda"
+          onClick={() => setTeacherTab("agenda")}
+          className={`pb-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${teacherTab === "agenda" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Minha Agenda {minhasTurmas.length > 0 && `(${minhasTurmas.length})`}
+        </button>
+      </div>
+
+      {/* Agenda Tab */}
+      {teacherTab === "agenda" && (
+        <div className="space-y-3">
+          {minhasTurmas.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <CalendarDays className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground font-medium">Nenhuma turma atribuída</p>
+                <p className="text-sm text-muted-foreground mt-1">Fale com o gestor para ser vinculado a uma turma.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            minhasTurmas.map((t: any) => (
+              <Card key={t.id} data-testid={`turma-professor-${t.id}`}>
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="h-3 w-3 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: t.cor }} />
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{t.nome}</p>
+                        <p className="text-sm text-muted-foreground">{t.modalidade}</p>
+                        <div className="flex flex-wrap gap-3 mt-1.5 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            {(t.diasSemana as string).split("|").filter(Boolean)
+                              .map((d: string) => ({ seg: "Seg", ter: "Ter", qua: "Qua", qui: "Qui", sex: "Sex", sab: "Sáb", dom: "Dom" } as Record<string,string>)[d] ?? d)
+                              .join(" · ")}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {t.horarioInicio}–{t.horarioFim}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="shrink-0">{t.alunosCount}/{t.capacidadeMaxima} alunos</Badge>
+                  </div>
+                  {Array.isArray(t.alunos) && t.alunos.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-2 font-medium">Alunos matriculados</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {t.alunos.map((a: any) => a && (
+                          <Badge key={a.id} variant="secondary" className="text-xs" data-testid={`turma-aluno-badge-${a.id}`}>{a.nome}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {teacherTab === "alunos" && (<>
       {/* Botão Cadastrar Aluno */}
       <Card className="mb-6">
         <CardContent className="pt-6">
@@ -1263,6 +1338,7 @@ export default function TeacherDashboard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </>)}
     </div>
   );
 }

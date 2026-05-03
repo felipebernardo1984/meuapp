@@ -17,7 +17,8 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `server/routes.ts` — All API routes
 - `client/src/pages/Admin.tsx` — Super-admin panel (arena CRUD, pricing, payment history)
 - `client/src/pages/ArenaApp.tsx` — Arena-specific app shell
-- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard with collapsible sidebar navigation (sections: Dashboard, Alunos, Mensalidades, Professores, Planos, Financeiro, WhatsApp, Configurações, Alertas, Ajuda)
+- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard with collapsible sidebar navigation (sections: Dashboard, Alunos, Mensalidades, Professores, Turmas, Planos, Financeiro, WhatsApp, Configurações, Alertas, Ajuda)
+- `client/src/components/TurmasManager.tsx` — Full class/schedule management: weekly calendar grid view + list view, CRUD dialogs for classes, student enrollment per class
 - `client/src/components/ManagerSidebar.tsx` — Dark collapsible sidebar with full mobile drawer support (hamburger button, overlay backdrop, fixed-position mobile drawer, smooth translate transition)
 - `client/src/components/OverviewDashboard.tsx` — Analytics overview (KPIs, student movement, financial, plan distribution)
 - `client/src/components/TeacherDashboard.tsx` — Teacher dashboard
@@ -51,6 +52,8 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `whatsapp_settings` — WhatsApp number + default message per arena
 - `whatsapp_automation` — WhatsApp automation config (cobrança + assiduidade)
 - `whatsapp_dispatch_log` — Pending/sent WhatsApp dispatches queue
+- `turmas` — Class/schedule definitions per arena (id, arenaId, professorId, nome, modalidade, diasSemana pipe-separated, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo)
+- `turma_alunos` — Student enrollments per class (id, arenaId, turmaId, alunoId, dataMatricula, ativo)
 
 ## Email / Password Reset
 - Password reset uses Resend (npm package installed). When `resend_api_key` is set in platform_settings, reset e-mails are sent automatically.

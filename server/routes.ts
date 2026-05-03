@@ -1653,6 +1653,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use(automationRouter);
 
+  // ── Turmas (Classes / Schedule) ───────────────────────────────────────────
+  app.get("/api/turmas", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const lista = await storage.listTurmas(arenaId);
+      const teacherList = await storage.listTeachers(arenaId);
+      const teacherMap = new Map(teacherList.map((t) => [t.id, t]));
+      const result = await Promise.all(
+        lista.map(async (t) => {
+          const enrollments = await storage.listTurmaAlunos(t.id);
+          return {
+            ...t,
+            professorNome: t.professorId ? (teacherMap.get(t.professorId)?.nome ?? "—") : null,
+            alunosCount: enrollments.length,
+          };
+        })
+      );
+      res.json(result);
+    } catch { res.status(500).json({ message: "Erro ao listar turmas" }); }
+  });
+
+  app.post("/api/turmas", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const { nome, modalidade, professorId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor } = req.body;
+      const turma = await storage.createTurma({
+        arenaId, nome, modalidade,
+        professorId: professorId || null,
+        diasSemana: diasSemana || "",
+        horarioInicio, horarioFim,
+        capacidadeMaxima: capacidadeMaxima ?? 20,
+        cor: cor || "#1565C0",
+        ativo: true,
+      });
+      res.json(turma);
+    } catch { res.status(500).json({ message: "Erro ao criar turma" }); }
+  });
+
+  app.put("/api/turmas/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const { nome, modalidade, professorId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo } = req.body;
+      const turma = await storage.updateTurma(req.params.id, {
+        nome, modalidade,
+        professorId: professorId || null,
+        diasSemana, horarioInicio, horarioFim,
+        capacidadeMaxima, cor,
+        ...(ativo !== undefined ? { ativo } : {}),
+      });
+      res.json(turma);
+    } catch { res.status(500).json({ message: "Erro ao atualizar turma" }); }
+  });
+
+  app.delete("/api/turmas/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      await storage.deleteTurma(req.params.id);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Erro ao excluir turma" }); }
+  });
+
+  app.get("/api/turmas/:id/alunos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const enrollments = await storage.listTurmaAlunos(req.params.id);
+      const allStudents = await storage.listStudents(arenaId);
+      const studentMap = new Map(allStudents.map((s) => [s.id, s]));
+      const result = enrollments.map((e) => ({
+        ...e,
+        aluno: studentMap.get(e.alunoId ?? "") ?? null,
+      }));
+      res.json(result);
+    } catch { res.status(500).json({ message: "Erro ao listar alunos da turma" }); }
+  });
+
+  app.post("/api/turmas/:id/alunos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const { alunoId } = req.body;
+      const today = new Date().toLocaleDateString("pt-BR");
+      const enrollment = await storage.enrollAluno({
+        arenaId, turmaId: req.params.id, alunoId, dataMatricula: today, ativo: true,
+      });
+      res.json(enrollment);
+    } catch { res.status(500).json({ message: "Erro ao matricular aluno" }); }
+  });
+
+  app.delete("/api/turmas/:id/alunos/:alunoId", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      await storage.unenrollAluno(req.params.id, req.params.alunoId);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Erro ao remover aluno da turma" }); }
+  });
+
+  app.get("/api/professor/turmas", async (req, res) => {
+    if (!req.session.arenaId || req.session.userType !== "professor") {
+      return res.status(401).json({ message: "Acesso negado" });
+    }
+    const professorId = req.session.userId!;
+    const arenaId = req.session.arenaId;
+    try {
+      const lista = await storage.listTurmasByProfessor(professorId);
+      const allStudents = await storage.listStudents(arenaId);
+      const studentMap = new Map(allStudents.map((s) => [s.id, s]));
+      const result = await Promise.all(
+        lista.map(async (t) => {
+          const enrollments = await storage.listTurmaAlunos(t.id);
+          const alunosList = enrollments
+            .map((e) => studentMap.get(e.alunoId ?? "") ?? null)
+            .filter(Boolean);
+          return { ...t, alunos: alunosList, alunosCount: alunosList.length };
+        })
+      );
+      res.json(result);
+    } catch { res.status(500).json({ message: "Erro ao buscar turmas do professor" }); }
+  });
+
+  app.get("/api/aluno/turma", async (req, res) => {
+    if (!req.session.arenaId || req.session.userType !== "aluno") {
+      return res.status(401).json({ message: "Acesso negado" });
+    }
+    const alunoId = req.session.userId!;
+    const arenaId = req.session.arenaId;
+    try {
+      const enrollment = await storage.getAlunoTurma(alunoId);
+      if (!enrollment) return res.json(null);
+      const turma = await storage.getTurma(enrollment.turmaId!);
+      if (!turma) return res.json(null);
+      const teacherList = await storage.listTeachers(arenaId);
+      const professor = teacherList.find((p) => p.id === turma.professorId);
+      res.json({ ...turma, professorNome: professor?.nome ?? null });
+    } catch { res.status(500).json({ message: "Erro ao buscar turma do aluno" }); }
+  });
+
   return createServer(app);
 }
 
