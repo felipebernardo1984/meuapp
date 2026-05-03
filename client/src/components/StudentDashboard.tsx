@@ -192,19 +192,19 @@ export default function StudentDashboard({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="relative shrink-0">
-            <Avatar className="h-14 w-14">
+            <Avatar className="h-12 w-12">
               <AvatarImage src={photoUrl} alt={studentName} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                 {initials}
               </AvatarFallback>
             </Avatar>
             {onUpdatePhoto && (
               <label
-                className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-md"
+                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-md"
                 title="Alterar foto"
                 data-testid="label-student-photo-upload"
               >
-                <Camera className="h-3 w-3" />
+                <Camera className="h-2.5 w-2.5" />
                 <input
                   type="file"
                   accept="image/*"
@@ -224,6 +224,16 @@ export default function StudentDashboard({
                 onRemove={() => { onUpdatePhoto(""); setCropSrc(null); }}
                 onCancel={() => setCropSrc(null)}
               />
+            )}
+            {onUpdatePhoto && photoUrl && (
+              <button
+                type="button"
+                className="mt-1 text-[10px] text-muted-foreground hover:text-destructive"
+                onClick={() => onUpdatePhoto("")}
+                data-testid="button-remove-student-photo"
+              >
+                Sem foto
+              </button>
             )}
           </div>
         <div className="flex items-center gap-2 min-w-0">
