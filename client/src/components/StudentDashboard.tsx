@@ -190,21 +190,21 @@ export default function StudentDashboard({
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
-            <Avatar className="h-12 w-12">
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-4 py-4 shadow-sm overflow-hidden min-w-[180px]">
+            <Avatar className="h-28 w-28">
               <AvatarImage src={photoUrl} alt={studentName} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                 {initials}
               </AvatarFallback>
             </Avatar>
             {onUpdatePhoto && (
               <label
-                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-md"
+                className="absolute bottom-4 right-4 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-md"
                 title="Alterar foto"
                 data-testid="label-student-photo-upload"
               >
-                <Camera className="h-2.5 w-2.5" />
+                <Camera className="h-3.5 w-3.5" />
                 <input
                   type="file"
                   accept="image/*"
@@ -225,15 +225,17 @@ export default function StudentDashboard({
                 onCancel={() => setCropSrc(null)}
               />
             )}
-            {onUpdatePhoto && photoUrl && (
-              <button
-                type="button"
-                className="mt-1 text-[10px] text-muted-foreground hover:text-destructive"
-                onClick={() => onUpdatePhoto("")}
-                data-testid="button-remove-student-photo"
-              >
-                Sem foto
-              </button>
+            {onUpdatePhoto && (
+              <div className="w-full flex items-center justify-center text-[11px] text-muted-foreground">
+                <button
+                  type="button"
+                  className="hover:text-primary transition-colors"
+                  onClick={() => onUpdatePhoto("")}
+                  data-testid="button-remove-student-photo"
+                >
+                  Sem foto
+                </button>
+              </div>
             )}
           </div>
         <div className="flex items-center gap-2 min-w-0">
