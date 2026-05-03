@@ -211,11 +211,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
     onSuccess: async (_, variables: any) => {
       await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
-      setRecursoSalvo({ id: `local-${Date.now()}`, nome: variables.nome, ativo: variables.ativo ?? true });
-      setRecursos((prev) => {
-        const next = { id: `local-${Date.now()}`, nome: variables.nome, ativo: variables.ativo ?? true };
-        return [next, ...prev.filter((r) => r.nome !== variables.nome)];
-      });
+      const next = { id: `local-${Date.now()}`, nome: variables.nome, ativo: variables.ativo ?? true };
+      setRecursos((prev) => [next, ...prev.filter((r) => r.nome !== variables.nome)]);
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
@@ -879,7 +876,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               <Label>Salas cadastradas</Label>
               <div className="space-y-2 max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                 {(() => {
-                  const salas = recursoSalvo ? [recursoSalvo, ...recursos.filter((r) => r.id !== recursoSalvo.id)] : recursos;
+                  const salas = recursos;
                   return salas.length > 0 ? (
                     salas.map((r) => (
                       <div
