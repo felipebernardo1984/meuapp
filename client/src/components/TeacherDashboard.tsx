@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -101,6 +101,7 @@ interface TeacherDashboardProps {
   onExcluirAluno: (alunoId: string) => void;
   onRemoverCheckin: (alunoId: string, index: number) => void;
   onUpdatePhoto?: (photoUrl: string) => void;
+  onIrAgenda?: () => void;
 }
 
 export default function TeacherDashboard({
@@ -118,6 +119,7 @@ export default function TeacherDashboard({
   onExcluirAluno,
   onRemoverCheckin,
   onUpdatePhoto,
+  onIrAgenda,
 }: TeacherDashboardProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -331,6 +333,25 @@ export default function TeacherDashboard({
         </div>
       </div>
 
+      {onIrAgenda && (
+        <div className="mb-5">
+          <button
+            data-testid="button-abrir-agenda"
+            onClick={onIrAgenda}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <CalendarDays className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="text-left">
+                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">Abrir Agenda</p>
+                <p className="text-xs text-blue-500 dark:text-blue-400">Grade semanal de turmas — crie e gerencie seus horários</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-blue-400 group-hover:text-blue-600 transition-colors" />
+          </button>
+        </div>
+      )}
+
       <>
       {/* Botão Cadastrar Aluno */}
       <Card className="mb-6">
@@ -425,8 +446,6 @@ export default function TeacherDashboard({
         </Table>
       </Card>
 
-      {/* Grade de alunos — expandido */}
-      {true && (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {alunos.map((aluno) => {
           const temCheckins = aluno.plano > 0;
@@ -575,7 +594,6 @@ export default function TeacherDashboard({
           );
         })}
       </div>
-      )}
 
       {alunos.length === 0 && (
         <Card>
