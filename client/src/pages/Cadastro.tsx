@@ -40,7 +40,7 @@ export default function Cadastro() {
 
   const valido =
     form.cpf.trim() &&
-    form.nome.trim() &&
+    form.responsavelNome.trim() &&
     form.email.trim() &&
     form.login.trim() &&
     form.senha.trim() &&
@@ -55,8 +55,12 @@ export default function Cadastro() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
-          nome: form.responsavelNome || form.nome,
+          cpf: form.cpf,
+          nome: form.responsavelNome,
+          email: form.email,
+          login: form.login,
+          senha: form.senha,
+          nomeArena: form.nomeArena,
         }),
       });
       const data = await res.json();
