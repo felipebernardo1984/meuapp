@@ -763,12 +763,12 @@ export default function TeacherDashboard({
                 <Input
                   placeholder="000.000.000-00"
                   value={dadosEdicao.cpf ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, cpf: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, cpf: e.target.value, senha: e.target.value })}
                   data-testid="input-edit-student-cpf"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Telefone</Label>
+                <Label>Telefone <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={dadosEdicao.telefone ?? ""}
@@ -797,7 +797,7 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Nova Senha</Label>
+                <Label>Nova Senha <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="CPF do aluno"
                   type="password"

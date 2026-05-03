@@ -3227,7 +3227,7 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5" />
-              Editar Dados do Aluno
+              Editar dados
             </DialogTitle>
             <DialogDescription>{alunoEditando?.nome}</DialogDescription>
           </DialogHeader>
@@ -3285,7 +3285,7 @@ export default function ManagerDashboard({
                 <Input
                   placeholder="000.000.000-00"
                   value={formEditarAluno.cpf}
-                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, cpf: e.target.value })}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, cpf: e.target.value, senha: e.target.value })}
                   data-testid="input-edit-cpf"
                 />
               </div>
