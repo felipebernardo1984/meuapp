@@ -504,7 +504,7 @@ export default function ArenaApp() {
                 integrationPlan: a.integrationPlan ?? "",
                 professorId: a.professorId ?? undefined,
               }))}
-              professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade, percentualComissao: p.percentualComissao }))}
+              professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade, percentualComissao: p.percentualComissao, photoUrl: p.photoUrl ?? undefined }))}
               onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
               onCadastrarProfessor={(dados: any) => cadastrarProfessor.mutate(dados)}
               onEditarProfessor={(profId: string, dados: any) => editarProfessor.mutate({ id: profId, ...dados })}
