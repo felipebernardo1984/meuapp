@@ -207,8 +207,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
   const salvarRecurso = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
@@ -860,6 +860,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               onClick={() => salvarRecurso.mutate({ nome: recursoNome, ativo: true })}
               data-testid="button-salvar-recurso"
               className="w-full"
+              disabled={!recursoNome || salvarRecurso.isPending}
             >
               Salvar ambiente
             </Button>
@@ -870,6 +871,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
                 </div>
               ))}
+              {salvarRecurso.isPending && (
+                <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">Salvando ambiente...</div>
+              )}
               {recursos.length > 0 && (
                 <div className="pt-1 text-xs text-muted-foreground">
                   {recursos.length} ambiente(s) cadastrado(s)
