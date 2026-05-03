@@ -260,6 +260,12 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     setDialogTurma(true);
   };
 
+  const openHorarioAulas = (diaPre?: string) => {
+    setDiaPopup(null);
+    setSlotPopup(null);
+    openNova(diaPre);
+  };
+
   const openEditar = (t: Turma) => {
     setEditandoId(t.id);
     setFormData({
@@ -581,7 +587,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                       {turmasPorDia(dia.id).length === 0 ? (
                         <div
                           className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-14 sm:h-16 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
-                          onClick={() => openNova(dia.id)}
+                          onClick={() => openHorarioAulas(dia.id)}
                           title={`Adicionar aula na ${dia.label}`}
                           data-testid={`dia-vazio-${dia.id}`}
                         >
@@ -770,7 +776,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                 <Button
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => { setDiaPopup(null); openNova(JS_DAY_TO_ID[diaPopup.date.getDay()]); }}
+                  onClick={() => openHorarioAulas(JS_DAY_TO_ID[diaPopup.date.getDay()])}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />Horário de Aulas
                 </Button>
