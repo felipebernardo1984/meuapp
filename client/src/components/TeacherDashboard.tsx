@@ -335,6 +335,22 @@ export default function TeacherDashboard({
       </div>
 
       <>
+      {onIrAgenda && (
+        <Card className="mb-2">
+          <CardContent className="pt-6">
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg"
+              onClick={onIrAgenda}
+              data-testid="button-abrir-agenda"
+            >
+              <CalendarDays className="mr-2 h-5 w-5" />
+              Abrir Agenda
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Botão Cadastrar Aluno */}
       <Card className="mb-6">
         <CardContent className="pt-6">
@@ -374,22 +390,6 @@ export default function TeacherDashboard({
           )}
         </Button>
       </div>
-
-      {onIrAgenda && (
-        <Card className="mb-2">
-          <CardContent className="pt-6">
-            <Button
-              size="lg"
-              className="w-full h-14 text-lg"
-              onClick={onIrAgenda}
-              data-testid="button-abrir-agenda"
-            >
-              <CalendarDays className="mr-2 h-5 w-5" />
-              Abrir Agenda
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       {alunosMinimizado ? (
         <Card>
