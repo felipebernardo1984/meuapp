@@ -8,20 +8,20 @@ import {
 } from "lucide-react";
 
 const features = [
-  { icon: ClipboardList, title: "Check-ins digitais", desc: "Controle de frequência em tempo real com histórico completo por aluno." },
-  { icon: Users, title: "Gestão de alunos", desc: "Cadastro, aprovação, planos e mensalidades em um só lugar." },
-  { icon: DollarSign, title: "Financeiro integrado", desc: "Cobranças, pagamentos e relatórios financeiros da sua arena." },
-  { icon: Trophy, title: "Professores e modalidades", desc: "Organize professores por modalidade com comissão e painel próprio." },
-  { icon: BarChart3, title: "Agenda de turmas", desc: "Grade semanal de aulas por modalidade — professor cria horários, alunos são vinculados automaticamente." },
-  { icon: Smartphone, title: "Acesso pelo celular", desc: "Plataforma responsiva — funciona em qualquer dispositivo, sem instalar nada." },
+  { icon: ClipboardList, title: "Check-ins rápidos", desc: "Registre presença em segundos e acompanhe histórico, faltas e evolução." },
+  { icon: Users, title: "Tudo dos alunos em um só lugar", desc: "Cadastro, aprovação, plano, status e pagamentos sem planilhas." },
+  { icon: DollarSign, title: "Mais controle financeiro", desc: "Mensalidades, cobranças e visão clara do que entra e do que falta receber." },
+  { icon: Trophy, title: "Gestão por professor e modalidade", desc: "Organize sua equipe por atividade com comissão e acesso isolado." },
+  { icon: BarChart3, title: "Agenda que evita conflitos", desc: "Turmas, salas e recursos separados para manter a operação fluindo." },
+  { icon: Smartphone, title: "Funciona no celular", desc: "Acompanhe a operação da arena de qualquer lugar, sem instalar nada." },
 ];
 
 const DEFAULT_FEATURES = [
   "Check-ins digitais ilimitados",
-  "Gestão completa de alunos",
-  "Financeiro e mensalidades",
+  "Cadastro e aprovação de alunos",
+  "Financeiro com mensalidades",
   "Professores e comissões",
-  "Agenda de turmas semanal",
+  "Agenda por turmas e recursos",
   "Relatórios e alertas",
   "Acesso pelo celular",
   "Suporte incluso",
@@ -75,11 +75,11 @@ export default function LandingPage() {
         </div>
 
         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4 max-w-3xl">
-          Plataforma completa para box e arenas esportivas
+          O sistema que organiza sua arena e ajuda a vender mais
         </p>
 
         <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-10">
-          Check-in · Alunos · Professores · Financeiro · em um único sistema.
+          Menos retrabalho, mais controle e uma operação profissional de ponta a ponta.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -113,10 +113,10 @@ export default function LandingPage() {
               Funcionalidades
             </span>
             <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white">
-              Tudo que sua arena precisa
+              Tudo o que sua arena precisa para crescer
             </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-3 max-w-md mx-auto">
-              Uma solução completa para gestores de arenas esportivas e box de crossfit.
+              Uma solução pensada para aumentar organização, produtividade e conversão.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
@@ -151,7 +151,7 @@ export default function LandingPage() {
             Plano
           </span>
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-10">
-            {planInfo?.planDescricao ?? "Um plano. Tudo incluído."}
+            {planInfo?.planDescricao ?? "Comece grátis e veja o valor na prática."}
           </h2>
           <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl p-8 shadow-sm text-left">
             <p className="text-base font-bold text-gray-900 dark:text-white mb-3">
@@ -163,7 +163,7 @@ export default function LandingPage() {
               </span>
               <span className="text-gray-400 text-sm mb-1">/mês</span>
             </div>
-            <p className="text-xs text-[#8bc34a] font-semibold mb-6">5 dias grátis · sem cartão de crédito</p>
+            <p className="text-xs text-[#8bc34a] font-semibold mb-6">7 dias grátis · sem cartão de crédito</p>
             <ul className="space-y-3 mb-8">
               {planFeatures.map((f) => (
                 <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
@@ -205,10 +205,10 @@ export default function LandingPage() {
       <section className="bg-gray-50 dark:bg-gray-900 py-20 px-6 text-center">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-3">
-            Pronto para transformar sua gestão?
+            Quer uma arena mais organizada e lucrativa?
           </h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
-            Crie sua conta e comece a usar hoje mesmo.
+            Teste por 7 dias e veja a diferença no primeiro dia.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/cadastro">
