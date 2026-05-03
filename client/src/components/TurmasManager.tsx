@@ -893,8 +893,8 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       {/* Dialog: Criar / Editar Agendamento */}
       <Dialog open={dialogTurma} onOpenChange={setDialogTurma}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex flex-col gap-2 pr-8 sm:flex-row sm:items-center sm:justify-between sm:pr-0">
+          <DialogHeader className="pr-12">
+            <div className="flex items-start justify-between gap-3">
               <DialogTitle>
                 {editandoId ? "Editar Agendamento" : "Novo Agendamento"}
               </DialogTitle>
@@ -902,12 +902,13 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full sm:w-auto"
+                className="shrink-0 mt-0.5"
                 onClick={() => setMostrarRecursos((p) => !p)}
                 data-testid="button-configurar-salas"
               >
                 <Settings className="h-4 w-4 mr-2" />
-                Configurar salas
+                <span className="hidden sm:inline">Configurar salas</span>
+                <span className="sm:hidden">Salas</span>
               </Button>
             </div>
           </DialogHeader>
