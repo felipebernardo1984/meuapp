@@ -480,16 +480,7 @@ export default function TeacherDashboard({
                       <p className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{aluno.planoTitulo}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 self-start">
-                    {temCheckins ? (
-                      <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs px-2">
-                        {aluno.checkinsRealizados}/{aluno.plano}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs px-2">
-                        {aluno.planoValorTexto ?? "Mensalista"}
-                      </Badge>
-                    )}
+                  <div className="flex flex-col items-end gap-1 shrink-0 self-start">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -499,6 +490,9 @@ export default function TeacherDashboard({
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
+                    <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-[10px] h-5 px-1.5">
+                      {temCheckins ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
+                    </Badge>
                   </div>
                 </div>
               </CardHeader>
