@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -123,6 +123,7 @@ export default function TeacherDashboard({
 }: TeacherDashboardProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [alunosMinimizado, setAlunosMinimizado] = useState(false);
 
   const handlePhotoSelect = (file: File) => {
     const reader = new FileReader();
@@ -372,10 +373,30 @@ export default function TeacherDashboard({
         <p className="text-sm font-medium text-muted-foreground">
           Alunos ({alunos.length})
         </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-foreground"
+          onClick={() => setAlunosMinimizado(!alunosMinimizado)}
+          data-testid="button-toggle-alunos"
+        >
+          {alunosMinimizado ? (
+            <>
+              <ChevronDown className="h-4 w-4 mr-1" />
+              Mostrar alunos
+            </>
+          ) : (
+            <>
+              <ChevronUp className="h-4 w-4 mr-1" />
+              Minimizar alunos
+            </>
+          )}
+        </Button>
       </div>
 
-      <Card>
-        <Table>
+      {alunosMinimizado ? (
+        <Card>
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Aluno</TableHead>
@@ -443,8 +464,114 @@ export default function TeacherDashboard({
               );
             })}
           </TableBody>
-        </Table>
-      </Card>
+          </Table>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {alunos.map((aluno) => {
+            const temCheckins = aluno.plano > 0;
+            const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
+            const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+            const alunoPayments = payments.filter((p) => p.studentId === aluno.id);
+
+            let mensalistaProgresso = 0;
+            if (!temCheckins) {
+              const refPayment = alunoPayments.find((p) => p.status === "pending") ?? alunoPayments[alunoPayments.length - 1];
+              if (refPayment) {
+                const [refMonth, refYear] = refPayment.referenceMonth.split("/");
+                const startDate = new Date(parseInt(refYear), parseInt(refMonth) - 1, 1);
+                const [dueDay, dueMonth, dueYear] = refPayment.dueDate.split("/");
+                const endDate = new Date(parseInt(dueYear), parseInt(dueMonth) - 1, parseInt(dueDay));
+                const today = new Date();
+                const totalDays = (endDate.getTime() - startDate.getTime()) / 86400000;
+                const elapsedDays = (today.getTime() - startDate.getTime()) / 86400000;
+                mensalistaProgresso = totalDays > 0 ? Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100) : 0;
+              } else {
+                const today = new Date();
+                const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                const totalDays = (end.getTime() - start.getTime()) / 86400000;
+                const elapsedDays = (today.getTime() - start.getTime()) / 86400000;
+                mensalistaProgresso = totalDays > 0 ? Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100) : 0;
+              }
+            }
+
+            return (
+              <Card key={aluno.id} className="hover-elevate" data-testid={`card-student-${aluno.id}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={aluno.photoUrl} alt={aluno.nome} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base truncate">{aluno.nome}</CardTitle>
+                        <p className="text-xs text-muted-foreground truncate">{aluno.planoTitulo}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {temCheckins ? (
+                        <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs">
+                          {aluno.checkinsRealizados}/{aluno.plano}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          {aluno.planoValorTexto ?? "Mensalista"}
+                        </Badge>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => openEditar(aluno)}
+                        data-testid={`button-edit-student-${aluno.id}`}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {temCheckins && <Progress value={Math.min(progresso, 100)} />}
+                  {!temCheckins && <Progress value={mensalistaProgresso} data-testid={`progress-mensalista-${aluno.id}`} />}
+                  {!temCheckins ? (
+                    <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white" data-testid={`button-mensalista-${aluno.id}`}>
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Plano Mensalista
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="w-full" onClick={() => onCheckinManual(aluno.id)} data-testid={`button-manual-checkin-${aluno.id}`}>
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Check-in
+                    </Button>
+                  )}
+                  {temCheckins && (
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => openHistorico(aluno)} data-testid={`button-view-history-${aluno.id}`}>
+                      Histórico
+                    </Button>
+                  )}
+                  {temCheckins && (
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => openRetroativo(aluno)} data-testid={`button-retroactive-checkin-${aluno.id}`}>
+                      Registrar Aula
+                    </Button>
+                  )}
+                  {(getValorPorCheckin(aluno.modalidade ?? modalidade) > 0 || !temCheckins) && (
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => { setAlunoReceita(aluno); setDialogReceita(true); }} data-testid={`button-receita-${aluno.id}`}>
+                      Receita Gerada
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => openFinanceiro(aluno)} data-testid={`button-financeiro-${aluno.id}`}>
+                    Cobrança e Pagamento
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {alunos.length === 0 && (
         <Card>
