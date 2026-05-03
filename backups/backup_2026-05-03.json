@@ -61,10 +61,10 @@
       "planoTitulo": "2x por semana 12",
       "planoCheckins": 12,
       "planoValorTexto": null,
-      "checkinsRealizados": 4,
+      "checkinsRealizados": 6,
       "statusMensalidade": "Em dia",
       "aprovado": true,
-      "ultimoCheckin": "14/04/2026",
+      "ultimoCheckin": "03/05/2026",
       "photoUrl": null,
       "integrationType": "wellhub",
       "integrationPlan": "SILVER+",
@@ -253,7 +253,25 @@
       "hora": "13:37",
       "tipo": "pendente",
       "professorId": null
+    },
+    {
+      "id": "0b71f5e1-b55a-4855-a3f3-165678d4f04d",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "03/05/2026",
+      "hora": "08:08",
+      "tipo": "pendente",
+      "professorId": null
+    },
+    {
+      "id": "82c588c2-ecd4-4ff8-8795-82a060639161",
+      "arenaId": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "studentId": "190a2db0-1191-4a62-a6ee-2b69447b8a8c",
+      "data": "03/05/2026",
+      "hora": "08:08",
+      "tipo": "pendente",
+      "professorId": null
     }
   ],
-  "createdAt": "2026-05-03T07:59:46.638Z"
+  "createdAt": "2026-05-03T08:57:09.945Z"
 }

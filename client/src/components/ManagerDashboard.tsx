@@ -1130,13 +1130,23 @@ export default function ManagerDashboard({
                   </div>
                 );
               })}
-              <button
-                onClick={() => setActiveSection("planos")}
-                className="text-xs text-primary flex items-center gap-1 hover:underline pt-1"
-                data-testid="link-ver-planos"
-              >
-                Gerenciar planos <ArrowUpRight className="h-3 w-3" />
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <button
+                  onClick={() => setActiveSection("planos")}
+                  className="text-xs text-primary flex items-center gap-1 hover:underline"
+                  data-testid="link-ver-planos"
+                >
+                  Gerenciar planos <ArrowUpRight className="h-3 w-3" />
+                </button>
+                <div className="flex gap-2 sm:ml-auto">
+                  <Button variant="outline" size="sm" onClick={onExportarPDF} data-testid="button-export-pdf">
+                    <Download className="h-4 w-4 mr-2" />PDF
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={onExportarExcel} data-testid="button-export-excel">
+                    <Download className="h-4 w-4 mr-2" />Excel
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
