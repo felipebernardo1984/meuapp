@@ -375,6 +375,25 @@ export default function TeacherDashboard({
         </Button>
       </div>
 
+      {onIrAgenda && (
+        <div className="mb-5">
+          <button
+            data-testid="button-abrir-agenda"
+            onClick={onIrAgenda}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <CalendarDays className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="text-left">
+                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">Abrir Agenda</p>
+                <p className="text-xs text-blue-500 dark:text-blue-400">Grade semanal de turmas — crie e gerencie seus horários</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-blue-400 group-hover:text-blue-600 transition-colors" />
+          </button>
+        </div>
+      )}
+
       {alunosMinimizado ? (
         <Card>
           <Table>
