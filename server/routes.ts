@@ -81,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existing) {
         const today = new Date().toLocaleDateString("pt-BR");
         const defaultArena = await storage.createArena({
-          name: "Arena Padrão",
+          name: "Arena Beach Sports",
           subscriptionPlan: "premium",
           gestorLogin: "333",
           gestorSenha: "333",
@@ -783,6 +783,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       nextBillingDate: calcNextBillingDate(today),
     });
     res.json(arena);
+  });
+
+  app.post("/api/admin/arenas/rename-existing", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const arenas = await storage.listArenas();
+    const updated = [];
+    for (const arena of arenas) {
+      const nextName = arena.name === "Arena Padrão" || arena.name === "SEVEN SPORTS" ? "Arena Beach Sports" : arena.name;
+      if (nextName !== arena.name) {
+        updated.push(await storage.updateArena(arena.id, { name: nextName }));
+      }
+    }
+    res.json({ ok: true, updated: updated.length });
   });
 
   app.put("/api/admin/credentials", (req, res) => {
