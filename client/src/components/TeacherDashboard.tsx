@@ -405,29 +405,43 @@ export default function TeacherDashboard({
               </Button>
             </div>
             <div className="space-y-2">
-              {alunos.slice(0, 4).map((aluno) => (
-                <div key={aluno.id} className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                    {aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{aluno.nome}</span>
-                      {aluno.modalidade && (
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{aluno.modalidade}</span>
-                      )}
+              {alunos.slice(0, 4).map((aluno) => {
+                const progresso = aluno.plano > 0 ? Math.min(100, (aluno.checkinsRealizados / aluno.plano) * 100) : 0;
+                return (
+                  <div key={aluno.id} className="space-y-2 rounded-lg border bg-background px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                        {aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{aluno.nome}</span>
+                          {aluno.modalidade && (
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{aluno.modalidade}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="whitespace-nowrap">
+                            {aluno.ultimoCheckin ? `Último: ${aluno.ultimoCheckin.data} ${aluno.ultimoCheckin.hora}` : "Sem check-in recente"}
+                          </span>
+                          <Badge variant="secondary" className="h-5 px-2 text-[11px]">
+                            {aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="whitespace-nowrap">
-                        {aluno.ultimoCheckin ? `Último: ${aluno.ultimoCheckin.data} ${aluno.ultimoCheckin.hora}` : "Sem check-in recente"}
-                      </span>
-                      <Badge variant="secondary" className="h-5 px-2 text-[11px]">
-                        {aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
-                      </Badge>
-                    </div>
+                    {aluno.plano > 0 && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <span>Progresso</span>
+                          <span>{Math.round(progresso)}%</span>
+                        </div>
+                        <Progress value={progresso} data-testid={`progress-student-${aluno.id}`} />
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {alunos.length > 4 && (
                 <p className="text-xs text-muted-foreground">+{alunos.length - 4} alunos</p>
               )}

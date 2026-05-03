@@ -29,8 +29,6 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   badge?: number;
-  progressLabel?: string;
-  progressValue?: number;
 }
 
 interface NavGroup {
@@ -125,13 +123,6 @@ export default function ManagerSidebar({
     return undefined;
   };
 
-  const getProgress = (id: string): { label: string; value: number } | undefined => {
-    if (id !== "alunos") return undefined;
-    const label = pendingCount > 0 ? `${pendingCount} pendentes` : "0 pendentes";
-    const value = Math.min(100, Math.max(0, 100 - pendingCount * 10));
-    return { label, value };
-  };
-
   const handleNavClick = (id: string) => {
     onSectionChange(id);
     onMobileClose?.();
@@ -205,7 +196,6 @@ export default function ManagerSidebar({
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const badge = getBadge(item.id);
-                  const progress = getProgress(item.id);
                   const isActive = activeSection === item.id;
 
                   return (
@@ -237,21 +227,6 @@ export default function ManagerSidebar({
                         )}
                         {collapsed && !mobileOpen && badge !== undefined && badge > 0 && (
                           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
-                        )}
-                        {collapsed && !mobileOpen && progress && (
-                          <div className="absolute inset-x-2 bottom-1">
-                            <div className="h-1 rounded-full bg-white/10 overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-primary"
-                                style={{ width: `${progress.value}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        {(!collapsed || mobileOpen) && progress && (
-                          <span className="ml-auto text-[10px] text-gray-500">
-                            {progress.label}
-                          </span>
                         )}
                       </button>
                     </li>
