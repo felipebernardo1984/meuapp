@@ -178,6 +178,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   const [dialogAlunos, setDialogAlunos] = useState(false);
   const [turmaAlunos, setTurmaAlunos] = useState<Turma | null>(null);
   const [confirmExcluir, setConfirmExcluir] = useState<Turma | null>(null);
+  const [confirmExcluirRecurso, setConfirmExcluirRecurso] = useState<Recurso | null>(null);
 
   // Popup for a clicked day
   const [diaPopup, setDiaPopup] = useState<{ date: Date; turmas: Turma[] } | null>(null);
@@ -244,6 +245,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
     mutationFn: (id: string) => apiRequest("DELETE", `/api/recursos/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+      setConfirmExcluirRecurso(null);
       toast({ title: "Sala removida" });
     },
     onError: () => toast({ title: "Erro ao remover sala", variant: "destructive" }),
@@ -1034,81 +1036,93 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               </div>
             )}
 
-            <div className="rounded-lg border bg-white dark:bg-gray-950 p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <Label>Sala / Quadra / Box</Label>
-                    <p className="text-xs text-gray-500">cadastre ou edite espaços</p>
+            <div className="space-y-2">
+              <Label>Sala / Quadra / Box</Label>
+              <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                <span>{mostrarRecursos ? "cadastre ou edite espaços" : "resumo das salas cadastradas"}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setMostrarRecursos((p) => !p)}
+                  data-testid="button-minimizar-salas"
+                >
+                  {mostrarRecursos ? "Minimizar" : "Expandir"}
+                </Button>
+              </div>
+              {mostrarRecursos ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <Input
+                      value={novoRecursoNome}
+                      onChange={(e) => setNovoRecursoNome(e.target.value)}
+                      placeholder="Novo nome de sala / quadra / box"
+                      data-testid="input-nova-sala"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const nome = novoRecursoNome.trim();
+                        if (!nome) return;
+                        criarRecurso.mutate(nome);
+                      }}
+                      data-testid="button-cadastrar-sala"
+                    >
+                      Adicionar
+                    </Button>
                   </div>
-                  {!mostrarRecursos && <span className="text-xs text-gray-500">Lista minimizada</span>}
+                  <div className="space-y-2">
+                    {recursos.filter((r) => r.ativo).map((r) => (
+                      <div key={r.id} className="flex items-center gap-2 rounded-md border p-2">
+                        {editandoRecursoId === r.id ? (
+                          <Input
+                            value={editandoRecursoNome}
+                            onChange={(e) => setEditandoRecursoNome(e.target.value)}
+                            className="h-9 flex-1"
+                            data-testid={`input-editar-sala-${r.id}`}
+                          />
+                        ) : (
+                          <span className="flex-1 text-sm">{r.nome}</span>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            if (editandoRecursoId === r.id) {
+                              const nome = editandoRecursoNome.trim();
+                              if (!nome) return;
+                              atualizarRecurso.mutate({ id: r.id, nome });
+                              return;
+                            }
+                            setEditandoRecursoId(r.id);
+                            setEditandoRecursoNome(r.nome);
+                          }}
+                          data-testid={`button-editar-sala-${r.id}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          onClick={() => setConfirmExcluirRecurso(r)}
+                          data-testid={`button-apagar-sala-${r.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-md border bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-gray-500">
+                  {recursos.filter((r) => r.ativo).length} sala(s) cadastrada(s)
                 </div>
-                {mostrarRecursos && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <Input
-                        value={novoRecursoNome}
-                        onChange={(e) => setNovoRecursoNome(e.target.value)}
-                        placeholder="Novo nome de sala / quadra / box"
-                        data-testid="input-nova-sala"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          const nome = novoRecursoNome.trim();
-                          if (!nome) return;
-                          criarRecurso.mutate(nome);
-                        }}
-                        data-testid="button-cadastrar-sala"
-                      >
-                        Adicionar
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {recursos.filter((r) => r.ativo).map((r) => (
-                        <div key={r.id} className="flex items-center gap-2 rounded-md border p-2">
-                          {editandoRecursoId === r.id ? (
-                            <Input
-                              value={editandoRecursoNome}
-                              onChange={(e) => setEditandoRecursoNome(e.target.value)}
-                              className="h-9 flex-1"
-                              data-testid={`input-editar-sala-${r.id}`}
-                            />
-                          ) : (
-                            <span className="flex-1 text-sm">{r.nome}</span>
-                          )}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
-                              if (editandoRecursoId === r.id) {
-                                const nome = editandoRecursoNome.trim();
-                                if (!nome) return;
-                                atualizarRecurso.mutate({ id: r.id, nome });
-                                return;
-                              }
-                              setEditandoRecursoId(r.id);
-                              setEditandoRecursoNome(r.nome);
-                            }}
-                            data-testid={`button-editar-sala-${r.id}`}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => removerRecurso.mutate(r.id)}
-                            data-testid={`button-apagar-sala-${r.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
+              )}
             </div>
 
             {/* Dias da semana */}
@@ -1323,6 +1337,25 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               onClick={() => confirmExcluir && excluirTurma.mutate(confirmExcluir.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={!!confirmExcluirRecurso} onOpenChange={(open) => { if (!open) setConfirmExcluirRecurso(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir sala?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A sala <strong>{confirmExcluirRecurso?.nome}</strong> será excluída permanentemente. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => confirmExcluirRecurso && removerRecurso.mutate(confirmExcluirRecurso.id)}
             >
               Excluir
             </AlertDialogAction>
