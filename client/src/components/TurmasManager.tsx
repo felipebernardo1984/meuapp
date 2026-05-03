@@ -586,10 +586,21 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                             style={{ backgroundColor: t.cor }}
                             onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
                           >
-                            <p className="font-semibold text-[11px] leading-tight truncate">{t.nome}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-semibold text-[11px] leading-tight truncate">{t.nome}</p>
+                              <Badge className="h-4 px-1.5 text-[9px] bg-white/20 text-white border-0">
+                                {TIPO_LABELS[t.tipo as TipoAgendamento] ?? t.tipo}
+                              </Badge>
+                            </div>
                             <p className="text-[10px] opacity-90 mt-0.5">{t.horarioInicio}–{t.horarioFim}</p>
+                            {t.recursoNome && (
+                              <p className="text-[9px] opacity-80 truncate mt-0.5">Sala: {t.recursoNome}</p>
+                            )}
                             {t.professorNome && (
-                              <p className="text-[9px] opacity-80 truncate mt-0.5">{t.professorNome}</p>
+                              <p className="text-[9px] opacity-80 truncate mt-0.5">Prof.: {t.professorNome}</p>
+                            )}
+                            {t.clienteNome && (
+                              <p className="text-[9px] opacity-80 truncate mt-0.5">Cliente: {t.clienteNome}</p>
                             )}
                             <div className="flex items-center gap-1 mt-1.5">
                               <Users className="h-2.5 w-2.5 opacity-80" />
@@ -621,6 +632,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                               >
                                 {TIPO_LABELS[t.tipo as TipoAgendamento] ?? t.tipo}
                               </Badge>
+                              {t.recursoNome && (
+                                <Badge variant="outline" className="text-xs">{t.recursoNome}</Badge>
+                              )}
                               {t.modalidade && (
                                 <Badge variant="outline" className="text-xs">{t.modalidade}</Badge>
                               )}
@@ -641,6 +655,18 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                               {t.professorNome && (
                                 <span className="flex items-center gap-1">
                                   <Users className="h-3.5 w-3.5" />{t.professorNome}
+                                </span>
+                              )}
+                              {t.recursoNome && (
+                                <span className="flex items-center gap-1">
+                                  <span className="h-2 w-2 rounded-full bg-gray-400" />
+                                  {t.recursoNome}
+                                </span>
+                              )}
+                              {t.clienteNome && (
+                                <span className="flex items-center gap-1">
+                                  <span className="h-2 w-2 rounded-full bg-gray-400" />
+                                  {t.clienteNome}
                                 </span>
                               )}
                               <span className="flex items-center gap-1">
@@ -706,6 +732,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                       <p className="font-semibold text-sm">{t.nome}</p>
                       <p className="text-xs opacity-90">{t.horarioInicio}–{t.horarioFim}</p>
                       {t.professorNome && <p className="text-xs opacity-80">{t.professorNome}</p>}
+                      {t.recursoNome && <p className="text-xs opacity-80">Sala: {t.recursoNome}</p>}
+                      {t.clienteNome && <p className="text-xs opacity-80">Cliente: {t.clienteNome}</p>}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="text-right text-xs opacity-90">
