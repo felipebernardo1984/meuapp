@@ -209,9 +209,10 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   const salvarRecurso = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
     onSuccess: async (response: any) => {
-      await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
       if (response?.lista) {
         qc.setQueryData(["/api/recursos"], response.lista);
+      } else {
+        await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
       }
       setRecursoNome("");
       setDialogRecursos(true);
@@ -265,7 +266,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     const payload = {
       ...formData,
       professorId: formData.professorId || null,
-      recursoId: formData.recursoId || null,
       diasSemana: formData.diasSemana.join("|"),
     };
     if (editandoId) {
