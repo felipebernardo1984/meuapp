@@ -1444,7 +1444,7 @@ export default function ManagerDashboard({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
+              <div className="col-span-2 space-y-1">
                 <Label>Integração <span className="text-destructive">*</span></Label>
                   <Select
                     value={novoAluno.integrationType}
@@ -1468,7 +1468,7 @@ export default function ManagerDashboard({
                 </Select>
               </div>
               {novoAluno.integrationType && novoAluno.integrationType !== "mensalista" && (
-                <div className="space-y-1">
+                <div className="col-span-2 space-y-1">
                   <Label>Plano da Integração <span className="text-destructive">*</span></Label>
                   {(() => {
                     const opts = Array.from(new Set(
