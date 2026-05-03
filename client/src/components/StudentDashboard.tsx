@@ -289,7 +289,7 @@ export default function StudentDashboard({
           {!temCheckins ? (
             <Button
               size="lg"
-              className="w-full h-12 sm:h-14 text-base sm:text-lg bg-green-600 hover:bg-green-700 text-white"
+              className="w-full h-14 text-lg bg-green-600 hover:bg-green-700 text-white"
               data-testid="button-checkin-mensalista"
             >
               <CheckCircle2 className="mr-2 h-5 w-5" />
@@ -298,7 +298,7 @@ export default function StudentDashboard({
           ) : (
             <Button
               size="lg"
-              className="w-full h-12 sm:h-14 text-base sm:text-lg"
+              className="w-full h-14 text-lg"
               onClick={onCheckin}
               data-testid="button-checkin"
             >
