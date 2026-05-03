@@ -212,9 +212,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
-    onError: (error: any) => {
-      toast({ title: error?.message || "Erro ao salvar recurso", variant: "destructive" });
-    },
+    onError: (error: any) => toast({ title: error?.message || "Erro ao salvar recurso", variant: "destructive" }),
   });
 
   // Helpers
@@ -864,7 +862,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               className="w-full"
               disabled={!recursoNome || salvarRecurso.isPending}
             >
-              Salvar ambiente
+              {salvarRecurso.isPending ? "Salvando..." : "Salvar ambiente"}
             </Button>
             <div className="space-y-2">
               {recursos.map((r) => (
