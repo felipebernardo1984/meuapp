@@ -599,7 +599,7 @@ export default function TeacherDashboard({
                 <Input
                   placeholder="000.000.000-00"
                   value={novoAluno.cpf}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value, senha: e.target.value })}
                   data-testid="input-new-student-cpf"
                 />
               </div>
