@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   CalendarDays, Plus, Pencil, Trash2, Users, Clock, ChevronLeft,
-  ChevronRight, LayoutGrid, List, Calendar, UserPlus, UserMinus, RefreshCw, ChevronDown, ChevronUp, Settings,
+  ChevronRight, LayoutGrid, List, Calendar, UserPlus, UserMinus, RefreshCw, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -192,7 +192,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   const [novoRecursoNome, setNovoRecursoNome] = useState("");
   const [editandoRecursoId, setEditandoRecursoId] = useState<string | null>(null);
   const [editandoRecursoNome, setEditandoRecursoNome] = useState("");
-  const [mostrarRecursos, setMostrarRecursos] = useState(false);
+  const [mostrarRecursos, setMostrarRecursos] = useState(true);
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
     queryFn: () => fetch(`/api/turmas/${turmaAlunos!.id}/alunos`).then((r) => r.json()),
@@ -904,11 +904,21 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                 size="sm"
                 className="shrink-0 h-8 px-2 text-xs sm:text-sm"
                 onClick={() => setMostrarRecursos((p) => !p)}
-                data-testid="button-configurar-salas"
+                data-testid="button-minimizar-salas"
               >
-                <Settings className="h-3.5 w-3.5 mr-1.5" />
-                <span className="hidden md:inline">Configurar salas</span>
-                <span className="md:hidden">Salas</span>
+                {mostrarRecursos ? (
+                  <>
+                    <ChevronUp className="h-3.5 w-3.5 mr-1.5" />
+                    <span className="hidden md:inline">Minimizar salas</span>
+                    <span className="md:hidden">Min.</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3.5 w-3.5 mr-1.5" />
+                    <span className="hidden md:inline">Mostrar resumo</span>
+                    <span className="md:hidden">Resumo</span>
+                  </>
+                )}
               </Button>
             </div>
           </DialogHeader>
@@ -1024,82 +1034,82 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               </div>
             )}
 
-            {mostrarRecursos && (
-              <div className="rounded-lg border bg-white dark:bg-gray-950 p-4 space-y-3">
+            <div className="rounded-lg border bg-white dark:bg-gray-950 p-4 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <Label>Sala / Quadra / Box</Label>
                     <p className="text-xs text-gray-500">cadastre ou edite espaços</p>
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setMostrarRecursos(false)} data-testid="button-fechar-salas">
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
+                  {!mostrarRecursos && <span className="text-xs text-gray-500">Lista minimizada</span>}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <Input
-                    value={novoRecursoNome}
-                    onChange={(e) => setNovoRecursoNome(e.target.value)}
-                    placeholder="Novo nome de sala / quadra / box"
-                    data-testid="input-nova-sala"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const nome = novoRecursoNome.trim();
-                      if (!nome) return;
-                      criarRecurso.mutate(nome);
-                    }}
-                    data-testid="button-cadastrar-sala"
-                  >
-                    Adicionar
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {recursos.filter((r) => r.ativo).map((r) => (
-                    <div key={r.id} className="flex items-center gap-2 rounded-md border p-2">
-                      {editandoRecursoId === r.id ? (
-                        <Input
-                          value={editandoRecursoNome}
-                          onChange={(e) => setEditandoRecursoNome(e.target.value)}
-                          className="h-9 flex-1"
-                          data-testid={`input-editar-sala-${r.id}`}
-                        />
-                      ) : (
-                        <span className="flex-1 text-sm">{r.nome}</span>
-                      )}
+                {mostrarRecursos && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <Input
+                        value={novoRecursoNome}
+                        onChange={(e) => setNovoRecursoNome(e.target.value)}
+                        placeholder="Novo nome de sala / quadra / box"
+                        data-testid="input-nova-sala"
+                      />
                       <Button
                         type="button"
                         variant="outline"
-                        size="icon"
                         onClick={() => {
-                          if (editandoRecursoId === r.id) {
-                            const nome = editandoRecursoNome.trim();
-                            if (!nome) return;
-                            atualizarRecurso.mutate({ id: r.id, nome });
-                            return;
-                          }
-                          setEditandoRecursoId(r.id);
-                          setEditandoRecursoNome(r.nome);
+                          const nome = novoRecursoNome.trim();
+                          if (!nome) return;
+                          criarRecurso.mutate(nome);
                         }}
-                        data-testid={`button-editar-sala-${r.id}`}
+                        data-testid="button-cadastrar-sala"
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => removerRecurso.mutate(r.id)}
-                        data-testid={`button-apagar-sala-${r.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
+                        Adicionar
                       </Button>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    <div className="space-y-2">
+                      {recursos.filter((r) => r.ativo).map((r) => (
+                        <div key={r.id} className="flex items-center gap-2 rounded-md border p-2">
+                          {editandoRecursoId === r.id ? (
+                            <Input
+                              value={editandoRecursoNome}
+                              onChange={(e) => setEditandoRecursoNome(e.target.value)}
+                              className="h-9 flex-1"
+                              data-testid={`input-editar-sala-${r.id}`}
+                            />
+                          ) : (
+                            <span className="flex-1 text-sm">{r.nome}</span>
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                              if (editandoRecursoId === r.id) {
+                                const nome = editandoRecursoNome.trim();
+                                if (!nome) return;
+                                atualizarRecurso.mutate({ id: r.id, nome });
+                                return;
+                              }
+                              setEditandoRecursoId(r.id);
+                              setEditandoRecursoNome(r.nome);
+                            }}
+                            data-testid={`button-editar-sala-${r.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removerRecurso.mutate(r.id)}
+                            data-testid={`button-apagar-sala-${r.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+            </div>
 
             {/* Dias da semana */}
             <div className="space-y-2">
