@@ -989,13 +989,13 @@ export default function ManagerDashboard({
         </div>
 
         {/* ── 4 Metric Cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 text-white shadow-md" data-testid="card-total-alunos">
             <div className="flex items-center justify-between mb-3">
               <span className="text-blue-100 text-xs font-semibold uppercase tracking-wider">Alunos Ativos</span>
               <Users className="h-5 w-5 text-blue-200" />
             </div>
-            <p className="text-4xl font-bold leading-none" data-testid="text-total-students">{alunosAprovados.length}</p>
+            <p className="text-3xl sm:text-4xl font-bold leading-none" data-testid="text-total-students">{alunosAprovados.length}</p>
             <p className="text-xs text-blue-200 mt-2">
               {alunosPendentes.length > 0 ? `+${alunosPendentes.length} pendente(s)` : "todos aprovados"}
             </p>
@@ -1006,7 +1006,7 @@ export default function ManagerDashboard({
               <span className="text-orange-100 text-xs font-semibold uppercase tracking-wider">Check-ins Hoje</span>
               <Zap className="h-5 w-5 text-orange-100" />
             </div>
-            <p className="text-4xl font-bold leading-none" data-testid="text-checkins-hoje">{checkinsHoje}</p>
+            <p className="text-3xl sm:text-4xl font-bold leading-none" data-testid="text-checkins-hoje">{checkinsHoje}</p>
             <p className="text-xs text-orange-100 mt-2">{today}</p>
           </div>
 
@@ -1015,7 +1015,7 @@ export default function ManagerDashboard({
               <span className="text-emerald-100 text-xs font-semibold uppercase tracking-wider">Mensalidades</span>
               <CheckCircle2 className="h-5 w-5 text-emerald-200" />
             </div>
-            <p className="text-4xl font-bold leading-none" data-testid="text-mensalidades-pagas">
+            <p className="text-3xl sm:text-4xl font-bold leading-none" data-testid="text-mensalidades-pagas">
               {totalPagosMes}
               <span className="text-xl text-emerald-200 font-normal">/{mensalistas.length}</span>
             </p>
@@ -1035,7 +1035,7 @@ export default function ManagerDashboard({
         </div>
 
         {/* ── Adimplência + Distribuição por Plano ── */}
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
           {/* Adimplência Ring */}
           <Card>
             <CardHeader className="pb-2">
@@ -1045,8 +1045,8 @@ export default function ManagerDashboard({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-6">
-                <div className="relative shrink-0 w-28 h-28">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+                <div className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28">
                   <svg width="112" height="112" viewBox="0 0 112 112">
                     <circle cx="56" cy="56" r="42" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted opacity-30" />
                     {adimplPct > 0 && (
@@ -1068,7 +1068,7 @@ export default function ManagerDashboard({
                     </div>
                   </div>
                 </div>
-                <div className="space-y-3 flex-1">
+                <div className="space-y-3 flex-1 w-full">
                   <div className="flex justify-between items-center">
                     <span className="flex items-center gap-2 text-sm">
                       <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shrink-0" />
@@ -1206,7 +1206,7 @@ export default function ManagerDashboard({
         )}
 
         {/* ── Bottom Row: Modalidades + Últimas Presenças ── */}
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
           {/* Alunos por Modalidade */}
           {porMod.length > 0 && (
             <Card>

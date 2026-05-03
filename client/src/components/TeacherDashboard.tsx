@@ -290,9 +290,9 @@ export default function TeacherDashboard({
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-4 py-4 shadow-sm overflow-hidden min-w-[180px] max-w-[180px]">
-          <Avatar className="h-28 w-28">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+        <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-3 py-3 sm:px-4 sm:py-4 shadow-sm overflow-hidden w-full sm:min-w-[180px] sm:max-w-[180px]">
+          <Avatar className="h-20 w-20 sm:h-28 sm:w-28">
             <AvatarImage src={photoUrl} alt={teacherName} />
             <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
               {teacherInitials}
@@ -326,11 +326,11 @@ export default function TeacherDashboard({
             />
           )}
         </div>
-        <div className="flex items-center gap-2 min-w-0 whitespace-nowrap">
-          <h1 className="text-2xl font-bold leading-tight whitespace-nowrap" data-testid="text-teacher-name">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+          <h1 className="text-2xl font-bold leading-tight break-words sm:whitespace-nowrap" data-testid="text-teacher-name">
             {teacherName}
           </h1>
-          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground hidden sm:inline">|</span>
           <p className="text-muted-foreground">{modalidade}</p>
           {onIrAgenda && (
             <Button
@@ -338,7 +338,7 @@ export default function TeacherDashboard({
               size="sm"
               onClick={onIrAgenda}
               data-testid="button-ir-agenda"
-              className="gap-2 ml-2"
+              className="w-full sm:w-auto gap-2 sm:ml-2"
             >
               <CalendarDays className="h-4 w-4" />
               Agenda
