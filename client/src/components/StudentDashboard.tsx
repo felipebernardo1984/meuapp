@@ -226,11 +226,12 @@ export default function StudentDashboard({
               />
             )}
           </div>
-          <div>
-            <h1 className="text-xl font-semibold" data-testid="text-student-name">
-              {studentName}
-            </h1>
-            <p className="text-sm text-muted-foreground">{modalidade}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-xl font-semibold whitespace-nowrap" data-testid="text-student-name">
+            {studentName}
+          </h1>
+          <span className="text-muted-foreground whitespace-nowrap">|</span>
+          <p className="text-sm text-muted-foreground whitespace-nowrap">{modalidade}</p>
           </div>
         </div>
         {statusMensalidade === "Pendente" && (
