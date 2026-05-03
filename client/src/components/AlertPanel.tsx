@@ -81,9 +81,14 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-3">
-        <h1 className="text-2xl font-bold">Painel de Alertas</h1>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3 mb-6">
+        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-alertas">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex items-center gap-2 flex-1">
+          <AlertCircle className="h-5 w-5 text-blue-600" />
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Painel de Alertas</h1>
+        </div>
       </div>
 
       <Button
@@ -291,17 +296,6 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
         </>
       )}
 
-      {onVoltar && (
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-alertas">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-2 flex-1">
-            <AlertCircle className="h-5 w-5 text-blue-600" />
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Alertas</h1>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
