@@ -326,7 +326,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { nome, ativo } = req.body;
     if (!nome?.trim()) return res.status(400).json({ message: "Nome é obrigatório" });
     const recurso = await storage.createRecurso({ arenaId, nome: nome.trim(), ativo: ativo ?? true });
-    res.json(recurso);
+    const lista = await storage.listRecursos(arenaId);
+    res.json({ recurso, lista });
   });
 
   app.put("/api/recursos/:id", async (req, res) => {
