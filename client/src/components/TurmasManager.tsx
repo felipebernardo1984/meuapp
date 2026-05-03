@@ -874,16 +874,16 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
 
       {/* Dialog: Criar / Editar Agendamento */}
       <Dialog open={dialogTurma} onOpenChange={setDialogTurma}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editandoId ? "Editar Agendamento" : "Novo Agendamento"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 py-2">
 
             {/* Tipo selector */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Tipo *</Label>
               <div className="flex gap-2">
                 {(["aula", "aluguel", "dayuse"] as TipoAgendamento[]).map((t) => (
@@ -912,7 +912,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             </div>
 
             {/* Nome */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="turma-nome">
                 {formData.tipo === "aula" ? "Nome da turma *" : formData.tipo === "aluguel" ? "Descrição do aluguel *" : "Descrição *"}
               </Label>
@@ -931,8 +931,8 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
 
             {/* AULA: Professor + Modalidade */}
             {formData.tipo === "aula" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
                   <Label>Professor *</Label>
                   <Select
                     value={formData.professorId}
@@ -953,7 +953,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label>Modalidade</Label>
                   <Input
                     value={professores.find((p) => p.id === formData.professorId)?.modalidade ?? ""}
@@ -966,8 +966,8 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
 
             {/* ALUGUEL / DAYUSE: Cliente + Valor */}
             {(formData.tipo === "aluguel" || formData.tipo === "dayuse") && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
                   <Label htmlFor="cliente-nome">
                     {formData.tipo === "aluguel" ? "Locatário" : "Nome do cliente"}
                   </Label>
@@ -979,7 +979,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                     onChange={(e) => setFormData((p) => ({ ...p, clienteNome: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="valor-cobrado">Valor cobrado</Label>
                   <Input
                     id="valor-cobrado"
@@ -996,13 +996,13 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <Label>Sala / Quadra / Box</Label>
-                <span className="text-xs text-gray-500">cadastre aqui se precisar</span>
+                <span className="text-xs text-gray-500">cadastre ou edite espaços</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <Input
                   value={novoRecursoNome}
                   onChange={(e) => setNovoRecursoNome(e.target.value)}
-                  placeholder="Novo nome de sala"
+                  placeholder="Novo nome de sala / quadra / box"
                   data-testid="input-nova-sala"
                 />
                 <Button
@@ -1040,7 +1040,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                         <Input
                           value={editandoRecursoNome}
                           onChange={(e) => setEditandoRecursoNome(e.target.value)}
-                          className="h-8"
+                          className="h-9"
                           data-testid={`input-sala-${r.id}`}
                         />
                         <Button
@@ -1101,8 +1101,8 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             </div>
 
             {/* Horário */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
                 <Label htmlFor="turma-inicio">Horário início *</Label>
                 <Input
                   id="turma-inicio"
@@ -1112,7 +1112,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                   onChange={(e) => setFormData((p) => ({ ...p, horarioInicio: e.target.value }))}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="turma-fim">Horário fim *</Label>
                 <Input
                   id="turma-fim"
@@ -1124,8 +1124,6 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               </div>
             </div>
 
-            {/* Capacidade (only for aula) */}
-            {/* Cor na agenda */}
             <div className="space-y-2">
               <Label>Cor na agenda</Label>
               <div className="flex flex-wrap gap-2">
@@ -1143,7 +1141,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDialogTurma(false)}>Cancelar</Button>
             <Button
               onClick={handleSalvar}
