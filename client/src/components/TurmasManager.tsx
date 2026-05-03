@@ -155,7 +155,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
-  const { data: modalidades = [] } = useQuery<ModalidadeSetting[]>({ queryKey: ["/api/configuracoes/modalidades"] });
+  const { data: modalidades = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
   const { data: recursos = [] } = useQuery<{ id: string; nome: string; ativo: boolean }[]>({ queryKey: ["/api/recursos"] });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
@@ -237,13 +237,20 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   };
 
   const handleSalvar = async () => {
-    if (!formData.nome || !formData.modalidade || !formData.horarioInicio || !formData.horarioFim || formData.diasSemana.length === 0) {
+    if (!formData.nome || !formData.professorId || !formData.horarioInicio || !formData.horarioFim || formData.diasSemana.length === 0) {
       toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+    const selectedProfessor = professores.find((p) => p.id === formData.professorId);
+    const modalidade = selectedProfessor?.modalidade ?? formData.modalidade;
+    if (!selectedProfessor || !modalidade) {
+      toast({ title: "Selecione um professor válido", variant: "destructive" });
       return;
     }
     const dataAula = slotPopup ? slotPopup.date.toISOString().slice(0, 10) : undefined;
     const payload = {
       ...formData,
+      modalidade,
       professorId: formData.professorId || null,
       recursoId: formData.recursoId || null,
       diasSemana: formData.diasSemana.join("|"),
@@ -705,36 +712,29 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Modalidade *</Label>
+                <Label>Professor *</Label>
                 <Select
-                  value={formData.modalidade}
-                  onValueChange={(v) => setFormData((p) => ({ ...p, modalidade: v }))}
+                  value={formData.professorId}
+                  onValueChange={(v) => {
+                    const selected = professores.find((p) => p.id === v);
+                    setFormData((p) => ({ ...p, professorId: v, modalidade: selected?.modalidade ?? p.modalidade }));
+                  }}
                 >
-                  <SelectTrigger data-testid="select-turma-modalidade">
-                    <SelectValue placeholder="Selecionar modalidade..." />
+                  <SelectTrigger data-testid="select-turma-professor">
+                    <SelectValue placeholder="Selecionar professor..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {modalidades.map((m) => (
-                      <SelectItem key={m.modalidade} value={m.modalidade}>
-                        {m.modalidade}
+                    {professores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nome} — {p.modalidade}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Professor</Label>
-                <Select value={formData.professorId} onValueChange={(v) => setFormData((p) => ({ ...p, professorId: v === "_none" ? "" : v }))}>
-                  <SelectTrigger data-testid="select-turma-professor">
-                    <SelectValue placeholder="Selecionar..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">Sem professor</SelectItem>
-                    {professores.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Modalidade</Label>
+                <Input value={professores.find((p) => p.id === formData.professorId)?.modalidade ?? formData.modalidade} readOnly />
               </div>
             </div>
 
