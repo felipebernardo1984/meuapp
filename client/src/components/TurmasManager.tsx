@@ -120,6 +120,14 @@ type DaySlot = {
   professorId?: string | null;
 };
 
+type Resource = {
+  id: string;
+  nome: string;
+  tipo: string;
+  cor: string;
+  ativo: boolean;
+};
+
 export default function TurmasManager({ onVoltar, professorContext }: TurmasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -139,6 +147,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   const [turmaAlunos, setTurmaAlunos] = useState<Turma | null>(null);
 
   const [confirmExcluir, setConfirmExcluir] = useState<Turma | null>(null);
+  const [gestorView, setGestorView] = useState<"agenda" | "recursos">("agenda");
 
   // Popup for a clicked day
   const [diaPopup, setDiaPopup] = useState<{ date: Date; turmas: Turma[] } | null>(null);
@@ -149,6 +158,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
+  const { data: resources = [] } = useQuery<Resource[]>({ queryKey: ["/api/agenda-recursos"] });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
     queryFn: () => fetch(`/api/turmas/${turmaAlunos!.id}/alunos`).then((r) => r.json()),
@@ -258,6 +268,15 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       return t.dataAula === dataIso && !(fim <= t.horarioInicio || inicio >= t.horarioFim);
     });
 
+  const recursosExibidos = resources.length > 0 ? resources : [
+    { id: "quadra-1", nome: "Quadra 1", tipo: "Quadra", cor: "#1565C0", ativo: true },
+    { id: "quadra-2", nome: "Quadra 2", tipo: "Quadra", cor: "#1976D2", ativo: true },
+    { id: "quadra-3", nome: "Quadra 3", tipo: "Quadra", cor: "#0288D1", ativo: true },
+    { id: "quadra-4", nome: "Quadra 4", tipo: "Quadra", cor: "#00838F", ativo: true },
+    { id: "box-1", nome: "Box 1", tipo: "Box", cor: "#2E7D32", ativo: true },
+    { id: "sala-danca", nome: "Sala de Dança", tipo: "Sala", cor: "#6A1B9A", ativo: true },
+  ];
+
   // ── Monthly calendar helpers ──────────────────────────────────────────────
   const calDays = useMemo(() => {
     // Get all days in the month
@@ -358,18 +377,56 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   Lista
                 </Button>
               </div>
-              <Button
-                onClick={() => openNova()}
-                data-testid="button-nova-turma"
-                size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5"
-              >
-                <Plus className="mr-2 h-5 w-5" />
-                Nova Turma
-              </Button>
+              {gestorView === "agenda" ? (
+                <Button
+                  onClick={() => openNova()}
+                  data-testid="button-nova-turma"
+                  size="lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5"
+                >
+                  <Plus className="mr-2 h-5 w-5" />
+                  Nova Turma
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setGestorView("agenda")}>Agenda</Button>
+                  <Button variant="default" size="sm" onClick={() => setGestorView("recursos")}>Recursos</Button>
+                </div>
+              )}
             </div>
 
-            {view === "mensal" ? (
+            {gestorView === "recursos" ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border bg-white dark:bg-gray-800 p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recursos da agenda</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Cadastre quadras, boxes e salas para liberar horários iguais em espaços diferentes.</p>
+                    </div>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-add-resource">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Adicionar recurso
+                    </Button>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {recursosExibidos.map((r) => (
+                      <Card key={r.id} data-testid={`card-recurso-${r.id}`} className="border-gray-200 dark:border-gray-700">
+                        <CardContent className="p-4 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-10 w-10 rounded-xl" style={{ backgroundColor: r.cor }} />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-900 dark:text-white truncate">{r.nome}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{r.tipo}</p>
+                            </div>
+                          </div>
+                          <Badge variant={r.ativo ? "default" : "secondary"}>{r.ativo ? "Ativo" : "Inativo"}</Badge>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : view === "mensal" ? (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                   <Button variant="ghost" size="icon" onClick={prevMonth} data-testid="button-mes-anterior">
