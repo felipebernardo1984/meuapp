@@ -305,7 +305,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
         ) : (
           <>
             {/* View toggle + Nova Turma */}
-            <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+            <div className="flex items-start justify-between mb-5 gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <Button
                   variant={view === "mensal" ? "default" : "outline"}
@@ -341,9 +341,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               <Button
                 onClick={() => openNova()}
                 data-testid="button-nova-turma"
-                className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 gap-1.5"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-14 px-6 text-lg gap-1.5"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="mr-2 h-5 w-5" />
                 Nova Turma
               </Button>
             </div>
