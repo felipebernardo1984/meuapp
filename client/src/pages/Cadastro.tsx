@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Loader2, ArrowLeft, Zap } from "lucide-react";
+import cadastroPreview from "@assets/image_1777801948799.png";
 
 export default function Cadastro() {
   const [, navigate] = useLocation();
@@ -124,6 +125,7 @@ export default function Cadastro() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-4">
+        <img src={cadastroPreview} alt="Prévia do formulário de cadastro" className="hidden" data-testid="img-cadastro-preview" />
         <Card className="border-primary/20">
           <CardHeader className="text-center space-y-1 pb-4">
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
