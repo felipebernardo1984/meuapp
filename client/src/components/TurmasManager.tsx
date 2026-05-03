@@ -160,7 +160,11 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
-  const { data: recursos = [] } = useQuery<Recurso[]>({ queryKey: ["/api/recursos"] });
+  const { data: recursos = [] } = useQuery<Recurso[]>({
+    queryKey: ["/api/recursos"],
+    queryFn: () => fetch("/api/recursos").then((r) => (r.ok ? r.json() : [])),
+    retry: false,
+  });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
     queryFn: () => fetch(`/api/turmas/${turmaAlunos!.id}/alunos`).then((r) => r.json()),
