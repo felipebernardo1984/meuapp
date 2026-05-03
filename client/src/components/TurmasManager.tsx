@@ -384,17 +384,15 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   <List className="h-4 w-4" />
                   Lista
                 </Button>
-                {professorContext ? null : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDialogRecursos(true)}
-                    data-testid="button-configuracao-salas"
-                    className="h-9 px-3 gap-1.5"
-                  >
-                    Configuração de Salas
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDialogRecursos(true)}
+                  data-testid="button-configuracao-salas"
+                  className="h-9 px-3 gap-1.5"
+                >
+                  {professorContext ? "Salas Disponíveis" : "Configuração de Salas"}
+                </Button>
               </div>
               <Button
                 onClick={() => openNova()}
@@ -844,26 +842,48 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       <Dialog open={dialogRecursos} onOpenChange={setDialogRecursos}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Configuração de Salas</DialogTitle>
+            <DialogTitle>{professorContext ? "Salas Disponíveis" : "Configuração de Salas"}</DialogTitle>
             <DialogDescription>
-              Cadastre ambientes como Quadra 1, Quadra 2 e Box 1 para usar na agenda.
+              {professorContext
+                ? "Veja apenas as salas liberadas para montar sua agenda."
+                : "Cadastre ambientes como Quadra 1, Quadra 2 e Box 1 para usar na agenda."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Input
-              value={recursoNome}
-              onChange={(e) => setRecursoNome(e.target.value)}
-              placeholder="Ex: Quadra 1"
-              data-testid="input-recurso-nome"
-            />
-            <Button
-              onClick={() => salvarRecurso.mutate({ nome: recursoNome.trim(), ativo: true })}
-              data-testid="button-salvar-recurso"
-              className="w-full"
-              disabled={!recursoNome || salvarRecurso.isPending}
-            >
-              {salvarRecurso.isPending ? "Salvando..." : "Salvar ambiente"}
-            </Button>
+            {professorContext ? (
+              <>
+                <div className="space-y-2">
+                  {recursos.filter((r) => r.ativo).map((r) => (
+                    <div key={r.id} className="flex items-center justify-between rounded-md border px-3 py-2" data-testid={`recurso-item-${r.id}`}>
+                      <span>{r.nome}</span>
+                      <span className="text-xs text-muted-foreground">Disponível</span>
+                    </div>
+                  ))}
+                  {recursos.filter((r) => r.ativo).length === 0 && (
+                    <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+                      Nenhuma sala disponível no momento.
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Input
+                  value={recursoNome}
+                  onChange={(e) => setRecursoNome(e.target.value)}
+                  placeholder="Ex: Quadra 1"
+                  data-testid="input-recurso-nome"
+                />
+                <Button
+                  onClick={() => salvarRecurso.mutate({ nome: recursoNome.trim(), ativo: true })}
+                  data-testid="button-salvar-recurso"
+                  className="w-full"
+                  disabled={!recursoNome || salvarRecurso.isPending}
+                >
+                  {salvarRecurso.isPending ? "Salvando..." : "Salvar ambiente"}
+                </Button>
+              </>
+            )}
             <div className="space-y-2">
               {recursos.map((r) => (
                 <div key={r.id} className="flex items-center justify-between rounded-md border px-3 py-2" data-testid={`recurso-item-${r.id}`}>

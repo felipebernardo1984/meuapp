@@ -522,20 +522,6 @@ export class DatabaseStorage {
     return db.select().from(turmas).where(eq(turmas.arenaId, arenaId));
   }
 
-  async listRecursos(arenaId: string) {
-    return db.select().from(recursos).where(eq(recursos.arenaId, arenaId));
-  }
-
-  async createRecurso(data: any) {
-    const [row] = await db.insert(recursos).values(data).returning();
-    return row;
-  }
-
-  async updateRecurso(id: string, data: any) {
-    const [row] = await db.update(recursos).set(data).where(eq(recursos.id, id)).returning();
-    return row;
-  }
-
   async getTurma(id: string) {
     const [turma] = await db.select().from(turmas).where(eq(turmas.id, id));
     return turma;
