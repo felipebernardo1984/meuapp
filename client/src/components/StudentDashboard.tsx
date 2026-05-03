@@ -63,7 +63,7 @@ interface StudentDashboardProps {
   cicloInicio: string;
   diasRestantes: number;
   statusMensalidade: "Em dia" | "Pendente";
-  historico: Array<{ data: string; hora: string }>;
+  historico?: Array<{ data: string; hora: string }>;
   payments?: Payment[];
   charges?: Charge[];
   pixSettings?: PixSettings;
@@ -125,6 +125,7 @@ export default function StudentDashboard({
   const [dialogPix, setDialogPix] = useState(false);
   const [pixItem, setPixItem] = useState<{ amount: string; description: string } | null>(null);
   const [checkinExpandido, setCheckinExpandido] = useState(false);
+  const historicoSeguro = historico ?? [];
   const [dialogEditar, setDialogEditar] = useState(false);
   const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
   const [dataEditar, setDataEditar] = useState("");
@@ -133,7 +134,7 @@ export default function StudentDashboard({
   const { data: minhaTurma } = useQuery<any | null>({ queryKey: ["/api/aluno/turma"] });
 
   const abrirEditar = (index: number) => {
-    const item = historico[index];
+    const item = historicoSeguro[index];
     setEditandoIndex(index);
     setDataEditar(ptBrParaISO(item.data));
     setHoraEditar(item.hora || "");
@@ -369,13 +370,13 @@ export default function StudentDashboard({
             </div>
           </CardHeader>
           <CardContent>
-            {historico.length === 0 ? (
+            {historicoSeguro.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 Nenhum check-in realizado ainda
               </p>
             ) : (
               <div className="space-y-1">
-                {(checkinExpandido ? historico : historico.slice(0, CHECKIN_PREVIEW)).map((item, index) => (
+                {(checkinExpandido ? historicoSeguro : historicoSeguro.slice(0, CHECKIN_PREVIEW)).map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between py-2 border-b last:border-0"
@@ -399,7 +400,7 @@ export default function StudentDashboard({
                     </Button>
                   </div>
                 ))}
-                {historico.length > CHECKIN_PREVIEW && (
+                {historicoSeguro.length > CHECKIN_PREVIEW && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -415,7 +416,7 @@ export default function StudentDashboard({
                     ) : (
                       <>
                         <ChevronDown className="h-4 w-4 mr-1" />
-                        Ver todos ({historico.length} check-ins)
+                        Ver todos ({historicoSeguro.length} check-ins)
                       </>
                     )}
                   </Button>
@@ -653,7 +654,7 @@ export default function StudentDashboard({
           <AlertDialogHeader>
             <AlertDialogTitle>Remover Check-in?</AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmarIndex !== null && historico[confirmarIndex] && (
+              {confirmarIndex !== null && historicoSeguro[confirmarIndex] && (
                 <>
                   Tem certeza que deseja remover o check-in?
                 </>

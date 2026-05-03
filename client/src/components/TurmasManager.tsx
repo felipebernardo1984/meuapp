@@ -162,20 +162,20 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Mutations
   const criarTurma = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/turmas", data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Horário de aulas criado!" }); },
-    onError: () => toast({ title: "Erro ao criar turma", variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Aula criada!" }); },
+    onError: () => toast({ title: "Erro ao criar aula", variant: "destructive" }),
   });
 
   const editarTurma = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PUT", `/api/turmas/${id}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Horário de aulas atualizado!" }); },
-    onError: () => toast({ title: "Erro ao atualizar turma", variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Aula atualizada!" }); },
+    onError: () => toast({ title: "Erro ao atualizar aula", variant: "destructive" }),
   });
 
   const excluirTurma = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/turmas/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setConfirmExcluir(null); toast({ title: "Horário de aulas excluído" }); },
-    onError: () => toast({ title: "Erro ao excluir turma", variant: "destructive" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setConfirmExcluir(null); toast({ title: "Aula excluída" }); },
+    onError: () => toast({ title: "Erro ao excluir aula", variant: "destructive" }),
   });
 
   const matricularAluno = useMutation({
@@ -229,7 +229,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     }));
   };
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!formData.nome || !formData.modalidade || !formData.horarioInicio || !formData.horarioFim || formData.diasSemana.length === 0) {
       toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
@@ -241,9 +241,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       diasSemana: formData.diasSemana.join("|"),
     };
     if (editandoId) {
-      editarTurma.mutate({ id: editandoId, data: payload });
+      await editarTurma.mutateAsync({ id: editandoId, data: payload });
     } else {
-      criarTurma.mutate(payload);
+      await criarTurma.mutateAsync(payload);
     }
   };
 
@@ -364,7 +364,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               </div>
               <Button
                 onClick={() => openNova()}
-                data-testid="button-horario-aulas"
+                data-testid="button-horario-aula"
                 size="lg"
                 className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5 justify-center"
               >
@@ -809,7 +809,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             <Button
               onClick={handleSalvar}
               disabled={criarTurma.isPending || editarTurma.isPending}
-              data-testid="button-salvar-turma"
+              data-testid="button-salvar-aula"
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {criarTurma.isPending || editarTurma.isPending ? "Salvando..." : "Salvar"}
