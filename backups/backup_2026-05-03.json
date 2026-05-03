@@ -1,25 +1,6 @@
 {
   "arenas": [
     {
-      "id": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
-      "name": "Arena Padrão",
-      "subscriptionPlan": "premium",
-      "gestorLogin": "333",
-      "gestorSenha": "333",
-      "gestorNome": null,
-      "gestorCpf": null,
-      "gestorEmail": null,
-      "gestorTelefone": null,
-      "subscriptionStartDate": "11/04/2026",
-      "subscriptionValue": "R$ 199,00",
-      "subscriptionStatus": "Ativo",
-      "nextBillingDate": "11/05/2026",
-      "statusConta": "ativo",
-      "trialExpiraEm": null,
-      "createdAt": "2026-04-11T20:48:47.643Z",
-      "updatedAt": "2026-04-11T20:48:47.643Z"
-    },
-    {
       "id": "c0082f10-2842-4085-b2fd-20f8c371b38f",
       "name": "FELIPE SPORTS",
       "subscriptionPlan": "basic",
@@ -56,6 +37,25 @@
       "trialExpiraEm": "2026-05-08",
       "createdAt": "2026-05-03T05:03:00.283Z",
       "updatedAt": "2026-05-03T05:03:00.283Z"
+    },
+    {
+      "id": "04e98b14-d810-4185-aed4-363eb3ef0ac5",
+      "name": "Arena Beach Sports",
+      "subscriptionPlan": "premium",
+      "gestorLogin": "333",
+      "gestorSenha": "333",
+      "gestorNome": null,
+      "gestorCpf": null,
+      "gestorEmail": null,
+      "gestorTelefone": null,
+      "subscriptionStartDate": "11/04/2026",
+      "subscriptionValue": "R$ 199,00",
+      "subscriptionStatus": "Ativo",
+      "nextBillingDate": "11/05/2026",
+      "statusConta": "ativo",
+      "trialExpiraEm": null,
+      "createdAt": "2026-04-11T20:48:47.643Z",
+      "updatedAt": "2026-04-11T20:48:47.643Z"
     }
   ],
   "students": [
@@ -293,5 +293,5 @@
       "professorId": null
     }
   ],
-  "createdAt": "2026-05-03T05:14:24.661Z"
+  "createdAt": "2026-05-03T05:17:59.324Z"
 }
