@@ -160,7 +160,9 @@ export default function ManagerSidebar({
           {(!collapsed || mobileOpen) && (
             <div className="min-w-0">
               <p className="text-sm font-bold text-white truncate">{arenaName || "SEVEN SPORTS"}</p>
-              <p className="text-xs text-gray-500 truncate">{gestorName || " "}</p>
+              {gestorName && (
+                <p className="text-xs text-gray-500 truncate">{gestorName}</p>
+              )}
             </div>
           )}
           {/* Mobile close button */}

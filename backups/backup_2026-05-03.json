@@ -18,6 +18,25 @@
       "trialExpiraEm": null,
       "createdAt": "2026-04-11T20:48:47.643Z",
       "updatedAt": "2026-04-11T20:48:47.643Z"
+    },
+    {
+      "id": "8fe97b45-392b-4ca2-bc06-45deeb22bdf2",
+      "name": "ARENALUA",
+      "subscriptionPlan": "basic",
+      "gestorLogin": "bernardo_lipe@live.com",
+      "gestorSenha": "34021713840",
+      "gestorNome": "Felipe Bernardo",
+      "gestorCpf": null,
+      "gestorEmail": "bernardo_lipe@live.com",
+      "gestorTelefone": null,
+      "subscriptionStartDate": "03/05/2026",
+      "subscriptionValue": "R$ 0,00",
+      "subscriptionStatus": "Trial",
+      "nextBillingDate": "10/06/2026",
+      "statusConta": "trial",
+      "trialExpiraEm": "2026-05-10",
+      "createdAt": "2026-05-03T09:55:02.230Z",
+      "updatedAt": "2026-05-03T09:55:02.230Z"
     }
   ],
   "students": [
@@ -273,5 +292,5 @@
       "professorId": null
     }
   ],
-  "createdAt": "2026-05-03T08:57:09.945Z"
+  "createdAt": "2026-05-03T09:57:42.655Z"
 }
