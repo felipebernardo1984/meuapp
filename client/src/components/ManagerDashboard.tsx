@@ -163,6 +163,7 @@ interface ManagerDashboardProps {
 
 
 export default function ManagerDashboard({
+  arenaName,
   planos,
   alunos,
   professores,
