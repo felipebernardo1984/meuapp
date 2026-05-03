@@ -896,33 +896,9 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       <Dialog open={dialogTurma} onOpenChange={setDialogTurma}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="pr-12">
-            <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-base sm:text-lg">
-                {editandoId ? "Editar Agendamento" : "Novo Agendamento"}
-              </DialogTitle>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 h-8 px-2 text-xs sm:text-sm"
-                onClick={() => setMostrarRecursos((p) => !p)}
-                data-testid="button-minimizar-salas"
-              >
-                {mostrarRecursos ? (
-                  <>
-                    <ChevronUp className="h-3.5 w-3.5 mr-1.5" />
-                    <span className="hidden md:inline">Minimizar salas</span>
-                    <span className="md:hidden">Min.</span>
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3.5 w-3.5 mr-1.5" />
-                    <span className="hidden md:inline">Mostrar resumo</span>
-                    <span className="md:hidden">Resumo</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            <DialogTitle className="text-base sm:text-lg">
+              {editandoId ? "Editar Agendamento" : "Novo Agendamento"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-2">
 
