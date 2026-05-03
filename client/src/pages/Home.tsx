@@ -340,6 +340,7 @@ export default function Home() {
               arenaName={sessao.arenaName}
               gestorName={sessao.gestorName}
               responsavelName={sessao.gestorName}
+              gestorLabel={sessao.gestorName}
               planos={planosAdaptados}
               alunos={alunos.map((a: any) => ({
                 id: a.id,
