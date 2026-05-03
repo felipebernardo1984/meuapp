@@ -479,17 +479,6 @@ export default function ArenaApp() {
         />
       )}
 
-      {sessao.tipo === "aluno" && professorView === "agenda" && (
-        <TurmasManager
-          onVoltar={() => setProfessorView("dashboard")}
-          professorContext={{
-            id: alunoAtual?.professorId ?? "",
-            modalidade: alunoAtual?.modalidade ?? "",
-            nome: alunoAtual?.professorNome ?? "Agenda",
-          }}
-        />
-      )}
-
       {sessao.tipo === "gestor" && gestorTab === "agenda" && (
         <TurmasManager onVoltar={() => setGestorTab("dashboard")} />
       )}
