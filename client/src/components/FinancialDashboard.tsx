@@ -532,16 +532,6 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
         </CardContent>
       </Card>
 
-      {/* Voltar button */}
-      {onVoltar && (
-        <div className="flex justify-start pb-8">
-          <Button variant="ghost" onClick={onVoltar} data-testid="button-voltar-financial">
-            Voltar ao Painel
-            <ArrowLeft className="h-4 w-4 ml-2" />
-          </Button>
-        </div>
-      )}
-
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}>
         <DialogContent>
