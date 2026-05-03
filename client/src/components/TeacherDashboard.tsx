@@ -291,7 +291,7 @@ export default function TeacherDashboard({
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
       <div className="flex items-center gap-4 mb-6">
-        <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-4 py-4 shadow-sm overflow-hidden min-w-[180px]">
+        <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-4 py-4 shadow-sm overflow-hidden min-w-[180px] max-w-[180px]">
           <Avatar className="h-28 w-28">
             <AvatarImage src={photoUrl} alt={teacherName} />
             <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
@@ -325,18 +325,6 @@ export default function TeacherDashboard({
               onCancel={() => setCropSrc(null)}
             />
           )}
-            {onUpdatePhoto && (
-              <div className="w-full flex items-center justify-center text-[11px] text-muted-foreground">
-                <button
-                  type="button"
-                  className="hover:text-primary transition-colors"
-                  onClick={() => onUpdatePhoto("")}
-                  data-testid="button-remove-teacher-photo"
-                >
-                  Sem foto
-                </button>
-              </div>
-            )}
         </div>
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-2xl font-bold leading-tight whitespace-nowrap" data-testid="text-teacher-name">

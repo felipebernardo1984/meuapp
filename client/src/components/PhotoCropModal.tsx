@@ -85,21 +85,21 @@ export function PhotoCropModal({ imageSrc, onConfirm, onRemove, onCancel }: Phot
 
   return (
     <Dialog open onOpenChange={onCancel}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-[92vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Ajustar foto de perfil
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-4 py-2">
+        <div className="flex flex-col items-center gap-3 py-2">
           <p className="text-xs text-muted-foreground text-center">
             Arraste para posicionar · Use o controle para ampliar
           </p>
 
           <div
             className="relative overflow-hidden rounded-full border-4 border-primary/30 bg-muted cursor-move select-none shadow-inner"
-            style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE }}
+            style={{ width: "min(200px, 64vw)", height: "min(200px, 64vw)" }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={stopDrag}
@@ -128,7 +128,7 @@ export function PhotoCropModal({ imageSrc, onConfirm, onRemove, onCancel }: Phot
             <div className="pointer-events-none absolute inset-0 rounded-full ring-4 ring-background/40" />
           </div>
 
-          <div className="w-full space-y-1.5">
+          <div className="w-full space-y-1.5 max-w-[220px]">
             <div className="flex items-center gap-2">
               <ZoomIn className="h-4 w-4 text-muted-foreground shrink-0" />
               <input
@@ -145,7 +145,7 @@ export function PhotoCropModal({ imageSrc, onConfirm, onRemove, onCancel }: Phot
           </div>
         </div>
 
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
           <Button
             variant="destructive"
             size="sm"
