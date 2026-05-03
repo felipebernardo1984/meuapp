@@ -18,6 +18,44 @@
       "trialExpiraEm": null,
       "createdAt": "2026-04-11T20:48:47.643Z",
       "updatedAt": "2026-04-11T20:48:47.643Z"
+    },
+    {
+      "id": "c0082f10-2842-4085-b2fd-20f8c371b38f",
+      "name": "FELIPE SPORTS",
+      "subscriptionPlan": "basic",
+      "gestorLogin": "bernardo_lipe@live.com",
+      "gestorSenha": "061323",
+      "gestorNome": "Felipe Bernardo",
+      "gestorCpf": null,
+      "gestorEmail": "bernardo_lipe@live.com",
+      "gestorTelefone": null,
+      "subscriptionStartDate": "03/05/2026",
+      "subscriptionValue": "R$ 0,00",
+      "subscriptionStatus": "Trial",
+      "nextBillingDate": "03/06/2026",
+      "statusConta": "trial",
+      "trialExpiraEm": "2026-05-08",
+      "createdAt": "2026-05-03T05:01:20.115Z",
+      "updatedAt": "2026-05-03T05:01:20.115Z"
+    },
+    {
+      "id": "19a68906-56ea-40e9-af44-6ef8c220457b",
+      "name": "FERNANDO BEACH",
+      "subscriptionPlan": "basic",
+      "gestorLogin": "fernando@maissucesso.com.br",
+      "gestorSenha": "mais2310",
+      "gestorNome": "Fernando Francisco",
+      "gestorCpf": null,
+      "gestorEmail": "fernando@maissucesso.com.br",
+      "gestorTelefone": null,
+      "subscriptionStartDate": "03/05/2026",
+      "subscriptionValue": "R$ 0,00",
+      "subscriptionStatus": "Trial",
+      "nextBillingDate": "03/06/2026",
+      "statusConta": "trial",
+      "trialExpiraEm": "2026-05-08",
+      "createdAt": "2026-05-03T05:03:00.283Z",
+      "updatedAt": "2026-05-03T05:03:00.283Z"
     }
   ],
   "students": [
@@ -255,5 +293,5 @@
       "professorId": null
     }
   ],
-  "createdAt": "2026-05-03T04:53:22.734Z"
+  "createdAt": "2026-05-03T05:12:31.920Z"
 }

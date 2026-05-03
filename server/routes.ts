@@ -760,7 +760,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/arenas", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const { name, subscriptionPlan, gestorLogin, gestorSenha, gestorNome, gestorCpf, gestorEmail, gestorTelefone } = req.body;
-    if (!name || !gestorLogin || !gestorSenha) {
+    const normalizedGestorLogin = (gestorEmail ?? gestorLogin)?.trim?.() ?? "";
+    if (!name || !normalizedGestorLogin || !gestorSenha) {
       return res.status(400).json({ message: "Nome, login e senha são obrigatórios" });
     }
     const planType = subscriptionPlan || "basic";
@@ -770,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arena = await storage.createArena({
       name,
       subscriptionPlan: planType,
-      gestorLogin,
+      gestorLogin: normalizedGestorLogin,
       gestorSenha,
       gestorNome: gestorNome ?? null,
       gestorCpf: gestorCpf ?? null,
@@ -798,7 +799,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { name, subscriptionPlan, gestorLogin, gestorSenha, gestorNome, gestorCpf, gestorEmail, gestorTelefone } = req.body;
     const updates: Record<string, any> = {};
     if (name !== undefined) updates.name = name;
-    if (gestorLogin !== undefined) updates.gestorLogin = gestorLogin;
+    if (gestorEmail !== undefined) updates.gestorLogin = gestorEmail;
+    else if (gestorLogin !== undefined) updates.gestorLogin = gestorLogin;
     if (gestorSenha) updates.gestorSenha = gestorSenha;
     if (gestorNome !== undefined) updates.gestorNome = gestorNome;
     if (gestorCpf !== undefined) updates.gestorCpf = gestorCpf;

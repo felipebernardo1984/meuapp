@@ -42,6 +42,7 @@ interface ManagerSidebarProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
   pendingCount: number;
+  arenaName?: string;
   onLogout?: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -96,6 +97,7 @@ export default function ManagerSidebar({
   collapsed,
   onToggleCollapse,
   pendingCount,
+  arenaName,
   onLogout,
   mobileOpen = false,
   onMobileClose,
@@ -154,7 +156,7 @@ export default function ManagerSidebar({
         <div className="flex items-center justify-between px-3 py-4 border-b border-white/10 shrink-0">
           {(!collapsed || mobileOpen) && (
             <div className="min-w-0">
-              <p className="text-sm font-bold text-white truncate">Seven Sports</p>
+              <p className="text-sm font-bold text-white truncate">{arenaName || "Seven Sports"}</p>
               <p className="text-xs text-gray-500 truncate">Gestor</p>
             </div>
           )}

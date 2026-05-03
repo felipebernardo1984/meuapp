@@ -337,6 +337,7 @@ export default function Home() {
 
           {gestorView === "dashboard" && (
             <ManagerDashboard
+              arenaName={sessao.arenaName}
               planos={planosAdaptados}
               alunos={alunos.map((a: any) => ({
                 id: a.id,

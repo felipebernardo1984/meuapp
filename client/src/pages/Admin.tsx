@@ -1238,10 +1238,11 @@ function ArenaFormDialog({
           <div className="space-y-2">
             <Label>Login <span className="text-destructive">*</span></Label>
             <Input
-              placeholder="Login de acesso da arena"
-              value={form.gestorLogin}
-              onChange={(e) => setForm({ ...form, gestorLogin: e.target.value })}
-              data-testid="input-gestor-login"
+              type="email"
+              placeholder="email@exemplo.com"
+              value={form.gestorEmail}
+              onChange={(e) => setForm({ ...form, gestorEmail: e.target.value, gestorLogin: e.target.value })}
+              data-testid="input-gestor-email-login"
             />
           </div>
           <div className="space-y-2">
