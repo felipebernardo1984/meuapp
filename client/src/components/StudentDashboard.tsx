@@ -235,6 +235,7 @@ export default function StudentDashboard({
               <p className="text-sm text-muted-foreground whitespace-nowrap">{modalidade}</p>
             </div>
           </div>
+        </div>
         {statusMensalidade === "Pendente" && (
           <Badge variant="destructive" data-testid="badge-payment-status">
             Pendente
