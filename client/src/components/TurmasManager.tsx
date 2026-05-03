@@ -69,6 +69,7 @@ interface Turma {
   diasSemana: string;
   horarioInicio: string;
   horarioFim: string;
+  dataAula?: string | null;
   capacidadeMaxima: number;
   cor: string;
   ativo: boolean;
@@ -112,6 +113,13 @@ const emptyForm = {
 
 type ViewMode = "mensal" | "semanal" | "lista";
 
+type DaySlot = {
+  date: string;
+  horarioInicio: string;
+  horarioFim: string;
+  professorId?: string | null;
+};
+
 export default function TurmasManager({ onVoltar, professorContext }: TurmasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -134,6 +142,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
   // Popup for a clicked day
   const [diaPopup, setDiaPopup] = useState<{ date: Date; turmas: Turma[] } | null>(null);
+  const [slotPopup, setSlotPopup] = useState<{ date: Date; horarioInicio: string; horarioFim: string } | null>(null);
+  const [slotHorarioInicio, setSlotHorarioInicio] = useState("08:00");
+  const [slotHorarioFim, setSlotHorarioFim] = useState("09:00");
 
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
@@ -240,6 +251,13 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   const turmasPorDia = (dia: string) =>
     turmas.filter((t) => t.diasSemana.split("|").includes(dia));
 
+  const turmasNoHorario = (dataIso: string, inicio: string, fim: string) =>
+    turmas.filter((t) => {
+      if (!t.professorId) return false;
+      if (!t.dataAula) return false;
+      return t.dataAula === dataIso && !(fim <= t.horarioInicio || inicio >= t.horarioFim);
+    });
+
   // ── Monthly calendar helpers ──────────────────────────────────────────────
   const calDays = useMemo(() => {
     // Get all days in the month
@@ -267,6 +285,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     date.getDate() === today.getDate() &&
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear();
+
+  const toISODate = (date: Date) => date.toISOString().slice(0, 10);
 
   const prevMonth = () => {
     if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
@@ -341,7 +361,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               <Button
                 onClick={() => openNova()}
                 data-testid="button-nova-turma"
-                className="bg-blue-600 hover:bg-blue-700 text-white h-14 px-4 text-lg gap-1.5"
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-14 px-4 text-lg gap-1.5"
               >
                 <Plus className="mr-2 h-5 w-5" />
                 Nova Turma
@@ -379,7 +399,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                         onClick={() => {
                           if (!date) return;
                           if (turmasDia.length > 0) setDiaPopup({ date, turmas: turmasDia });
-                          else openNova(JS_DAY_TO_ID[date.getDay()]);
+                          else setSlotPopup({ date, horarioInicio: slotHorarioInicio, horarioFim: slotHorarioFim });
                         }}
                         className={`min-h-[120px] p-2 border-b border-r border-gray-100 dark:border-gray-700 ${
                           date ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10" : "bg-gray-50 dark:bg-gray-900/30"
@@ -578,6 +598,72 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   onClick={() => { setDiaPopup(null); openNova(JS_DAY_TO_ID[diaPopup.date.getDay()]); }}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />Nova Turma
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!slotPopup} onOpenChange={(open) => { if (!open) setSlotPopup(null); }}>
+        <DialogContent className="max-w-md">
+          {slotPopup && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Criar horário</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
+                <div className="text-sm text-gray-500">
+                  {slotPopup.date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Início</Label>
+                    <Input type="time" value={slotHorarioInicio} onChange={(e) => setSlotHorarioInicio(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Fim</Label>
+                    <Input type="time" value={slotHorarioFim} onChange={(e) => setSlotHorarioFim(e.target.value)} />
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Se existir choque de horário para o mesmo professor, a criação será bloqueada.
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSlotPopup(null)}>Cancelar</Button>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    const dayId = JS_DAY_TO_ID[slotPopup.date.getDay()];
+                    const dia = slotPopup.date.toISOString().slice(0, 10);
+                    const conflict = turmasNoHorario(dia, slotHorarioInicio, slotHorarioFim);
+                    if (conflict.length > 0) {
+                      toast({ title: "Horário indisponível", description: "Já existe uma aula nesse horário para o mesmo professor.", variant: "destructive" });
+                      return;
+                    }
+                    setFormData({
+                      ...emptyForm,
+                      nome: "",
+                      modalidade: professorContext?.modalidade ?? "",
+                      professorId: professorContext?.id ?? "",
+                      diasSemana: [dayId],
+                      horarioInicio: slotHorarioInicio,
+                      horarioFim: slotHorarioFim,
+                      capacidadeMaxima: 20,
+                      cor: "#1565C0",
+                    });
+                    setEditandoId(null);
+                    setFormData((prev) => ({
+                      ...prev,
+                      dataAula: dia,
+                    }));
+                    setDiaPopup(null);
+                    setSlotPopup(null);
+                    setDialogTurma(true);
+                  }}
+                >
+                  Continuar
                 </Button>
               </DialogFooter>
             </>

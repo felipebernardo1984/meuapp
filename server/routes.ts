@@ -1679,7 +1679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, modalidade, professorId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor } = req.body;
+      const { nome, modalidade, professorId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, dataAula } = req.body;
       const turma = await storage.createTurma({
         arenaId, nome, modalidade,
         professorId: professorId || null,
@@ -1688,25 +1688,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         capacidadeMaxima: capacidadeMaxima ?? 20,
         cor: cor || "#1565C0",
         ativo: true,
+        dataAula: dataAula || null,
       });
       res.json(turma);
-    } catch { res.status(500).json({ message: "Erro ao criar turma" }); }
+    } catch (e) { res.status(400).json({ message: e instanceof Error ? e.message : "Erro ao criar turma" }); }
   });
 
   app.put("/api/turmas/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, modalidade, professorId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo } = req.body;
+      const { nome, modalidade, professorId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo, dataAula } = req.body;
       const turma = await storage.updateTurma(req.params.id, {
         nome, modalidade,
         professorId: professorId || null,
         diasSemana, horarioInicio, horarioFim,
         capacidadeMaxima, cor,
+        dataAula: dataAula ?? undefined,
         ...(ativo !== undefined ? { ativo } : {}),
       });
       res.json(turma);
-    } catch { res.status(500).json({ message: "Erro ao atualizar turma" }); }
+    } catch (e) { res.status(400).json({ message: e instanceof Error ? e.message : "Erro ao atualizar turma" }); }
   });
 
   app.delete("/api/turmas/:id", async (req, res) => {

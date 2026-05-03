@@ -377,6 +377,7 @@ export const turmas = pgTable("turmas", {
   cor: text("cor").notNull().default("#1565C0"),
   ativo: boolean("ativo").notNull().default(true),
   criadaEm: timestamp("criada_em").defaultNow(),
+  dataAula: text("data_aula"),
 });
 
 export const insertTurmaSchema = createInsertSchema(turmas).omit({ id: true, criadaEm: true });

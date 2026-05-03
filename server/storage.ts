@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, ne } from "drizzle-orm";
 import { db } from "./db";
 import {
   users, arenas, plans, teachers, students, checkinHistory,
@@ -502,11 +502,30 @@ export class DatabaseStorage {
   }
 
   async createTurma(data: any) {
+    if (data.professorId && data.dataAula) {
+      const conflicts = await db.select().from(turmas).where(and(
+        eq(turmas.professorId, data.professorId),
+        eq(turmas.dataAula, data.dataAula)
+      ));
+      if (conflicts.length > 0) throw new Error("Conflito de horário");
+    }
     const [turma] = await db.insert(turmas).values(data).returning();
     return turma;
   }
 
   async updateTurma(id: string, data: any) {
+    const current = await this.getTurma(id);
+    if (!current) return undefined;
+    const professorId = data.professorId ?? current.professorId;
+    const dataAula = data.dataAula ?? current.dataAula;
+    if (professorId && dataAula) {
+      const conflicts = await db.select().from(turmas).where(and(
+        eq(turmas.professorId, professorId),
+        eq(turmas.dataAula, dataAula),
+        ne(turmas.id, id)
+      ));
+      if (conflicts.length > 0) throw new Error("Conflito de horário");
+    }
     const [turma] = await db.update(turmas).set(data).where(eq(turmas.id, id)).returning();
     return turma;
   }
