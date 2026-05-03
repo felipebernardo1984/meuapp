@@ -350,7 +350,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
           <>
             {/* View toggle + Nova Turma */}
             <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   variant={view === "mensal" ? "default" : "outline"}
                   size="sm"
@@ -381,12 +381,21 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   <List className="h-4 w-4" />
                   Lista
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDialogRecursos(true)}
+                  data-testid="button-configurar-recursos"
+                  className="h-9 px-3 gap-1.5"
+                >
+                  Configuração de sala
+                </Button>
               </div>
               <Button
                 onClick={() => openNova()}
                 data-testid="button-nova-turma"
-                size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5"
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 gap-1.5"
               >
                 <Plus className="mr-2 h-5 w-5" />
                 Nova Turma
@@ -808,18 +817,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                 value={formData.capacidadeMaxima}
                 onChange={(e) => setFormData((p) => ({ ...p, capacidadeMaxima: parseInt(e.target.value) || 20 }))}
               />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogRecursos(true)}
-                data-testid="button-configurar-recursos"
-              >
-                Configurar recursos
-              </Button>
-              <p className="text-xs text-muted-foreground">Crie quadras, salas ou boxes para liberar horários iguais.</p>
             </div>
 
             <div className="space-y-2">
