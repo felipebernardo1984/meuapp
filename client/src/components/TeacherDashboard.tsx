@@ -467,7 +467,7 @@ export default function TeacherDashboard({
           return (
             <Card key={aluno.id} className="hover-elevate overflow-hidden" data-testid={`card-student-${aluno.id}`}>
               <CardHeader className="pb-3">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={aluno.photoUrl} alt={aluno.nome} />
@@ -480,19 +480,13 @@ export default function TeacherDashboard({
                       <p className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{aluno.planoTitulo}</p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0 self-start">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => openEditar(aluno)}
-                      data-testid={`button-edit-student-${aluno.id}`}
-                    >
+                  <div className="flex flex-col items-end gap-0.5 shrink-0 self-start">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditar(aluno)} data-testid={`button-edit-student-${aluno.id}`}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-[10px] h-5 px-1.5">
+                    <span className="text-[10px] leading-none text-muted-foreground tabular-nums">
                       {temCheckins ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
-                    </Badge>
+                    </span>
                   </div>
                 </div>
               </CardHeader>
