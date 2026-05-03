@@ -875,24 +875,22 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               <Label>Salas cadastradas</Label>
               <div className="space-y-2 max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                 {(() => {
-                  const salas = [...recursos, ...(recursoSalvo ? [recursoSalvo] : [])].filter(
-                    (r, index, list) => list.findIndex((x) => x.nome === r.nome) === index,
-                  );
+                  const salas = recursoSalvo ? [recursoSalvo] : recursos;
                   return salas.length > 0 ? (
                     salas.map((r) => (
-                    <div
-                      key={r.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                      data-testid={`recurso-item-${r.id}`}
-                    >
-                      <span>{r.nome}</span>
-                      <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
-                    </div>
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between rounded-md border px-3 py-2"
+                        data-testid={`recurso-item-${r.id}`}
+                      >
+                        <span>{r.nome}</span>
+                        <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
+                      </div>
                     ))
                   ) : (
-                  <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
-                    Nenhuma sala cadastrada.
-                  </div>
+                    <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+                      Nenhuma sala cadastrada.
+                    </div>
                   );
                 })()}
                 {salvarRecurso.isPending && <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">Salvando ambiente...</div>}
