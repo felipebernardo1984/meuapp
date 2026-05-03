@@ -13,6 +13,7 @@ export default function Cadastro() {
     cpf: "",
     nome: "",
     email: "",
+    responsavelNome: "",
     login: "",
     senha: "",
     nomeArena: "",
@@ -53,7 +54,10 @@ export default function Cadastro() {
       const res = await fetch("/api/registro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          nome: form.responsavelNome || form.nome,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -157,13 +161,13 @@ export default function Cadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nome">Seu nome</Label>
+              <Label htmlFor="responsavelNome">Nome do responsável</Label>
               <Input
-                id="nome"
+                id="responsavelNome"
                 placeholder="Nome completo do responsável"
-                value={form.nome}
-                onChange={set("nome")}
-                data-testid="input-nome"
+                value={form.responsavelNome}
+                onChange={set("responsavelNome")}
+                data-testid="input-responsavel-nome"
                 className="h-11"
               />
             </div>
