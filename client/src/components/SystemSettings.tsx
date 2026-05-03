@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Settings, DollarSign, Zap, Save, ChevronUp, ChevronDown } from "lucide-react";
+import { Settings, DollarSign, Zap, Save, ChevronUp, ChevronDown, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -333,7 +333,7 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
 
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-settings-bottom">
-          <ArrowLeft className="h-5 w-5" />
+          <ChevronLeft className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-2 flex-1">
           <Settings className="h-5 w-5 text-blue-600" />
