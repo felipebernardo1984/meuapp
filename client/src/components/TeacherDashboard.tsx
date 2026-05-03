@@ -388,7 +388,35 @@ export default function TeacherDashboard({
           )}
         </Button>
       </div>
-      {!alunosMinimizados && (
+      {alunosMinimizados ? (
+        <Card className="mb-4">
+          <CardContent className="py-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Alunos visíveis</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2"
+                onClick={() => setAlunosMinimizados(false)}
+                data-testid="button-show-students"
+              >
+                <ChevronDown className="mr-2 h-4 w-4" />
+                Mostrar
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {alunos.slice(0, 3).map((aluno) => (
+                <Badge key={aluno.id} variant="secondary" className="max-w-full whitespace-normal text-left">
+                  {aluno.nome}
+                </Badge>
+              ))}
+              {alunos.length > 3 && (
+                <Badge variant="outline">+{alunos.length - 3}</Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {alunos.map((aluno) => {
           const temCheckins = aluno.plano > 0;
@@ -430,11 +458,11 @@ export default function TeacherDashboard({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base truncate">{aluno.nome}</CardTitle>
-                      <p className="text-xs text-muted-foreground truncate">{aluno.planoTitulo}</p>
+                      <CardTitle className="text-base whitespace-normal break-words">{aluno.nome}</CardTitle>
+                      <p className="text-xs text-muted-foreground whitespace-normal break-words">{aluno.planoTitulo}</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-start sm:justify-end gap-1 shrink-0">
+                  <div className="flex flex-wrap items-center justify-start sm:justify-end gap-1 shrink-0 self-start sm:self-auto">
                     {temCheckins ? (
                       <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs">
                         {aluno.checkinsRealizados}/{aluno.plano}
