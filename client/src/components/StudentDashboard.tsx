@@ -190,7 +190,7 @@ export default function StudentDashboard({
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex items-start justify-between gap-4 mb-6">
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-4 min-w-0">
           <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-4 py-4 shadow-sm overflow-hidden min-w-[180px] max-w-[180px]">
             <Avatar className="h-28 w-28">
               <AvatarImage src={photoUrl} alt={studentName} />
