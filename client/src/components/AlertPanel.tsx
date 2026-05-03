@@ -293,9 +293,8 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
 
       {onVoltar && (
         <div className="flex justify-start pt-6 pb-8">
-          <Button variant="outline" onClick={onVoltar} data-testid="button-voltar-alertas">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Painel
+          <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-alertas">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         </div>
       )}

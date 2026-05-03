@@ -381,9 +381,8 @@ export default function Admin() {
 
         <div className="max-w-6xl mx-auto p-6 pt-16">
           <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" onClick={() => setDetailId(null)} data-testid="button-back">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar às arenas
+            <Button variant="ghost" size="icon" onClick={() => setDetailId(null)} data-testid="button-back">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <span className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               SEVEN SPORTS

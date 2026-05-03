@@ -174,8 +174,8 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           {onVoltar && (
-            <Button variant="ghost" size="sm" onClick={onVoltar} data-testid="button-voltar">
-              <ArrowLeft className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
           <h1 className="text-2xl font-bold" data-testid="text-financial-title">Financeiro</h1>
@@ -534,9 +534,8 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
       {/* Voltar button */}
       {onVoltar && (
         <div className="flex justify-start pb-8">
-          <Button variant="outline" onClick={onVoltar} data-testid="button-voltar-financial">
+          <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-financial">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Painel
           </Button>
         </div>
       )}
