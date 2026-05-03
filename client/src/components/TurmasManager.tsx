@@ -209,7 +209,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
-      await qc.invalidateQueries({ queryKey: ["/api/turmas"] });
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
@@ -851,23 +850,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            {professorContext ? (
-              <>
-                <div className="space-y-2">
-                  {recursos.filter((r) => r.ativo).map((r) => (
-                    <div key={r.id} className="flex items-center justify-between rounded-md border px-3 py-2" data-testid={`recurso-item-${r.id}`}>
-                      <span>{r.nome}</span>
-                      <span className="text-xs text-muted-foreground">Disponível</span>
-                    </div>
-                  ))}
-                  {recursos.filter((r) => r.ativo).length === 0 && (
-                    <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
-                      Nenhuma sala disponível no momento.
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
+            {!professorContext && (
               <>
                 <Input
                   value={recursoNome}
