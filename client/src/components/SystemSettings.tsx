@@ -218,11 +218,11 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                             </div>
                             <div className="space-y-1">
                               <Label htmlFor={`wh-plano-${modalidade}`} className="text-xs text-muted-foreground">
-                                Plano Mínimo
+                                ID da Academia no Wellhub
                               </Label>
                               <Input
                                 id={`wh-plano-${modalidade}`}
-                                placeholder="Ex: GP1, GP2..."
+                                placeholder="Ex: ID 12345"
                                 value={local.wellhubPlanoMinimo}
                                 onChange={(e) => setLocal(modalidade, "wellhubPlanoMinimo", e.target.value)}
                                 data-testid={`input-wellhub-plano-${modalidade}`}
@@ -253,11 +253,11 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                             </div>
                             <div className="space-y-1">
                               <Label htmlFor={`tp-plano-${modalidade}`} className="text-xs text-muted-foreground">
-                                Plano Mínimo
+                                Código do Provedor
                               </Label>
                               <Input
                                 id={`tp-plano-${modalidade}`}
-                                placeholder="Ex: TP1, TP2..."
+                                placeholder="Ex: COD-9876"
                                 value={local.totalpassPlanoMinimo}
                                 onChange={(e) => setLocal(modalidade, "totalpassPlanoMinimo", e.target.value)}
                                 data-testid={`input-totalpass-plano-${modalidade}`}
