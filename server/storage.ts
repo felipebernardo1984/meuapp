@@ -313,17 +313,29 @@ export class DatabaseStorage {
   }
 
   async listRecursos(arenaId: string) {
-    return db.select().from(recursos).where(eq(recursos.arenaId, arenaId)).orderBy(desc(recursos.criadoEm));
+    try {
+      return await db.select().from(recursos).where(eq(recursos.arenaId, arenaId)).orderBy(desc(recursos.criadoEm));
+    } catch {
+      return [];
+    }
   }
 
   async createRecurso(data: any) {
-    const [row] = await db.insert(recursos).values(data).returning();
-    return row;
+    try {
+      const [row] = await db.insert(recursos).values(data).returning();
+      return row;
+    } catch {
+      return null;
+    }
   }
 
   async updateRecurso(id: string, data: any) {
-    const [row] = await db.update(recursos).set(data).where(eq(recursos.id, id)).returning();
-    return row;
+    try {
+      const [row] = await db.update(recursos).set(data).where(eq(recursos.id, id)).returning();
+      return row;
+    } catch {
+      return null;
+    }
   }
 
   // TEACHER COMMISSIONS
