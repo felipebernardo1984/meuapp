@@ -212,7 +212,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
-    onError: () => toast({ title: "Erro ao salvar recurso", variant: "destructive" }),
+    onError: (error: any) => {
+      toast({ title: error?.message || "Erro ao salvar recurso", variant: "destructive" });
+    },
   });
 
   // Helpers
@@ -857,7 +859,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               data-testid="input-recurso-nome"
             />
             <Button
-              onClick={() => salvarRecurso.mutate({ nome: recursoNome, ativo: true })}
+              onClick={() => salvarRecurso.mutate({ nome: recursoNome.trim(), ativo: true })}
               data-testid="button-salvar-recurso"
               className="w-full"
               disabled={!recursoNome || salvarRecurso.isPending}

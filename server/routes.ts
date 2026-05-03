@@ -1687,7 +1687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const lista = await storage.listTurmas(arenaId);
       const teacherList = await storage.listTeachers(arenaId);
-      const recursoList = await storage.listRecursos(arenaId);
+      const recursoList = await storage.listRecursos(arenaId).catch(() => []);
       const teacherMap = new Map(teacherList.map((t) => [t.id, t]));
       const recursoMap = new Map(recursoList.map((r) => [r.id, r]));
       const result = await Promise.all(
