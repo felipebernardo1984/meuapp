@@ -97,6 +97,7 @@ export default function ArenaApp() {
       setGestorTab("dashboard");
       qc.invalidateQueries({ queryKey: ["/api/session"] });
       qc.clear();
+      window.location.reload();
     },
   });
 

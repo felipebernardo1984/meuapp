@@ -81,6 +81,7 @@ export default function Home() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/session"] });
       qc.clear();
+      window.location.reload();
     },
   });
 
