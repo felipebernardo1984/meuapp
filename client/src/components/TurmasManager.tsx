@@ -385,6 +385,17 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   <List className="h-4 w-4" />
                   Lista
                 </Button>
+                {professorContext ? null : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDialogRecursos(true)}
+                    data-testid="button-configuracao-salas"
+                    className="h-9 px-3 gap-1.5"
+                  >
+                    Configuração de Salas
+                  </Button>
+                )}
               </div>
               <Button
                 onClick={() => openNova()}
@@ -834,7 +845,10 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       <Dialog open={dialogRecursos} onOpenChange={setDialogRecursos}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Configurar recursos</DialogTitle>
+            <DialogTitle>Configuração de Salas</DialogTitle>
+            <DialogDescription>
+              Cadastre ambientes como Quadra 1, Quadra 2 e Box 1 para usar na agenda.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <Input
@@ -848,7 +862,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               data-testid="button-salvar-recurso"
               className="w-full"
             >
-              Salvar recurso
+              Salvar ambiente
             </Button>
             <div className="space-y-2">
               {recursos.map((r) => (
