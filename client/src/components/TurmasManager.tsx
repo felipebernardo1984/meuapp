@@ -84,6 +84,10 @@ interface Professor {
   modalidade: string;
 }
 
+interface ModalidadeSetting {
+  modalidade: string;
+}
+
 interface Aluno {
   id: string;
   nome: string;
@@ -151,6 +155,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
+  const { data: modalidades = [] } = useQuery<ModalidadeSetting[]>({ queryKey: ["/api/configuracoes/modalidades"] });
   const { data: recursos = [] } = useQuery<{ id: string; nome: string; ativo: boolean }[]>({ queryKey: ["/api/recursos"] });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
@@ -162,13 +167,13 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Mutations
   const criarTurma = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/turmas", data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Aula criada!" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); setSlotPopup(null); toast({ title: "Aula criada!" }); },
     onError: () => toast({ title: "Erro ao criar aula", variant: "destructive" }),
   });
 
   const editarTurma = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PUT", `/api/turmas/${id}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Aula atualizada!" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); setSlotPopup(null); toast({ title: "Aula atualizada!" }); },
     onError: () => toast({ title: "Erro ao atualizar aula", variant: "destructive" }),
   });
 
@@ -701,12 +706,21 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Modalidade *</Label>
-                <Input
-                  data-testid="input-turma-modalidade"
-                  placeholder="Beach Tennis, Funcional..."
+                <Select
                   value={formData.modalidade}
-                  onChange={(e) => setFormData((p) => ({ ...p, modalidade: e.target.value }))}
-                />
+                  onValueChange={(v) => setFormData((p) => ({ ...p, modalidade: v }))}
+                >
+                  <SelectTrigger data-testid="select-turma-modalidade">
+                    <SelectValue placeholder="Selecionar modalidade..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modalidades.map((m) => (
+                      <SelectItem key={m.modalidade} value={m.modalidade}>
+                        {m.modalidade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Professor</Label>
