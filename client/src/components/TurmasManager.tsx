@@ -896,7 +896,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                 <Label>Sala / Quadra / Box</Label>
                 <span className="text-xs text-gray-500">cadastre aqui se precisar</span>
               </div>
-              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <div className="grid grid-cols-2 gap-2">
                 <Input
                   value={novoRecursoNome}
                   onChange={(e) => setNovoRecursoNome(e.target.value)}
@@ -1023,20 +1023,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             </div>
 
             {/* Capacidade (only for aula) */}
-            {formData.tipo === "aula" && (
-              <div className="space-y-1.5">
-                <Label>Capacidade máxima</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={200}
-                  data-testid="input-turma-capacidade"
-                  value={formData.capacidadeMaxima}
-                  onChange={(e) => setFormData((p) => ({ ...p, capacidadeMaxima: parseInt(e.target.value) || 20 }))}
-                />
-              </div>
-            )}
-
             {/* Cor na agenda */}
             <div className="space-y-2">
               <Label>Cor na agenda</Label>
