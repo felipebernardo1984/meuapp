@@ -62,6 +62,12 @@ const COR_OPTIONS = [
 
 type TipoAgendamento = "aula" | "aluguel" | "dayuse";
 
+interface Recurso {
+  id: string;
+  nome: string;
+  ativo: boolean;
+}
+
 interface Turma {
   id: string;
   nome: string;
@@ -175,7 +181,10 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
-  const { data: recursos = [] } = useQuery<{ id: string; nome: string; ativo: boolean }[]>({ queryKey: ["/api/recursos"] });
+  const { data: recursos = [] } = useQuery<Recurso[]>({ queryKey: ["/api/recursos"] });
+  const [novoRecursoNome, setNovoRecursoNome] = useState("");
+  const [editandoRecursoId, setEditandoRecursoId] = useState<string | null>(null);
+  const [editandoRecursoNome, setEditandoRecursoNome] = useState("");
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
     queryFn: () => fetch(`/api/turmas/${turmaAlunos!.id}/alunos`).then((r) => r.json()),
@@ -200,6 +209,27 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     mutationFn: (id: string) => apiRequest("DELETE", `/api/turmas/${id}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setConfirmExcluir(null); toast({ title: "Aula excluída" }); },
     onError: () => toast({ title: "Erro ao excluir aula", variant: "destructive" }),
+  });
+
+  const criarRecurso = useMutation({
+    mutationFn: (nome: string) => apiRequest("POST", "/api/recursos", { nome, ativo: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+      setNovoRecursoNome("");
+      toast({ title: "Sala cadastrada" });
+    },
+    onError: () => toast({ title: "Erro ao cadastrar sala", variant: "destructive" }),
+  });
+
+  const atualizarRecurso = useMutation({
+    mutationFn: ({ id, nome }: { id: string; nome: string }) => apiRequest("PUT", `/api/recursos/${id}`, { nome, ativo: true }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+      setEditandoRecursoId(null);
+      setEditandoRecursoNome("");
+      toast({ title: "Sala atualizada" });
+    },
+    onError: () => toast({ title: "Erro ao atualizar sala", variant: "destructive" }),
   });
 
   const matricularAluno = useMutation({
@@ -860,9 +890,32 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               </div>
             )}
 
-            {/* Sala / Recurso (Select from cadastro) */}
-            <div className="space-y-1.5">
-              <Label>Sala / Quadra / Box</Label>
+            {/* Sala / Recurso */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label>Sala / Quadra / Box</Label>
+                <span className="text-xs text-gray-500">cadastre aqui se precisar</span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                <Input
+                  value={novoRecursoNome}
+                  onChange={(e) => setNovoRecursoNome(e.target.value)}
+                  placeholder="Novo nome de sala"
+                  data-testid="input-nova-sala"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const nome = novoRecursoNome.trim();
+                    if (!nome) return;
+                    criarRecurso.mutate(nome);
+                  }}
+                  data-testid="button-cadastrar-sala"
+                >
+                  Adicionar
+                </Button>
+              </div>
               <Select
                 value={formData.recursoId || "_none"}
                 onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }))}
@@ -877,6 +930,49 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   ))}
                 </SelectContent>
               </Select>
+              <div className="space-y-1.5">
+                {recursos.map((r) => (
+                  <div key={r.id} className="flex items-center gap-2 rounded-md border px-3 py-2">
+                    {editandoRecursoId === r.id ? (
+                      <>
+                        <Input
+                          value={editandoRecursoNome}
+                          onChange={(e) => setEditandoRecursoNome(e.target.value)}
+                          className="h-8"
+                          data-testid={`input-sala-${r.id}`}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => atualizarRecurso.mutate({ id: r.id, nome: editandoRecursoNome.trim() })}
+                          data-testid={`button-salvar-sala-${r.id}`}
+                        >
+                          Salvar
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => setEditandoRecursoId(null)}>
+                          Cancelar
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex-1 text-sm">{r.nome}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditandoRecursoId(r.id);
+                            setEditandoRecursoNome(r.nome);
+                          }}
+                          data-testid={`button-editar-sala-${r.id}`}
+                        >
+                          Editar
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Dias da semana */}
