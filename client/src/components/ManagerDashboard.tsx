@@ -2322,7 +2322,7 @@ export default function ManagerDashboard({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {professores.map((professor, idx) => {
+                {professores.map((professor, idx) => {
               const profGradients = ["from-blue-400 to-blue-600","from-violet-400 to-purple-600","from-emerald-400 to-emerald-600","from-orange-400 to-orange-600","from-pink-400 to-rose-600","from-cyan-400 to-cyan-600"];
               return (
               <div
@@ -2331,7 +2331,7 @@ export default function ManagerDashboard({
                 data-testid={`teacher-${professor.id}`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center shadow-sm ${professor.photoUrl ? "" : `bg-gradient-to-br ${profGradients[idx % profGradients.length]}`}`}>
+                      <div className={`w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center shadow-sm ${professor.photoUrl ? "" : `bg-gradient-to-br ${profGradients[idx % profGradients.length]}`}`}>
                     {professor.photoUrl ? (
                       <img src={professor.photoUrl} alt={professor.nome} className="w-full h-full object-cover" />
                     ) : (
