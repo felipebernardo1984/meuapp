@@ -368,7 +368,7 @@ export default function TeacherDashboard({
           Alunos ({alunos.length})
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
         {alunos.map((aluno) => {
           const temCheckins = aluno.plano > 0;
           const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
@@ -398,9 +398,9 @@ export default function TeacherDashboard({
           }
 
           return (
-            <Card key={aluno.id} className="hover-elevate" data-testid={`card-student-${aluno.id}`}>
+            <Card key={aluno.id} className="hover-elevate overflow-hidden" data-testid={`card-student-${aluno.id}`}>
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={aluno.photoUrl} alt={aluno.nome} />
@@ -413,7 +413,7 @@ export default function TeacherDashboard({
                       <p className="text-xs text-muted-foreground truncate">{aluno.planoTitulo}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex flex-wrap items-center justify-start sm:justify-end gap-1 shrink-0">
                     {temCheckins ? (
                       <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs">
                         {aluno.checkinsRealizados}/{aluno.plano}
