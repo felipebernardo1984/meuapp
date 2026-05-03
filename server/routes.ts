@@ -80,6 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existing = await storage.getArenaByGestorLogin("333");
       if (!existing) {
         const today = new Date().toLocaleDateString("pt-BR");
+        const trialDate = new Date();
+        trialDate.setDate(trialDate.getDate() + 7);
         const defaultArena = await storage.createArena({
           name: "Arena Beach Sports",
           subscriptionPlan: "premium",
@@ -88,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionStartDate: today,
           subscriptionValue: "R$ 199,00",
           subscriptionStatus: "Ativo",
-          nextBillingDate: calcNextBillingDate(today),
+          nextBillingDate: trialDate.toLocaleDateString("pt-BR"),
         });
         const p1 = await storage.createPlan({ arenaId: defaultArena.id, titulo: "1x por semana", checkins: 8, valorTexto: null });
         const p2 = await storage.createPlan({ arenaId: defaultArena.id, titulo: "2x por semana", checkins: 12, valorTexto: null });
@@ -150,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const today = new Date();
     const trialExpira = new Date(today);
-    trialExpira.setDate(trialExpira.getDate() + 5);
+    trialExpira.setDate(trialExpira.getDate() + 7);
     const trialExpiraEm = trialExpira.toISOString().split("T")[0];
     const arena = await storage.createArena({
       name: nomeArena.trim(),
@@ -162,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       subscriptionStartDate: today.toLocaleDateString("pt-BR"),
       subscriptionValue: "R$ 0,00",
       subscriptionStatus: "Trial",
-      nextBillingDate: calcNextBillingDate(today.toLocaleDateString("pt-BR")),
+      nextBillingDate: calcNextBillingDate(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("pt-BR")),
       statusConta: "trial",
       trialExpiraEm,
     });
