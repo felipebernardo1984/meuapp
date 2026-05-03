@@ -376,7 +376,7 @@ export default function TeacherDashboard({
       </div>
 
       {onIrAgenda && (
-        <Card className="mb-5">
+        <Card className="mb-2">
           <CardContent className="pt-6">
             <Button
               size="lg"
