@@ -1721,7 +1721,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       res.json(result);
-    } catch { res.status(500).json({ message: "Erro ao listar turmas" }); }
+    } catch (e: any) {
+      console.error("Erro ao listar turmas:", e);
+      res.status(500).json({ message: e?.message || "Erro ao listar turmas" });
+    }
   });
 
   app.post("/api/turmas", async (req, res) => {
@@ -1806,7 +1809,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       await storage.deleteTurma(req.params.id);
       res.json({ ok: true });
-    } catch { res.status(500).json({ message: "Erro ao excluir turma" }); }
+    } catch (e: any) {
+      console.error("Erro ao excluir turma:", e);
+      res.status(500).json({ message: e?.message || "Erro ao excluir turma" });
+    }
   });
 
   app.get("/api/turmas/:id/alunos", async (req, res) => {
