@@ -171,15 +171,15 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          {onVoltar && (
-            <Button variant="ghost" onClick={onVoltar} data-testid="button-voltar">
-              Voltar
-              <ArrowLeft className="h-4 w-4 ml-2" />
-            </Button>
-          )}
-          <h1 className="text-2xl font-bold" data-testid="text-financial-title">Financeiro</h1>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3 mb-4">
+        {onVoltar && (
+          <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        )}
+        <div className="flex items-center gap-2 flex-1">
+          <Settings className="h-5 w-5 text-blue-600" />
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white" data-testid="text-financial-title">Financeiro</h1>
         </div>
         <Button variant="outline" size="sm" onClick={() => setDialogPix(true)} data-testid="button-pix-settings">
           <Settings className="h-4 w-4 mr-2" />

@@ -292,11 +292,14 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
       )}
 
       {onVoltar && (
-        <div className="flex justify-start pt-6 pb-8">
-          <Button variant="ghost" onClick={onVoltar} data-testid="button-voltar-alertas">
-            Voltar ao Painel
-            <ArrowLeft className="h-4 w-4 ml-2" />
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-alertas">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
+          <div className="flex items-center gap-2 flex-1">
+            <AlertCircle className="h-5 w-5 text-blue-600" />
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Alertas</h1>
+          </div>
         </div>
       )}
     </div>

@@ -380,14 +380,13 @@ export default function Admin() {
         </div>
 
         <div className="max-w-6xl mx-auto p-6 pt-16">
-          <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" onClick={() => setDetailId(null)} data-testid="button-back">
-              Voltar às arenas
-              <ArrowLeft className="h-4 w-4 ml-2" />
+          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3 mb-6">
+            <Button variant="ghost" size="icon" onClick={() => setDetailId(null)} data-testid="button-back">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <span className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              SEVEN SPORTS
-            </span>
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-xl font-semibold text-gray-900 dark:text-white">Voltar às arenas</span>
+            </div>
           </div>
 
           {detailLoading || !arenaDetail ? (
