@@ -331,7 +331,7 @@ export default function TeacherDashboard({
               {teacherName}
             </h1>
             <span className="text-muted-foreground hidden sm:inline">|</span>
-            <p className="text-sm sm:text-base text-muted-foreground break-words">{modalidade}</p>
+            <p className="text-xl sm:text-2xl font-semibold text-foreground break-words">{modalidade}</p>
           </div>
           {onIrAgenda && (
             <Button
