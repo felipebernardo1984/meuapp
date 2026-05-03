@@ -43,7 +43,7 @@ interface ManagerSidebarProps {
   onToggleCollapse: () => void;
   pendingCount: number;
   arenaName?: string;
-  responsableName?: string;
+  responsavelName?: string;
   gestorName?: string;
   onLogout?: () => void;
   mobileOpen?: boolean;
@@ -100,7 +100,7 @@ export default function ManagerSidebar({
   onToggleCollapse,
   pendingCount,
   arenaName,
-  responsableName,
+  responsavelName,
   gestorName,
   onLogout,
   mobileOpen = false,
@@ -161,7 +161,7 @@ export default function ManagerSidebar({
           {(!collapsed || mobileOpen) && (
             <div className="min-w-0">
               <p className="text-sm font-bold text-white truncate">{arenaName || "SEVEN SPORTS"}</p>
-              <p className="text-xs text-gray-500 truncate">{responsableName || gestorName || "Gestor"}</p>
+              <p className="text-xs text-gray-500 truncate">{responsavelName || gestorName || "Gestor"}</p>
             </div>
           )}
           {/* Mobile close button */}
