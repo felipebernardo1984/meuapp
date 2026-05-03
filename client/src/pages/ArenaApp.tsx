@@ -393,6 +393,7 @@ export default function ArenaApp() {
   const alunoAtual = sessao.tipo === "aluno"
     ? (alunos.find((a: any) => a.id === sessao.aluno?.id) ?? sessao.aluno)
     : null;
+  const abrirAgendaAluno = () => setProfessorView("agenda");
 
   return (
     <>
@@ -410,22 +411,7 @@ export default function ArenaApp() {
           studentName={alunoAtual.nome}
           photoUrl={alunoAtual.photoUrl ?? undefined}
           modalidade={alunoAtual.modalidade}
-          plano={alunoAtual.planoCheckins}
-          planoTitulo={alunoAtual.planoTitulo}
-          planoValorTexto={alunoAtual.planoValorTexto ?? undefined}
-          checkinsRealizados={alunoAtual.checkinsRealizados}
-          cicloInicio="15/12/2024"
-          diasRestantes={12}
-          statusMensalidade={alunoAtual.statusMensalidade}
-          historico={alunoAtual.historico ?? []}
-          payments={studentPayments}
-          charges={studentCharges}
-          pixSettings={pixSettings}
-          onCheckin={() => checkinManual.mutate({ id: alunoAtual.id })}
-          onRemoverCheckin={(index: number) => removerCheckin.mutate({ id: alunoAtual.id, index })}
-          onCheckinRetroativo={(data: string, hora: string) => checkinManual.mutate({ id: alunoAtual.id, data, hora })}
-          onUpdatePhoto={(photoUrl: string) => editarAluno.mutate({ id: alunoAtual.id, photoUrl })}
-          onIrAgenda={() => setProfessorView("agenda")}
+          onIrAgenda={abrirAgendaAluno}
         />
       )}
 
@@ -485,7 +471,7 @@ export default function ArenaApp() {
           professorContext={{
             id: alunoAtual?.professorId ?? "",
             modalidade: alunoAtual?.modalidade ?? "",
-            nome: alunoAtual?.professorNome ?? "Agenda",
+            nome: alunoAtual?.professorNome ?? alunoAtual?.modalidade ?? "Agenda",
           }}
         />
       )}
