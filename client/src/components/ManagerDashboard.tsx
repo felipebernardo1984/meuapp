@@ -1151,8 +1151,8 @@ export default function ManagerDashboard({
                 <span className="ml-auto text-xs font-normal text-muted-foreground">{professores.length} ativo(s)</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="pb-4">
-              <div className="flex gap-3 overflow-x-auto pb-2 snap-x -mx-1 px-1 sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0">
+            <CardContent className="space-y-3">
+              <div className="space-y-3">
                 {professores.map((prof, i) => {
                   const gradients = [
                     "from-blue-400 to-blue-600",
@@ -1166,36 +1166,32 @@ export default function ManagerDashboard({
                   return (
                     <div
                       key={prof.id}
-                      className="shrink-0 snap-start w-[170px] sm:w-40 rounded-2xl border bg-card hover:shadow-md hover:border-primary/30 transition-all p-3 sm:p-4 flex flex-col items-center text-center gap-2 cursor-pointer"
+                      className="flex items-center gap-3 rounded-xl border bg-card p-3 hover:border-primary/30 transition-colors cursor-pointer"
                       onClick={() => setActiveSection("professores")}
                       data-testid={`prof-card-${prof.id}`}
                     >
-                      <div className={`w-14 h-14 rounded-full overflow-hidden ${prof.photoUrl ? "" : `bg-gradient-to-br ${gradients[i % gradients.length]}`} flex items-center justify-center shadow-md shrink-0`}>
+                      <div className={`w-10 h-10 rounded-full overflow-hidden ${prof.photoUrl ? "" : `bg-gradient-to-br ${gradients[i % gradients.length]}`} flex items-center justify-center shadow-sm shrink-0`}>
                         {prof.photoUrl ? (
                           <img src={prof.photoUrl} alt={prof.nome} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-white text-2xl font-bold">{prof.nome.charAt(0).toUpperCase()}</span>
+                          <span className="text-white text-sm font-bold">{prof.nome.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
-                      <div className="min-w-0 w-full">
-                        <p className="font-semibold text-sm leading-tight whitespace-nowrap overflow-hidden text-ellipsis">{prof.nome}</p>
-                        {prof.modalidade && (
-                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 font-medium mt-1 inline-block">
-                            {prof.modalidade}
-                          </span>
-                        )}
-                      </div>
-                      <div className="w-full space-y-1 text-xs border-t pt-2 mt-1">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Alunos</span>
-                          <span className="font-bold">{alunosCount}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{prof.nome}</p>
+                          {prof.modalidade && (
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{prof.modalidade}</span>
+                          )}
                         </div>
-                        {prof.percentualComissao && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Comissão</span>
-                            <span className="font-bold text-emerald-600">{prof.percentualComissao}%</span>
-                          </div>
-                        )}
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <span className="whitespace-nowrap">Alunos: {alunosCount}</span>
+                          {prof.percentualComissao && (
+                            <Badge variant="secondary" className="h-5 px-2 text-[11px]">
+                              {prof.percentualComissao}%
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
