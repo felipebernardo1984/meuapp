@@ -66,6 +66,8 @@ interface Turma {
   modalidade: string;
   professorId?: string | null;
   professorNome?: string | null;
+  recursoId?: string | null;
+  recursoNome?: string | null;
   diasSemana: string;
   horarioInicio: string;
   horarioFim: string;
@@ -80,6 +82,12 @@ interface Professor {
   id: string;
   nome: string;
   modalidade: string;
+}
+
+interface Recurso {
+  id: string;
+  nome: string;
+  ativo: boolean;
 }
 
 interface Aluno {
@@ -104,6 +112,7 @@ const emptyForm = {
   nome: "",
   modalidade: "",
   professorId: "",
+  recursoId: "",
   diasSemana: [] as string[],
   horarioInicio: "08:00",
   horarioFim: "09:00",
@@ -137,6 +146,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
   const [dialogAlunos, setDialogAlunos] = useState(false);
   const [turmaAlunos, setTurmaAlunos] = useState<Turma | null>(null);
+  const [dialogRecursos, setDialogRecursos] = useState(false);
+  const [recursoNome, setRecursoNome] = useState("");
 
   const [confirmExcluir, setConfirmExcluir] = useState<Turma | null>(null);
 
@@ -149,6 +160,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
+  const { data: recursos = [] } = useQuery<Recurso[]>({ queryKey: ["/api/recursos"] });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
     queryFn: () => fetch(`/api/turmas/${turmaAlunos!.id}/alunos`).then((r) => r.json()),
@@ -189,6 +201,17 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     onError: () => toast({ title: "Erro ao remover aluno", variant: "destructive" }),
   });
 
+  const salvarRecurso = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+      setDialogRecursos(false);
+      setRecursoNome("");
+      toast({ title: "Recurso salvo!" });
+    },
+    onError: () => toast({ title: "Erro ao salvar recurso", variant: "destructive" }),
+  });
+
   // Helpers
   const openNova = (diaPre?: string) => {
     setEditandoId(null);
@@ -207,6 +230,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       nome: t.nome,
       modalidade: t.modalidade,
       professorId: t.professorId ?? "",
+      recursoId: t.recursoId ?? "",
       diasSemana: t.diasSemana ? t.diasSemana.split("|").filter(Boolean) : [],
       horarioInicio: t.horarioInicio,
       horarioFim: t.horarioFim,
@@ -233,6 +257,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     const payload = {
       ...formData,
       professorId: formData.professorId || null,
+      recursoId: formData.recursoId || null,
       diasSemana: formData.diasSemana.join("|"),
     };
     if (editandoId) {
@@ -253,7 +278,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
   const turmasNoHorario = (dataIso: string, inicio: string, fim: string) =>
     turmas.filter((t) => {
-      if (!t.professorId) return false;
       if (!t.dataAula) return false;
       return t.dataAula === dataIso && !(fim <= t.horarioInicio || inicio >= t.horarioFim);
     });
@@ -714,6 +738,20 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label>Recurso / Sala</Label>
+                <Select value={formData.recursoId || "_none"} onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }))}>
+                  <SelectTrigger data-testid="select-recurso">
+                    <SelectValue placeholder="Selecionar..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Sem recurso</SelectItem>
+                    {recursos.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -772,6 +810,18 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               />
             </div>
 
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogRecursos(true)}
+                data-testid="button-configurar-recursos"
+              >
+                Configurar recursos
+              </Button>
+              <p className="text-xs text-muted-foreground">Crie quadras, salas ou boxes para liberar horários iguais.</p>
+            </div>
+
             <div className="space-y-2">
               <Label>Cor na agenda</Label>
               <div className="flex flex-wrap gap-2">
@@ -800,6 +850,37 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               {criarTurma.isPending || editarTurma.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialogRecursos} onOpenChange={setDialogRecursos}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurar recursos</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Input
+              value={recursoNome}
+              onChange={(e) => setRecursoNome(e.target.value)}
+              placeholder="Ex: Quadra 1"
+              data-testid="input-recurso-nome"
+            />
+            <Button
+              onClick={() => salvarRecurso.mutate({ nome: recursoNome, ativo: true })}
+              data-testid="button-salvar-recurso"
+              className="w-full"
+            >
+              Salvar recurso
+            </Button>
+            <div className="space-y-2">
+              {recursos.map((r) => (
+                <div key={r.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <span>{r.nome}</span>
+                  <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

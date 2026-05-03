@@ -311,6 +311,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(lista.map(({ senha: _s, ...t }) => t));
   });
 
+  app.get("/api/recursos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const lista = await storage.listRecursos(arenaId);
+    res.json(lista);
+  });
+
+  app.post("/api/recursos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { nome, ativo } = req.body;
+    if (!nome?.trim()) return res.status(400).json({ message: "Nome é obrigatório" });
+    const recurso = await storage.createRecurso({ arenaId, nome: nome.trim(), ativo: ativo ?? true });
+    res.json(recurso);
+  });
+
+  app.put("/api/recursos/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { nome, ativo } = req.body;
+    const updated = await storage.updateRecurso(req.params.id, {
+      ...(nome !== undefined ? { nome } : {}),
+      ...(ativo !== undefined ? { ativo } : {}),
+    });
+    res.json(updated);
+  });
+
   app.post("/api/professores", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
