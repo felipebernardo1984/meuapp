@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   CalendarDays, Plus, Pencil, Trash2, Users, Clock, ChevronLeft,
-  LayoutGrid, List, UserPlus, UserMinus, RefreshCw,
+  ChevronRight, LayoutGrid, List, Calendar, UserPlus, UserMinus, RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,6 +33,26 @@ const DIAS = [
 const DIAS_SHORT: Record<string, string> = {
   seg: "Seg", ter: "Ter", qua: "Qua", qui: "Qui", sex: "Sex", sab: "Sáb", dom: "Dom",
 };
+
+// Maps JS getDay() (0=Sun..6=Sat) to our DIAS id
+const JS_DAY_TO_ID: Record<number, string> = {
+  0: "dom",
+  1: "seg",
+  2: "ter",
+  3: "qua",
+  4: "qui",
+  5: "sex",
+  6: "sab",
+};
+
+// Week header order starting Monday (Brazilian standard)
+const WEEK_HEADER = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const WEEK_HEADER_IDS = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"];
+
+const MESES = [
+  "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro",
+];
 
 const COR_OPTIONS = [
   "#1565C0", "#1976D2", "#0288D1", "#00838F", "#2E7D32",
@@ -90,10 +110,17 @@ const emptyForm = {
   cor: "#1565C0",
 };
 
+type ViewMode = "mensal" | "semanal" | "lista";
+
 export default function TurmasManager({ onVoltar, professorContext }: TurmasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [view, setView] = useState<"calendario" | "lista">("calendario");
+  const [view, setView] = useState<ViewMode>("mensal");
+
+  // Monthly calendar navigation
+  const today = new Date();
+  const [calYear, setCalYear] = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth()); // 0-indexed
 
   // Dialogs
   const [dialogTurma, setDialogTurma] = useState(false);
@@ -104,6 +131,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   const [turmaAlunos, setTurmaAlunos] = useState<Turma | null>(null);
 
   const [confirmExcluir, setConfirmExcluir] = useState<Turma | null>(null);
+
+  // Popup for a clicked day
+  const [diaPopup, setDiaPopup] = useState<{ date: Date; turmas: Turma[] } | null>(null);
 
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
@@ -206,26 +236,62 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     (a) => a.modalidade === turmaAlunos?.modalidade && !alunosDaTurma.has(a.id)
   );
 
-  // Calendar view helpers
+  // Weekly view helper
   const turmasPorDia = (dia: string) =>
     turmas.filter((t) => t.diasSemana.split("|").includes(dia));
+
+  // ── Monthly calendar helpers ──────────────────────────────────────────────
+  const calDays = useMemo(() => {
+    // Get all days in the month
+    const firstDay = new Date(calYear, calMonth, 1);
+    const lastDay = new Date(calYear, calMonth + 1, 0);
+
+    // Offset so Monday is column 0
+    // JS: 0=Sun,1=Mon...6=Sat → we want Mon=0...Sun=6
+    const startOffset = (firstDay.getDay() + 6) % 7;
+
+    const cells: (Date | null)[] = [];
+    for (let i = 0; i < startOffset; i++) cells.push(null);
+    for (let d = 1; d <= lastDay.getDate(); d++) cells.push(new Date(calYear, calMonth, d));
+    // Pad to complete last week
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }, [calYear, calMonth]);
+
+  const turmasForDate = (date: Date): Turma[] => {
+    const dayId = JS_DAY_TO_ID[date.getDay()];
+    return turmas.filter((t) => t.diasSemana.split("|").includes(dayId));
+  };
+
+  const isToday = (date: Date) =>
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+
+  const prevMonth = () => {
+    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
+    else setCalMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
+    else setCalMonth(m => m + 1);
+  };
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-agenda">
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-blue-600" />
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Agenda</h1>
-              {professorContext?.nome && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">{professorContext.nome}</p>
-              )}
-            </div>
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-agenda">
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex items-center gap-2 flex-1">
+          <CalendarDays className="h-5 w-5 text-blue-600" />
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Agenda</h1>
+            {professorContext?.nome && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">{professorContext.nome}</p>
+            )}
           </div>
         </div>
       </div>
@@ -236,127 +302,308 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
           <div className="flex items-center justify-center h-40 text-gray-400">
             <RefreshCw className="h-5 w-5 animate-spin mr-2" />Carregando turmas...
           </div>
-        ) : turmas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-60 text-center">
-            <CalendarDays className="h-12 w-12 text-gray-300 mb-4" />
-            <p className="text-gray-500 font-medium mb-1">Nenhuma turma cadastrada</p>
-            <p className="text-sm text-gray-400 mb-4">Crie sua primeira turma para organizar horários e alunos.</p>
-            <Button onClick={() => openNova()} className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="mr-2 h-5 w-5" />Nova Turma
-            </Button>
-          </div>
-        ) : view === "calendario" ? (
-          /* CALENDAR GRID */
-          <div className="grid grid-cols-7 gap-3 min-w-[700px]">
-            {DIAS.map((dia) => (
-              <div key={dia.id} className="flex flex-col gap-2">
-                <div className="text-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    {dia.label}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-2 min-h-[120px]">
-                  {turmasPorDia(dia.id).length === 0 ? (
-                    <div
-                      className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-16 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
-                      onClick={() => openNova(dia.id)}
-                      title={`Adicionar aula na ${dia.label}`}
-                      data-testid={`dia-vazio-${dia.id}`}
-                    >
-                      <Plus className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 transition-colors" />
-                    </div>
-                  ) : (
-                    turmasPorDia(dia.id).map((t) => (
-                      <div
-                        key={`${dia.id}-${t.id}`}
-                        data-testid={`turma-card-${t.id}-${dia.id}`}
-                        className="rounded-lg p-2.5 text-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                        style={{ backgroundColor: t.cor }}
-                        onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
-                      >
-                        <p className="font-semibold text-xs leading-tight truncate">{t.nome}</p>
-                        <p className="text-[11px] opacity-90 mt-0.5">{t.horarioInicio}–{t.horarioFim}</p>
-                        {t.professorNome && (
-                          <p className="text-[10px] opacity-80 truncate mt-0.5">{t.professorNome}</p>
-                        )}
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <Users className="h-2.5 w-2.5 opacity-80" />
-                          <span className="text-[10px] opacity-90">{t.alunosCount}/{t.capacidadeMaxima}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
         ) : (
-          /* LIST VIEW */
-          <div className="space-y-3 max-w-4xl">
-            {turmas.map((t) => (
-              <Card key={t.id} data-testid={`turma-row-${t.id}`} className="bg-white dark:bg-gray-800 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: t.cor }} />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-gray-900 dark:text-white">{t.nome}</p>
-                          <Badge variant="outline" className="text-xs">{t.modalidade}</Badge>
-                          {!t.ativo && <Badge variant="destructive" className="text-xs">Inativa</Badge>}
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
-                          <span className="flex items-center gap-1">
-                            <CalendarDays className="h-3.5 w-3.5" />
-                            {t.diasSemana.split("|").filter(Boolean).map((d) => DIAS_SHORT[d] ?? d).join(", ")}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5" />
-                            {t.horarioInicio}–{t.horarioFim}
-                          </span>
-                          {t.professorNome && (
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3.5 w-3.5" />{t.professorNome}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3.5 w-3.5" />
-                            {t.alunosCount}/{t.capacidadeMaxima} alunos
-                          </span>
-                        </div>
-                      </div>
+          <>
+            {/* View toggle + Nova Turma */}
+            <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={view === "mensal" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setView("mensal")}
+                  data-testid="button-view-mensal"
+                  className="h-9 px-3 gap-1.5"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Mensal
+                </Button>
+                <Button
+                  variant={view === "semanal" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setView("semanal")}
+                  data-testid="button-view-semanal"
+                  className="h-9 px-3 gap-1.5"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  Semanal
+                </Button>
+                <Button
+                  variant={view === "lista" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setView("lista")}
+                  data-testid="button-view-lista"
+                  className="h-9 px-3 gap-1.5"
+                >
+                  <List className="h-4 w-4" />
+                  Lista
+                </Button>
+              </div>
+              <Button
+                onClick={() => openNova()}
+                data-testid="button-nova-turma"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 gap-1.5"
+              >
+                <Plus className="h-4 w-4" />
+                Nova Turma
+              </Button>
+            </div>
+
+            {turmas.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-60 text-center">
+                <CalendarDays className="h-12 w-12 text-gray-300 mb-4" />
+                <p className="text-gray-500 font-medium mb-1">Nenhuma turma cadastrada</p>
+                <p className="text-sm text-gray-400 mb-4">Crie sua primeira turma para organizar horários e alunos.</p>
+              </div>
+            ) : view === "mensal" ? (
+              /* ── MONTHLY CALENDAR ─────────────────────────────────────── */
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                {/* Month navigation */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                  <Button variant="ghost" size="icon" onClick={prevMonth} data-testid="button-mes-anterior">
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+                    {MESES[calMonth]} {calYear}
+                  </h2>
+                  <Button variant="ghost" size="icon" onClick={nextMonth} data-testid="button-proximo-mes">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Day-of-week header */}
+                <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700">
+                  {WEEK_HEADER.map((h) => (
+                    <div key={h} className="py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                      {h}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        variant="outline" size="sm"
-                        data-testid={`button-alunos-${t.id}`}
-                        onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
+                  ))}
+                </div>
+
+                {/* Calendar cells */}
+                <div className="grid grid-cols-7">
+                  {calDays.map((date, idx) => {
+                    const turmasDia = date ? turmasForDate(date) : [];
+                    const hoje = date ? isToday(date) : false;
+                    return (
+                      <div
+                        key={idx}
+                        data-testid={date ? `cal-dia-${date.getDate()}` : `cal-vazio-${idx}`}
+                        onClick={() => {
+                          if (date && turmasDia.length > 0) {
+                            setDiaPopup({ date, turmas: turmasDia });
+                          } else if (date) {
+                            openNova(JS_DAY_TO_ID[date.getDay()]);
+                          }
+                        }}
+                        className={`min-h-[90px] p-2 border-b border-r border-gray-100 dark:border-gray-700 transition-colors
+                          ${date ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10" : "bg-gray-50 dark:bg-gray-900/30"}
+                          ${idx % 7 === 6 ? "border-r-0" : ""}
+                        `}
                       >
-                        <Users className="h-3.5 w-3.5 mr-1" />Alunos
-                      </Button>
-                      <Button
-                        variant="outline" size="icon"
-                        data-testid={`button-editar-${t.id}`}
-                        onClick={() => openEditar(t)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="outline" size="icon"
-                        data-testid={`button-excluir-${t.id}`}
-                        onClick={() => setConfirmExcluir(t)}
-                        className="text-red-500 hover:text-red-600 hover:border-red-300"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                        {date && (
+                          <>
+                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium mb-1.5 ${
+                              hoje
+                                ? "bg-blue-600 text-white"
+                                : "text-gray-700 dark:text-gray-300"
+                            }`}>
+                              {date.getDate()}
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              {turmasDia.slice(0, 3).map((t) => (
+                                <div
+                                  key={t.id}
+                                  className="rounded px-1.5 py-0.5 text-white text-[10px] font-medium truncate leading-tight"
+                                  style={{ backgroundColor: t.cor }}
+                                  title={`${t.nome} ${t.horarioInicio}–${t.horarioFim}`}
+                                >
+                                  {t.nome}
+                                </div>
+                              ))}
+                              {turmasDia.length > 3 && (
+                                <span className="text-[10px] text-gray-400 pl-1">+{turmasDia.length - 3} mais</span>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                {turmas.length > 0 && (
+                  <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-3">
+                    {turmas.map((t) => (
+                      <div key={t.id} className="flex items-center gap-1.5">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.cor }} />
+                        <span className="text-xs text-gray-600 dark:text-gray-400">{t.nome}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : view === "semanal" ? (
+              /* ── WEEKLY GRID ──────────────────────────────────────────── */
+              <div className="grid grid-cols-7 gap-3 min-w-[700px]">
+                {DIAS.map((dia) => (
+                  <div key={dia.id} className="flex flex-col gap-2">
+                    <div className="text-center">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {dia.label}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-2 min-h-[120px]">
+                      {turmasPorDia(dia.id).length === 0 ? (
+                        <div
+                          className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-16 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
+                          onClick={() => openNova(dia.id)}
+                          title={`Adicionar aula na ${dia.label}`}
+                          data-testid={`dia-vazio-${dia.id}`}
+                        >
+                          <Plus className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 transition-colors" />
+                        </div>
+                      ) : (
+                        turmasPorDia(dia.id).map((t) => (
+                          <div
+                            key={`${dia.id}-${t.id}`}
+                            data-testid={`turma-card-${t.id}-${dia.id}`}
+                            className="rounded-lg p-2.5 text-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                            style={{ backgroundColor: t.cor }}
+                            onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
+                          >
+                            <p className="font-semibold text-xs leading-tight truncate">{t.nome}</p>
+                            <p className="text-[11px] opacity-90 mt-0.5">{t.horarioInicio}–{t.horarioFim}</p>
+                            {t.professorNome && (
+                              <p className="text-[10px] opacity-80 truncate mt-0.5">{t.professorNome}</p>
+                            )}
+                            <div className="flex items-center gap-1 mt-1.5">
+                              <Users className="h-2.5 w-2.5 opacity-80" />
+                              <span className="text-[10px] opacity-90">{t.alunosCount}/{t.capacidadeMaxima}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                ))}
+              </div>
+            ) : (
+              /* ── LIST VIEW ────────────────────────────────────────────── */
+              <div className="space-y-3 max-w-4xl">
+                {turmas.map((t) => (
+                  <Card key={t.id} data-testid={`turma-row-${t.id}`} className="bg-white dark:bg-gray-800 shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: t.cor }} />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-gray-900 dark:text-white">{t.nome}</p>
+                              <Badge variant="outline" className="text-xs">{t.modalidade}</Badge>
+                              {!t.ativo && <Badge variant="destructive" className="text-xs">Inativa</Badge>}
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <CalendarDays className="h-3.5 w-3.5" />
+                                {t.diasSemana.split("|").filter(Boolean).map((d) => DIAS_SHORT[d] ?? d).join(", ")}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3.5 w-3.5" />
+                                {t.horarioInicio}–{t.horarioFim}
+                              </span>
+                              {t.professorNome && (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3.5 w-3.5" />{t.professorNome}
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3.5 w-3.5" />
+                                {t.alunosCount}/{t.capacidadeMaxima} alunos
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="outline" size="sm"
+                            data-testid={`button-alunos-${t.id}`}
+                            onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
+                          >
+                            <Users className="h-3.5 w-3.5 mr-1" />Alunos
+                          </Button>
+                          <Button
+                            variant="outline" size="icon"
+                            data-testid={`button-editar-${t.id}`}
+                            onClick={() => openEditar(t)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="outline" size="icon"
+                            data-testid={`button-excluir-${t.id}`}
+                            onClick={() => setConfirmExcluir(t)}
+                            className="text-red-500 hover:text-red-600 hover:border-red-300"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      {/* Dialog: Dia popup (monthly view) */}
+      <Dialog open={!!diaPopup} onOpenChange={(open) => { if (!open) setDiaPopup(null); }}>
+        <DialogContent className="max-w-sm">
+          {diaPopup && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-blue-600" />
+                  {diaPopup.date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2 py-2">
+                {diaPopup.turmas.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between p-3 rounded-lg text-white"
+                    style={{ backgroundColor: t.cor }}
+                  >
+                    <div>
+                      <p className="font-semibold text-sm">{t.nome}</p>
+                      <p className="text-xs opacity-90">{t.horarioInicio}–{t.horarioFim}</p>
+                      {t.professorNome && <p className="text-xs opacity-80">{t.professorNome}</p>}
+                    </div>
+                    <div className="text-right text-xs opacity-90">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {t.alunosCount}/{t.capacidadeMaxima}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => setDiaPopup(null)}>Fechar</Button>
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => { setDiaPopup(null); openNova(JS_DAY_TO_ID[diaPopup.date.getDay()]); }}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />Nova Turma
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog: Criar / Editar Turma */}
       <Dialog open={dialogTurma} onOpenChange={setDialogTurma}>
@@ -533,40 +780,33 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               <div className="flex-1 overflow-auto space-y-4 py-2">
                 {/* Enrolled students */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Alunos matriculados ({alunosTurma.length}/{turmaAlunos.capacidadeMaxima})
-                    </h3>
-                    <div className="w-24 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-blue-500 transition-all"
-                        style={{ width: `${Math.min(100, (alunosTurma.length / turmaAlunos.capacidadeMaxima) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Alunos matriculados ({alunosTurma.length}/{turmaAlunos.capacidadeMaxima})
+                  </p>
                   {loadingAlunos ? (
-                    <p className="text-sm text-gray-400 py-2">Carregando...</p>
+                    <div className="text-center text-gray-400 py-4">
+                      <RefreshCw className="h-4 w-4 animate-spin inline mr-2" />Carregando...
+                    </div>
                   ) : alunosTurma.length === 0 ? (
-                    <p className="text-sm text-gray-400 italic py-2">Nenhum aluno matriculado ainda.</p>
+                    <p className="text-sm text-gray-400 py-2">Nenhum aluno matriculado ainda.</p>
                   ) : (
                     <div className="space-y-1.5">
                       {alunosTurma.map((e) => (
-                        <div
-                          key={e.id}
-                          data-testid={`aluno-matriculado-${e.alunoId}`}
-                          className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50"
-                        >
+                        <div key={e.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg">
                           <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{e.aluno?.nome ?? "—"}</p>
-                            <p className="text-xs text-gray-500">Desde {e.dataMatricula}</p>
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{e.aluno?.nome ?? "–"}</p>
+                            <p className="text-xs text-gray-400">
+                              Desde {new Date(e.dataMatricula).toLocaleDateString("pt-BR")}
+                            </p>
                           </div>
                           <Button
                             variant="ghost" size="icon"
                             data-testid={`button-remover-aluno-${e.alunoId}`}
-                            className="h-7 w-7 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            className="text-red-400 hover:text-red-600"
                             onClick={() => removerAluno.mutate({ turmaId: turmaAlunos.id, alunoId: e.alunoId })}
+                            disabled={removerAluno.isPending}
                           >
-                            <UserMinus className="h-3.5 w-3.5" />
+                            <UserMinus className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
@@ -574,36 +814,27 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   )}
                 </div>
 
-                {/* Add student */}
+                {/* Add students */}
                 {alunosDisponiveis.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      Adicionar aluno ({turmaAlunos.modalidade})
-                    </h3>
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Adicionar alunos</p>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
                       {alunosDisponiveis.map((a) => (
-                        <div
-                          key={a.id}
-                          data-testid={`aluno-disponivel-${a.id}`}
-                          className="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                        >
-                          <p className="text-sm text-gray-800 dark:text-gray-200">{a.nome}</p>
+                        <div key={a.id} className="flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-3 py-2 rounded-lg">
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{a.nome}</p>
                           <Button
-                            variant="outline" size="sm"
-                            data-testid={`button-matricular-${a.id}`}
-                            disabled={matricularAluno.isPending}
-                            className="h-7 text-xs gap-1 text-blue-600 border-blue-300 hover:bg-blue-50"
+                            variant="ghost" size="icon"
+                            data-testid={`button-add-aluno-turma-${a.id}`}
+                            className="text-blue-500 hover:text-blue-700"
                             onClick={() => matricularAluno.mutate({ turmaId: turmaAlunos.id, alunoId: a.id })}
+                            disabled={matricularAluno.isPending}
                           >
-                            <UserPlus className="h-3 w-3" />Matricular
+                            <UserPlus className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
                     </div>
                   </div>
-                )}
-                {alunosDisponiveis.length === 0 && alunosTurma.length > 0 && (
-                  <p className="text-sm text-gray-400 italic">Todos os alunos da modalidade já estão matriculados.</p>
                 )}
               </div>
             </>
@@ -611,19 +842,19 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
         </DialogContent>
       </Dialog>
 
-      {/* Confirm Delete */}
-      <AlertDialog open={!!confirmExcluir} onOpenChange={(open) => !open && setConfirmExcluir(null)}>
+      {/* Alert: Confirm Delete */}
+      <AlertDialog open={!!confirmExcluir} onOpenChange={(open) => { if (!open) setConfirmExcluir(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir turma</AlertDialogTitle>
+            <AlertDialogTitle>Excluir turma?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a turma <strong>{confirmExcluir?.nome}</strong>? Todas as matrículas serão removidas. Esta ação não pode ser desfeita.
+              A turma <strong>{confirmExcluir?.nome}</strong> será excluída permanentemente. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700"
               onClick={() => confirmExcluir && excluirTurma.mutate(confirmExcluir.id)}
             >
               Excluir
