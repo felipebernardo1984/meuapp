@@ -148,6 +148,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   const [turmaAlunos, setTurmaAlunos] = useState<Turma | null>(null);
   const [dialogRecursos, setDialogRecursos] = useState(false);
   const [recursoNome, setRecursoNome] = useState("");
+  const [recursoSalvo, setRecursoSalvo] = useState<Recurso | null>(null);
 
   const [confirmExcluir, setConfirmExcluir] = useState<Turma | null>(null);
 
@@ -207,8 +208,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
   const salvarRecurso = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
-    onSuccess: async () => {
+    onSuccess: async (_, variables: any) => {
       await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+      setRecursoSalvo({ id: `local-${Date.now()}`, nome: variables.nome, ativo: variables.ativo ?? true });
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
@@ -871,12 +873,16 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             <div className="space-y-2">
               <Label>Salas cadastradas</Label>
               <div className="space-y-2 max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                {recursos.length > 0 ? (
-                  recursos.map((r) => (
+                {[...recursos, ...(recursoSalvo ? [recursoSalvo] : [])]
+                  .filter((r, index, list) => list.findIndex((x) => x.nome === r.nome) === index)
+                  .length > 0 ? (
+                  [...recursos, ...(recursoSalvo ? [recursoSalvo] : [])]
+                    .filter((r, index, list) => list.findIndex((x) => x.nome === r.nome) === index)
+                    .map((r) => (
                     <div
-                      key={r.id}
+                      key={`${r.nome}-${r.id}`}
                       className="flex items-center justify-between rounded-md border px-3 py-2"
-                      data-testid={`recurso-item-${r.id}`}
+                      data-testid={`recurso-item-${r.nome}`}
                     >
                       <span>{r.nome}</span>
                       <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
