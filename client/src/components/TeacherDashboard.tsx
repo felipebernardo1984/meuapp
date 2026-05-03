@@ -635,7 +635,7 @@ export default function TeacherDashboard({
               <div className="space-y-1">
                 <Label>Senha <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="CPF vinculado"
+                  placeholder="CPF do aluno"
                   type="password"
                   value={novoAluno.senha}
                   onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value, cpf: e.target.value })}
@@ -799,7 +799,7 @@ export default function TeacherDashboard({
               <div className="space-y-1">
                 <Label>Nova Senha</Label>
                 <Input
-                  placeholder="CPF vinculado"
+                  placeholder="CPF do aluno"
                   type="password"
                   value={dadosEdicao.senha ?? ""}
                   onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value, cpf: e.target.value })}

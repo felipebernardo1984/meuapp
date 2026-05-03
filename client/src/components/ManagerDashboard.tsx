@@ -1401,7 +1401,7 @@ export default function ManagerDashboard({
                 <Label>Senha <span className="text-destructive">*</span></Label>
                 <Input
                   type="text"
-                  placeholder="CPF vinculado"
+                  placeholder="CPF do aluno"
                   value={novoAluno.senha}
                   onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value, cpf: e.target.value })}
                   data-testid="input-manager-student-senha"
@@ -3311,7 +3311,7 @@ export default function ManagerDashboard({
               <div className="space-y-1">
                 <Label>Nova Senha</Label>
                 <Input
-                  placeholder="CPF vinculado"
+                  placeholder="CPF do aluno"
                   type="password"
                   value={formEditarAluno.senha}
                   onChange={(e) => setFormEditarAluno({ ...formEditarAluno, senha: e.target.value, cpf: e.target.value })}
