@@ -156,8 +156,8 @@ export default function ManagerSidebar({
         <div className="flex items-center justify-between px-3 py-4 border-b border-white/10 shrink-0">
           {(!collapsed || mobileOpen) && (
             <div className="min-w-0">
-              <p className="text-sm font-bold text-white truncate">{arenaName || "Seven Sports"}</p>
-              <p className="text-xs text-gray-500 truncate">Gestor</p>
+              <p className="text-sm font-bold text-white truncate">SEVEN SPORTS</p>
+              <p className="text-xs text-gray-500 truncate">Felipe Bernardo</p>
             </div>
           )}
           {/* Mobile close button */}

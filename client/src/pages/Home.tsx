@@ -277,7 +277,7 @@ export default function Home() {
       )}
 
       {sessao.tipo === "professor" && (
-        <TeacherDashboard
+          <TeacherDashboard
           teacherName={sessao.professor.nome}
           modalidade={sessao.professor.modalidade}
           planos={planosAdaptados}
