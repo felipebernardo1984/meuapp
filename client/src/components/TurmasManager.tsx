@@ -185,6 +185,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
   const { data: recursos = [] } = useQuery<Recurso[]>({ queryKey: ["/api/recursos"] });
   const [novoRecursoNome, setNovoRecursoNome] = useState("");
+  const [editandoRecursoId, setEditandoRecursoId] = useState<string | null>(null);
   const [editandoRecursoNome, setEditandoRecursoNome] = useState("");
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
@@ -226,10 +227,20 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
     mutationFn: ({ id, nome }: { id: string; nome: string }) => apiRequest("PUT", `/api/recursos/${id}`, { nome, ativo: true }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+      setEditandoRecursoId(null);
       setEditandoRecursoNome("");
       toast({ title: "Sala atualizada" });
     },
     onError: () => toast({ title: "Erro ao atualizar sala", variant: "destructive" }),
+  });
+
+  const removerRecurso = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/recursos/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+      toast({ title: "Sala removida" });
+    },
+    onError: () => toast({ title: "Erro ao remover sala", variant: "destructive" }),
   });
 
   const matricularAluno = useMutation({
@@ -1016,73 +1027,34 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                   Adicionar
                 </Button>
               </div>
-              <Select
-                value={formData.recursoId || "_none"}
-                onValueChange={(v) => {
-                  if (v.startsWith("_edit:")) {
-                    const id = v.replace("_edit:", "");
-                    const recurso = recursos.find((r) => r.id === id);
-                    if (recurso) {
-                      setEditandoRecursoNome(recurso.nome);
-                      setFormData((p) => ({ ...p, recursoId: id }));
-                    }
-                    return;
-                  }
-                  setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }));
-                }}
-              >
-                <SelectTrigger data-testid="select-turma-recurso">
-                  <SelectValue placeholder="Selecionar espaço..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">Sem espaço específico</SelectItem>
-                  {recursos.filter((r) => r.ativo).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.nome}
-                    </SelectItem>
-                  ))}
-                  {recursos.map((r) => (
-                    <SelectItem key={`edit-${r.id}`} value={`_edit:${r.id}`}>
-                      Editar {r.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {formData.recursoId.startsWith("_edit:") && (
-                <div className="flex flex-col gap-2 rounded-md border bg-gray-50 dark:bg-gray-900 p-3">
-                  <Input
-                    value={editandoRecursoNome}
-                    onChange={(e) => setEditandoRecursoNome(e.target.value)}
-                    className="h-9"
-                    data-testid="input-editar-sala"
-                  />
-                  <div className="flex gap-2">
+              <div className="space-y-2">
+                {recursos.filter((r) => r.ativo).map((r) => (
+                  <div key={r.id} className="flex items-center gap-2 rounded-md border p-2">
+                    <span className="flex-1 text-sm">{r.nome}</span>
                     <Button
                       type="button"
-                      size="sm"
+                      variant="outline"
+                      size="icon"
                       onClick={() => {
-                        const id = formData.recursoId.replace("_edit:", "");
-                        const nome = editandoRecursoNome.trim();
-                        if (!nome) return;
-                        atualizarRecurso.mutate({ id, nome });
-                        setFormData((p) => ({ ...p, recursoId: id }));
+                        setEditandoRecursoId(r.id);
+                        setEditandoRecursoNome(r.nome);
                       }}
-                      data-testid="button-salvar-sala"
+                      data-testid={`button-editar-sala-${r.id}`}
                     >
-                      Salvar
+                      <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
-                      onClick={() => setFormData((p) => ({ ...p, recursoId: "_none" }))}
-                      data-testid="button-cancelar-editar-sala"
+                      size="icon"
+                      onClick={() => removerRecurso.mutate(r.id)}
+                      data-testid={`button-apagar-sala-${r.id}`}
                     >
-                      Cancelar
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
 
             {/* Dias da semana */}
