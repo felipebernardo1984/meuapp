@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   CalendarDays, Plus, Pencil, Trash2, Users, Clock, ChevronLeft,
-  ChevronRight, LayoutGrid, List, Calendar, UserPlus, UserMinus, RefreshCw, ChevronDown, ChevronUp,
+  ChevronRight, LayoutGrid, List, Calendar, UserPlus, UserMinus, RefreshCw, ChevronDown, ChevronUp, Settings,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -1010,43 +1010,48 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               </div>
             )}
 
-            <div className="rounded-lg border bg-white dark:bg-gray-950 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <Label>Sala / Quadra / Box</Label>
-                  <p className="text-xs text-gray-500">cadastre ou edite espaços</p>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setMostrarRecursos((p) => !p)}
+                data-testid="button-configurar-salas"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Configurar salas
+              </Button>
+            </div>
+            {mostrarRecursos && (
+              <div className="rounded-lg border bg-white dark:bg-gray-950 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <Label>Sala / Quadra / Box</Label>
+                    <p className="text-xs text-gray-500">cadastre ou edite espaços</p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setMostrarRecursos(false)} data-testid="button-fechar-salas">
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMostrarRecursos((p) => !p)}
-                  data-testid="button-toggle-salas"
-                >
-                  {mostrarRecursos ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <Input
-                  value={novoRecursoNome}
-                  onChange={(e) => setNovoRecursoNome(e.target.value)}
-                  placeholder="Novo nome de sala / quadra / box"
-                  data-testid="input-nova-sala"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const nome = novoRecursoNome.trim();
-                    if (!nome) return;
-                    criarRecurso.mutate(nome);
-                  }}
-                  data-testid="button-cadastrar-sala"
-                >
-                  Adicionar
-                </Button>
-              </div>
-              {mostrarRecursos && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <Input
+                    value={novoRecursoNome}
+                    onChange={(e) => setNovoRecursoNome(e.target.value)}
+                    placeholder="Novo nome de sala / quadra / box"
+                    data-testid="input-nova-sala"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const nome = novoRecursoNome.trim();
+                      if (!nome) return;
+                      criarRecurso.mutate(nome);
+                    }}
+                    data-testid="button-cadastrar-sala"
+                  >
+                    Adicionar
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   {recursos.filter((r) => r.ativo).map((r) => (
                     <div key={r.id} className="flex items-center gap-2 rounded-md border p-2">
@@ -1090,8 +1095,8 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Dias da semana */}
             <div className="space-y-2">
