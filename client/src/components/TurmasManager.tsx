@@ -282,7 +282,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   const removerDiaDoAgendamento = async (t: Turma, dia: string) => {
     const diasRestantes = t.diasSemana.split("|").filter(Boolean).filter((d) => d !== dia);
     if (diasRestantes.length === 0) {
-      toast({ title: "Não dá para remover o último dia", variant: "destructive" });
+      await excluirTurma.mutateAsync(t.id);
+      toast({ title: "Agendamento excluído" });
       return;
     }
     await editarTurma.mutateAsync({
