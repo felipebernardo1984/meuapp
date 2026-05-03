@@ -115,6 +115,7 @@ interface AlunoTurma {
 interface TurmasManagerProps {
   onVoltar: () => void;
   professorContext?: { id: string; modalidade: string; nome?: string };
+  readOnly?: boolean;
 }
 
 const emptyForm = {
@@ -153,7 +154,7 @@ type DaySlot = {
   professorId?: string | null;
 };
 
-export default function TurmasManager({ onVoltar, professorContext }: TurmasManagerProps) {
+export default function TurmasManager({ onVoltar, professorContext, readOnly = false }: TurmasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [view, setView] = useState<ViewMode>("mensal");
@@ -487,15 +488,17 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   Lista
                 </Button>
               </div>
-              <Button
-                onClick={() => openNova()}
-                data-testid="button-horario-aula"
-                size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5 justify-center"
-              >
-                <Plus className="h-5 w-5" />
-                Horário de Aulas
-              </Button>
+              {!readOnly && (
+                <Button
+                  onClick={() => openNova()}
+                  data-testid="button-horario-aula"
+                  size="lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5 justify-center"
+                >
+                  <Plus className="h-5 w-5" />
+                  Horário de Aulas
+                </Button>
+              )}
             </div>
 
             {view === "mensal" ? (
@@ -529,7 +532,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                         onClick={() => {
                           if (!date) return;
                           if (turmasDia.length > 0) setDiaPopup({ date, turmas: turmasDia });
-                          else setSlotPopup({ date, horarioInicio: slotHorarioInicio, horarioFim: slotHorarioFim });
+                          else if (!readOnly) setSlotPopup({ date, horarioInicio: slotHorarioInicio, horarioFim: slotHorarioFim });
                         }}
                         className={`min-h-[88px] sm:min-h-[120px] p-1.5 sm:p-2 border-b border-r border-gray-100 dark:border-gray-700 ${
                           date ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10" : "bg-gray-50 dark:bg-gray-900/30"
@@ -586,12 +589,12 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                     <div className="flex flex-col gap-2 min-h-[104px] sm:min-h-[120px]">
                       {turmasPorDia(dia.id).length === 0 ? (
                         <div
-                          className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-14 sm:h-16 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
-                          onClick={() => openHorarioAulas(dia.id)}
-                          title={`Adicionar aula na ${dia.label}`}
+                          className={`rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-14 sm:h-16 flex items-center justify-center transition-colors ${!readOnly ? "cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 group" : ""}`}
+                          onClick={() => { if (!readOnly) openHorarioAulas(dia.id); }}
+                          title={!readOnly ? `Adicionar aula na ${dia.label}` : undefined}
                           data-testid={`dia-vazio-${dia.id}`}
                         >
-                          <Plus className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 transition-colors" />
+                          {!readOnly && <Plus className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 transition-colors" />}
                         </div>
                       ) : (
                         turmasPorDia(dia.id).map((t) => (
@@ -692,30 +695,32 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Button
-                            variant="outline" size="sm"
-                            data-testid={`button-alunos-${t.id}`}
-                            onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
-                          >
-                            <Users className="h-3.5 w-3.5 mr-1" />Alunos
-                          </Button>
-                          <Button
-                            variant="outline" size="icon"
-                            data-testid={`button-editar-${t.id}`}
-                            onClick={() => openEditar(t)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="outline" size="icon"
-                            data-testid={`button-excluir-${t.id}`}
-                            onClick={() => setConfirmExcluir(t)}
-                            className="text-red-500 hover:text-red-600 hover:border-red-300"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        {!readOnly && (
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              variant="outline" size="sm"
+                              data-testid={`button-alunos-${t.id}`}
+                              onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
+                            >
+                              <Users className="h-3.5 w-3.5 mr-1" />Alunos
+                            </Button>
+                            <Button
+                              variant="outline" size="icon"
+                              data-testid={`button-editar-${t.id}`}
+                              onClick={() => openEditar(t)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="outline" size="icon"
+                              data-testid={`button-excluir-${t.id}`}
+                              onClick={() => setConfirmExcluir(t)}
+                              className="text-red-500 hover:text-red-600 hover:border-red-300"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -758,28 +763,32 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                           {t.alunosCount}/{t.capacidadeMaxima}
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="h-8 bg-white/20 text-white hover:bg-white/30"
-                        data-testid={`button-remover-dia-${t.id}-${JS_DAY_TO_ID[diaPopup.date.getDay()]}`}
-                        onClick={() => removerDiaDoAgendamento(t, JS_DAY_TO_ID[diaPopup.date.getDay()])}
-                      >
-                        Remover dia
-                      </Button>
+                      {!readOnly && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 bg-white/20 text-white hover:bg-white/30"
+                          data-testid={`button-remover-dia-${t.id}-${JS_DAY_TO_ID[diaPopup.date.getDay()]}`}
+                          onClick={() => removerDiaDoAgendamento(t, JS_DAY_TO_ID[diaPopup.date.getDay()])}
+                        >
+                          Remover dia
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
               <DialogFooter>
                 <Button variant="outline" size="sm" onClick={() => setDiaPopup(null)}>Fechar</Button>
-                <Button
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => openHorarioAulas(JS_DAY_TO_ID[diaPopup.date.getDay()])}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />Horário de Aulas
-                </Button>
+                {!readOnly && (
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => openHorarioAulas(JS_DAY_TO_ID[diaPopup.date.getDay()])}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />Horário de Aulas
+                  </Button>
+                )}
               </DialogFooter>
             </>
           )}

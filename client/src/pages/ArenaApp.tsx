@@ -34,6 +34,7 @@ export default function ArenaApp() {
   const [esqueceuSenha, setEsqueceuSenha] = useState(false);
   const [gestorTab, setGestorTab] = useState<"dashboard" | "agenda" | "financeiro" | "configuracoes" | "integracoes" | "alertas">("dashboard");
   const [professorView, setProfessorView] = useState<"dashboard" | "agenda">("dashboard");
+  const [alunoView, setAlunoView] = useState<"dashboard" | "agenda">("dashboard");
   const [resetEmail, setResetEmail] = useState("");
   const [resetEnviado, setResetEnviado] = useState(false);
 
@@ -405,7 +406,7 @@ export default function ArenaApp() {
         </div>
       )}
 
-      {sessao.tipo === "aluno" && alunoAtual && (
+      {sessao.tipo === "aluno" && alunoAtual && alunoView === "dashboard" && (
         <StudentDashboard
           studentName={alunoAtual.nome}
           photoUrl={alunoAtual.photoUrl ?? undefined}
@@ -425,7 +426,14 @@ export default function ArenaApp() {
           onRemoverCheckin={(index: number) => removerCheckin.mutate({ id: alunoAtual.id, index })}
           onCheckinRetroativo={(data: string, hora: string) => checkinManual.mutate({ id: alunoAtual.id, data, hora })}
           onUpdatePhoto={(photoUrl: string) => editarAluno.mutate({ id: alunoAtual.id, photoUrl })}
-          onIrAgenda={() => setProfessorView("agenda")}
+          onIrAgenda={() => setAlunoView("agenda")}
+        />
+      )}
+
+      {sessao.tipo === "aluno" && alunoView === "agenda" && (
+        <TurmasManager
+          onVoltar={() => setAlunoView("dashboard")}
+          readOnly
         />
       )}
 
