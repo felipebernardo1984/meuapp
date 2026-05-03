@@ -170,6 +170,7 @@ export default function TeacherDashboard({
 
   const [dialogReceita, setDialogReceita] = useState(false);
   const [alunoReceita, setAlunoReceita] = useState<AlunoView | null>(null);
+  const [alunosMinimizados, setAlunosMinimizados] = useState(false);
 
 
   const { data: modalidadeSettings = [] } = useQuery<any[]>({ queryKey: ["/api/configuracoes/modalidades"] });
@@ -363,13 +364,33 @@ export default function TeacherDashboard({
         </CardContent>
       </Card>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-3">
-        <p className="text-sm font-medium text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+        <p className="text-sm font-medium text-muted-foreground text-center sm:text-left">
           Alunos ({alunos.length})
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={() => setAlunosMinimizados((value) => !value)}
+          data-testid="button-toggle-students"
+        >
+          {alunosMinimizados ? (
+            <>
+              <ChevronDown className="mr-2 h-4 w-4" />
+              Mostrar alunos
+            </>
+          ) : (
+            <>
+              <ChevronUp className="mr-2 h-4 w-4" />
+              Minimizar alunos
+            </>
+          )}
+        </Button>
       </div>
-      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {alunos.map((aluno) => {
+      {!alunosMinimizados && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {alunos.map((aluno) => {
           const temCheckins = aluno.plano > 0;
           const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -470,8 +491,9 @@ export default function TeacherDashboard({
               </CardContent>
             </Card>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
 
       {alunos.length === 0 && (
         <Card>
