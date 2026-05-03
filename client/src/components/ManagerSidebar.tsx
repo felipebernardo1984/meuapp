@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+const FALLBACK_RESPONSAVEL = import.meta.env.VITE_RESPONSAVEL_NAME || "Gestor";
 
 interface NavItem {
   id: string;
@@ -159,7 +160,7 @@ export default function ManagerSidebar({
           {(!collapsed || mobileOpen) && (
             <div className="min-w-0">
               <p className="text-sm font-bold text-white truncate">{arenaName || "SEVEN SPORTS"}</p>
-              <p className="text-xs text-gray-500 truncate">{gestorName || "Gestor"}</p>
+              <p className="text-xs text-gray-500 truncate">{FALLBACK_RESPONSAVEL}</p>
             </div>
           )}
           {/* Mobile close button */}
