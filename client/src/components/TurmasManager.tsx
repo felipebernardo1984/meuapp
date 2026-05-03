@@ -399,9 +399,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                 onClick={() => openNova()}
                 data-testid="button-horario-aulas"
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5"
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5 justify-center"
               >
-                <Plus className="mr-2 h-5 w-5" />
+                <Plus className="h-5 w-5" />
                 Horário de Aulas
               </Button>
             </div>
