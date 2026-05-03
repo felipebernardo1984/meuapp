@@ -1687,7 +1687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const lista = await storage.listTurmas(arenaId);
       const teacherList = await storage.listTeachers(arenaId);
-      const recursoList = await storage.listRecursos(arenaId).catch(() => []);
+      const recursoList = await storage.listRecursos(arenaId);
       const teacherMap = new Map(teacherList.map((t) => [t.id, t]));
       const recursoMap = new Map(recursoList.map((r) => [r.id, r]));
       const result = await Promise.all(
@@ -1741,6 +1741,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json(turma);
     } catch (e) { res.status(400).json({ message: e instanceof Error ? e.message : "Erro ao atualizar turma" }); }
+  });
+
+  app.get("/api/recursos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const list = await storage.listRecursos(arenaId);
+      res.json(list);
+    } catch {
+      res.json([]);
+    }
+  });
+
+  app.post("/api/recursos", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const { nome, ativo } = req.body;
+      if (!nome?.trim()) return res.status(400).json({ message: "Nome é obrigatório" });
+      const recurso = await storage.createRecurso({ arenaId, nome: nome.trim(), ativo: ativo ?? true, tipo: "sala" });
+      if (!recurso) return res.status(500).json({ message: "Não foi possível salvar a sala" });
+      res.json(recurso);
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Não foi possível salvar a sala" });
+    }
+  });
+
+  app.put("/api/recursos/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const { nome, ativo } = req.body;
+      const recurso = await storage.updateRecurso(req.params.id, { nome, ativo });
+      if (!recurso) return res.status(500).json({ message: "Não foi possível atualizar a sala" });
+      res.json(recurso);
+    } catch (e: any) {
+      res.status(500).json({ message: e?.message || "Não foi possível atualizar a sala" });
+    }
   });
 
   app.delete("/api/turmas/:id", async (req, res) => {
