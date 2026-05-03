@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ArrowLeft, Upload, CalendarRange, BarChart3 } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, AlertCircle, QrCode, Settings, CheckCircle, Trash2, ChevronLeft, Upload, CalendarRange, BarChart3 } from "lucide-react";
 import FinancialReports from "./FinancialReports";
 
 interface ModalidadeSetting {
@@ -174,7 +174,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3 mb-4">
         {onVoltar && (
           <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar">
-            <ArrowLeft className="h-5 w-5" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
         )}
         <div className="flex items-center gap-2 flex-1">
