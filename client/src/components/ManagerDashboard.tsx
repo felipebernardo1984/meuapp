@@ -1778,16 +1778,6 @@ export default function ManagerDashboard({
                   {mensalistas.length === 0 ? (
                     <div className="space-y-3">
                       <p className="text-muted-foreground text-sm">Nenhum mensalista cadastrado ainda.</p>
-                      <Button
-                        size="sm"
-                        data-testid="button-novo-mensalista-empty"
-                        onClick={() => {
-                          setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
-                          setDialogNovoMensalista(true);
-                        }}
-                      >
-                        <UserPlus className="w-4 h-4 mr-1" /> Cadastrar Primeiro Mensalista
-                      </Button>
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">Nenhum resultado para o filtro selecionado.</p>
