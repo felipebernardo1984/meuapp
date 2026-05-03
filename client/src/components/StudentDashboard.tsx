@@ -234,9 +234,6 @@ export default function StudentDashboard({
               <span className="text-muted-foreground whitespace-nowrap">|</span>
               <p className="text-sm text-muted-foreground whitespace-nowrap">{modalidade}</p>
             </div>
-            <Button size="sm" className="w-fit" data-testid="button-agenda-professor">
-              Agenda
-            </Button>
           </div>
         {statusMensalidade === "Pendente" && (
           <Badge variant="destructive" data-testid="badge-payment-status">
