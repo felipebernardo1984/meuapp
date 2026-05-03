@@ -4,7 +4,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
   Users, ClipboardList, DollarSign, Trophy,
-  CheckCircle, Zap, Shield, BarChart3, Smartphone, LogIn, Mail
+  CheckCircle, Zap, Shield, BarChart3, Smartphone, LogIn, Mail, CalendarDays
 } from "lucide-react";
 
 const features = [
@@ -12,7 +12,7 @@ const features = [
   { icon: Users, title: "Gestão de alunos", desc: "Cadastro, aprovação, planos e mensalidades em um só lugar." },
   { icon: DollarSign, title: "Financeiro integrado", desc: "Cobranças, pagamentos e relatórios financeiros da sua arena." },
   { icon: Trophy, title: "Professores e modalidades", desc: "Organize professores por modalidade com comissão e painel próprio." },
-  { icon: BarChart3, title: "Relatórios e alertas", desc: "Veja inadimplentes, aniversários e métricas importantes da sua arena." },
+  { icon: BarChart3, title: "Agenda de turmas", desc: "Grade semanal de aulas por modalidade — professor cria horários, alunos são vinculados automaticamente." },
   { icon: Smartphone, title: "Acesso pelo celular", desc: "Plataforma responsiva — funciona em qualquer dispositivo, sem instalar nada." },
 ];
 
@@ -21,6 +21,7 @@ const DEFAULT_FEATURES = [
   "Gestão completa de alunos",
   "Financeiro e mensalidades",
   "Professores e comissões",
+  "Agenda de turmas semanal",
   "Relatórios e alertas",
   "Acesso pelo celular",
   "Suporte incluso",

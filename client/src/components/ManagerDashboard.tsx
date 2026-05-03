@@ -147,7 +147,7 @@ interface ManagerDashboardProps {
   onExportarExcel: () => void;
   onRegistrarPagamento: (dados: { studentId: string; description?: string; amount: string; referenceMonth: string; dueDate: string; status: string }) => void;
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
-  onIrTurmas?: () => void;
+  onIrAgenda?: () => void;
   onIrFinanceiro: () => void;
   onIrConfiguracoes?: () => void;
   onIrIntegracoes?: () => void;
@@ -180,7 +180,7 @@ export default function ManagerDashboard({
   onExportarExcel,
   onRegistrarPagamento,
   onCriarCobranca,
-  onIrTurmas,
+  onIrAgenda,
   onIrFinanceiro,
   onIrConfiguracoes,
   onIrIntegracoes,
@@ -761,7 +761,7 @@ export default function ManagerDashboard({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const handleSidebarAction = (section: string) => {
-    if (section === "turmas") { onIrTurmas?.(); return; }
+    if (section === "agenda") { onIrAgenda?.(); return; }
     if (section === "financeiro") { onIrFinanceiro(); return; }
     if (section === "alertas") { onIrAlertas?.(); return; }
     if (section === "configuracoes") { onIrConfiguracoes?.(); return; }

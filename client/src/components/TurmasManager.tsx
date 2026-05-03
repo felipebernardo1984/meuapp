@@ -76,6 +76,7 @@ interface AlunoTurma {
 
 interface TurmasManagerProps {
   onVoltar: () => void;
+  professorContext?: { id: string; modalidade: string; nome?: string };
 }
 
 const emptyForm = {
@@ -89,7 +90,7 @@ const emptyForm = {
   cor: "#1565C0",
 };
 
-export default function TurmasManager({ onVoltar }: TurmasManagerProps) {
+export default function TurmasManager({ onVoltar, professorContext }: TurmasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [view, setView] = useState<"calendario" | "lista">("calendario");
@@ -148,9 +149,14 @@ export default function TurmasManager({ onVoltar }: TurmasManagerProps) {
   });
 
   // Helpers
-  const openNova = () => {
+  const openNova = (diaPre?: string) => {
     setEditandoId(null);
-    setFormData(emptyForm);
+    setFormData({
+      ...emptyForm,
+      diasSemana: diaPre ? [diaPre] : [],
+      modalidade: professorContext?.modalidade ?? "",
+      professorId: professorContext?.id ?? "",
+    });
     setDialogTurma(true);
   };
 
@@ -209,12 +215,17 @@ export default function TurmasManager({ onVoltar }: TurmasManagerProps) {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-turmas">
+          <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-agenda">
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-blue-600" />
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Turmas</h1>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Agenda</h1>
+              {professorContext?.nome && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">{professorContext.nome}</p>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -236,7 +247,7 @@ export default function TurmasManager({ onVoltar }: TurmasManagerProps) {
               Lista
             </button>
           </div>
-          <Button onClick={openNova} data-testid="button-nova-turma" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
+          <Button onClick={() => openNova()} data-testid="button-nova-turma" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
             <Plus className="h-4 w-4" />
             Nova Turma
           </Button>
@@ -254,7 +265,7 @@ export default function TurmasManager({ onVoltar }: TurmasManagerProps) {
             <CalendarDays className="h-12 w-12 text-gray-300 mb-4" />
             <p className="text-gray-500 font-medium mb-1">Nenhuma turma cadastrada</p>
             <p className="text-sm text-gray-400 mb-4">Crie sua primeira turma para organizar horários e alunos.</p>
-            <Button onClick={openNova} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
+            <Button onClick={() => openNova()} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
               <Plus className="h-4 w-4" />Nova Turma
             </Button>
           </div>
@@ -270,8 +281,13 @@ export default function TurmasManager({ onVoltar }: TurmasManagerProps) {
                 </div>
                 <div className="flex flex-col gap-2 min-h-[120px]">
                   {turmasPorDia(dia.id).length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-16 flex items-center justify-center">
-                      <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                    <div
+                      className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-16 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
+                      onClick={() => openNova(dia.id)}
+                      title={`Adicionar aula na ${dia.label}`}
+                      data-testid={`dia-vazio-${dia.id}`}
+                    >
+                      <Plus className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 transition-colors" />
                     </div>
                   ) : (
                     turmasPorDia(dia.id).map((t) => (

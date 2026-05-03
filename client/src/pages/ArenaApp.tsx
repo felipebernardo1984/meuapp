@@ -32,7 +32,8 @@ export default function ArenaApp() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [lembrarDados, setLembrarDados] = useState(false);
   const [esqueceuSenha, setEsqueceuSenha] = useState(false);
-  const [gestorTab, setGestorTab] = useState<"dashboard" | "turmas" | "financeiro" | "configuracoes" | "integracoes" | "alertas">("dashboard");
+  const [gestorTab, setGestorTab] = useState<"dashboard" | "agenda" | "financeiro" | "configuracoes" | "integracoes" | "alertas">("dashboard");
+  const [professorView, setProfessorView] = useState<"dashboard" | "agenda">("dashboard");
   const [resetEmail, setResetEmail] = useState("");
   const [resetEnviado, setResetEnviado] = useState(false);
 
@@ -426,7 +427,7 @@ export default function ArenaApp() {
         />
       )}
 
-      {sessao.tipo === "professor" && (
+      {sessao.tipo === "professor" && professorView === "dashboard" && (
         <TeacherDashboard
           teacherName={sessao.professor.nome}
           photoUrl={sessao.professor.photoUrl ?? undefined}
@@ -461,6 +462,18 @@ export default function ArenaApp() {
           onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
           onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
           onUpdatePhoto={(photoUrl: string) => editarProfessor.mutate({ id: sessao.professor.id, photoUrl })}
+          onIrAgenda={() => setProfessorView("agenda")}
+        />
+      )}
+
+      {sessao.tipo === "professor" && professorView === "agenda" && (
+        <TurmasManager
+          onVoltar={() => setProfessorView("dashboard")}
+          professorContext={{
+            id: sessao.professor.id,
+            modalidade: sessao.professor.modalidade,
+            nome: sessao.professor.nome,
+          }}
         />
       )}
 
@@ -503,7 +516,7 @@ export default function ArenaApp() {
               onExportarExcel={() => alert("Exportar Excel em breve")}
               onRegistrarPagamento={(dados: any) => registrarPagamento.mutate(dados)}
               onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
-              onIrTurmas={() => setGestorTab("turmas")}
+              onIrAgenda={() => setGestorTab("agenda")}
               onIrFinanceiro={() => setGestorTab("financeiro")}
               onIrConfiguracoes={() => setGestorTab("configuracoes")}
               onIrIntegracoes={() => setGestorTab("integracoes")}
@@ -517,7 +530,7 @@ export default function ArenaApp() {
               onReativarAluno={(alunoId: string) => reativarAluno.mutate(alunoId)}
             />
           )}
-          {gestorTab === "turmas" && (
+          {gestorTab === "agenda" && (
             <TurmasManager onVoltar={() => setGestorTab("dashboard")} />
           )}
           {gestorTab === "financeiro" && (
