@@ -227,12 +227,12 @@ export default function StudentDashboard({
             )}
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-nowrap">
-              <h1 className="text-2xl font-semibold whitespace-nowrap" data-testid="text-student-name">
-                {studentName}
-              </h1>
-              <span className="text-muted-foreground whitespace-nowrap">|</span>
-              <p className="text-base text-muted-foreground whitespace-nowrap">{modalidade}</p>
-            <Button variant="outline" size="sm" className="w-fit" data-testid="button-agenda-professor">
+            <h1 className="text-2xl font-semibold whitespace-nowrap" data-testid="text-student-name">
+              {studentName}
+            </h1>
+            <span className="text-muted-foreground whitespace-nowrap">|</span>
+            <p className="text-base text-muted-foreground whitespace-nowrap">{modalidade}</p>
+            <Button variant="outline" size="sm" className="w-fit ml-2" data-testid="button-agenda-professor">
               <Calendar className="h-4 w-4 mr-2" />
               Agenda
             </Button>
