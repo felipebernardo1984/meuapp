@@ -185,7 +185,6 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
   const { data: recursos = [] } = useQuery<Recurso[]>({ queryKey: ["/api/recursos"] });
   const [novoRecursoNome, setNovoRecursoNome] = useState("");
-  const [editandoRecursoId, setEditandoRecursoId] = useState<string | null>(null);
   const [editandoRecursoNome, setEditandoRecursoNome] = useState("");
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
@@ -227,7 +226,6 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
     mutationFn: ({ id, nome }: { id: string; nome: string }) => apiRequest("PUT", `/api/recursos/${id}`, { nome, ativo: true }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/recursos"] });
-      setEditandoRecursoId(null);
       setEditandoRecursoNome("");
       toast({ title: "Sala atualizada" });
     },
@@ -1032,49 +1030,75 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                   ))}
                 </SelectContent>
               </Select>
-              <div className="space-y-1.5">
-                {recursos.map((r) => (
-                  <div key={r.id} className="flex items-center gap-2 rounded-md border px-3 py-2">
-                    {editandoRecursoId === r.id ? (
-                      <>
-                        <Input
-                          value={editandoRecursoNome}
-                          onChange={(e) => setEditandoRecursoNome(e.target.value)}
-                          className="h-9"
-                          data-testid={`input-sala-${r.id}`}
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => atualizarRecurso.mutate({ id: r.id, nome: editandoRecursoNome.trim() })}
-                          data-testid={`button-salvar-sala-${r.id}`}
-                        >
-                          Salvar
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => setEditandoRecursoId(null)}>
-                          Cancelar
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="flex-1 text-sm">{r.nome}</span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditandoRecursoId(r.id);
-                            setEditandoRecursoNome(r.nome);
-                          }}
-                          data-testid={`button-editar-sala-${r.id}`}
-                        >
-                          Editar
-                        </Button>
-                      </>
-                    )}
+              <Select
+                value={formData.recursoId || "_none"}
+                onValueChange={(v) => {
+                  if (v.startsWith("_edit:")) {
+                    const id = v.replace("_edit:", "");
+                    const recurso = recursos.find((r) => r.id === id);
+                    if (recurso) {
+                      setEditandoRecursoNome(recurso.nome);
+                      setFormData((p) => ({ ...p, recursoId: id }));
+                    }
+                    return;
+                  }
+                  setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }));
+                }}
+              >
+                <SelectTrigger data-testid="select-turma-recurso">
+                  <SelectValue placeholder="Selecionar espaço..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Sem espaço específico</SelectItem>
+                  <div className="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">Espaços cadastrados</div>
+                  {recursos.filter((r) => r.ativo).map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.nome}
+                    </SelectItem>
+                  ))}
+                  <div className="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">Editar espaço</div>
+                  {recursos.map((r) => (
+                    <SelectItem key={`edit-${r.id}`} value={`_edit:${r.id}`}>
+                      Editar {r.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formData.recursoId.startsWith("_edit:") && (
+                <div className="flex flex-col gap-2 rounded-md border bg-gray-50 dark:bg-gray-900 p-3">
+                  <Input
+                    value={editandoRecursoNome}
+                    onChange={(e) => setEditandoRecursoNome(e.target.value)}
+                    className="h-9"
+                    data-testid="input-editar-sala"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        const id = formData.recursoId.replace("_edit:", "");
+                        const nome = editandoRecursoNome.trim();
+                        if (!nome) return;
+                        atualizarRecurso.mutate({ id, nome });
+                        setFormData((p) => ({ ...p, recursoId: id }));
+                      }}
+                      data-testid="button-salvar-sala"
+                    >
+                      Salvar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFormData((p) => ({ ...p, recursoId: "_none" }))}
+                      data-testid="button-cancelar-editar-sala"
+                    >
+                      Cancelar
+                    </Button>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Dias da semana */}
