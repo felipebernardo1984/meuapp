@@ -394,8 +394,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               <Button
                 onClick={() => openNova()}
                 data-testid="button-nova-turma"
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 gap-1.5"
+                size="lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5"
               >
                 <Plus className="mr-2 h-5 w-5" />
                 Nova Turma
