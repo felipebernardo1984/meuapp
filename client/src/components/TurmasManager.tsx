@@ -529,7 +529,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                         onClick={() => {
                           if (!date) return;
                           if (turmasDia.length > 0) setDiaPopup({ date, turmas: turmasDia });
-                          else openHorarioAulas(JS_DAY_TO_ID[date.getDay()]);
+                          else setSlotPopup({ date, horarioInicio: slotHorarioInicio, horarioFim: slotHorarioFim });
                         }}
                         className={`min-h-[88px] sm:min-h-[120px] p-1.5 sm:p-2 border-b border-r border-gray-100 dark:border-gray-700 ${
                           date ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10" : "bg-gray-50 dark:bg-gray-900/30"
