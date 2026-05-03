@@ -58,7 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Gestão",
     items: [
-      { id: "alunos", label: "Alunos / Cobrança", icon: Users },
+      { id: "alunos", label: "Alunos", icon: Users },
       { id: "professores", label: "Professores", icon: GraduationCap },
       { id: "agenda", label: "Agenda", icon: CalendarDays },
       { id: "planos", label: "Planos", icon: ClipboardList },
