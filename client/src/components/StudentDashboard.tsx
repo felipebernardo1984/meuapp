@@ -241,7 +241,7 @@ export default function StudentDashboard({
               size="sm"
               className="w-fit ml-2"
               onClick={onIrAgenda}
-              data-testid="button-agenda-professor"
+              data-testid="button-agenda-aluno"
             >
               <Calendar className="h-4 w-4 mr-2" />
               Agenda
