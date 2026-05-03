@@ -228,10 +228,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             </div>
           </div>
         </div>
-        <Button onClick={() => openNova()} data-testid="button-nova-turma" className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 text-white">
-          <Plus className="mr-2 h-5 w-5" />
-          Nova Turma
-        </Button>
       </div>
 
       {/* Content */}
