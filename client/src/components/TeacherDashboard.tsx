@@ -623,9 +623,10 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Login <span className="text-destructive">*</span></Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="login de acesso"
+                  type="email"
+                  placeholder="email@exemplo.com"
                   value={novoAluno.login}
                   onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
                   data-testid="input-new-student-login"
@@ -786,9 +787,10 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Login <span className="text-destructive">*</span></Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="login de acesso"
+                  type="email"
+                  placeholder="email@exemplo.com"
                   value={dadosEdicao.login ?? ""}
                   onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value })}
                   data-testid="input-edit-student-login"

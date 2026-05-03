@@ -1388,9 +1388,10 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Login <span className="text-destructive">*</span></Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="login de acesso"
+                  type="email"
+                  placeholder="email@exemplo.com"
                   value={novoAluno.login}
                   onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
                   data-testid="input-manager-student-login"
@@ -2184,9 +2185,10 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Login <span className="text-destructive">*</span></Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="login de acesso"
+                  type="email"
+                  placeholder="email@exemplo.com"
                   value={novoMensalista.login}
                   onChange={(e) => setNovoMensalista({ ...novoMensalista, login: e.target.value })}
                   data-testid="input-nm-login"
@@ -2476,9 +2478,10 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>Login <span className="text-destructive">*</span></Label>
+              <Label>Email <span className="text-destructive">*</span></Label>
               <Input
-                placeholder="Login de acesso do professor"
+                type="email"
+                placeholder="email@exemplo.com"
                 value={formProfessor.login}
                 onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
                 data-testid="input-teacher-login"
@@ -2615,9 +2618,10 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>Login</Label>
+              <Label>Email</Label>
               <Input
-                placeholder="Login de acesso do professor"
+                type="email"
+                placeholder="email@exemplo.com"
                 value={formProfessor.login}
                 onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
                 data-testid="input-edit-teacher-login"
@@ -3305,9 +3309,10 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Login <span className="text-destructive">*</span></Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="login de acesso"
+                  type="email"
+                  placeholder="email@exemplo.com"
                   value={formEditarAluno.login}
                   onChange={(e) => setFormEditarAluno({ ...formEditarAluno, login: e.target.value })}
                   data-testid="input-edit-login"
