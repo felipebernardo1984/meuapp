@@ -209,7 +209,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/recursos"] });
-      setDialogRecursos(false);
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
@@ -866,11 +865,16 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             </Button>
             <div className="space-y-2">
               {recursos.map((r) => (
-                <div key={r.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                <div key={r.id} className="flex items-center justify-between rounded-md border px-3 py-2" data-testid={`recurso-item-${r.id}`}>
                   <span>{r.nome}</span>
                   <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
                 </div>
               ))}
+              {recursos.length > 0 && (
+                <div className="pt-1 text-xs text-muted-foreground">
+                  {recursos.length} ambiente(s) cadastrado(s)
+                </div>
+              )}
             </div>
           </div>
         </DialogContent>
