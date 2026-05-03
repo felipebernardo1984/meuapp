@@ -2397,11 +2397,11 @@ export default function ManagerDashboard({
 
       {/* Dialog cadastrar professor */}
       <Dialog open={dialogProfessor} onOpenChange={setDialogProfessor}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Cadastrar Professor</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
+          <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
             {/* Photo upload */}
             <div className="flex flex-col items-center gap-1.5 pb-1">
               <div className="relative">
@@ -2440,85 +2440,87 @@ export default function ManagerDashboard({
                 />
               )}
             </div>
-            <div className="space-y-1">
-              <Label>Nome do Professor <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="Nome completo"
-                value={formProfessor.nome}
-                onChange={(e) => setFormProfessor({ ...formProfessor, nome: e.target.value })}
-                data-testid="input-teacher-name"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>CPF <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="000.000.000-00"
-                value={formProfessor.cpf}
-                onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value, senha: e.target.value })}
-                data-testid="input-teacher-cpf"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Email <span className="text-destructive">*</span></Label>
-              <Input
-                type="email"
-                placeholder="email@exemplo.com"
-                value={formProfessor.email}
-                onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value, login: e.target.value })}
-                data-testid="input-teacher-email"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Telefone <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="(00) 00000-0000"
-                value={formProfessor.telefone}
-                onChange={(e) => setFormProfessor({ ...formProfessor, telefone: e.target.value })}
-                data-testid="input-teacher-telefone"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Login <span className="text-destructive">*</span></Label>
-              <Input
-                type="email"
-                placeholder="email@exemplo.com"
-                value={formProfessor.login}
-                onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
-                data-testid="input-teacher-login"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Senha <span className="text-destructive">*</span></Label>
-              <Input
-                type="text"
-                placeholder="CPF do professor"
-                value={formProfessor.senha}
-                onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
-                data-testid="input-teacher-senha"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Modalidade <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="Ex: Beach Tennis, Futevôlei, Surf..."
-                value={formProfessor.modalidade}
-                onChange={(e) => setFormProfessor({ ...formProfessor, modalidade: e.target.value })}
-                data-testid="input-teacher-modality"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Comissão (%)</Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                placeholder="Ex: 30"
-                value={formProfessor.percentualComissao}
-                onChange={(e) => setFormProfessor({ ...formProfessor, percentualComissao: e.target.value })}
-                data-testid="input-teacher-comissao"
-              />
-              <p className="text-xs text-muted-foreground">Percentual sobre a receita gerada por check-ins atribuídos a este professor</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1">
+                <Label>Nome do Professor <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Nome completo"
+                  value={formProfessor.nome}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, nome: e.target.value })}
+                  data-testid="input-teacher-name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>CPF <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="000.000.000-00"
+                  value={formProfessor.cpf}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value, senha: e.target.value })}
+                  data-testid="input-teacher-cpf"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Telefone <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="(00) 00000-0000"
+                  value={formProfessor.telefone}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, telefone: e.target.value })}
+                  data-testid="input-teacher-telefone"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Email <span className="text-destructive">*</span></Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={formProfessor.email}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value, login: e.target.value })}
+                  data-testid="input-teacher-email"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login <span className="text-destructive">*</span></Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={formProfessor.login}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
+                  data-testid="input-teacher-login"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Senha <span className="text-destructive">*</span></Label>
+                <Input
+                  type="text"
+                  placeholder="CPF do professor"
+                  value={formProfessor.senha}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
+                  data-testid="input-teacher-senha"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Modalidade <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Ex: Beach Tennis, Futevôlei, Surf..."
+                  value={formProfessor.modalidade}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, modalidade: e.target.value })}
+                  data-testid="input-teacher-modality"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Comissão (%)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="Ex: 30"
+                  value={formProfessor.percentualComissao}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, percentualComissao: e.target.value })}
+                  data-testid="input-teacher-comissao"
+                />
+                <p className="text-xs text-muted-foreground">Percentual sobre a receita gerada por check-ins atribuídos a este professor</p>
+              </div>
             </div>
           </div>
           <DialogFooter>
