@@ -130,6 +130,7 @@ interface NovoAlunoDados {
 }
 
 interface ManagerDashboardProps {
+  arenaName?: string;
   gestorName?: string;
   planos: Plano[];
   alunos: AlunoGestor[];
