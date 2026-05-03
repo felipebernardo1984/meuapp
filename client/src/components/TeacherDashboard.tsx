@@ -289,58 +289,60 @@ export default function TeacherDashboard({
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="flex flex-col items-center text-center sm:text-left sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-3 py-3 sm:px-4 sm:py-4 shadow-sm overflow-hidden w-full sm:min-w-[180px] sm:max-w-[180px]">
-          <Avatar className="h-20 w-20 sm:h-28 sm:w-28">
-            <AvatarImage src={photoUrl} alt={teacherName} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-              {teacherInitials}
-            </AvatarFallback>
-          </Avatar>
-          {onUpdatePhoto && (
-            <label
-              className="absolute bottom-4 right-4 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-md"
-              title="Alterar foto"
-              data-testid="label-teacher-photo-upload"
-            >
-              <Camera className="h-3.5 w-3.5" />
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handlePhotoSelect(file);
-                  e.target.value = "";
-                }}
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
+      <div className="flex flex-col items-center text-center sm:text-left sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+        <div className="flex flex-col items-center sm:items-start sm:flex-row sm:items-center gap-4 min-w-0">
+          <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-3 py-3 shadow-sm overflow-hidden w-[140px] h-[140px] sm:w-[180px] sm:h-[180px]">
+            <Avatar className="h-20 w-20 sm:h-28 sm:w-28">
+              <AvatarImage src={photoUrl} alt={teacherName} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                {teacherInitials}
+              </AvatarFallback>
+            </Avatar>
+            {onUpdatePhoto && (
+              <label
+                className="absolute bottom-4 right-4 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-md"
+                title="Alterar foto"
+                data-testid="label-teacher-photo-upload"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoSelect(file);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+            {cropSrc && onUpdatePhoto && (
+              <PhotoCropModal
+                imageSrc={cropSrc}
+                onConfirm={(b64) => { onUpdatePhoto(b64); setCropSrc(null); }}
+                onRemove={() => { onUpdatePhoto(""); setCropSrc(null); }}
+                onCancel={() => setCropSrc(null)}
               />
-            </label>
-          )}
-          {cropSrc && onUpdatePhoto && (
-            <PhotoCropModal
-              imageSrc={cropSrc}
-              onConfirm={(b64) => { onUpdatePhoto(b64); setCropSrc(null); }}
-              onRemove={() => { onUpdatePhoto(""); setCropSrc(null); }}
-              onCancel={() => setCropSrc(null)}
-            />
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
-          <h1 className="text-2xl font-bold leading-tight break-words sm:whitespace-nowrap" data-testid="text-teacher-name">
-            {teacherName}
-          </h1>
-          <span className="text-muted-foreground hidden sm:inline">|</span>
-          <p className="text-muted-foreground">{modalidade}</p>
+            )}
+          </div>
+          <div className="flex items-center justify-center sm:justify-start gap-2 min-w-0 flex-nowrap">
+            <h1 className="text-xl sm:text-2xl font-semibold break-words sm:whitespace-nowrap" data-testid="text-teacher-name">
+              {teacherName}
+            </h1>
+            <span className="text-muted-foreground hidden sm:inline">|</span>
+            <p className="text-sm sm:text-base text-muted-foreground break-words">{modalidade}</p>
+          </div>
           {onIrAgenda && (
             <Button
               variant="outline"
               size="sm"
               onClick={onIrAgenda}
               data-testid="button-ir-agenda"
-              className="w-full sm:w-auto gap-2 sm:ml-2"
+              className="w-full sm:w-fit sm:ml-2"
             >
-              <CalendarDays className="h-4 w-4" />
+              <CalendarDays className="h-4 w-4 mr-2" />
               Agenda
             </Button>
           )}
@@ -363,7 +365,7 @@ export default function TeacherDashboard({
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-3">
         <p className="text-sm font-medium text-muted-foreground">
           Alunos ({alunos.length})
         </p>
