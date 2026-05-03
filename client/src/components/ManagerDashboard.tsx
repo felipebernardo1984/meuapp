@@ -2490,7 +2490,7 @@ export default function ManagerDashboard({
             <div className="space-y-1">
               <Label>Senha <span className="text-destructive">*</span></Label>
               <Input
-                type="password"
+                type="text"
                 placeholder="CPF do professor"
                 value={formProfessor.senha}
                 onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
