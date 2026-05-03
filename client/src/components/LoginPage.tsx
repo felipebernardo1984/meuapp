@@ -25,18 +25,18 @@ export default function LoginPage({ onLogin, error }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-3 sm:p-4">
+      <div className="w-full max-w-md space-y-4 sm:space-y-6">
         <Card className="border-primary/20">
-          <CardHeader className="text-center space-y-2 pb-6">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <CardHeader className="text-center space-y-1.5 sm:space-y-2 pb-4 sm:pb-6">
+            <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               SEVEN SPORTS
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Informe Seus Dados de Acesso
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <Label htmlFor="usuario">Login</Label>
               <Input

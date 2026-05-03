@@ -56,15 +56,15 @@ export default function StudentRegistration({
     formData.compromisso;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-3 sm:p-4">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Cadastro de Aluno</CardTitle>
+          <CardTitle className="text-center sm:text-left">Cadastro de Aluno</CardTitle>
           <CardDescription>
             Preencha seus dados para começar a treinar na Seven Sports
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           <div className="flex justify-center">
             <div className="relative">
               <Avatar className="h-24 w-24">
@@ -186,17 +186,17 @@ export default function StudentRegistration({
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 w-full"
               onClick={onCancel}
               data-testid="button-cancel"
             >
               Cancelar
             </Button>
             <Button
-              className="flex-1"
+              className="flex-1 w-full"
               disabled={!canSubmit}
               onClick={() => onRegister(formData)}
               data-testid="button-register"

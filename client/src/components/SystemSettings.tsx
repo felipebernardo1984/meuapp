@@ -127,15 +127,15 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
     : "Gerencie valores por check-in por integração e modalidade";
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3 mb-6">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-4 sm:mb-6 text-center sm:text-left">
         <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-settings-top">
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <div className="flex items-center gap-2 flex-1">
+        <div className="flex items-center justify-center sm:justify-start gap-2 flex-1 min-w-0">
           {headingIcon}
           <div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{headingTitle}</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{headingTitle}</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">{headingDesc}</p>
           </div>
         </div>
@@ -194,9 +194,9 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                         className="border rounded-lg p-4 space-y-4"
                         data-testid={`card-modalidade-settings-${modalidade}`}
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                           <h3 className="font-semibold text-base">{modalidade}</h3>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 self-end sm:self-auto">
                             {isDirty && <Badge variant="outline" className="text-orange-600 border-orange-300">Alterado</Badge>}
                             <Button
                               size="sm"
