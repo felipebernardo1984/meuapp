@@ -190,7 +190,7 @@ export default function StudentDashboard({
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex items-start justify-between gap-4 mb-6">
-        <div className="flex items-start gap-4 min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
           <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-4 py-4 shadow-sm overflow-hidden w-[180px] h-[180px]">
             <Avatar className="h-28 w-28 mt-1">
               <AvatarImage src={photoUrl} alt={studentName} />
@@ -226,14 +226,12 @@ export default function StudentDashboard({
               />
             )}
           </div>
-          <div className="flex flex-col gap-2 min-w-0 pt-6">
-            <div className="flex items-center gap-2 min-w-0 flex-nowrap">
+          <div className="flex items-center gap-2 min-w-0 flex-nowrap">
               <h1 className="text-2xl font-semibold whitespace-nowrap" data-testid="text-student-name">
                 {studentName}
               </h1>
               <span className="text-muted-foreground whitespace-nowrap">|</span>
               <p className="text-base text-muted-foreground whitespace-nowrap">{modalidade}</p>
-            </div>
             <Button variant="outline" size="sm" className="w-fit" data-testid="button-agenda-professor">
               <Calendar className="h-4 w-4 mr-2" />
               Agenda
