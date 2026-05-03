@@ -148,7 +148,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   const [turmaAlunos, setTurmaAlunos] = useState<Turma | null>(null);
   const [dialogRecursos, setDialogRecursos] = useState(false);
   const [recursoNome, setRecursoNome] = useState("");
-  const [recursoSalvo, setRecursoSalvo] = useState<Recurso | null>(null);
   const [confirmExcluirRecurso, setConfirmExcluirRecurso] = useState<Recurso | null>(null);
 
   const [confirmExcluir, setConfirmExcluir] = useState<Turma | null>(null);
@@ -209,24 +208,12 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
   const salvarRecurso = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
-    onSuccess: async (_, variables: any) => {
+    onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
-      setRecursoSalvo({ id: `local-${Date.now()}`, nome: variables.nome, ativo: variables.ativo ?? true });
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
     onError: (error: any) => toast({ title: error?.message || "Erro ao salvar recurso", variant: "destructive" }),
-  });
-
-  const excluirRecurso = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/recursos/${id}`),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
-      setConfirmExcluirRecurso(null);
-      setRecursoSalvo(null);
-      toast({ title: "Sala excluída" });
-    },
-    onError: () => toast({ title: "Erro ao excluir sala", variant: "destructive" }),
   });
 
   // Helpers
@@ -885,30 +872,15 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             <div className="space-y-2">
               <Label>Salas cadastradas</Label>
               <div className="space-y-2 max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                {[...recursos, ...(recursoSalvo ? [recursoSalvo] : [])]
-                  .filter((r, index, list) => list.findIndex((x) => x.nome === r.nome) === index)
-                  .length > 0 ? (
-                  [...recursos, ...(recursoSalvo ? [recursoSalvo] : [])]
-                    .filter((r, index, list) => list.findIndex((x) => x.nome === r.nome) === index)
-                    .map((r) => (
+                {recursos.length > 0 ? (
+                  recursos.map((r) => (
                     <div
-                      key={`${r.nome}-${r.id}`}
+                      key={r.id}
                       className="flex items-center justify-between rounded-md border px-3 py-2"
-                      data-testid={`recurso-item-${r.nome}`}
+                      data-testid={`recurso-item-${r.id}`}
                     >
                       <span>{r.nome}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-red-500 hover:text-red-600"
-                          onClick={() => setConfirmExcluirRecurso(r)}
-                          data-testid={`button-excluir-recurso-${r.nome}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
                     </div>
                   ))
                 ) : (
@@ -923,26 +895,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
           </div>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!confirmExcluirRecurso} onOpenChange={(open) => { if (!open) setConfirmExcluirRecurso(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir sala?</AlertDialogTitle>
-            <AlertDialogDescription>
-              A sala <strong>{confirmExcluirRecurso?.nome}</strong> será excluída permanentemente. Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => confirmExcluirRecurso && excluirRecurso.mutate(confirmExcluirRecurso.id)}
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Dialog: Alunos da Turma */}
       <Dialog open={dialogAlunos} onOpenChange={(open) => { setDialogAlunos(open); if (!open) setTurmaAlunos(null); }}>
