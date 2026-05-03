@@ -2450,31 +2450,12 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>CPF</Label>
+              <Label>CPF <span className="text-destructive">*</span></Label>
               <Input
                 placeholder="000.000.000-00"
                 value={formProfessor.cpf}
                 onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value })}
                 data-testid="input-teacher-cpf"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                placeholder="email@exemplo.com"
-                value={formProfessor.email}
-                onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value })}
-                data-testid="input-teacher-email"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Telefone <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="(00) 00000-0000"
-                value={formProfessor.telefone}
-                onChange={(e) => setFormProfessor({ ...formProfessor, telefone: e.target.value })}
-                data-testid="input-teacher-telefone"
               />
             </div>
             <div className="space-y-1">
@@ -2485,6 +2466,15 @@ export default function ManagerDashboard({
                 value={formProfessor.email}
                 onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value, login: e.target.value })}
                 data-testid="input-teacher-email"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Telefone <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="(00) 00000-0000"
+                value={formProfessor.telefone}
+                onChange={(e) => setFormProfessor({ ...formProfessor, telefone: e.target.value })}
+                data-testid="input-teacher-telefone"
               />
             </div>
             <div className="space-y-1">
@@ -2501,7 +2491,7 @@ export default function ManagerDashboard({
               <Label>Senha <span className="text-destructive">*</span></Label>
               <Input
                 type="password"
-                placeholder="CPF vinculado"
+                placeholder="CPF do professor"
                 value={formProfessor.senha}
                 onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value, cpf: e.target.value })}
                 data-testid="input-teacher-senha"
