@@ -291,7 +291,7 @@ export default function TeacherDashboard({
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex flex-col items-center text-center sm:text-left sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div className="flex flex-col items-center sm:items-start sm:flex-row sm:items-center gap-4 min-w-0">
-          <div className="relative shrink-0 flex flex-col items-center gap-1 rounded-2xl border bg-card px-2 py-2 shadow-sm overflow-hidden w-[140px] h-[140px] sm:w-[180px] sm:h-[180px]">
+          <div className="relative shrink-0 flex flex-col items-center gap-1 rounded-2xl border bg-card px-2 py-2 shadow-sm overflow-hidden w-[130px] h-[120px] sm:w-[170px] sm:h-[150px]">
             <Avatar className="h-20 w-20 sm:h-28 sm:w-28">
               <AvatarImage src={photoUrl} alt={teacherName} />
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
