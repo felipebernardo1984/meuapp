@@ -305,23 +305,23 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   return (
     <div className="flex flex-col h-full min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-agenda">
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <div className="flex items-center gap-2 flex-1">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <CalendarDays className="h-5 w-5 text-blue-600" />
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Agenda</h1>
             {professorContext?.nome && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">{professorContext.nome}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 break-words">{professorContext.nome}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-4 sm:p-6">
         {isLoading ? (
           <div className="flex items-center justify-center h-40 text-gray-400">
             <RefreshCw className="h-5 w-5 animate-spin mr-2" />Carregando horários de aulas...
@@ -329,7 +329,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
         ) : (
           <>
             {/* View toggle + Horário de Aulas */}
-            <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   variant={view === "mensal" ? "default" : "outline"}
@@ -366,7 +366,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                 onClick={() => openNova()}
                 data-testid="button-horario-aula"
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5 justify-center"
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-12 sm:h-14 text-base sm:text-lg gap-1.5 justify-center"
               >
                 <Plus className="h-5 w-5" />
                 Horário de Aulas
@@ -375,7 +375,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
             {view === "mensal" ? (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700">
                   <Button variant="ghost" size="icon" onClick={prevMonth} data-testid="button-mes-anterior">
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -388,12 +388,12 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                 </div>
                 <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700">
                   {WEEK_HEADER.map((h) => (
-                    <div key={h} className="py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    <div key={h} className="py-2 text-center text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                       {h}
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 min-h-[70vh]">
+                <div className="grid grid-cols-7 min-h-[70vh] overflow-x-auto">
                   {calDays.map((date, idx) => {
                     const turmasDia = date ? turmasForDate(date) : [];
                     const hoje = date ? isToday(date) : false;
@@ -406,13 +406,13 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                           if (turmasDia.length > 0) setDiaPopup({ date, turmas: turmasDia });
                           else setSlotPopup({ date, horarioInicio: slotHorarioInicio, horarioFim: slotHorarioFim });
                         }}
-                        className={`min-h-[120px] p-2 border-b border-r border-gray-100 dark:border-gray-700 ${
+                        className={`min-h-[88px] sm:min-h-[120px] p-1.5 sm:p-2 border-b border-r border-gray-100 dark:border-gray-700 ${
                           date ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10" : "bg-gray-50 dark:bg-gray-900/30"
                         } ${idx % 7 === 6 ? "border-r-0" : ""}`}
                       >
                         {date && (
                           <>
-                            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium mb-1.5 ${
+                            <div className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[10px] sm:text-sm font-medium mb-1 ${
                               hoje ? "bg-blue-600 text-white" : "text-gray-700 dark:text-gray-300"
                             }`}>
                               {date.getDate()}
@@ -421,7 +421,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                               {turmasDia.slice(0, 4).map((t) => (
                                 <div
                                   key={t.id}
-                                  className="rounded px-1.5 py-0.5 text-white text-[10px] font-medium truncate leading-tight"
+                                  className="rounded px-1 py-0.5 text-white text-[9px] sm:text-[10px] font-medium truncate leading-tight"
                                   style={{ backgroundColor: t.cor }}
                                   title={`${t.nome} ${t.horarioInicio}–${t.horarioFim}`}
                                 >
@@ -429,10 +429,10 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                                 </div>
                               ))}
                               {turmasDia.length === 0 && (
-                                <div className="text-[10px] text-gray-300 dark:text-gray-600 px-1">Sem aula</div>
+                                <div className="text-[9px] sm:text-[10px] text-gray-300 dark:text-gray-600 px-1">Sem aula</div>
                               )}
                               {turmasDia.length > 4 && (
-                                <span className="text-[10px] text-gray-400 pl-1">+{turmasDia.length - 4} mais</span>
+                                <span className="text-[9px] sm:text-[10px] text-gray-400 pl-1">+{turmasDia.length - 4} mais</span>
                               )}
                             </div>
                           </>
@@ -450,18 +450,18 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               </div>
             ) : view === "semanal" ? (
               /* ── WEEKLY GRID ──────────────────────────────────────────── */
-              <div className="grid grid-cols-7 gap-3 min-w-[700px]">
+              <div className="grid grid-cols-7 gap-2 sm:gap-3 min-w-[700px]">
                 {DIAS.map((dia) => (
                   <div key={dia.id} className="flex flex-col gap-2">
                     <div className="text-center">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                         {dia.label}
                       </span>
                     </div>
-                    <div className="flex flex-col gap-2 min-h-[120px]">
+                    <div className="flex flex-col gap-2 min-h-[104px] sm:min-h-[120px]">
                       {turmasPorDia(dia.id).length === 0 ? (
                         <div
-                          className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-16 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
+                          className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 h-14 sm:h-16 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
                           onClick={() => openNova(dia.id)}
                           title={`Adicionar aula na ${dia.label}`}
                           data-testid={`dia-vazio-${dia.id}`}
@@ -473,18 +473,18 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                           <div
                             key={`${dia.id}-${t.id}`}
                             data-testid={`turma-card-${t.id}-${dia.id}`}
-                            className="rounded-lg p-2.5 text-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                            className="rounded-lg p-2 text-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
                             style={{ backgroundColor: t.cor }}
                             onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
                           >
-                            <p className="font-semibold text-xs leading-tight truncate">{t.nome}</p>
-                            <p className="text-[11px] opacity-90 mt-0.5">{t.horarioInicio}–{t.horarioFim}</p>
+                            <p className="font-semibold text-[11px] leading-tight truncate">{t.nome}</p>
+                            <p className="text-[10px] opacity-90 mt-0.5">{t.horarioInicio}–{t.horarioFim}</p>
                             {t.professorNome && (
-                              <p className="text-[10px] opacity-80 truncate mt-0.5">{t.professorNome}</p>
+                              <p className="text-[9px] opacity-80 truncate mt-0.5">{t.professorNome}</p>
                             )}
                             <div className="flex items-center gap-1 mt-1.5">
                               <Users className="h-2.5 w-2.5 opacity-80" />
-                              <span className="text-[10px] opacity-90">{t.alunosCount}/{t.capacidadeMaxima}</span>
+                              <span className="text-[9px] opacity-90">{t.alunosCount}/{t.capacidadeMaxima}</span>
                             </div>
                           </div>
                         ))

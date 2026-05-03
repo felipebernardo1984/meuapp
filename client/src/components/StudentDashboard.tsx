@@ -191,13 +191,13 @@ export default function StudentDashboard({
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-4 py-4 shadow-sm overflow-hidden w-[180px] h-[180px]">
-            <Avatar className="h-28 w-28 mt-1">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
+          <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-3 py-3 shadow-sm overflow-hidden w-[140px] h-[140px] sm:w-[180px] sm:h-[180px]">
+            <Avatar className="h-20 w-20 sm:h-28 sm:w-28 mt-1">
               <AvatarImage src={photoUrl} alt={studentName} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xl sm:text-2xl">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -230,17 +230,17 @@ export default function StudentDashboard({
             )}
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-nowrap">
-            <h1 className="text-2xl font-semibold whitespace-nowrap" data-testid="text-student-name">
+            <h1 className="text-xl sm:text-2xl font-semibold break-words sm:whitespace-nowrap" data-testid="text-student-name">
               {studentName}
             </h1>
-            <span className="text-muted-foreground whitespace-nowrap">|</span>
-            <p className="text-base text-muted-foreground whitespace-nowrap">{modalidade}</p>
+            <span className="text-muted-foreground hidden sm:inline">|</span>
+            <p className="text-sm sm:text-base text-muted-foreground break-words">{modalidade}</p>
           </div>
           {onIrAgenda && (
             <Button
               variant="outline"
               size="sm"
-              className="w-fit ml-2"
+              className="w-full sm:w-fit sm:ml-2"
               onClick={onIrAgenda}
               data-testid="button-agenda-aluno"
             >
@@ -289,7 +289,7 @@ export default function StudentDashboard({
           {!temCheckins ? (
             <Button
               size="lg"
-              className="w-full h-14 text-lg bg-green-600 hover:bg-green-700 text-white"
+              className="w-full h-12 sm:h-14 text-base sm:text-lg bg-green-600 hover:bg-green-700 text-white"
               data-testid="button-checkin-mensalista"
             >
               <CheckCircle2 className="mr-2 h-5 w-5" />
@@ -298,7 +298,7 @@ export default function StudentDashboard({
           ) : (
             <Button
               size="lg"
-              className="w-full h-14 text-lg"
+              className="w-full h-12 sm:h-14 text-base sm:text-lg"
               onClick={onCheckin}
               data-testid="button-checkin"
             >
