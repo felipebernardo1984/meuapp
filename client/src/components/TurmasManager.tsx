@@ -146,10 +146,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
 
   const [dialogAlunos, setDialogAlunos] = useState(false);
   const [turmaAlunos, setTurmaAlunos] = useState<Turma | null>(null);
-  const [dialogRecursos, setDialogRecursos] = useState(false);
-  const [recursoNome, setRecursoNome] = useState("");
-  const [confirmExcluirRecurso, setConfirmExcluirRecurso] = useState<Recurso | null>(null);
-
   const [confirmExcluir, setConfirmExcluir] = useState<Turma | null>(null);
 
   // Popup for a clicked day
@@ -161,11 +157,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
-  const { data: recursos = [] } = useQuery<Recurso[]>({
-    queryKey: ["/api/recursos"],
-    queryFn: () => fetch("/api/recursos").then((r) => (r.ok ? r.json() : [])),
-    retry: false,
-  });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
     queryFn: () => fetch(`/api/turmas/${turmaAlunos!.id}/alunos`).then((r) => r.json()),
@@ -204,21 +195,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       apiRequest("DELETE", `/api/turmas/${turmaId}/alunos/${alunoId}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"] }); qc.invalidateQueries({ queryKey: ["/api/turmas"] }); toast({ title: "Aluno removido" }); },
     onError: () => toast({ title: "Erro ao remover aluno", variant: "destructive" }),
-  });
-
-  const salvarRecurso = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
-    onSuccess: async (response: any) => {
-      if (response?.lista) {
-        qc.setQueryData(["/api/recursos"], response.lista);
-      } else {
-        await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
-      }
-      setRecursoNome("");
-      setDialogRecursos(true);
-      toast({ title: "Recurso salvo!" });
-    },
-    onError: (error: any) => toast({ title: error?.message || "Erro ao salvar recurso", variant: "destructive" }),
   });
 
   // Helpers
@@ -388,15 +364,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                 >
                   <List className="h-4 w-4" />
                   Lista
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDialogRecursos(true)}
-                  data-testid="button-configuracao-salas"
-                  className="h-9 px-3 gap-1.5"
-                >
-                  {professorContext ? "Salas Disponíveis" : "Configuração de Salas"}
                 </Button>
               </div>
               <Button
@@ -841,62 +808,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               {criarTurma.isPending || editarTurma.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={dialogRecursos} onOpenChange={setDialogRecursos}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{professorContext ? "Salas Disponíveis" : "Configuração de Salas"}</DialogTitle>
-            <DialogDescription>
-              {professorContext
-                ? "Veja apenas as salas liberadas para montar sua agenda."
-                : "Ex: Quadra 1, Quadra 2, Box 1, Box 2"}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            {!professorContext && (
-              <>
-                <Input
-                  value={recursoNome}
-                  onChange={(e) => setRecursoNome(e.target.value)}
-                  placeholder="Ex: Quadra 1"
-                  data-testid="input-recurso-nome"
-                />
-                <Button
-                  onClick={() => salvarRecurso.mutate({ nome: recursoNome.trim(), ativo: true })}
-                  data-testid="button-salvar-recurso"
-                  className="w-full"
-                  disabled={!recursoNome || salvarRecurso.isPending}
-                >
-                  {salvarRecurso.isPending ? "Salvando..." : "Salvar ambiente"}
-                </Button>
-              </>
-            )}
-            <div className="space-y-2">
-              <Label>Salas cadastradas</Label>
-              <div className="space-y-2 max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-                {recursos.length > 0 ? (
-                  recursos.map((r) => (
-                    <div
-                      key={r.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                      data-testid={`recurso-item-${r.id}`}
-                    >
-                      <span>{r.nome}</span>
-                      <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
-                    Nenhuma sala cadastrada.
-                  </div>
-                )}
-                {salvarRecurso.isPending && <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">Salvando ambiente...</div>}
-              </div>
-              {recursos.length > 0 && <div className="pt-1 text-xs text-muted-foreground">{recursos.length} ambiente(s) cadastrado(s)</div>}
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
 
