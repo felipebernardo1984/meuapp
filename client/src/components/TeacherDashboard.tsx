@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, ChevronUp, ChevronDown, ChevronRight, Eye, Camera, CalendarDays, Clock } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -101,7 +101,6 @@ interface TeacherDashboardProps {
   onExcluirAluno: (alunoId: string) => void;
   onRemoverCheckin: (alunoId: string, index: number) => void;
   onUpdatePhoto?: (photoUrl: string) => void;
-  onIrAgenda?: () => void;
 }
 
 export default function TeacherDashboard({
@@ -119,7 +118,6 @@ export default function TeacherDashboard({
   onExcluirAluno,
   onRemoverCheckin,
   onUpdatePhoto,
-  onIrAgenda,
 }: TeacherDashboardProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -172,7 +170,6 @@ export default function TeacherDashboard({
   const [dialogReceita, setDialogReceita] = useState(false);
   const [alunoReceita, setAlunoReceita] = useState<AlunoView | null>(null);
 
-  const [alunosMinimizado, setAlunosMinimizado] = useState(false);
 
   const { data: modalidadeSettings = [] } = useQuery<any[]>({ queryKey: ["/api/configuracoes/modalidades"] });
 
@@ -334,26 +331,6 @@ export default function TeacherDashboard({
         </div>
       </div>
 
-      {/* Botão Abrir Agenda */}
-      {onIrAgenda && (
-        <div className="mb-5">
-          <button
-            data-testid="button-abrir-agenda"
-            onClick={onIrAgenda}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors group"
-          >
-            <div className="flex items-center gap-3">
-              <CalendarDays className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <div className="text-left">
-                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">Abrir Agenda</p>
-                <p className="text-xs text-blue-500 dark:text-blue-400">Grade semanal de turmas — crie e gerencie seus horários</p>
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-blue-400 group-hover:text-blue-600 transition-colors" />
-          </button>
-        </div>
-      )}
-
       <>
       {/* Botão Cadastrar Aluno */}
       <Card className="mb-6">
@@ -370,106 +347,83 @@ export default function TeacherDashboard({
         </CardContent>
       </Card>
 
-      {/* Cabeçalho da seção de alunos com minimizar */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium text-muted-foreground">
           Alunos ({alunos.length})
         </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-foreground"
-          onClick={() => setAlunosMinimizado(!alunosMinimizado)}
-          data-testid="button-toggle-alunos"
-        >
-          {alunosMinimizado ? (
-            <>
-              <ChevronDown className="h-4 w-4 mr-1" />
-              Mostrar alunos
-            </>
-          ) : (
-            <>
-              <ChevronUp className="h-4 w-4 mr-1" />
-              Minimizar alunos
-            </>
-          )}
-        </Button>
       </div>
 
-      {/* Grade de alunos — minimizado: tabela compacta */}
-      {alunosMinimizado && alunos.length > 0 && (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Aluno</TableHead>
-                <TableHead>Plano</TableHead>
-                <TableHead>Check-ins</TableHead>
-                <TableHead>Integração</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {alunos.map((aluno) => {
-                const temCheckins = aluno.plano > 0;
-                const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
-                const initials = aluno.nome.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-                const pendentes = charges.filter((c) => c.studentId === aluno.id && c.status === "pending").length;
-                return (
-                  <TableRow key={aluno.id} data-testid={`row-student-minimized-${aluno.id}`}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7">
-                          <AvatarImage src={aluno.photoUrl} alt={aluno.nome} />
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm leading-tight">{aluno.nome}</p>
-                          {pendentes > 0 && (
-                            <span className="text-xs text-orange-600 dark:text-orange-400">{pendentes} cobrança{pendentes > 1 ? "s" : ""} pend.</span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{aluno.planoTitulo}</TableCell>
-                    <TableCell>
-                      {temCheckins ? (
-                        <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs">
-                          {aluno.checkinsRealizados}/{aluno.plano}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">Mensalista</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {aluno.integrationType && aluno.integrationType !== "none" ? (
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {aluno.integrationType === "wellhub" ? "Wellhub" : aluno.integrationType === "totalpass" ? "TotalPass" : "Mensalista"}
-                          {aluno.integrationPlan ? ` · ${aluno.integrationPlan}` : ""}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        {temCheckins && (
-                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onCheckinManual(aluno.id)} data-testid={`button-mini-checkin-${aluno.id}`}>
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                          </Button>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Aluno</TableHead>
+              <TableHead>Plano</TableHead>
+              <TableHead>Check-ins</TableHead>
+              <TableHead>Integração</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {alunos.map((aluno) => {
+              const temCheckins = aluno.plano > 0;
+              const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
+              const initials = aluno.nome.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+              const pendentes = charges.filter((c) => c.studentId === aluno.id && c.status === "pending").length;
+              return (
+                <TableRow key={aluno.id} data-testid={`row-student-${aluno.id}`}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={aluno.photoUrl} alt={aluno.nome} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm leading-tight">{aluno.nome}</p>
+                        {pendentes > 0 && (
+                          <span className="text-xs text-orange-600 dark:text-orange-400">{pendentes} cobrança{pendentes > 1 ? "s" : ""} pend.</span>
                         )}
-                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => openEditar(aluno)} data-testid={`button-mini-edit-${aluno.id}`}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{aluno.planoTitulo}</TableCell>
+                  <TableCell>
+                    {temCheckins ? (
+                      <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs">
+                        {aluno.checkinsRealizados}/{aluno.plano}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">Mensalista</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {aluno.integrationType && aluno.integrationType !== "none" ? (
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {aluno.integrationType === "wellhub" ? "Wellhub" : aluno.integrationType === "totalpass" ? "TotalPass" : "Mensalista"}
+                        {aluno.integrationPlan ? ` · ${aluno.integrationPlan}` : ""}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      {temCheckins && (
+                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onCheckinManual(aluno.id)} data-testid={`button-mini-checkin-${aluno.id}`}>
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => openEditar(aluno)} data-testid={`button-mini-edit-${aluno.id}`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Grade de alunos — expandido */}
       {!alunosMinimizado && (
