@@ -394,10 +394,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   data-testid="button-configuracao-salas"
                   className="h-9 px-3 gap-1.5"
                 >
-                  <div className="flex flex-col items-start leading-tight">
-                    <span>{professorContext ? "Salas Disponíveis" : "Configuração de Salas"}</span>
-                    <span className="text-[11px] font-normal text-muted-foreground">Ex: Quadra 1, Quadra 2, Box 1, Box 2</span>
-                  </div>
+                  {professorContext ? "Salas Disponíveis" : "Configuração de Salas"}
                 </Button>
               </div>
               <Button
@@ -852,11 +849,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             <DialogDescription>
               {professorContext
                 ? "Veja apenas as salas liberadas para montar sua agenda."
-                : <>
-                    Cadastre ambientes como:
-                    <br />
-                    Quadra 1, Quadra 2, Box 1, Box 2
-                  </>}
+                : "Ex: Quadra 1, Quadra 2, Box 1, Box 2"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
