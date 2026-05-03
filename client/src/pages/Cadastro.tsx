@@ -10,6 +10,7 @@ import { CheckCircle2, Loader2, ArrowLeft, Zap } from "lucide-react";
 export default function Cadastro() {
   const [, navigate] = useLocation();
   const [form, setForm] = useState({
+    cpf: "",
     nome: "",
     email: "",
     login: "",
@@ -22,9 +23,22 @@ export default function Cadastro() {
   const [arenaId, setArenaId] = useState<string | null>(null);
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [key]: e.target.value }));
+    setForm((f) => {
+      const value = e.target.value;
+      if (key === "email") return { ...f, email: value, login: value };
+      if (key === "cpf") return { ...f, cpf: value, senha: value };
+      return { ...f, [key]: value };
+    });
+
+  const handleBlur = (key: "email" | "cpf") => () =>
+    setForm((f) => {
+      if (key === "email" && !f.login) return { ...f, login: f.email };
+      if (key === "cpf" && !f.senha) return { ...f, senha: f.cpf };
+      return f;
+    });
 
   const valido =
+    form.cpf.trim() &&
     form.nome.trim() &&
     form.email.trim() &&
     form.login.trim() &&
@@ -130,6 +144,19 @@ export default function Cadastro() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                placeholder="000.000.000-00"
+                value={form.cpf}
+                onChange={set("cpf")}
+                onBlur={handleBlur("cpf")}
+                data-testid="input-cpf"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="nome">Seu nome</Label>
               <Input
                 id="nome"
@@ -140,6 +167,9 @@ export default function Cadastro() {
                 className="h-11"
               />
             </div>
+            <p className="text-[11px] text-muted-foreground -mt-1">
+              O login será preenchido com o e-mail e a senha com o CPF.
+            </p>
 
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
@@ -149,6 +179,7 @@ export default function Cadastro() {
                 placeholder="seu@email.com"
                 value={form.email}
                 onChange={set("email")}
+                onBlur={handleBlur("email")}
                 data-testid="input-email"
                 className="h-11"
               />
