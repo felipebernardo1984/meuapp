@@ -273,6 +273,7 @@ export default function Home() {
           onCheckin={() => checkinManual.mutate({ id: alunoAtual.id })}
           onRemoverCheckin={(index) => removerCheckin.mutate({ id: alunoAtual.id, index })}
           onCheckinRetroativo={(data, hora) => checkinManual.mutate({ id: alunoAtual.id, data, hora })}
+          onLogout={() => logoutMutation.mutate()}
         />
       )}
 
@@ -310,6 +311,7 @@ export default function Home() {
           onEditarAluno={(alunoId, dados) => editarAluno.mutate({ id: alunoId, ...dados })}
           onExcluirAluno={(alunoId) => excluirAluno.mutate(alunoId)}
           onRemoverCheckin={(alunoId, index) => removerCheckin.mutate({ id: alunoId, index })}
+          onLogout={() => logoutMutation.mutate()}
         />
       )}
 

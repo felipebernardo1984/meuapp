@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight, ChevronDown, ChevronUp, LogOut } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -102,6 +103,7 @@ interface TeacherDashboardProps {
   onRemoverCheckin: (alunoId: string, index: number) => void;
   onUpdatePhoto?: (photoUrl: string) => void;
   onIrAgenda?: () => void;
+  onLogout?: () => void;
 }
 
 export default function TeacherDashboard({
@@ -120,6 +122,7 @@ export default function TeacherDashboard({
   onRemoverCheckin,
   onUpdatePhoto,
   onIrAgenda,
+  onLogout,
 }: TeacherDashboardProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -333,8 +336,8 @@ export default function TeacherDashboard({
             <span className="text-muted-foreground hidden sm:inline">|</span>
             <p className="text-xl sm:text-2xl font-semibold text-foreground break-words">{modalidade}</p>
           </div>
-          {onIrAgenda && (
-            <div className="w-full sm:w-auto sm:ml-auto flex justify-center sm:justify-end">
+          <div className="w-full sm:w-auto sm:ml-auto flex justify-center sm:justify-end gap-2">
+            {onIrAgenda && (
               <Button
                 variant="outline"
                 size="sm"
@@ -345,8 +348,14 @@ export default function TeacherDashboard({
                 <CalendarDays className="h-4 w-4 mr-2" />
                 Agenda
               </Button>
-            </div>
-          )}
+            )}
+            {onLogout && (
+              <Button variant="outline" size="icon" onClick={onLogout} data-testid="button-logout-teacher">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
       </div>
 

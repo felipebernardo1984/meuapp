@@ -26,7 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2, Camera, CalendarDays, GraduationCap } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, Pencil, CalendarClock, QrCode, Receipt, DollarSign, ChevronDown, ChevronUp, Trash2, Camera, CalendarDays, GraduationCap, LogOut } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface Payment {
   id: string;
@@ -73,6 +74,7 @@ interface StudentDashboardProps {
   onEditarCheckin?: (index: number, data: string, hora: string) => void;
   onUpdatePhoto?: (photoUrl: string) => void;
   onIrAgenda?: () => void;
+  onLogout?: () => void;
 }
 
 function paymentStatusBadge(status: string) {
@@ -108,6 +110,7 @@ export default function StudentDashboard({
   onEditarCheckin,
   onUpdatePhoto,
   onIrAgenda,
+  onLogout,
 }: StudentDashboardProps) {
   const [uploading, setUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -236,8 +239,8 @@ export default function StudentDashboard({
             <span className="text-muted-foreground hidden sm:inline">|</span>
             <p className="text-xl sm:text-2xl font-semibold text-foreground break-words">{modalidade}</p>
           </div>
-          {onIrAgenda && (
-            <div className="w-full sm:w-auto sm:ml-auto flex justify-center sm:justify-end">
+          <div className="w-full sm:w-auto sm:ml-auto flex justify-center sm:justify-end gap-2">
+            {onIrAgenda && (
               <Button
                 variant="outline"
                 size="sm"
@@ -248,8 +251,14 @@ export default function StudentDashboard({
                 <Calendar className="h-4 w-4 mr-2" />
                 Agenda
               </Button>
-            </div>
-          )}
+            )}
+            {onLogout && (
+              <Button variant="outline" size="icon" onClick={onLogout} data-testid="button-logout-aluno">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
         {statusMensalidade === "Pendente" && (
           <Badge variant="destructive" data-testid="badge-payment-status">
