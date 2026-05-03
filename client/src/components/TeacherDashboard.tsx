@@ -604,7 +604,7 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Telefone</Label>
+                <Label>Telefone <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={novoAluno.telefone}
