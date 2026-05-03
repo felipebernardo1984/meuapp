@@ -879,6 +879,7 @@ export default function ManagerDashboard({
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         pendingCount={alunosPendentes.length}
+        arenaName={arenaName}
         onLogout={onLogout}
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
