@@ -66,8 +66,6 @@ interface Turma {
   modalidade: string;
   professorId?: string | null;
   professorNome?: string | null;
-  recursoId?: string | null;
-  recursoNome?: string | null;
   diasSemana: string;
   horarioInicio: string;
   horarioFim: string;
@@ -82,12 +80,6 @@ interface Professor {
   id: string;
   nome: string;
   modalidade: string;
-}
-
-interface Recurso {
-  id: string;
-  nome: string;
-  ativo: boolean;
 }
 
 interface Aluno {
@@ -112,7 +104,6 @@ const emptyForm = {
   nome: "",
   modalidade: "",
   professorId: "",
-  recursoId: "",
   diasSemana: [] as string[],
   horarioInicio: "08:00",
   horarioFim: "09:00",
@@ -215,7 +206,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       nome: t.nome,
       modalidade: t.modalidade,
       professorId: t.professorId ?? "",
-      recursoId: t.recursoId ?? "",
       diasSemana: t.diasSemana ? t.diasSemana.split("|").filter(Boolean) : [],
       horarioInicio: t.horarioInicio,
       horarioFim: t.horarioFim,
