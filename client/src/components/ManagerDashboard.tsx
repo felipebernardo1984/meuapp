@@ -1378,22 +1378,22 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="col-span-2 space-y-1">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  placeholder="email@exemplo.com"
-                  value={novoAluno.email}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value })}
-                  data-testid="input-manager-student-email"
-                />
-              </div>
-              <div className="space-y-1">
                 <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
+                  value={novoAluno.email}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value, login: e.target.value })}
+                  data-testid="input-manager-student-email"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login <span className="text-destructive">*</span></Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
                   value={novoAluno.login}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value, email: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
                   data-testid="input-manager-student-login"
                 />
               </div>
@@ -2469,7 +2469,7 @@ export default function ManagerDashboard({
               />
             </div>
             <div className="space-y-1">
-              <Label>Telefone</Label>
+              <Label>Telefone <span className="text-destructive">*</span></Label>
               <Input
                 placeholder="(00) 00000-0000"
                 value={formProfessor.telefone}
@@ -2482,8 +2482,18 @@ export default function ManagerDashboard({
               <Input
                 type="email"
                 placeholder="email@exemplo.com"
+                value={formProfessor.email}
+                onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value, login: e.target.value })}
+                data-testid="input-teacher-email"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Login <span className="text-destructive">*</span></Label>
+              <Input
+                type="email"
+                placeholder="email@exemplo.com"
                 value={formProfessor.login}
-                  onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value, email: e.target.value })}
+                onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
                 data-testid="input-teacher-login"
               />
             </div>
@@ -2491,9 +2501,9 @@ export default function ManagerDashboard({
               <Label>Senha <span className="text-destructive">*</span></Label>
               <Input
                 type="password"
-                  placeholder="CPF vinculado"
+                placeholder="CPF vinculado"
                 value={formProfessor.senha}
-                  onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value, cpf: e.target.value })}
+                onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value, cpf: e.target.value })}
                 data-testid="input-teacher-senha"
               />
             </div>
@@ -3290,7 +3300,7 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Telefone</Label>
+                <Label>Telefone <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={formEditarAluno.telefone}
@@ -3299,12 +3309,12 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Email <span className="text-destructive">*</span></Label>
+                <Label>Login <span className="text-destructive">*</span></Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
                   value={formEditarAluno.login}
-                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, login: e.target.value, email: e.target.value })}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, login: e.target.value })}
                   data-testid="input-edit-login"
                 />
               </div>
