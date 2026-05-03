@@ -228,8 +228,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             </div>
           </div>
         </div>
-        <Button onClick={() => openNova()} data-testid="button-nova-turma" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 h-10 px-4">
-          <Plus className="h-4 w-4" />
+        <Button onClick={() => openNova()} data-testid="button-nova-turma" className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 text-white">
+          <Plus className="mr-2 h-5 w-5" />
           Nova Turma
         </Button>
       </div>
@@ -245,8 +245,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             <CalendarDays className="h-12 w-12 text-gray-300 mb-4" />
             <p className="text-gray-500 font-medium mb-1">Nenhuma turma cadastrada</p>
             <p className="text-sm text-gray-400 mb-4">Crie sua primeira turma para organizar horários e alunos.</p>
-            <Button onClick={() => openNova()} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 h-10 px-4">
-              <Plus className="h-4 w-4" />Nova Turma
+            <Button onClick={() => openNova()} className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 text-white">
+              <Plus className="mr-2 h-5 w-5" />Nova Turma
             </Button>
           </div>
         ) : view === "calendario" ? (
