@@ -485,6 +485,8 @@ export default function ArenaApp() {
             <ManagerDashboard
               arenaName={sessao.arenaName ?? arena?.name}
               gestorName={sessao.gestorName}
+              responsavelName={sessao.gestorName}
+              gestorLabel={sessao.gestorName}
               planos={planosAdaptados}
               alunos={alunos.map((a: any) => ({
                 id: a.id,
