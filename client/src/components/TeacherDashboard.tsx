@@ -426,7 +426,7 @@ export default function TeacherDashboard({
       </Card>
 
       {/* Grade de alunos — expandido */}
-      {!alunosMinimizado && (
+      {true && (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {alunos.map((aluno) => {
           const temCheckins = aluno.plano > 0;
@@ -577,7 +577,7 @@ export default function TeacherDashboard({
       </div>
       )}
 
-      {alunos.length === 0 && !alunosMinimizado && (
+      {alunos.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Nenhum aluno cadastrado nesta modalidade</p>
