@@ -2151,12 +2151,12 @@ export default function ManagerDashboard({
                 <Input
                   placeholder="000.000.000-00"
                   value={novoMensalista.cpf}
-                  onChange={(e) => setNovoMensalista({ ...novoMensalista, cpf: e.target.value })}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, cpf: e.target.value, senha: e.target.value })}
                   data-testid="input-nm-cpf"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Telefone (WhatsApp)</Label>
+                <Label>Telefone (WhatsApp) <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={novoMensalista.telefone}
@@ -2165,17 +2165,17 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="col-span-2 space-y-1">
-                <Label>Email</Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
                   value={novoMensalista.email}
-                  onChange={(e) => setNovoMensalista({ ...novoMensalista, email: e.target.value })}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, email: e.target.value, login: e.target.value })}
                   data-testid="input-nm-email"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Email <span className="text-destructive">*</span></Label>
+                <Label>Login <span className="text-destructive">*</span></Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
@@ -2188,9 +2188,9 @@ export default function ManagerDashboard({
                 <Label>Senha <span className="text-destructive">*</span></Label>
                 <Input
                   type="password"
-                  placeholder="senha de acesso"
+                  placeholder="CPF do aluno"
                   value={novoMensalista.senha}
-                  onChange={(e) => setNovoMensalista({ ...novoMensalista, senha: e.target.value })}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, senha: e.target.value, cpf: e.target.value })}
                   data-testid="input-nm-senha"
                 />
               </div>
