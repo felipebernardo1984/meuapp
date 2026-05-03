@@ -1151,8 +1151,8 @@ export default function ManagerDashboard({
                 <span className="ml-auto text-xs font-normal text-muted-foreground">{professores.length} ativo(s)</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+            <CardContent className="pb-4">
+              <div className="flex gap-3 overflow-x-auto pb-2 snap-x -mx-1 px-1 sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0">
                 {professores.map((prof, i) => {
                   const gradients = [
                     "from-blue-400 to-blue-600",
@@ -1166,7 +1166,7 @@ export default function ManagerDashboard({
                   return (
                     <div
                       key={prof.id}
-                      className="shrink-0 snap-start w-40 rounded-2xl border bg-card hover:shadow-md hover:border-primary/30 transition-all p-4 flex flex-col items-center text-center gap-2 cursor-pointer"
+                      className="shrink-0 snap-start w-[170px] sm:w-40 rounded-2xl border bg-card hover:shadow-md hover:border-primary/30 transition-all p-3 sm:p-4 flex flex-col items-center text-center gap-2 cursor-pointer"
                       onClick={() => setActiveSection("professores")}
                       data-testid={`prof-card-${prof.id}`}
                     >
@@ -1177,8 +1177,8 @@ export default function ManagerDashboard({
                           <span className="text-white text-2xl font-bold">{prof.nome.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
-                      <div>
-                        <p className="font-semibold text-sm leading-tight">{prof.nome.split(" ")[0]}</p>
+                      <div className="min-w-0 w-full">
+                        <p className="font-semibold text-sm leading-tight whitespace-nowrap overflow-hidden text-ellipsis">{prof.nome}</p>
                         {prof.modalidade && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 font-medium mt-1 inline-block">
                             {prof.modalidade}
