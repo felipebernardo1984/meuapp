@@ -326,30 +326,32 @@ export default function TeacherDashboard({
             />
           )}
         </div>
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex flex-col gap-2 min-w-0">
           <h1 className="text-2xl font-bold leading-tight whitespace-nowrap" data-testid="text-teacher-name">
             {teacherName}
           </h1>
-          <span className="text-muted-foreground whitespace-nowrap">|</span>
-          <p className="text-muted-foreground whitespace-nowrap">{modalidade}</p>
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="text-muted-foreground">|</span>
+            <p className="text-muted-foreground">{modalidade}</p>
+          </div>
+          {onIrAgenda && (
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onIrAgenda}
+                data-testid="button-ir-agenda"
+                className="gap-2"
+              >
+                <CalendarDays className="h-4 w-4" />
+                Agenda
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
       <>
-      {onIrAgenda && (
-        <div className="flex justify-end mb-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onIrAgenda}
-            data-testid="button-ir-agenda"
-            className="gap-2"
-          >
-            <CalendarDays className="h-4 w-4" />
-            Agenda
-          </Button>
-        </div>
-      )}
       {/* Botão Cadastrar Aluno */}
       <Card className="mb-6">
         <CardContent className="pt-6">
