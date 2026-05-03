@@ -134,6 +134,10 @@ const emptyForm = {
   cor: "#1565C0",
 };
 
+const emptySession = {
+  dataAula: "",
+};
+
 const TIPO_LABELS: Record<TipoAgendamento, string> = {
   aula: "Aula",
   aluguel: "Aluguel",
@@ -169,6 +173,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   const [dialogTurma, setDialogTurma] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [formData, setFormData] = useState(emptyForm);
+  const [sessionData, setSessionData] = useState(emptySession);
 
   const [dialogAlunos, setDialogAlunos] = useState(false);
   const [turmaAlunos, setTurmaAlunos] = useState<Turma | null>(null);
@@ -267,6 +272,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       modalidade: professorContext?.modalidade ?? "",
       professorId: professorContext?.id ?? "",
     });
+    setSessionData(emptySession);
     setSlotHorarioInicio(emptyForm.horarioInicio);
     setSlotHorarioFim(emptyForm.horarioFim);
     setDialogTurma(true);
@@ -294,6 +300,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       capacidadeMaxima: t.capacidadeMaxima,
       cor: t.cor,
     });
+    setSessionData({ dataAula: t.dataAula ?? "" });
     setDialogTurma(true);
   };
 
@@ -362,6 +369,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
     }
 
     const dataAula = slotPopup ? slotPopup.date.toISOString().slice(0, 10) : undefined;
+    const dataAulaFinal = sessionData.dataAula || dataAula || undefined;
     const payload = {
       nome: formData.nome,
       tipo: formData.tipo,
@@ -375,7 +383,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       horarioFim: formData.horarioFim,
       capacidadeMaxima: formData.capacidadeMaxima,
       cor: formData.cor,
-      ...(dataAula ? { dataAula } : {}),
+      ...(dataAulaFinal ? { dataAula: dataAulaFinal } : {}),
     };
     if (editandoId) {
       await editarTurma.mutateAsync({ id: editandoId, data: payload });
@@ -1088,7 +1096,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             {/* Dias da semana */}
             <div className="space-y-2">
               <Label>Dias da semana *</Label>
-              <p className="text-xs text-gray-500">A aula será repetida nos dias selecionados.</p>
+              <p className="text-xs text-gray-500">Use isso para repetir a aula em vários dias da semana.</p>
               <div className="flex flex-wrap gap-2">
                 {DIAS.map((dia) => (
                   <button
@@ -1107,6 +1115,18 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="turma-data-unica">Data única</Label>
+              <p className="text-xs text-gray-500">Se quiser um dia específico, preencha essa data e deixe a repetição sem uso.</p>
+              <Input
+                id="turma-data-unica"
+                type="date"
+                value={sessionData.dataAula}
+                onChange={(e) => setSessionData({ dataAula: e.target.value })}
+                data-testid="input-turma-data-unica"
+              />
             </div>
 
             {/* Horário */}
