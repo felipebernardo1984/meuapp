@@ -305,7 +305,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
         ) : (
           <>
             {/* View toggle + Nova Turma */}
-            <div className="flex items-start justify-between mb-5 gap-3 flex-wrap">
+            <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <Button
                   variant={view === "mensal" ? "default" : "outline"}
@@ -341,23 +341,15 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               <Button
                 onClick={() => openNova()}
                 data-testid="button-nova-turma"
-                className="bg-blue-600 hover:bg-blue-700 text-white h-14 px-6 text-lg gap-1.5"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-14 px-4 text-lg gap-1.5"
               >
                 <Plus className="mr-2 h-5 w-5" />
                 Nova Turma
               </Button>
             </div>
 
-            {turmas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-60 text-center">
-                <CalendarDays className="h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-gray-500 font-medium mb-1">Nenhuma turma cadastrada</p>
-                <p className="text-sm text-gray-400 mb-4">Crie sua primeira turma para organizar horários e alunos.</p>
-              </div>
-            ) : view === "mensal" ? (
-              /* ── MONTHLY CALENDAR ─────────────────────────────────────── */
+            {view === "mensal" ? (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                {/* Month navigation */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                   <Button variant="ghost" size="icon" onClick={prevMonth} data-testid="button-mes-anterior">
                     <ChevronLeft className="h-4 w-4" />
@@ -369,8 +361,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
-
-                {/* Day-of-week header */}
                 <div className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700">
                   {WEEK_HEADER.map((h) => (
                     <div key={h} className="py-2 text-center text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
@@ -378,9 +368,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                     </div>
                   ))}
                 </div>
-
-                {/* Calendar cells */}
-                <div className="grid grid-cols-7">
+                <div className="grid grid-cols-7 min-h-[70vh]">
                   {calDays.map((date, idx) => {
                     const turmasDia = date ? turmasForDate(date) : [];
                     const hoje = date ? isToday(date) : false;
@@ -389,28 +377,23 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                         key={idx}
                         data-testid={date ? `cal-dia-${date.getDate()}` : `cal-vazio-${idx}`}
                         onClick={() => {
-                          if (date && turmasDia.length > 0) {
-                            setDiaPopup({ date, turmas: turmasDia });
-                          } else if (date) {
-                            openNova(JS_DAY_TO_ID[date.getDay()]);
-                          }
+                          if (!date) return;
+                          if (turmasDia.length > 0) setDiaPopup({ date, turmas: turmasDia });
+                          else openNova(JS_DAY_TO_ID[date.getDay()]);
                         }}
-                        className={`min-h-[90px] p-2 border-b border-r border-gray-100 dark:border-gray-700 transition-colors
-                          ${date ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10" : "bg-gray-50 dark:bg-gray-900/30"}
-                          ${idx % 7 === 6 ? "border-r-0" : ""}
-                        `}
+                        className={`min-h-[120px] p-2 border-b border-r border-gray-100 dark:border-gray-700 ${
+                          date ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10" : "bg-gray-50 dark:bg-gray-900/30"
+                        } ${idx % 7 === 6 ? "border-r-0" : ""}`}
                       >
                         {date && (
                           <>
                             <div className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium mb-1.5 ${
-                              hoje
-                                ? "bg-blue-600 text-white"
-                                : "text-gray-700 dark:text-gray-300"
+                              hoje ? "bg-blue-600 text-white" : "text-gray-700 dark:text-gray-300"
                             }`}>
                               {date.getDate()}
                             </div>
                             <div className="flex flex-col gap-0.5">
-                              {turmasDia.slice(0, 3).map((t) => (
+                              {turmasDia.slice(0, 4).map((t) => (
                                 <div
                                   key={t.id}
                                   className="rounded px-1.5 py-0.5 text-white text-[10px] font-medium truncate leading-tight"
@@ -420,8 +403,11 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                                   {t.nome}
                                 </div>
                               ))}
-                              {turmasDia.length > 3 && (
-                                <span className="text-[10px] text-gray-400 pl-1">+{turmasDia.length - 3} mais</span>
+                              {turmasDia.length === 0 && (
+                                <div className="text-[10px] text-gray-300 dark:text-gray-600 px-1">Sem aula</div>
+                              )}
+                              {turmasDia.length > 4 && (
+                                <span className="text-[10px] text-gray-400 pl-1">+{turmasDia.length - 4} mais</span>
                               )}
                             </div>
                           </>
@@ -430,18 +416,12 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                     );
                   })}
                 </div>
-
-                {/* Legend */}
-                {turmas.length > 0 && (
-                  <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-3">
-                    {turmas.map((t) => (
-                      <div key={t.id} className="flex items-center gap-1.5">
-                        <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.cor }} />
-                        <span className="text-xs text-gray-600 dark:text-gray-400">{t.nome}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              </div>
+            ) : turmas.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-60 text-center">
+                <CalendarDays className="h-12 w-12 text-gray-300 mb-4" />
+                <p className="text-gray-500 font-medium mb-1">Nenhuma turma cadastrada</p>
+                <p className="text-sm text-gray-400 mb-4">Crie sua primeira turma para organizar horários e alunos.</p>
               </div>
             ) : view === "semanal" ? (
               /* ── WEEKLY GRID ──────────────────────────────────────────── */
