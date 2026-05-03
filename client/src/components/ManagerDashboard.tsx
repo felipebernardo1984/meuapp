@@ -130,6 +130,7 @@ interface NovoAlunoDados {
 }
 
 interface ManagerDashboardProps {
+  gestorName?: string;
   planos: Plano[];
   alunos: AlunoGestor[];
   professores: ProfessorGestor[];
@@ -163,6 +164,7 @@ interface ManagerDashboardProps {
 
 
 export default function ManagerDashboard({
+  gestorName,
   arenaName,
   planos,
   alunos,
@@ -881,6 +883,7 @@ export default function ManagerDashboard({
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         pendingCount={alunosPendentes.length}
         arenaName={arenaName}
+        gestorName={gestorName}
         onLogout={onLogout}
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
