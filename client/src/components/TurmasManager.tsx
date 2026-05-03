@@ -463,12 +463,9 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
         </Button>
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <CalendarDays className="h-5 w-5 text-blue-600" />
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Agenda</h1>
-            {professorContext?.nome && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 break-words">{professorContext.nome}</p>
-            )}
-          </div>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white min-w-0 truncate">
+            {professorContext?.nome ? `Agenda: ${professorContext.nome}` : "Agenda"}
+          </h1>
         </div>
       </div>
 
