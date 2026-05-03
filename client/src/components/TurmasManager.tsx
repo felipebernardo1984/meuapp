@@ -1088,6 +1088,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             {/* Dias da semana */}
             <div className="space-y-2">
               <Label>Dias da semana *</Label>
+              <p className="text-xs text-gray-500">A aula será repetida nos dias selecionados.</p>
               <div className="flex flex-wrap gap-2">
                 {DIAS.map((dia) => (
                   <button
