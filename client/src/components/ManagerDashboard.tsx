@@ -1260,13 +1260,19 @@ export default function ManagerDashboard({
                     "from-pink-400 to-rose-600",
                     "from-cyan-400 to-cyan-600",
                   ];
+                  const initials = aluno.nome
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part.charAt(0).toUpperCase())
+                    .join("");
                   return (
                     <div key={aluno.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-muted/50 transition-colors">
                       <div className={`w-9 h-9 rounded-full overflow-hidden shrink-0 shadow-sm ${aluno.photoUrl ? "" : `bg-gradient-to-br ${avatarGrads[i % avatarGrads.length]}`} flex items-center justify-center`}>
                         {aluno.photoUrl ? (
                           <img src={aluno.photoUrl} alt={aluno.nome} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-white text-sm font-bold">{aluno.nome.charAt(0).toUpperCase()}</span>
+                          <span className="text-white text-xs font-bold">{initials || aluno.nome.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
