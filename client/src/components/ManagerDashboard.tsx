@@ -1393,7 +1393,7 @@ export default function ManagerDashboard({
                   type="email"
                   placeholder="email@exemplo.com"
                   value={novoAluno.login}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value, email: e.target.value })}
                   data-testid="input-manager-student-login"
                 />
               </div>
@@ -1401,9 +1401,9 @@ export default function ManagerDashboard({
                 <Label>Senha <span className="text-destructive">*</span></Label>
                 <Input
                   type="password"
-                  placeholder="senha de acesso"
+                  placeholder="CPF vinculado"
                   value={novoAluno.senha}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value, cpf: e.target.value })}
                   data-testid="input-manager-student-senha"
                 />
               </div>
@@ -2483,7 +2483,7 @@ export default function ManagerDashboard({
                 type="email"
                 placeholder="email@exemplo.com"
                 value={formProfessor.login}
-                onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value, email: e.target.value })}
                 data-testid="input-teacher-login"
               />
             </div>
@@ -2491,9 +2491,9 @@ export default function ManagerDashboard({
               <Label>Senha <span className="text-destructive">*</span></Label>
               <Input
                 type="password"
-                placeholder="Senha de acesso do professor"
+                  placeholder="CPF vinculado"
                 value={formProfessor.senha}
-                onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value, cpf: e.target.value })}
                 data-testid="input-teacher-senha"
               />
             </div>
@@ -3298,33 +3298,23 @@ export default function ManagerDashboard({
                   data-testid="input-edit-telefone"
                 />
               </div>
-              <div className="col-span-2 space-y-1">
-                <Label>Email</Label>
-                <Input
-                  placeholder="email@exemplo.com"
-                  type="email"
-                  value={formEditarAluno.email}
-                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, email: e.target.value })}
-                  data-testid="input-edit-email"
-                />
-              </div>
               <div className="space-y-1">
                 <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
                   value={formEditarAluno.login}
-                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, login: e.target.value })}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, login: e.target.value, email: e.target.value })}
                   data-testid="input-edit-login"
                 />
               </div>
               <div className="space-y-1">
                 <Label>Nova Senha</Label>
                 <Input
-                  placeholder="deixe em branco para manter"
+                  placeholder="CPF vinculado"
                   type="password"
                   value={formEditarAluno.senha}
-                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, senha: e.target.value })}
+                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, senha: e.target.value, cpf: e.target.value })}
                   data-testid="input-edit-senha"
                 />
               </div>

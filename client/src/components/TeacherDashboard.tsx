@@ -628,17 +628,17 @@ export default function TeacherDashboard({
                   type="email"
                   placeholder="email@exemplo.com"
                   value={novoAluno.login}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value, email: e.target.value })}
                   data-testid="input-new-student-login"
                 />
               </div>
               <div className="space-y-1">
                 <Label>Senha <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="senha de acesso"
+                  placeholder="CPF vinculado"
                   type="password"
                   value={novoAluno.senha}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value, cpf: e.target.value })}
                   data-testid="input-new-student-password"
                 />
               </div>
@@ -792,17 +792,17 @@ export default function TeacherDashboard({
                   type="email"
                   placeholder="email@exemplo.com"
                   value={dadosEdicao.login ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value, email: e.target.value })}
                   data-testid="input-edit-student-login"
                 />
               </div>
               <div className="space-y-1">
                 <Label>Nova Senha</Label>
                 <Input
-                  placeholder="senha aluno"
+                  placeholder="CPF vinculado"
                   type="password"
                   value={dadosEdicao.senha ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value, cpf: e.target.value })}
                   data-testid="input-edit-student-password"
                 />
               </div>
