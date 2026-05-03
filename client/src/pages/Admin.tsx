@@ -380,11 +380,11 @@ export default function Admin() {
         </div>
 
         <div className="max-w-6xl mx-auto p-3 sm:p-4 md:p-6 pt-16">
-          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 mb-4 sm:mb-6">
+          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-center sm:justify-start gap-3 mb-4 sm:mb-6">
             <Button variant="ghost" size="icon" onClick={() => setDetailId(null)} data-testid="button-back">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-2 flex-1 min-w-0 justify-center sm:justify-start">
               <span className="text-base sm:text-xl font-semibold text-gray-900 dark:text-white">Voltar às arenas</span>
             </div>
           </div>
@@ -393,11 +393,11 @@ export default function Admin() {
             <div className="text-center py-12 text-muted-foreground">Carregando dados da arena...</div>
           ) : (
             <>
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6 gap-3">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6 gap-3 text-center sm:text-left">
+                <div className="w-full sm:w-auto">
                   <h1 className="text-xl sm:text-2xl font-bold break-words" data-testid="text-detail-name">{arenaDetail.name}</h1>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
                   <Badge variant={PLAN_BADGE[arenaDetail.subscriptionPlan]}>
                     {PLAN_LABELS[arenaDetail.subscriptionPlan] ?? arenaDetail.subscriptionPlan}
                   </Badge>
@@ -446,7 +446,7 @@ export default function Admin() {
               </Card>
 
               {/* Stats bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                 {[
                   { label: "Alunos ativos", value: arenaDetail.stats.alunosAtivos, icon: <Users className="h-4 w-4" /> },
                   { label: "Total alunos", value: arenaDetail.stats.alunos, icon: <Users className="h-4 w-4" /> },
