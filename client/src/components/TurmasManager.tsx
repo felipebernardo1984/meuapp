@@ -176,19 +176,19 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Mutations
   const criarTurma = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/turmas", data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Turma criada!" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Horário de aulas criado!" }); },
     onError: () => toast({ title: "Erro ao criar turma", variant: "destructive" }),
   });
 
   const editarTurma = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PUT", `/api/turmas/${id}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Turma atualizada!" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setDialogTurma(false); toast({ title: "Horário de aulas atualizado!" }); },
     onError: () => toast({ title: "Erro ao atualizar turma", variant: "destructive" }),
   });
 
   const excluirTurma = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/turmas/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setConfirmExcluir(null); toast({ title: "Turma excluída" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas"] }); setConfirmExcluir(null); toast({ title: "Horário de aulas excluído" }); },
     onError: () => toast({ title: "Erro ao excluir turma", variant: "destructive" }),
   });
 
@@ -348,11 +348,11 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       <div className="flex-1 overflow-auto p-6">
         {isLoading ? (
           <div className="flex items-center justify-center h-40 text-gray-400">
-            <RefreshCw className="h-5 w-5 animate-spin mr-2" />Carregando turmas...
+            <RefreshCw className="h-5 w-5 animate-spin mr-2" />Carregando horários de aulas...
           </div>
         ) : (
           <>
-            {/* View toggle + Nova Turma */}
+            {/* View toggle + Horário de Aulas */}
             <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
               <div className="flex items-center gap-2 flex-wrap">
                 <Button
@@ -397,12 +397,12 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               </div>
               <Button
                 onClick={() => openNova()}
-                data-testid="button-nova-turma"
+                data-testid="button-horario-aulas"
                 size="lg"
                 className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5"
               >
                 <Plus className="mr-2 h-5 w-5" />
-                Nova Turma
+                Horário de Aulas
               </Button>
             </div>
 
@@ -635,7 +635,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => { setDiaPopup(null); openNova(JS_DAY_TO_ID[diaPopup.date.getDay()]); }}
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" />Nova Turma
+                  <Plus className="h-3.5 w-3.5 mr-1" />Horário de Aulas
                 </Button>
               </DialogFooter>
             </>
@@ -713,7 +713,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       <Dialog open={dialogTurma} onOpenChange={setDialogTurma}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editandoId ? "Editar Turma" : "Nova Turma"}</DialogTitle>
+            <DialogTitle>{editandoId ? "Editar Horário de Aulas" : "Horário de Aulas"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
