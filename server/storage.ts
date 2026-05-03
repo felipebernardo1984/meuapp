@@ -6,7 +6,7 @@ import {
   platformPlans, arenaSubscriptionPayments, modalidadeSettings,
   checkinFinanceiro, integrationPlans, integrationSettings,
   teacherCommissions, platformSettings, passwordResetTokens,
-  turmas, turmaAlunos,
+  turmas, turmaAlunos, recursos,
 } from "@shared/schema";
 
 export class DatabaseStorage {
@@ -494,6 +494,20 @@ export class DatabaseStorage {
   // TURMAS
   async listTurmas(arenaId: string) {
     return db.select().from(turmas).where(eq(turmas.arenaId, arenaId));
+  }
+
+  async listRecursos(arenaId: string) {
+    return db.select().from(recursos).where(eq(recursos.arenaId, arenaId));
+  }
+
+  async createRecurso(data: any) {
+    const [row] = await db.insert(recursos).values(data).returning();
+    return row;
+  }
+
+  async updateRecurso(id: string, data: any) {
+    const [row] = await db.update(recursos).set(data).where(eq(recursos.id, id)).returning();
+    return row;
   }
 
   async getTurma(id: string) {
