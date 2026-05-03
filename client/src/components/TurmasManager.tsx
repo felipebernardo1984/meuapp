@@ -201,6 +201,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       modalidade: professorContext?.modalidade ?? "",
       professorId: professorContext?.id ?? "",
     });
+    setSlotHorarioInicio(emptyForm.horarioInicio);
+    setSlotHorarioFim(emptyForm.horarioFim);
     setDialogTurma(true);
   };
 
