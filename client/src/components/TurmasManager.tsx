@@ -381,15 +381,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   <List className="h-4 w-4" />
                   Lista
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDialogRecursos(true)}
-                  data-testid="button-configurar-recursos"
-                  className="h-9 px-3 gap-1.5"
-                >
-                  Configuração de sala
-                </Button>
               </div>
               <Button
                 onClick={() => openNova()}
@@ -743,20 +734,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                     <SelectItem value="_none">Sem professor</SelectItem>
                     {professores.map((p) => (
                       <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Recurso / Sala</Label>
-                <Select value={formData.recursoId || "_none"} onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }))}>
-                  <SelectTrigger data-testid="select-recurso">
-                    <SelectValue placeholder="Selecionar..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">Sem recurso</SelectItem>
-                    {recursos.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
