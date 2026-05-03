@@ -904,15 +904,9 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                     Nenhuma sala cadastrada.
                   </div>
                 )}
-                {salvarRecurso.isPending && (
-                  <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">Salvando ambiente...</div>
-                )}
+                {salvarRecurso.isPending && <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">Salvando ambiente...</div>}
               </div>
-              {recursos.length > 0 && (
-                <div className="pt-1 text-xs text-muted-foreground">
-                  {recursos.length} ambiente(s) cadastrado(s)
-                </div>
-              )}
+              {recursos.length > 0 && <div className="pt-1 text-xs text-muted-foreground">{recursos.length} ambiente(s) cadastrado(s)</div>}
             </div>
           </div>
         </DialogContent>
