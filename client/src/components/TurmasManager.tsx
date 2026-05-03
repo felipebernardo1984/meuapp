@@ -116,6 +116,7 @@ interface TurmasManagerProps {
   onVoltar: () => void;
   professorContext?: { id: string; modalidade: string; nome?: string };
   readOnly?: boolean;
+  highlightProfessorId?: string;
 }
 
 const emptyForm = {
@@ -154,7 +155,7 @@ type DaySlot = {
   professorId?: string | null;
 };
 
-export default function TurmasManager({ onVoltar, professorContext, readOnly = false }: TurmasManagerProps) {
+export default function TurmasManager({ onVoltar, professorContext, readOnly = false, highlightProfessorId }: TurmasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [view, setView] = useState<ViewMode>("mensal");
@@ -411,6 +412,11 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
     return turmas.filter((t) => t.diasSemana.split("|").includes(dayId));
   };
 
+  const isHighlightedTurma = (t: Turma) => {
+    if (!highlightProfessorId) return false;
+    return t.professorId === highlightProfessorId;
+  };
+
   const isToday = (date: Date) =>
     date.getDate() === today.getDate() &&
     date.getMonth() === today.getMonth() &&
@@ -549,8 +555,8 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                               {turmasDia.slice(0, 4).map((t) => (
                                 <div
                                   key={t.id}
-                                  className="rounded px-1 py-0.5 text-white text-[9px] sm:text-[10px] font-medium truncate leading-tight"
-                                  style={{ backgroundColor: t.cor }}
+                                  className={`rounded px-1 py-0.5 text-[9px] sm:text-[10px] font-medium truncate leading-tight border ${isHighlightedTurma(t) ? "ring-2 ring-yellow-300 border-yellow-200 text-gray-900" : "text-white border-transparent"}`}
+                                  style={{ backgroundColor: isHighlightedTurma(t) ? "#fef3c7" : t.cor }}
                                   title={`${t.nome} ${t.horarioInicio}–${t.horarioFim}`}
                                 >
                                   {t.nome}
@@ -601,8 +607,8 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                           <div
                             key={`${dia.id}-${t.id}`}
                             data-testid={`turma-card-${t.id}-${dia.id}`}
-                            className="rounded-lg p-2 text-white shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                            style={{ backgroundColor: t.cor }}
+                            className={`rounded-lg p-2 shadow-sm cursor-pointer hover:opacity-90 transition-opacity border ${isHighlightedTurma(t) ? "bg-yellow-100 text-gray-900 border-yellow-300 ring-2 ring-yellow-300" : "text-white border-transparent"}`}
+                            style={{ backgroundColor: isHighlightedTurma(t) ? "#fef3c7" : t.cor }}
                             onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
                           >
                             <div className="flex items-center gap-1.5 flex-wrap">
@@ -636,7 +642,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               /* ── LIST VIEW ────────────────────────────────────────────── */
               <div className="space-y-3 max-w-4xl">
                 {turmas.map((t) => (
-                  <Card key={t.id} data-testid={`turma-row-${t.id}`} className="bg-white dark:bg-gray-800 shadow-sm">
+                  <Card key={t.id} data-testid={`turma-row-${t.id}`} className={`shadow-sm ${isHighlightedTurma(t) ? "ring-2 ring-yellow-300 bg-yellow-50 dark:bg-yellow-950/20" : "bg-white dark:bg-gray-800"}`}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">

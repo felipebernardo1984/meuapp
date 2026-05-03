@@ -433,6 +433,7 @@ export default function ArenaApp() {
       {sessao.tipo === "aluno" && alunoView === "agenda" && (
         <TurmasManager
           onVoltar={() => setAlunoView("dashboard")}
+          highlightProfessorId={alunoAtual?.professorId ?? undefined}
         />
       )}
 
