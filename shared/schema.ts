@@ -368,6 +368,7 @@ export const turmas = pgTable("turmas", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
   professorId: varchar("professor_id").references(() => teachers.id, { onDelete: "set null" }),
+  recursoId: varchar("recurso_id"),
   nome: text("nome").notNull(),
   modalidade: text("modalidade").notNull(),
   diasSemana: text("dias_semana").notNull().default(""),
