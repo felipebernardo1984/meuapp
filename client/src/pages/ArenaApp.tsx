@@ -479,10 +479,6 @@ export default function ArenaApp() {
         />
       )}
 
-      {sessao.tipo === "gestor" && gestorTab === "agenda" && (
-        <TurmasManager onVoltar={() => setGestorTab("dashboard")} />
-      )}
-
       {sessao.tipo === "gestor" && (
         <>
           {gestorTab === "dashboard" && (
