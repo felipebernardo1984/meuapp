@@ -1,0 +1,120 @@
+Implemente um módulo de agendamento de quadras dentro de um sistema já existente de gestão de arenas esportivas.
+
+---
+
+### 🎯 OBJETIVO
+
+Permitir que gestores e professores controlem reservas de quadras com regras de acesso diferentes.
+
+---
+
+### 👥 PERFIS DE USUÁRIO
+
+#### Gestor (admin da arena)
+
+* Pode criar, editar e excluir qualquer reserva
+* Pode ver todas as reservas da arena
+* Pode ver controle financeiro
+
+#### Professor
+
+* Pode criar reservas
+* Pode visualizar suas próprias reservas
+* (Opcional) pode visualizar todas as reservas, sem editar
+
+---
+
+### 🏟️ ESTRUTURA DE DADOS
+
+Criar tabela "reservas" com os campos:
+
+* id
+* arena_id
+* quadra_id
+* data (YYYY-MM-DD)
+* horario (HH:mm)
+* nome_cliente
+* telefone_cliente
+* professor_id (nullable)
+* criado_por (user_id)
+* status_pagamento (pago | pendente)
+* valor (opcional)
+* created_at
+
+---
+
+### 📅 FUNCIONALIDADES
+
+#### Criar reserva
+
+* Selecionar:
+
+  * Data
+  * Horário
+  * Quadra
+* Informar:
+
+  * Nome do cliente
+  * Telefone
+  * Status de pagamento
+
+---
+
+### ⚠️ REGRA CRÍTICA
+
+* NÃO permitir duas reservas com:
+
+  * mesma data
+  * mesmo horário
+  * mesma quadra
+
+---
+
+### 📊 VISUALIZAÇÃO
+
+Criar tela de agenda com:
+
+* Lista de horários do dia (ex: 08:00 às 23:00)
+* Exibir reservas por horário
+* Mostrar:
+
+  * Nome do cliente
+  * Status (pago/pendente)
+  * Quem criou (professor ou gestor)
+
+---
+
+### 🔎 FILTROS
+
+* Filtrar por data
+* Filtrar por quadra
+
+---
+
+### 🔐 CONTROLE DE ACESSO
+
+* Professor:
+
+  * só pode editar/excluir reservas criadas por ele
+* Gestor:
+
+  * pode editar/excluir qualquer reserva
+
+---
+
+### 💰 EXTRA (SE POSSÍVEL)
+
+* Somar faturamento do dia
+* Exibir total de reservas
+
+---
+
+### 🎨 INTERFACE
+
+* Layout simples e rápido (foco mobile)
+* Botão de "Nova Reserva"
+* Visual tipo agenda (horários em lista)
+
+---
+
+Objetivo: criar um sistema de agendamento funcional, semelhante a apps de gestão de quadras, com controle de acesso entre gestor e professor.
