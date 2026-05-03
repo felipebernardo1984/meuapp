@@ -849,7 +849,11 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             <DialogDescription>
               {professorContext
                 ? "Veja apenas as salas liberadas para montar sua agenda."
-                : "Quadra 1, Quadra 2, Box 1, Box 2"}
+                : <>
+                    Cadastre ambientes como:
+                    <br />
+                    Quadra 1, Quadra 2, Box 1, Box 2
+                  </>}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
