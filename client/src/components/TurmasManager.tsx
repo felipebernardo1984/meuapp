@@ -505,6 +505,11 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                   Horário de Aulas
                 </Button>
               )}
+              {readOnly && (
+                <div className="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                  Visualização apenas. O aluno pode consultar o calendário, mas não criar ou editar aulas.
+                </div>
+              )}
             </div>
 
             {view === "mensal" ? (
