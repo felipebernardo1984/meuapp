@@ -193,7 +193,7 @@ export default function StudentDashboard({
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex flex-col items-center text-center sm:text-left sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-        <div className="flex flex-col items-center sm:items-start sm:flex-row sm:items-center gap-4 min-w-0">
+        <div className="flex flex-col items-center sm:items-start sm:flex-row sm:items-center gap-4 min-w-0 w-full">
           <div className="relative shrink-0 flex flex-col items-center gap-1 rounded-2xl border bg-card px-2 py-2 shadow-sm overflow-hidden w-[130px] h-[120px] sm:w-[170px] sm:h-[150px]">
             <Avatar className="h-20 w-20 sm:h-28 sm:w-28 mt-1">
               <AvatarImage src={photoUrl} alt={studentName} />
@@ -237,16 +237,18 @@ export default function StudentDashboard({
             <p className="text-xl sm:text-2xl font-semibold text-foreground break-words">{modalidade}</p>
           </div>
           {onIrAgenda && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-fit sm:ml-2"
-              onClick={onIrAgenda}
-              data-testid="button-agenda-aluno"
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Agenda
-            </Button>
+            <div className="w-full sm:w-auto sm:ml-auto flex justify-center sm:justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-fit"
+                onClick={onIrAgenda}
+                data-testid="button-agenda-aluno"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Agenda
+              </Button>
+            </div>
           )}
         </div>
         {statusMensalidade === "Pendente" && (
