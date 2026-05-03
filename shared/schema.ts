@@ -384,7 +384,13 @@ export const turmas = pgTable("turmas", {
   professorId: varchar("professor_id").references(() => teachers.id, { onDelete: "set null" }),
   recursoId: varchar("recurso_id").references(() => recursos.id, { onDelete: "set null" }),
   nome: text("nome").notNull(),
-  modalidade: text("modalidade").notNull(),
+  // tipo: 'aula' | 'aluguel' | 'dayuse'
+  tipo: text("tipo").notNull().default("aula"),
+  modalidade: text("modalidade").notNull().default(""),
+  // For aluguel / dayuse: nome do cliente/locatário
+  clienteNome: text("cliente_nome"),
+  // For aluguel / dayuse: valor cobrado (texto livre)
+  valorCobrado: text("valor_cobrado"),
   diasSemana: text("dias_semana").notNull().default(""),
   horarioInicio: text("horario_inicio").notNull(),
   horarioFim: text("horario_fim").notNull(),

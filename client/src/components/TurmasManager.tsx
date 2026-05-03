@@ -60,14 +60,19 @@ const COR_OPTIONS = [
   "#AD1457", "#37474F",
 ];
 
+type TipoAgendamento = "aula" | "aluguel" | "dayuse";
+
 interface Turma {
   id: string;
   nome: string;
+  tipo: TipoAgendamento;
   modalidade: string;
   professorId?: string | null;
   professorNome?: string | null;
   recursoId?: string | null;
   recursoNome?: string | null;
+  clienteNome?: string | null;
+  valorCobrado?: string | null;
   diasSemana: string;
   horarioInicio: string;
   horarioFim: string;
@@ -108,14 +113,29 @@ interface TurmasManagerProps {
 
 const emptyForm = {
   nome: "",
+  tipo: "aula" as TipoAgendamento,
   modalidade: "",
   professorId: "",
   recursoId: "",
+  clienteNome: "",
+  valorCobrado: "",
   diasSemana: [] as string[],
   horarioInicio: "08:00",
   horarioFim: "09:00",
   capacidadeMaxima: 20,
   cor: "#1565C0",
+};
+
+const TIPO_LABELS: Record<TipoAgendamento, string> = {
+  aula: "Aula",
+  aluguel: "Aluguel",
+  dayuse: "Day-use",
+};
+
+const TIPO_CORES: Record<TipoAgendamento, string> = {
+  aula: "#1565C0",
+  aluguel: "#2E7D32",
+  dayuse: "#E65100",
 };
 
 type ViewMode = "mensal" | "semanal" | "lista";
@@ -155,7 +175,6 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
-  const { data: modalidades = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
   const { data: recursos = [] } = useQuery<{ id: string; nome: string; ativo: boolean }[]>({ queryKey: ["/api/recursos"] });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
@@ -215,9 +234,12 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     setEditandoId(t.id);
     setFormData({
       nome: t.nome,
+      tipo: (t.tipo as TipoAgendamento) || "aula",
       modalidade: t.modalidade,
       professorId: t.professorId ?? "",
       recursoId: t.recursoId ?? "",
+      clienteNome: t.clienteNome ?? "",
+      valorCobrado: t.valorCobrado ?? "",
       diasSemana: t.diasSemana ? t.diasSemana.split("|").filter(Boolean) : [],
       horarioInicio: t.horarioInicio,
       horarioFim: t.horarioFim,
@@ -237,23 +259,37 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   };
 
   const handleSalvar = async () => {
-    if (!formData.nome || !formData.professorId || !formData.horarioInicio || !formData.horarioFim || formData.diasSemana.length === 0) {
-      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+    if (!formData.nome || !formData.horarioInicio || !formData.horarioFim || formData.diasSemana.length === 0) {
+      toast({ title: "Preencha nome, horário e dias da semana", variant: "destructive" });
       return;
     }
-    const selectedProfessor = professores.find((p) => p.id === formData.professorId);
-    const modalidade = selectedProfessor?.modalidade ?? formData.modalidade;
-    if (!selectedProfessor || !modalidade) {
-      toast({ title: "Selecione um professor válido", variant: "destructive" });
-      return;
+    let modalidade = formData.modalidade;
+    let professorIdFinal: string | null = null;
+
+    if (formData.tipo === "aula") {
+      const selectedProfessor = professores.find((p) => p.id === formData.professorId);
+      if (!selectedProfessor) {
+        toast({ title: "Selecione um professor para a aula", variant: "destructive" });
+        return;
+      }
+      modalidade = selectedProfessor.modalidade;
+      professorIdFinal = selectedProfessor.id;
     }
+
     const dataAula = slotPopup ? slotPopup.date.toISOString().slice(0, 10) : undefined;
     const payload = {
-      ...formData,
+      nome: formData.nome,
+      tipo: formData.tipo,
       modalidade,
-      professorId: formData.professorId || null,
+      professorId: professorIdFinal,
       recursoId: formData.recursoId || null,
+      clienteNome: formData.clienteNome || null,
+      valorCobrado: formData.valorCobrado || null,
       diasSemana: formData.diasSemana.join("|"),
+      horarioInicio: formData.horarioInicio,
+      horarioFim: formData.horarioFim,
+      capacidadeMaxima: formData.capacidadeMaxima,
+      cor: formData.cor,
       ...(dataAula ? { dataAula } : {}),
     };
     if (editandoId) {
@@ -521,7 +557,19 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="font-semibold text-gray-900 dark:text-white">{t.nome}</p>
-                              <Badge variant="outline" className="text-xs">{t.modalidade}</Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-xs text-white border-0"
+                                style={{ backgroundColor: TIPO_CORES[t.tipo as TipoAgendamento] ?? "#1565C0" }}
+                              >
+                                {TIPO_LABELS[t.tipo as TipoAgendamento] ?? t.tipo}
+                              </Badge>
+                              {t.modalidade && (
+                                <Badge variant="outline" className="text-xs">{t.modalidade}</Badge>
+                              )}
+                              {t.clienteNome && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">{t.clienteNome}</span>
+                              )}
                               {!t.ativo && <Badge variant="destructive" className="text-xs">Inativa</Badge>}
                             </div>
                             <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
@@ -692,63 +740,146 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Criar / Editar Turma */}
+      {/* Dialog: Criar / Editar Agendamento */}
       <Dialog open={dialogTurma} onOpenChange={setDialogTurma}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editandoId ? "Editar Horário de Aulas" : "Horário de Aulas"}</DialogTitle>
+            <DialogTitle>
+              {editandoId ? "Editar Agendamento" : "Novo Agendamento"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+
+            {/* Tipo selector */}
             <div className="space-y-1.5">
-              <Label htmlFor="turma-nome">Nome da turma *</Label>
+              <Label>Tipo *</Label>
+              <div className="flex gap-2">
+                {(["aula", "aluguel", "dayuse"] as TipoAgendamento[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    data-testid={`button-tipo-${t}`}
+                    onClick={() => setFormData((p) => ({
+                      ...p,
+                      tipo: t,
+                      cor: TIPO_CORES[t],
+                      professorId: t !== "aula" ? "" : p.professorId,
+                      modalidade: t !== "aula" ? "" : p.modalidade,
+                    }))}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      formData.tipo === t
+                        ? "text-white border-transparent"
+                        : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400"
+                    }`}
+                    style={formData.tipo === t ? { backgroundColor: TIPO_CORES[t] } : {}}
+                  >
+                    {TIPO_LABELS[t]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Nome */}
+            <div className="space-y-1.5">
+              <Label htmlFor="turma-nome">
+                {formData.tipo === "aula" ? "Nome da turma *" : formData.tipo === "aluguel" ? "Descrição do aluguel *" : "Descrição *"}
+              </Label>
               <Input
                 id="turma-nome"
                 data-testid="input-turma-nome"
-                placeholder="Ex: Beach Tennis Avançado"
+                placeholder={
+                  formData.tipo === "aula" ? "Ex: Beach Tennis Avançado"
+                  : formData.tipo === "aluguel" ? "Ex: Aluguel Quadra 1"
+                  : "Ex: Day-use Funcional"
+                }
                 value={formData.nome}
                 onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Professor *</Label>
-                <Select
-                  value={formData.professorId}
-                  onValueChange={(v) => {
-                    const selected = professores.find((p) => p.id === v);
-                    setFormData((p) => ({ ...p, professorId: v, modalidade: selected?.modalidade ?? p.modalidade }));
-                  }}
-                >
-                  <SelectTrigger data-testid="select-turma-professor">
-                    <SelectValue placeholder="Selecionar professor..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {professores.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.nome} — {p.modalidade}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* AULA: Professor + Modalidade */}
+            {formData.tipo === "aula" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Professor *</Label>
+                  <Select
+                    value={formData.professorId}
+                    onValueChange={(v) => {
+                      const selected = professores.find((p) => p.id === v);
+                      setFormData((p) => ({ ...p, professorId: v, modalidade: selected?.modalidade ?? p.modalidade }));
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-turma-professor">
+                      <SelectValue placeholder="Selecionar professor..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {professores.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nome} — {p.modalidade}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Modalidade</Label>
+                  <Input
+                    value={professores.find((p) => p.id === formData.professorId)?.modalidade ?? ""}
+                    readOnly
+                    className="bg-gray-50 dark:bg-gray-900"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Modalidade</Label>
-                <Input value={professores.find((p) => p.id === formData.professorId)?.modalidade ?? formData.modalidade} readOnly />
-              </div>
-            </div>
+            )}
 
+            {/* ALUGUEL / DAYUSE: Cliente + Valor */}
+            {(formData.tipo === "aluguel" || formData.tipo === "dayuse") && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cliente-nome">
+                    {formData.tipo === "aluguel" ? "Locatário" : "Nome do cliente"}
+                  </Label>
+                  <Input
+                    id="cliente-nome"
+                    data-testid="input-cliente-nome"
+                    placeholder="Nome da pessoa ou empresa"
+                    value={formData.clienteNome}
+                    onChange={(e) => setFormData((p) => ({ ...p, clienteNome: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="valor-cobrado">Valor cobrado</Label>
+                  <Input
+                    id="valor-cobrado"
+                    data-testid="input-valor-cobrado"
+                    placeholder="Ex: R$ 150,00"
+                    value={formData.valorCobrado}
+                    onChange={(e) => setFormData((p) => ({ ...p, valorCobrado: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Sala / Recurso (Select from cadastro) */}
             <div className="space-y-1.5">
-              <Label htmlFor="turma-recurso">Sala / Box / Quadra</Label>
-              <Input
-                id="turma-recurso"
-                data-testid="input-turma-recurso"
-                placeholder="Ex: Quadra 1"
-                value={formData.recursoId}
-                onChange={(e) => setFormData((p) => ({ ...p, recursoId: e.target.value }))}
-              />
+              <Label>Sala / Quadra / Box</Label>
+              <Select
+                value={formData.recursoId || "_none"}
+                onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }))}
+              >
+                <SelectTrigger data-testid="select-turma-recurso">
+                  <SelectValue placeholder="Selecionar espaço..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Sem espaço específico</SelectItem>
+                  {recursos.filter((r) => r.ativo).map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
+            {/* Dias da semana */}
             <div className="space-y-2">
               <Label>Dias da semana *</Label>
               <div className="flex flex-wrap gap-2">
@@ -760,9 +891,10 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                     onClick={() => toggleDia(dia.id)}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
                       formData.diasSemana.includes(dia.id)
-                        ? "bg-blue-600 text-white border-blue-600"
+                        ? "text-white border-transparent"
                         : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-blue-400"
                     }`}
+                    style={formData.diasSemana.includes(dia.id) ? { backgroundColor: TIPO_CORES[formData.tipo] } : {}}
                   >
                     {DIAS_SHORT[dia.id]}
                   </button>
@@ -770,6 +902,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               </div>
             </div>
 
+            {/* Horário */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="turma-inicio">Horário início *</Label>
@@ -793,18 +926,22 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label>Capacidade máxima</Label>
-              <Input
-                type="number"
-                min={1}
-                max={200}
-                data-testid="input-turma-capacidade"
-                value={formData.capacidadeMaxima}
-                onChange={(e) => setFormData((p) => ({ ...p, capacidadeMaxima: parseInt(e.target.value) || 20 }))}
-              />
-            </div>
+            {/* Capacidade (only for aula) */}
+            {formData.tipo === "aula" && (
+              <div className="space-y-1.5">
+                <Label>Capacidade máxima</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={200}
+                  data-testid="input-turma-capacidade"
+                  value={formData.capacidadeMaxima}
+                  onChange={(e) => setFormData((p) => ({ ...p, capacidadeMaxima: parseInt(e.target.value) || 20 }))}
+                />
+              </div>
+            )}
 
+            {/* Cor na agenda */}
             <div className="space-y-2">
               <Label>Cor na agenda</Label>
               <div className="flex flex-wrap gap-2">
@@ -828,7 +965,8 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               onClick={handleSalvar}
               disabled={criarTurma.isPending || editarTurma.isPending}
               data-testid="button-salvar-aula"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              style={{ backgroundColor: TIPO_CORES[formData.tipo] }}
+              className="text-white hover:opacity-90"
             >
               {criarTurma.isPending || editarTurma.isPending ? "Salvando..." : "Salvar"}
             </Button>

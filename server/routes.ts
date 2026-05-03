@@ -1731,11 +1731,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, modalidade, professorId, recursoId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, dataAula } = req.body;
+      const { nome, tipo, modalidade, professorId, recursoId, clienteNome, valorCobrado, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, dataAula } = req.body;
       const turma = await storage.createTurma({
-        arenaId, nome, modalidade,
+        arenaId, nome,
+        tipo: tipo || "aula",
+        modalidade: modalidade || "",
         professorId: professorId || null,
         recursoId: recursoId || null,
+        clienteNome: clienteNome || null,
+        valorCobrado: valorCobrado || null,
         diasSemana: diasSemana || "",
         horarioInicio, horarioFim,
         capacidadeMaxima: capacidadeMaxima ?? 20,
@@ -1754,11 +1758,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, modalidade, professorId, recursoId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo, dataAula } = req.body;
+      const { nome, tipo, modalidade, professorId, recursoId, clienteNome, valorCobrado, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo, dataAula } = req.body;
       const turma = await storage.updateTurma(req.params.id, {
-        nome, modalidade,
+        nome,
+        tipo: tipo || "aula",
+        modalidade: modalidade || "",
         professorId: professorId || null,
         recursoId: recursoId || null,
+        clienteNome: clienteNome || null,
+        valorCobrado: valorCobrado || null,
         diasSemana, horarioInicio, horarioFim,
         capacidadeMaxima, cor,
         dataAula: dataAula ?? undefined,
