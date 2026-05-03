@@ -2454,7 +2454,7 @@ export default function ManagerDashboard({
               <Input
                 placeholder="000.000.000-00"
                 value={formProfessor.cpf}
-                onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value })}
+                onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value, senha: e.target.value })}
                 data-testid="input-teacher-cpf"
               />
             </div>
@@ -2493,7 +2493,7 @@ export default function ManagerDashboard({
                 type="password"
                 placeholder="CPF do professor"
                 value={formProfessor.senha}
-                onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value, cpf: e.target.value })}
+                onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
                 data-testid="input-teacher-senha"
               />
             </div>
