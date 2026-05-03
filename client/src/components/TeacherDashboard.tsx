@@ -393,16 +393,6 @@ export default function TeacherDashboard({
           <CardContent className="py-4 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-medium">Alunos visíveis</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2"
-                onClick={() => setAlunosMinimizados(false)}
-                data-testid="button-show-students"
-              >
-                <ChevronDown className="mr-2 h-4 w-4" />
-                Mostrar
-              </Button>
             </div>
             <div className="space-y-2">
               {alunos.slice(0, 4).map((aluno) => {
