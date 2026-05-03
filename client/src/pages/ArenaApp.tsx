@@ -485,7 +485,7 @@ export default function ArenaApp() {
           professorContext={{
             id: alunoAtual?.professorId ?? "",
             modalidade: alunoAtual?.modalidade ?? "",
-            nome: "Agenda",
+            nome: alunoAtual?.professorNome ?? "Agenda",
           }}
         />
       )}
