@@ -20,7 +20,7 @@ export interface Plano {
 type SessaoAtiva =
   | { tipo: "aluno"; aluno: AlunoCompleto }
   | { tipo: "professor"; professor: { id: string; nome: string; modalidade: string; photoUrl?: string } }
-  | { tipo: "gestor"; arenaId: string; arenaName: string; gestorName?: string; responsavelName?: string; gestorLabel?: string; statusConta?: string; trialExpiraEm?: string | null }
+  | { tipo: "gestor"; arenaId: string; arenaName: string; gestorName?: string; statusConta?: string; trialExpiraEm?: string | null }
   | null;
 
 interface AlunoCompleto {
@@ -52,7 +52,7 @@ export default function Home() {
     queryKey: ["/api/session"],
     select: (data: any) => {
       if (!data?.authenticated) return null;
-      if (data.tipo === "gestor") return { tipo: "gestor", arenaId: data.arenaId, arenaName: data.arenaName, gestorName: data.gestorName, responsavelName: data.responsavelName ?? data.gestorName, gestorLabel: data.gestorLabel ?? data.responsavelName ?? data.gestorName, statusConta: data.statusConta, trialExpiraEm: data.trialExpiraEm };
+      if (data.tipo === "gestor") return { tipo: "gestor", arenaId: data.arenaId, arenaName: data.arenaName, gestorName: data.gestorName, statusConta: data.statusConta, trialExpiraEm: data.trialExpiraEm };
       if (data.tipo === "professor") return { tipo: "professor", professor: data.professor };
       if (data.tipo === "aluno") return { tipo: "aluno", aluno: data.aluno };
       return null;
@@ -339,8 +339,6 @@ export default function Home() {
             <ManagerDashboard
               arenaName={sessao.arenaName}
               gestorName={sessao.gestorName}
-              responsavelName={sessao.responsavelName}
-              gestorLabel={sessao.gestorLabel}
               planos={planosAdaptados}
               alunos={alunos.map((a: any) => ({
                 id: a.id,
