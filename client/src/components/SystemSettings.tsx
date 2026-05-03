@@ -128,12 +128,17 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3 mb-6">
+        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-settings-top">
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex items-center gap-2 flex-1">
           {headingIcon}
-          {headingTitle}
-        </h1>
-        <p className="text-sm text-muted-foreground">{headingDesc}</p>
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{headingTitle}</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{headingDesc}</p>
+          </div>
+        </div>
       </div>
 
       {showConfiguracoes && (
@@ -330,16 +335,6 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
           </CardContent>
         </Card>
       )}
-
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-settings-bottom">
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center gap-2 flex-1">
-          <Settings className="h-5 w-5 text-blue-600" />
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Configurações</h1>
-        </div>
-      </div>
     </div>
   );
 }
