@@ -233,6 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tipo: "gestor",
         arenaId,
         arenaName: arena?.name,
+        gestorName: arena?.gestorNome ?? undefined,
         statusConta: arena?.statusConta ?? "ativo",
         trialExpiraEm: arena?.trialExpiraEm ?? null,
       });
