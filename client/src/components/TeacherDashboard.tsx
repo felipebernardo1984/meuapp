@@ -613,22 +613,22 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="col-span-2 space-y-1">
-                <Label>Email</Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="email@exemplo.com"
                   type="email"
                   value={novoAluno.email}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value, login: e.target.value })}
                   data-testid="input-new-student-email"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Email <span className="text-destructive">*</span></Label>
+                <Label>Login <span className="text-destructive">*</span></Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
                   value={novoAluno.login}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value, email: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
                   data-testid="input-new-student-login"
                 />
               </div>
@@ -777,22 +777,22 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="col-span-2 space-y-1">
-                <Label>Email</Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="email@exemplo.com"
                   type="email"
                   value={dadosEdicao.email ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, email: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, email: e.target.value, login: e.target.value })}
                   data-testid="input-edit-student-email"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Email <span className="text-destructive">*</span></Label>
+                <Label>Login <span className="text-destructive">*</span></Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
                   value={dadosEdicao.login ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value, email: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value })}
                   data-testid="input-edit-student-login"
                 />
               </div>
