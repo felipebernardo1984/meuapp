@@ -530,6 +530,13 @@ export class DatabaseStorage {
   }
 
   async createTurma(data: any) {
+    if (data.recursoId && data.dataAula) {
+      const resourceConflicts = await db.select().from(turmas).where(and(
+        eq(turmas.recursoId, data.recursoId),
+        eq(turmas.dataAula, data.dataAula)
+      ));
+      if (resourceConflicts.length > 0) throw new Error("Sala já ocupada nesse horário");
+    }
     if (data.professorId && data.dataAula) {
       const conflicts = await db.select().from(turmas).where(and(
         eq(turmas.professorId, data.professorId),
@@ -545,7 +552,16 @@ export class DatabaseStorage {
     const current = await this.getTurma(id);
     if (!current) return undefined;
     const professorId = data.professorId ?? current.professorId;
+    const recursoId = data.recursoId ?? current.recursoId;
     const dataAula = data.dataAula ?? current.dataAula;
+    if (recursoId && dataAula) {
+      const conflicts = await db.select().from(turmas).where(and(
+        eq(turmas.recursoId, recursoId),
+        eq(turmas.dataAula, dataAula),
+        ne(turmas.id, id)
+      ));
+      if (conflicts.length > 0) throw new Error("Sala já ocupada nesse horário");
+    }
     if (professorId && dataAula) {
       const conflicts = await db.select().from(turmas).where(and(
         eq(turmas.professorId, professorId),

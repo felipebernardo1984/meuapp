@@ -99,6 +99,20 @@ export const insertTeacherSchema = createInsertSchema(teachers).omit({ id: true 
 export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 export type Teacher = typeof teachers.$inferSelect;
 
+// ── Resources (Salas / Quadras / Boxes) ─────────────────────────────────────
+export const recursos = pgTable("recursos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  nome: text("nome").notNull(),
+  tipo: text("tipo").notNull().default("sala"),
+  ativo: boolean("ativo").notNull().default(true),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
+
+export const insertRecursoSchema = createInsertSchema(recursos).omit({ id: true, criadoEm: true });
+export type InsertRecurso = z.infer<typeof insertRecursoSchema>;
+export type Recurso = typeof recursos.$inferSelect;
+
 // ── Students (Alunos) ────────────────────────────────────────────────────────
 export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -368,7 +382,7 @@ export const turmas = pgTable("turmas", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
   professorId: varchar("professor_id").references(() => teachers.id, { onDelete: "set null" }),
-  recursoId: varchar("recurso_id"),
+  recursoId: varchar("recurso_id").references(() => recursos.id, { onDelete: "set null" }),
   nome: text("nome").notNull(),
   modalidade: text("modalidade").notNull(),
   diasSemana: text("dias_semana").notNull().default(""),
@@ -384,17 +398,6 @@ export const turmas = pgTable("turmas", {
 export const insertTurmaSchema = createInsertSchema(turmas).omit({ id: true, criadaEm: true });
 export type InsertTurma = z.infer<typeof insertTurmaSchema>;
 export type Turma = typeof turmas.$inferSelect;
-
-export const recursos = pgTable("recursos", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
-  nome: text("nome").notNull(),
-  ativo: boolean("ativo").notNull().default(true),
-});
-
-export const insertRecursoSchema = createInsertSchema(recursos).omit({ id: true });
-export type InsertRecurso = z.infer<typeof insertRecursoSchema>;
-export type Recurso = typeof recursos.$inferSelect;
 
 // ── Turma Alunos (Enrollments) ────────────────────────────────────────────────
 export const turmaAlunos = pgTable("turma_alunos", {

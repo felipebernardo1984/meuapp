@@ -1706,10 +1706,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, modalidade, professorId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, dataAula } = req.body;
+      const { nome, modalidade, professorId, recursoId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, dataAula } = req.body;
       const turma = await storage.createTurma({
         arenaId, nome, modalidade,
         professorId: professorId || null,
+        recursoId: recursoId || null,
         diasSemana: diasSemana || "",
         horarioInicio, horarioFim,
         capacidadeMaxima: capacidadeMaxima ?? 20,
@@ -1725,10 +1726,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, modalidade, professorId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo, dataAula } = req.body;
+      const { nome, modalidade, professorId, recursoId, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo, dataAula } = req.body;
       const turma = await storage.updateTurma(req.params.id, {
         nome, modalidade,
         professorId: professorId || null,
+        recursoId: recursoId || null,
         diasSemana, horarioInicio, horarioFim,
         capacidadeMaxima, cor,
         dataAula: dataAula ?? undefined,
