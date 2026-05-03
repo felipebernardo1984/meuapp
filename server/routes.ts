@@ -1744,7 +1744,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dataAula: dataAula || null,
       });
       res.json(turma);
-    } catch (e) { res.status(400).json({ message: e instanceof Error ? e.message : "Erro ao criar turma" }); }
+    } catch (e: any) {
+      console.error("Erro ao criar turma:", e);
+      res.status(500).json({ message: e instanceof Error ? e.message : "Erro ao criar turma" });
+    }
   });
 
   app.put("/api/turmas/:id", async (req, res) => {
@@ -1762,7 +1765,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...(ativo !== undefined ? { ativo } : {}),
       });
       res.json(turma);
-    } catch (e) { res.status(400).json({ message: e instanceof Error ? e.message : "Erro ao atualizar turma" }); }
+    } catch (e: any) {
+      console.error("Erro ao atualizar turma:", e);
+      res.status(500).json({ message: e instanceof Error ? e.message : "Erro ao atualizar turma" });
+    }
   });
 
   app.get("/api/recursos", async (req, res) => {

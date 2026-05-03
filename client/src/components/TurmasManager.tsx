@@ -236,11 +236,13 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
+    const dataAula = slotPopup ? slotPopup.date.toISOString().slice(0, 10) : undefined;
     const payload = {
       ...formData,
       professorId: formData.professorId || null,
       recursoId: formData.recursoId || null,
       diasSemana: formData.diasSemana.join("|"),
+      ...(dataAula ? { dataAula } : {}),
     };
     if (editandoId) {
       await editarTurma.mutateAsync({ id: editandoId, data: payload });
