@@ -332,8 +332,9 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
       )}
 
       <div className="flex justify-start pb-8">
-        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-settings-bottom">
-          <ArrowLeft className="h-5 w-5" />
+        <Button variant="ghost" onClick={onVoltar} data-testid="button-voltar-settings-bottom">
+          Voltar ao Painel
+          <ArrowLeft className="h-4 w-4 ml-2" />
         </Button>
       </div>
     </div>
