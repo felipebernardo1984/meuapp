@@ -326,11 +326,12 @@ export default function TeacherDashboard({
             />
           )}
         </div>
-        <div>
-          <h1 className="text-2xl font-bold leading-tight" data-testid="text-teacher-name">
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-2xl font-bold leading-tight whitespace-nowrap" data-testid="text-teacher-name">
             {teacherName}
           </h1>
-          <p className="text-muted-foreground">{modalidade}</p>
+          <span className="text-muted-foreground whitespace-nowrap">|</span>
+          <p className="text-muted-foreground whitespace-nowrap">{modalidade}</p>
         </div>
       </div>
 
