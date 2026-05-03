@@ -111,6 +111,13 @@ export default function StudentDashboard({
 }: StudentDashboardProps) {
   const [uploading, setUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  const handlePhotoSelect = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => setCropSrc(e.target!.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const [confirmarIndex, setConfirmarIndex] = useState<number | null>(null);
   const [dialogRetroativo, setDialogRetroativo] = useState(false);
   const [dataRetroativa, setDataRetroativa] = useState("");
@@ -124,12 +131,6 @@ export default function StudentDashboard({
   const [horaEditar, setHoraEditar] = useState("");
 
   const { data: minhaTurma } = useQuery<any | null>({ queryKey: ["/api/aluno/turma"] });
-  const initials = studentName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 
   const abrirEditar = (index: number) => {
     const item = historico[index];
@@ -174,6 +175,12 @@ export default function StudentDashboard({
 
   const temCheckins = plano > 0;
   const progresso = temCheckins ? (checkinsRealizados / plano) * 100 : 0;
+  const initials = studentName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   const handleConfirmarRemover = () => {
     if (confirmarIndex !== null) {
@@ -206,11 +213,7 @@ export default function StudentDashboard({
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (ev) => setCropSrc(ev.target!.result as string);
-                      reader.readAsDataURL(file);
-                    }
+                    if (file) handlePhotoSelect(file);
                     e.target.value = "";
                   }}
                 />
@@ -423,6 +426,7 @@ export default function StudentDashboard({
         </Card>
       )}
 
+      {/* ── Histórico Financeiro ── */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -470,6 +474,7 @@ export default function StudentDashboard({
         </CardContent>
       </Card>
 
+      {/* ── Minhas Cobranças ── */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -517,6 +522,7 @@ export default function StudentDashboard({
         </CardContent>
       </Card>
 
+      {/* ── PIX Payment Dialog ── */}
       <Dialog open={dialogPix} onOpenChange={setDialogPix}>
         <DialogContent>
           <DialogHeader>
@@ -571,6 +577,7 @@ export default function StudentDashboard({
         </DialogContent>
       </Dialog>
 
+      {/* ── Dialog: Editar Check-in ── */}
       <Dialog open={dialogEditar} onOpenChange={(open) => { if (!open) { setDialogEditar(false); setEditandoIndex(null); } }}>
         <DialogContent>
           <DialogHeader>
