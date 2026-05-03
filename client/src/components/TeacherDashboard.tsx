@@ -406,19 +406,34 @@ export default function TeacherDashboard({
             </div>
             <div className="space-y-2">
               {alunos.slice(0, 4).map((aluno) => (
-                <div key={aluno.id} className="flex flex-wrap items-center gap-2 text-sm">
-                  <Badge variant="secondary" className="shrink-0">
-                    {aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
-                  </Badge>
-                  <span className="font-medium whitespace-nowrap">{aluno.nome}</span>
-                  {aluno.modalidade && (
-                    <span className="text-muted-foreground whitespace-nowrap">{aluno.modalidade}</span>
-                  )}
-                  {aluno.ultimoCheckin && (
-                    <span className="text-muted-foreground whitespace-nowrap">
-                      {aluno.ultimoCheckin.data} {aluno.ultimoCheckin.hora}
-                    </span>
-                  )}
+                <div key={aluno.id} className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                    {aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium whitespace-nowrap">{aluno.nome}</span>
+                      {aluno.modalidade && (
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{aluno.modalidade}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      {aluno.ultimoCheckin ? (
+                        <span className="whitespace-nowrap">Último: {aluno.ultimoCheckin.data} {aluno.ultimoCheckin.hora}</span>
+                      ) : (
+                        <span className="whitespace-nowrap">Sem check-in recente</span>
+                      )}
+                      {aluno.plano > 0 ? (
+                        <Badge variant="secondary" className="h-5 px-2 text-[11px]">
+                          {aluno.checkinsRealizados}/{aluno.plano}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="h-5 px-2 text-[11px]">
+                          {aluno.planoValorTexto ?? "Mensalista"}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
               {alunos.length > 4 && (
@@ -469,17 +484,17 @@ export default function TeacherDashboard({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base whitespace-nowrap">{aluno.nome}</CardTitle>
+                      <CardTitle className="text-base whitespace-nowrap overflow-hidden text-ellipsis">{aluno.nome}</CardTitle>
                       <p className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{aluno.planoTitulo}</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-start sm:justify-end gap-1 shrink-0 self-start sm:self-auto">
+                  <div className="flex items-center gap-2 shrink-0 self-start">
                     {temCheckins ? (
-                      <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs">
+                      <Badge variant={progresso >= 100 ? "default" : "secondary"} className="text-xs px-2">
                         {aluno.checkinsRealizados}/{aluno.plano}
                       </Badge>
                     ) : (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs px-2">
                         {aluno.planoValorTexto ?? "Mensalista"}
                       </Badge>
                     )}
