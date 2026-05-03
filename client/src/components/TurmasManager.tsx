@@ -394,7 +394,10 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   data-testid="button-configuracao-salas"
                   className="h-9 px-3 gap-1.5"
                 >
-                  {professorContext ? "Salas Disponíveis" : "Configuração de Salas"}
+                  <div className="flex flex-col items-start leading-tight">
+                    <span>{professorContext ? "Salas Disponíveis" : "Configuração de Salas"}</span>
+                    <span className="text-[11px] font-normal text-muted-foreground">Ex: Quadra 1, Quadra 2, Box 1, Box 2</span>
+                  </div>
                 </Button>
               </div>
               <Button
