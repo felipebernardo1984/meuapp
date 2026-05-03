@@ -341,6 +341,11 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             {professorContext?.nome && (
               <p className="text-xs text-gray-500 dark:text-gray-400">{professorContext.nome}</p>
             )}
+            <div className="mt-2">
+              <Button variant="ghost" size="sm" onClick={onVoltar} data-testid="button-voltar-agenda">
+                Agenda
+              </Button>
+            </div>
           </div>
         </div>
       </div>
