@@ -72,6 +72,7 @@ interface StudentDashboardProps {
   onCheckinRetroativo: (data: string, hora: string) => void;
   onEditarCheckin?: (index: number, data: string, hora: string) => void;
   onUpdatePhoto?: (photoUrl: string) => void;
+  onIrAgenda?: () => void;
 }
 
 function paymentStatusBadge(status: string) {
@@ -106,6 +107,7 @@ export default function StudentDashboard({
   onCheckinRetroativo,
   onEditarCheckin,
   onUpdatePhoto,
+  onIrAgenda,
 }: StudentDashboardProps) {
   const [uploading, setUploading] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -232,7 +234,13 @@ export default function StudentDashboard({
             </h1>
             <span className="text-muted-foreground whitespace-nowrap">|</span>
             <p className="text-base text-muted-foreground whitespace-nowrap">{modalidade}</p>
-            <Button variant="outline" size="sm" className="w-fit ml-2" data-testid="button-agenda-professor">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-fit ml-2"
+              onClick={onIrAgenda}
+              data-testid="button-agenda-professor"
+            >
               <Calendar className="h-4 w-4 mr-2" />
               Agenda
             </Button>

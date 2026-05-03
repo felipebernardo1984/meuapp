@@ -425,6 +425,7 @@ export default function ArenaApp() {
           onRemoverCheckin={(index: number) => removerCheckin.mutate({ id: alunoAtual.id, index })}
           onCheckinRetroativo={(data: string, hora: string) => checkinManual.mutate({ id: alunoAtual.id, data, hora })}
           onUpdatePhoto={(photoUrl: string) => editarAluno.mutate({ id: alunoAtual.id, photoUrl })}
+          onIrAgenda={() => setProfessorView("agenda")}
         />
       )}
 
@@ -476,6 +477,10 @@ export default function ArenaApp() {
             nome: sessao.professor.nome,
           }}
         />
+      )}
+
+      {sessao.tipo === "gestor" && gestorTab === "agenda" && (
+        <TurmasManager onVoltar={() => setGestorTab("dashboard")} />
       )}
 
       {sessao.tipo === "gestor" && (
