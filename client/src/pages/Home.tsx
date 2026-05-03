@@ -339,6 +339,7 @@ export default function Home() {
             <ManagerDashboard
               arenaName={sessao.arenaName}
               gestorName={sessao.gestorName}
+              responsavelName={sessao.gestorName}
               planos={planosAdaptados}
               alunos={alunos.map((a: any) => ({
                 id: a.id,
