@@ -411,27 +411,19 @@ export default function TeacherDashboard({
                     {aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium whitespace-nowrap">{aluno.nome}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{aluno.nome}</span>
                       {aluno.modalidade && (
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{aluno.modalidade}</span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      {aluno.ultimoCheckin ? (
-                        <span className="whitespace-nowrap">Último: {aluno.ultimoCheckin.data} {aluno.ultimoCheckin.hora}</span>
-                      ) : (
-                        <span className="whitespace-nowrap">Sem check-in recente</span>
-                      )}
-                      {aluno.plano > 0 ? (
-                        <Badge variant="secondary" className="h-5 px-2 text-[11px]">
-                          {aluno.checkinsRealizados}/{aluno.plano}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="h-5 px-2 text-[11px]">
-                          {aluno.planoValorTexto ?? "Mensalista"}
-                        </Badge>
-                      )}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="whitespace-nowrap">
+                        {aluno.ultimoCheckin ? `Último: ${aluno.ultimoCheckin.data} ${aluno.ultimoCheckin.hora}` : "Sem check-in recente"}
+                      </span>
+                      <Badge variant="secondary" className="h-5 px-2 text-[11px]">
+                        {aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -484,7 +476,7 @@ export default function TeacherDashboard({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base whitespace-nowrap overflow-hidden text-ellipsis">{aluno.nome}</CardTitle>
+                      <CardTitle className="text-base whitespace-nowrap">{aluno.nome}</CardTitle>
                       <p className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{aluno.planoTitulo}</p>
                     </div>
                   </div>
