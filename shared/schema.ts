@@ -385,6 +385,17 @@ export const insertTurmaSchema = createInsertSchema(turmas).omit({ id: true, cri
 export type InsertTurma = z.infer<typeof insertTurmaSchema>;
 export type Turma = typeof turmas.$inferSelect;
 
+export const recursos = pgTable("recursos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  nome: text("nome").notNull(),
+  ativo: boolean("ativo").notNull().default(true),
+});
+
+export const insertRecursoSchema = createInsertSchema(recursos).omit({ id: true });
+export type InsertRecurso = z.infer<typeof insertRecursoSchema>;
+export type Recurso = typeof recursos.$inferSelect;
+
 // ── Turma Alunos (Enrollments) ────────────────────────────────────────────────
 export const turmaAlunos = pgTable("turma_alunos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

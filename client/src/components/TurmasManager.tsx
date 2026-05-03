@@ -12,6 +12,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   CalendarDays, Plus, Pencil, Trash2, Users, Clock, ChevronLeft,
   ChevronRight, LayoutGrid, List, Calendar, UserPlus, UserMinus, RefreshCw,

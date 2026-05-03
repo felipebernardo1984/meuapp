@@ -194,7 +194,7 @@ export class DatabaseStorage {
       const student = await this.getStudent(data.studentId);
       if (!student) return entry;
 
-      const config = await this.getModalidadeSetting(student.arenaId, student.modalidade);
+      const config = student.arenaId ? await this.getModalidadeSetting(student.arenaId, student.modalidade) : null;
       if (!config) return entry;
 
       let valor = config.valorPorCheckin;
