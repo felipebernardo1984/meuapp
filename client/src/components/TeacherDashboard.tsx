@@ -290,7 +290,7 @@ export default function TeacherDashboard({
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+      <div className="flex flex-col items-center text-center sm:text-left sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div className="relative shrink-0 flex flex-col items-center gap-2 rounded-2xl border bg-card px-3 py-3 sm:px-4 sm:py-4 shadow-sm overflow-hidden w-full sm:min-w-[180px] sm:max-w-[180px]">
           <Avatar className="h-20 w-20 sm:h-28 sm:w-28">
             <AvatarImage src={photoUrl} alt={teacherName} />
