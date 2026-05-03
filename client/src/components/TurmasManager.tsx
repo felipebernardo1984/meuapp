@@ -1018,20 +1018,6 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               </div>
               <Select
                 value={formData.recursoId || "_none"}
-                onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }))}
-              >
-                <SelectTrigger data-testid="select-turma-recurso">
-                  <SelectValue placeholder="Selecionar espaço..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">Sem espaço específico</SelectItem>
-                  {recursos.filter((r) => r.ativo).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={formData.recursoId || "_none"}
                 onValueChange={(v) => {
                   if (v.startsWith("_edit:")) {
                     const id = v.replace("_edit:", "");
@@ -1050,13 +1036,11 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="_none">Sem espaço específico</SelectItem>
-                  <div className="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">Espaços cadastrados</div>
                   {recursos.filter((r) => r.ativo).map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.nome}
                     </SelectItem>
                   ))}
-                  <div className="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">Editar espaço</div>
                   {recursos.map((r) => (
                     <SelectItem key={`edit-${r.id}`} value={`_edit:${r.id}`}>
                       Editar {r.nome}
