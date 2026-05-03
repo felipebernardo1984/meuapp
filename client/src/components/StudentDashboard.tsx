@@ -234,17 +234,17 @@ export default function StudentDashboard({
             </h1>
             <span className="text-muted-foreground whitespace-nowrap">|</span>
             <p className="text-base text-muted-foreground whitespace-nowrap">{modalidade}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-fit ml-2"
-              onClick={onIrAgenda}
-              data-testid="button-agenda-professor"
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Agenda
-            </Button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-fit ml-2"
+            onClick={onIrAgenda}
+            data-testid="button-agenda-professor"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Agenda
+          </Button>
         </div>
         {statusMensalidade === "Pendente" && (
           <Badge variant="destructive" data-testid="badge-payment-status">
