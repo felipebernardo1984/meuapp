@@ -4454,18 +4454,9 @@ export default function ManagerDashboard({
 
       {onIrAgenda && (
         <div className="mb-4">
-          <div className="flex gap-2">
-            <Button onClick={onIrAgenda} data-testid="button-open-agenda-manager">
-              Abrir Agenda
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setDialogRecursos(true)}
-              data-testid="button-configurar-recursos"
-            >
-              Configuração de sala
-            </Button>
-          </div>
+          <Button onClick={onIrAgenda} data-testid="button-open-agenda-manager">
+            Abrir Agenda
+          </Button>
         </div>
       )}
 
