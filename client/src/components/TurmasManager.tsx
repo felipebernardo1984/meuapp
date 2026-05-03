@@ -66,6 +66,8 @@ interface Turma {
   modalidade: string;
   professorId?: string | null;
   professorNome?: string | null;
+  recursoId?: string | null;
+  recursoNome?: string | null;
   diasSemana: string;
   horarioInicio: string;
   horarioFim: string;
@@ -104,6 +106,7 @@ const emptyForm = {
   nome: "",
   modalidade: "",
   professorId: "",
+  recursoId: "",
   diasSemana: [] as string[],
   horarioInicio: "08:00",
   horarioFim: "09:00",
@@ -148,6 +151,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
+  const { data: recursos = [] } = useQuery<{ id: string; nome: string; ativo: boolean }[]>({ queryKey: ["/api/recursos"] });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
     queryFn: () => fetch(`/api/turmas/${turmaAlunos!.id}/alunos`).then((r) => r.json()),
@@ -206,6 +210,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
       nome: t.nome,
       modalidade: t.modalidade,
       professorId: t.professorId ?? "",
+      recursoId: t.recursoId ?? "",
       diasSemana: t.diasSemana ? t.diasSemana.split("|").filter(Boolean) : [],
       horarioInicio: t.horarioInicio,
       horarioFim: t.horarioFim,
@@ -232,6 +237,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     const payload = {
       ...formData,
       professorId: formData.professorId || null,
+      recursoId: formData.recursoId || null,
       diasSemana: formData.diasSemana.join("|"),
     };
     if (editandoId) {
@@ -712,6 +718,21 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Sala / Box / Quadra</Label>
+              <Select value={formData.recursoId || "_none"} onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }))}>
+                <SelectTrigger data-testid="select-turma-recurso">
+                  <SelectValue placeholder="Selecionar..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Sem sala</SelectItem>
+                  {recursos.filter((r) => r.ativo).map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
