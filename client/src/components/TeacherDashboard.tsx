@@ -404,14 +404,25 @@ export default function TeacherDashboard({
                 Mostrar
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {alunos.slice(0, 3).map((aluno) => (
-                <Badge key={aluno.id} variant="secondary" className="max-w-full whitespace-normal text-left">
-                  {aluno.nome}
-                </Badge>
+            <div className="space-y-2">
+              {alunos.slice(0, 4).map((aluno) => (
+                <div key={aluno.id} className="flex flex-wrap items-center gap-2 text-sm">
+                  <Badge variant="secondary" className="shrink-0">
+                    {aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
+                  </Badge>
+                  <span className="font-medium whitespace-nowrap">{aluno.nome}</span>
+                  {aluno.modalidade && (
+                    <span className="text-muted-foreground whitespace-nowrap">{aluno.modalidade}</span>
+                  )}
+                  {aluno.ultimoCheckin && (
+                    <span className="text-muted-foreground whitespace-nowrap">
+                      {aluno.ultimoCheckin.data} {aluno.ultimoCheckin.hora}
+                    </span>
+                  )}
+                </div>
               ))}
-              {alunos.length > 3 && (
-                <Badge variant="outline">+{alunos.length - 3}</Badge>
+              {alunos.length > 4 && (
+                <p className="text-xs text-muted-foreground">+{alunos.length - 4} alunos</p>
               )}
             </div>
           </CardContent>
@@ -458,8 +469,8 @@ export default function TeacherDashboard({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base whitespace-normal break-words">{aluno.nome}</CardTitle>
-                      <p className="text-xs text-muted-foreground whitespace-normal break-words">{aluno.planoTitulo}</p>
+                      <CardTitle className="text-base whitespace-nowrap">{aluno.nome}</CardTitle>
+                      <p className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{aluno.planoTitulo}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-start sm:justify-end gap-1 shrink-0 self-start sm:self-auto">
