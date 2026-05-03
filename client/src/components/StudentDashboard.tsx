@@ -217,6 +217,14 @@ export default function StudentDashboard({
                 />
               </label>
             )}
+            {cropSrc && onUpdatePhoto && (
+              <PhotoCropModal
+                imageSrc={cropSrc}
+                onConfirm={(b64) => { onUpdatePhoto(b64); setCropSrc(null); }}
+                onRemove={() => { onUpdatePhoto(""); setCropSrc(null); }}
+                onCancel={() => setCropSrc(null)}
+              />
+            )}
           </div>
         <div className="flex items-center gap-2 min-w-0">
           <h1 className="text-xl font-semibold whitespace-nowrap" data-testid="text-student-name">

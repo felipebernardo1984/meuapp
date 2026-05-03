@@ -10,28 +10,30 @@ interface PhotoCropModalProps {
   onCancel: () => void;
 }
 
-const CIRCLE_SIZE = 260;
-
 export function PhotoCropModal({ imageSrc, onConfirm, onRemove, onCancel }: PhotoCropModalProps) {
   const [zoom, setZoom] = useState(1);
   const [minZoom, setMinZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [frameSize, setFrameSize] = useState(180);
   const dragOrigin = useRef({ mx: 0, my: 0, ox: 0, oy: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
 
   const clampOffset = useCallback((ox: number, oy: number, z: number, naturalW: number, naturalH: number) => {
     const displayW = naturalW * z;
     const displayH = naturalH * z;
-    const maxX = Math.max(0, (displayW - CIRCLE_SIZE) / 2);
-    const maxY = Math.max(0, (displayH - CIRCLE_SIZE) / 2);
+    const maxX = Math.max(0, (displayW - frameSize) / 2);
+    const maxY = Math.max(0, (displayH - frameSize) / 2);
     return { x: Math.min(maxX, Math.max(-maxX, ox)), y: Math.min(maxY, Math.max(-maxY, oy)) };
-  }, []);
+  }, [frameSize]);
 
   const onImgLoad = () => {
     const img = imgRef.current;
     if (!img) return;
-    const initial = Math.max(CIRCLE_SIZE / img.naturalWidth, CIRCLE_SIZE / img.naturalHeight);
+    const size = frameRef.current?.getBoundingClientRect().width ?? frameSize;
+    setFrameSize(size);
+    const initial = Math.max(size / img.naturalWidth, size / img.naturalHeight);
     setMinZoom(initial);
     setZoom(initial);
     setOffset({ x: 0, y: 0 });
@@ -69,16 +71,16 @@ export function PhotoCropModal({ imageSrc, onConfirm, onRemove, onCancel }: Phot
     const img = imgRef.current;
     if (!img) return;
     const canvas = document.createElement("canvas");
-    canvas.width = CIRCLE_SIZE;
-    canvas.height = CIRCLE_SIZE;
+    canvas.width = frameSize;
+    canvas.height = frameSize;
     const ctx = canvas.getContext("2d")!;
     ctx.beginPath();
-    ctx.arc(CIRCLE_SIZE / 2, CIRCLE_SIZE / 2, CIRCLE_SIZE / 2, 0, Math.PI * 2);
+    ctx.arc(frameSize / 2, frameSize / 2, frameSize / 2, 0, Math.PI * 2);
     ctx.clip();
     const drawW = img.naturalWidth * zoom;
     const drawH = img.naturalHeight * zoom;
-    const drawX = CIRCLE_SIZE / 2 + offset.x - drawW / 2;
-    const drawY = CIRCLE_SIZE / 2 + offset.y - drawH / 2;
+    const drawX = frameSize / 2 + offset.x - drawW / 2;
+    const drawY = frameSize / 2 + offset.y - drawH / 2;
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
     onConfirm(canvas.toDataURL("image/jpeg", 0.92));
   };
@@ -98,8 +100,9 @@ export function PhotoCropModal({ imageSrc, onConfirm, onRemove, onCancel }: Phot
           </p>
 
           <div
+            ref={frameRef}
             className="relative overflow-hidden rounded-full border-4 border-primary/30 bg-muted cursor-move select-none shadow-inner"
-            style={{ width: "min(200px, 64vw)", height: "min(200px, 64vw)" }}
+            style={{ width: "min(180px, 62vw)", height: "min(180px, 62vw)" }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={stopDrag}
