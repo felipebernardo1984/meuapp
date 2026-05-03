@@ -321,15 +321,15 @@ export default function Admin() {
   // ── Login screen ──────────────────────────────────────────────────────────
   if (!adminSession?.isAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-3 sm:p-4">
         <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
         <Card className="w-full max-w-md border-primary/20">
-          <CardHeader className="text-center space-y-2 pb-6">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <CardHeader className="text-center space-y-1.5 sm:space-y-2 pb-4 sm:pb-6">
+            <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               SEVEN SPORTS
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <Label>Login</Label>
               <Input
@@ -379,13 +379,13 @@ export default function Admin() {
           <ThemeToggle />
         </div>
 
-        <div className="max-w-6xl mx-auto p-6 pt-16">
-          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center gap-3 mb-6">
+        <div className="max-w-6xl mx-auto p-3 sm:p-4 md:p-6 pt-16">
+          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 mb-4 sm:mb-6">
             <Button variant="ghost" size="icon" onClick={() => setDetailId(null)} data-testid="button-back">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2 flex-1">
-              <span className="text-xl font-semibold text-gray-900 dark:text-white">Voltar às arenas</span>
+              <span className="text-base sm:text-xl font-semibold text-gray-900 dark:text-white">Voltar às arenas</span>
             </div>
           </div>
 
@@ -393,11 +393,11 @@ export default function Admin() {
             <div className="text-center py-12 text-muted-foreground">Carregando dados da arena...</div>
           ) : (
             <>
-              <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6 gap-3">
                 <div>
-                  <h1 className="text-2xl font-bold" data-testid="text-detail-name">{arenaDetail.name}</h1>
+                  <h1 className="text-xl sm:text-2xl font-bold break-words" data-testid="text-detail-name">{arenaDetail.name}</h1>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={PLAN_BADGE[arenaDetail.subscriptionPlan]}>
                     {PLAN_LABELS[arenaDetail.subscriptionPlan] ?? arenaDetail.subscriptionPlan}
                   </Badge>
@@ -406,10 +406,10 @@ export default function Admin() {
                       {arenaDetail.subscriptionStatus}
                     </Badge>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => openEdit(arenaDetail)}>
+                  <Button size="sm" variant="outline" onClick={() => openEdit(arenaDetail)} className="flex-1 sm:flex-none">
                     <Pencil className="h-3.5 w-3.5 mr-1.5" />Editar
                   </Button>
-                  <Button size="sm" variant="outline" className="text-destructive hover:text-destructive"
+                  <Button size="sm" variant="outline" className="text-destructive hover:text-destructive flex-1 sm:flex-none"
                     onClick={() => setDeletingArena(arenaDetail)}>
                     <Trash2 className="h-3.5 w-3.5 mr-1.5" />Excluir
                   </Button>
@@ -424,7 +424,7 @@ export default function Admin() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground text-xs mb-0.5">Plano</p>
                       <p className="font-semibold">{PLAN_LABELS[arenaDetail.subscriptionPlan] ?? arenaDetail.subscriptionPlan}</p>
@@ -446,7 +446,7 @@ export default function Admin() {
               </Card>
 
               {/* Stats bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                 {[
                   { label: "Alunos ativos", value: arenaDetail.stats.alunosAtivos, icon: <Users className="h-4 w-4" /> },
                   { label: "Total alunos", value: arenaDetail.stats.alunos, icon: <Users className="h-4 w-4" /> },
@@ -464,7 +464,7 @@ export default function Admin() {
               </div>
 
               <Tabs defaultValue="alunos">
-                <TabsList className="mb-4">
+                <TabsList className="mb-4 w-full overflow-x-auto justify-start">
                   <TabsTrigger value="alunos" data-testid="tab-alunos">Alunos ({arenaDetail.stats.alunos})</TabsTrigger>
                   <TabsTrigger value="professores" data-testid="tab-professores">Professores ({arenaDetail.stats.professores})</TabsTrigger>
                   <TabsTrigger value="planos" data-testid="tab-planos">Planos ({arenaDetail.stats.planos})</TabsTrigger>
