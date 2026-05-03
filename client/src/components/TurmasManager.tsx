@@ -279,9 +279,18 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     setDialogTurma(true);
   };
 
-  const removerDiaDoAgendamento = async (t: Turma, dia: string) => {
-    const diasRestantes = t.diasSemana.split("|").filter(Boolean).filter((d) => d !== dia);
-    if (diasRestantes.length === 0) {
+  const removerDiaDoAgendamento = async (t: Turma, diaIso: string) => {
+    const dataAula = t.dataAula;
+    if (dataAula && dataAula !== diaIso) {
+      toast({ title: "Esse agendamento não é dessa data", variant: "destructive" });
+      return;
+    }
+    if (!dataAula) {
+      await excluirTurma.mutateAsync(t.id);
+      toast({ title: "Agendamento excluído" });
+      return;
+    }
+    if (t.diasSemana.split("|").filter(Boolean).length === 1) {
       await excluirTurma.mutateAsync(t.id);
       toast({ title: "Agendamento excluído" });
       return;
@@ -296,14 +305,15 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
         recursoId: t.recursoId ?? null,
         clienteNome: t.clienteNome ?? null,
         valorCobrado: t.valorCobrado ?? null,
-        diasSemana: diasRestantes.join("|"),
+        diasSemana: t.diasSemana,
         horarioInicio: t.horarioInicio,
         horarioFim: t.horarioFim,
         capacidadeMaxima: t.capacidadeMaxima,
         cor: t.cor,
+        dataAula: null,
       },
     });
-    toast({ title: "Dia removido do agendamento" });
+    toast({ title: "Ocorrência removida da data" });
   };
 
   const toggleDia = (dia: string) => {
