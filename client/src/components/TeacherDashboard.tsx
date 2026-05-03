@@ -1233,6 +1233,14 @@ export default function TeacherDashboard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {onIrAgenda && (
+        <div className="mb-4">
+          <Button onClick={onIrAgenda} data-testid="button-open-agenda-teacher">
+            Abrir Agenda
+          </Button>
+        </div>
+      )}
       </>
     </div>
   );

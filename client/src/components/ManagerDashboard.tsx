@@ -4452,6 +4452,14 @@ export default function ManagerDashboard({
 
       <HelpDialog open={showHelp} onClose={() => setShowHelp(false)} />
 
+      {onIrAgenda && (
+        <div className="mb-4">
+          <Button onClick={onIrAgenda} data-testid="button-open-agenda-manager">
+            Abrir Agenda
+          </Button>
+        </div>
+      )}
+
       {/* Dialog Conta Bancária */}
       <Dialog open={dialogContaBancaria} onOpenChange={setDialogContaBancaria}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

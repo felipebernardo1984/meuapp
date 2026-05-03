@@ -312,6 +312,20 @@ export class DatabaseStorage {
     return db.select().from(checkinHistory).where(eq(checkinHistory.arenaId, arenaId)).orderBy(desc(checkinHistory.id));
   }
 
+  async listRecursos(arenaId: string) {
+    return db.select().from(recursos).where(eq(recursos.arenaId, arenaId)).orderBy(desc(recursos.criadoEm));
+  }
+
+  async createRecurso(data: any) {
+    const [row] = await db.insert(recursos).values(data).returning();
+    return row;
+  }
+
+  async updateRecurso(id: string, data: any) {
+    const [row] = await db.update(recursos).set(data).where(eq(recursos.id, id)).returning();
+    return row;
+  }
+
   // TEACHER COMMISSIONS
   async createCommission(data: any) {
     const [row] = await db.insert(teacherCommissions).values(data).returning();
