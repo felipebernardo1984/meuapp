@@ -59,9 +59,9 @@ export default function LandingPage() {
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 text-center bg-gray-50 dark:bg-gray-950">
-        <div className="mb-5 sm:mb-7 select-none">
+        <div className="mb-4 sm:mb-6 select-none">
           <h1
-            className="text-[3.6rem] sm:text-[5.5rem] md:text-[7rem] leading-none tracking-widest font-bold"
+            className="text-[3.2rem] sm:text-[5rem] md:text-[6.5rem] leading-none tracking-widest font-bold"
             style={{
               fontFamily: "'Bebas Neue', 'Impact', sans-serif",
               background: "linear-gradient(90deg, #1565C0 0%, #1E88E5 40%, #29B6F6 100%)",
@@ -74,15 +74,15 @@ export default function LandingPage() {
           </h1>
         </div>
 
-        <p className="text-lg sm:text-xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-3 max-w-3xl">
+        <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2 max-w-3xl">
           O sistema que organiza sua arena e ajuda a vender mais
         </p>
 
-        <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-6 sm:mb-8 max-w-2xl">
+        <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-5 sm:mb-6 max-w-2xl">
           Menos retrabalho, mais controle e uma operação profissional de ponta a ponta.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3">
           <Link href="/cadastro">
             <Button
               size="lg"
@@ -106,9 +106,9 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ──────────────────────────────────────────────────────── */}
-      <section className="bg-gray-50 dark:bg-gray-900 py-14 sm:py-20 px-4 sm:px-6">
+      <section className="bg-gray-50 dark:bg-gray-900 py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
+          <div className="text-center mb-7 sm:mb-10">
             <span className="inline-block bg-[#e91e8c]/10 text-[#e91e8c] text-xs font-bold px-4 py-1.5 rounded-full mb-4 tracking-widest uppercase">
               Funcionalidades
             </span>
@@ -119,7 +119,7 @@ export default function LandingPage() {
               Uma solução pensada para aumentar organização, produtividade e conversão.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             {features.map(({ icon: Icon, title, desc }, i) => {
               const colors = [
                 { bg: "bg-[#1a1d4e]/8 dark:bg-[#1a1d4e]/40", icon: "text-[#1a1d4e] dark:text-blue-300" },
@@ -131,7 +131,7 @@ export default function LandingPage() {
               ];
               const c = colors[i % colors.length];
               return (
-                <div key={title} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 sm:p-6 space-y-2.5 sm:space-y-3 shadow-sm hover:shadow-md transition-shadow">
+                <div key={title} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 sm:p-5 space-y-2.5 shadow-sm hover:shadow-md transition-shadow">
                   <div className={`w-11 h-11 rounded-xl ${c.bg} flex items-center justify-center`}>
                     <Icon className={`h-5 w-5 ${c.icon}`} />
                   </div>
@@ -145,15 +145,15 @@ export default function LandingPage() {
       </section>
 
       {/* ── Pricing ───────────────────────────────────────────────────────── */}
-      <section className="bg-white dark:bg-gray-950 py-14 sm:py-20 px-4 sm:px-6">
+      <section className="bg-white dark:bg-gray-950 py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-md mx-auto text-center">
           <span className="inline-block bg-[#1a1d4e]/8 text-[#1a1d4e] dark:bg-blue-900/30 dark:text-blue-300 text-xs font-bold px-4 py-1.5 rounded-full mb-4 tracking-widest uppercase">
             Plano
           </span>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-6 sm:mb-10">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-5 sm:mb-8">
             {planInfo?.planDescricao ?? "Comece grátis e veja o valor na prática."}
           </h2>
-          <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl p-6 sm:p-8 shadow-sm text-left">
+          <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl p-5 sm:p-7 shadow-sm text-left">
             <p className="text-base font-bold text-gray-900 dark:text-white mb-3">
               {planInfo?.planNome ?? "Seven Sports"}
             </p>
@@ -164,7 +164,7 @@ export default function LandingPage() {
               <span className="text-gray-400 text-sm mb-1">/mês</span>
             </div>
             <p className="text-xs text-[#8bc34a] font-semibold mb-6">7 dias grátis · sem cartão de crédito</p>
-            <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
+            <ul className="space-y-2 sm:space-y-2.5 mb-5 sm:mb-7">
               {planFeatures.map((f) => (
                 <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
                   <CheckCircle className="h-4 w-4 text-[#8bc34a] flex-shrink-0" />
@@ -186,8 +186,8 @@ export default function LandingPage() {
       </section>
 
       {/* ── Trust bar ─────────────────────────────────────────────────────── */}
-      <section className="bg-gray-50 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800 py-8 sm:py-10 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+      <section className="bg-gray-50 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800 py-7 sm:py-9 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
           {[
             { icon: CheckCircle, text: "Sem contrato de fidelidade", color: "text-[#8bc34a]" },
             { icon: Shield, text: "Dados seguros e protegidos", color: "text-[#1a1d4e] dark:text-blue-400" },
@@ -202,12 +202,12 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA final ─────────────────────────────────────────────────────── */}
-      <section className="bg-gray-50 dark:bg-gray-900 py-14 sm:py-20 px-4 sm:px-6 text-center">
+      <section className="bg-gray-50 dark:bg-gray-900 py-12 sm:py-16 px-4 sm:px-6 text-center">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mb-3">
             Quer uma arena mais organizada e lucrativa?
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 sm:mb-8">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-5 sm:mb-7">
             Teste por 7 dias e veja a diferença no primeiro dia.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
