@@ -279,6 +279,32 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     setDialogTurma(true);
   };
 
+  const removerDiaDoAgendamento = async (t: Turma, dia: string) => {
+    const diasRestantes = t.diasSemana.split("|").filter(Boolean).filter((d) => d !== dia);
+    if (diasRestantes.length === 0) {
+      toast({ title: "Não dá para remover o último dia", variant: "destructive" });
+      return;
+    }
+    await editarTurma.mutateAsync({
+      id: t.id,
+      data: {
+        nome: t.nome,
+        tipo: t.tipo,
+        modalidade: t.modalidade,
+        professorId: t.professorId ?? null,
+        recursoId: t.recursoId ?? null,
+        clienteNome: t.clienteNome ?? null,
+        valorCobrado: t.valorCobrado ?? null,
+        diasSemana: diasRestantes.join("|"),
+        horarioInicio: t.horarioInicio,
+        horarioFim: t.horarioFim,
+        capacidadeMaxima: t.capacidadeMaxima,
+        cor: t.cor,
+      },
+    });
+    toast({ title: "Dia removido do agendamento" });
+  };
+
   const toggleDia = (dia: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -672,7 +698,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                 {diaPopup.turmas.map((t) => (
                   <div
                     key={t.id}
-                    className="flex items-center justify-between p-3 rounded-lg text-white"
+                    className="flex items-center justify-between gap-2 p-3 rounded-lg text-white"
                     style={{ backgroundColor: t.cor }}
                   >
                     <div>
@@ -680,11 +706,22 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
                       <p className="text-xs opacity-90">{t.horarioInicio}–{t.horarioFim}</p>
                       {t.professorNome && <p className="text-xs opacity-80">{t.professorNome}</p>}
                     </div>
-                    <div className="text-right text-xs opacity-90">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {t.alunosCount}/{t.capacidadeMaxima}
+                    <div className="flex items-center gap-2">
+                      <div className="text-right text-xs opacity-90">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {t.alunosCount}/{t.capacidadeMaxima}
+                        </div>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 bg-white/20 text-white hover:bg-white/30"
+                        data-testid={`button-remover-dia-${t.id}-${JS_DAY_TO_ID[diaPopup.date.getDay()]}`}
+                        onClick={() => removerDiaDoAgendamento(t, JS_DAY_TO_ID[diaPopup.date.getDay()])}
+                      >
+                        Remover dia
+                      </Button>
                     </div>
                   </div>
                 ))}
