@@ -83,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const trialDate = new Date();
         trialDate.setDate(trialDate.getDate() + 7);
         const defaultArena = await storage.createArena({
-          name: "Arena Beach Sports",
+          name: "Arena Padrão",
           subscriptionPlan: "premium",
           gestorLogin: "333",
           gestorSenha: "333",
