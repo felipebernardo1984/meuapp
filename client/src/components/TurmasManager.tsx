@@ -209,6 +209,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
     mutationFn: (data: any) => apiRequest("POST", "/api/recursos", data),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["/api/recursos"] });
+      await qc.invalidateQueries({ queryKey: ["/api/turmas"] });
       setRecursoNome("");
       toast({ title: "Recurso salvo!" });
     },
@@ -885,15 +886,28 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
               </>
             )}
             <div className="space-y-2">
-              {recursos.map((r) => (
-                <div key={r.id} className="flex items-center justify-between rounded-md border px-3 py-2" data-testid={`recurso-item-${r.id}`}>
-                  <span>{r.nome}</span>
-                  <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
-                </div>
-              ))}
-              {salvarRecurso.isPending && (
-                <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">Salvando ambiente...</div>
-              )}
+              <Label>Salas cadastradas</Label>
+              <div className="space-y-2 max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                {recursos.length > 0 ? (
+                  recursos.map((r) => (
+                    <div
+                      key={r.id}
+                      className="flex items-center justify-between rounded-md border px-3 py-2"
+                      data-testid={`recurso-item-${r.id}`}
+                    >
+                      <span>{r.nome}</span>
+                      <span className="text-xs text-muted-foreground">{r.ativo ? "Ativo" : "Inativo"}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+                    Nenhuma sala cadastrada.
+                  </div>
+                )}
+                {salvarRecurso.isPending && (
+                  <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">Salvando ambiente...</div>
+                )}
+              </div>
               {recursos.length > 0 && (
                 <div className="pt-1 text-xs text-muted-foreground">
                   {recursos.length} ambiente(s) cadastrado(s)
