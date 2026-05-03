@@ -721,18 +721,14 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             </div>
 
             <div className="space-y-1.5">
-              <Label>Sala / Box / Quadra</Label>
-              <Select value={formData.recursoId || "_none"} onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "_none" ? "" : v }))}>
-                <SelectTrigger data-testid="select-turma-recurso">
-                  <SelectValue placeholder="Selecionar..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">Sem sala</SelectItem>
-                  {recursos.filter((r) => r.ativo).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="turma-recurso">Sala / Box / Quadra</Label>
+              <Input
+                id="turma-recurso"
+                data-testid="input-turma-recurso"
+                placeholder="Ex: Quadra 1"
+                value={formData.recursoId}
+                onChange={(e) => setFormData((p) => ({ ...p, recursoId: e.target.value }))}
+              />
             </div>
 
             <div className="space-y-2">
