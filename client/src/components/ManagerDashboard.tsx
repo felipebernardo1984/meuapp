@@ -1400,7 +1400,7 @@ export default function ManagerDashboard({
               <div className="space-y-1">
                 <Label>Senha <span className="text-destructive">*</span></Label>
                 <Input
-                  type="password"
+                  type="text"
                   placeholder="CPF vinculado"
                   value={novoAluno.senha}
                   onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value, cpf: e.target.value })}
