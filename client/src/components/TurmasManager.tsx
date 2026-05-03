@@ -228,30 +228,10 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
-            <button
-              onClick={() => setView("calendario")}
-              data-testid="button-view-calendario"
-              className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${view === "calendario" ? "bg-blue-600 text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-              Grade
-            </button>
-            <button
-              onClick={() => setView("lista")}
-              data-testid="button-view-lista"
-              className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${view === "lista" ? "bg-blue-600 text-white" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"}`}
-            >
-              <List className="h-3.5 w-3.5" />
-              Lista
-            </button>
-          </div>
-          <Button onClick={() => openNova()} data-testid="button-nova-turma" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
-            <Plus className="h-4 w-4" />
-            Nova Turma
-          </Button>
-        </div>
+        <Button onClick={() => openNova()} data-testid="button-nova-turma" className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 h-10 px-4">
+          <Plus className="h-4 w-4" />
+          Nova Turma
+        </Button>
       </div>
 
       {/* Content */}
@@ -265,7 +245,7 @@ export default function TurmasManager({ onVoltar, professorContext }: TurmasMana
             <CalendarDays className="h-12 w-12 text-gray-300 mb-4" />
             <p className="text-gray-500 font-medium mb-1">Nenhuma turma cadastrada</p>
             <p className="text-sm text-gray-400 mb-4">Crie sua primeira turma para organizar horários e alunos.</p>
-            <Button onClick={() => openNova()} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
+            <Button onClick={() => openNova()} className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 h-10 px-4">
               <Plus className="h-4 w-4" />Nova Turma
             </Button>
           </div>
