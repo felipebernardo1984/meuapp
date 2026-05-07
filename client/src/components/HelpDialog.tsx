@@ -48,20 +48,37 @@ const secoes: HelpSection[] = [
     id: "primeiros-passos",
     icon: Zap,
     title: "Primeiros Passos",
-    badge: "Início",
+    badge: "Prioridade",
     content: [
       {
-        titulo: "Sequência recomendada para configurar a arena",
-        descricao: "Siga esta ordem para ter o sistema funcionando corretamente desde o início:",
+        titulo: "Configuração obrigatória — faça primeiro",
+        descricao: "Antes de cadastrar qualquer aluno, configure estes itens na ordem abaixo. São obrigatórios para o sistema funcionar:",
         passos: [
-          "1. Configure as Modalidades e valores por check-in (seção Configurações → Modalidades)",
-          "2. Crie os Planos de treino dos alunos (ex: 1x por semana, Mensalista)",
-          "3. Cadastre os Professores com os dados de acesso e % de comissão",
-          "4. Cadastre os Alunos vinculando cada um a um plano e modalidade",
-          "5. Configure o WhatsApp para envio de mensagens automáticas (opcional)",
-          "6. Configure o PIX para recebimento de mensalidades (opcional)",
+          "1. Modalidades e valores por check-in → Configurações → Modalidades (ex: Beach Tennis = R$ 40,00)",
+          "2. Planos de treino → seção Planos (ex: 2x por semana = 8 check-ins/mês, Mensalista = R$ 250/mês)",
+          "3. Professores → seção Professores (login, senha e % de comissão)",
         ],
-        dica: "Sem modalidades e planos configurados, não é possível cadastrar alunos corretamente.",
+        dica: "Sem modalidades e planos cadastrados, não é possível registrar alunos corretamente.",
+      },
+      {
+        titulo: "Configuração recomendada — faça em seguida",
+        descricao: "Com a base configurada, complete o restante para aproveitar 100% do sistema:",
+        passos: [
+          "4. Alunos → seção Alunos (vincule cada aluno a um plano, modalidade e professor)",
+          "5. Turmas → seção Turmas (crie grades de aulas com horários e professores responsáveis)",
+          "6. PIX → Configurações → Conta Bancária (gera QR Code para pagamentos)",
+          "7. WhatsApp → seção WhatsApp (automação de cobrança e assiduidade)",
+        ],
+      },
+      {
+        titulo: "Configuração opcional — avançado",
+        descricao: "Recursos adicionais que podem ser ativados quando necessário:",
+        passos: [
+          "Integrações Wellhub / TotalPass → Configurações → Modalidades",
+          "Planos de integração (valores de repasse por operadora)",
+          "Automações de cobrança e assiduidade via WhatsApp",
+        ],
+        dica: "Você pode usar o sistema sem WhatsApp e sem PIX — esses são apenas facilitadores de operação.",
       },
     ],
   },
@@ -414,8 +431,32 @@ const secoes: HelpSection[] = [
         ],
       },
       {
-        titulo: "Pagar a assinatura",
-        descricao: "No card 'Assinatura do Sistema', clique em 'Pagar assinatura'. Selecione o método de pagamento e siga as instruções.",
+        titulo: "Período de teste (trial)",
+        descricao: "Toda arena começa com um período de teste gratuito. Durante o trial, você tem acesso completo ao sistema.",
+        dica: "Acompanhe os dias restantes no card 'Assinatura do Sistema' no topo do painel.",
+      },
+      {
+        titulo: "O que acontece quando o trial expira",
+        descricao: "Quando o período de teste termina, o sistema gera automaticamente a primeira fatura de assinatura e o acesso à arena é suspenso temporariamente.",
+        passos: [
+          "O sistema detecta o fim do trial e gera a fatura automaticamente",
+          "O acesso é suspenso até a confirmação do pagamento",
+          "Entre em contato com o suporte para regularizar e reativar o acesso",
+        ],
+        dica: "O acesso é restabelecido imediatamente após o pagamento ser confirmado pela equipe.",
+      },
+      {
+        titulo: "Renovação mensal",
+        descricao: "Após o primeiro pagamento, o ciclo mensal começa automaticamente. Uma nova fatura é gerada no início de cada ciclo.",
+        passos: [
+          "A fatura mensal é gerada automaticamente na data de renovação",
+          "O acesso permanece ativo enquanto o pagamento estiver em dia",
+          "Em caso de atraso, o acesso é suspenso e restaurado após confirmação",
+        ],
+      },
+      {
+        titulo: "Como regularizar o acesso",
+        descricao: "Se o acesso da sua arena for suspenso por falta de pagamento, entre em contato com o suporte Seven Sports informando o comprovante de pagamento. A liberação é feita manualmente pela equipe ou automaticamente se o gateway de pagamento estiver configurado.",
       },
     ],
   },
@@ -460,39 +501,30 @@ const secoes: HelpSection[] = [
   {
     id: "proximos-passos",
     icon: Rocket,
-    title: "Próximas Funcionalidades",
+    title: "Em Desenvolvimento",
     badge: "Roadmap",
     content: [
       {
-        titulo: "Cadastro self-service",
-        descricao: "Qualquer gestor pode criar sua própria conta e arena diretamente pelo site, sem depender de aprovação manual.",
+        titulo: "Gateway de pagamento nativo",
+        descricao: "Integração direta com processadoras de pagamento para que a assinatura e as mensalidades dos alunos sejam liquidadas e confirmadas automaticamente, sem intervenção manual.",
         passos: [
-          "Acesse a tela de login e clique em 'Criar conta grátis'",
-          "Informe o nome da arena, seu nome, e-mail, login e senha",
-          "A arena é criada automaticamente com 5 dias de teste grátis",
-          "Faça login imediatamente com as credenciais criadas",
+          "PIX com confirmação automática via Pagar.me ou Asaas",
+          "Cartão de crédito com cobrança recorrente",
+          "Boleto bancário com baixa automática",
         ],
-        dica: "O fluxo segue o padrão de SaaS profissional: conta + arena criadas em um único passo, sem cartão de crédito.",
+        dica: "Enquanto o gateway não está configurado, a confirmação de pagamento é feita manualmente pela equipe Seven Sports.",
       },
       {
-        titulo: "Controle de trial em tempo real",
-        descricao: "O sistema controla automaticamente o período de teste de cada arena:",
-        passos: [
-          "Trial ativo → banner amarelo no dashboard mostrando dias restantes + botão 'Assinar plano'",
-          "Trial expirado → acesso bloqueado no login com mensagem explicativa",
-          "Plano ativo → acesso completo liberado sem restrição",
-        ],
-        dica: "O banner de trial aparece no topo do Home com contagem regressiva de dias. Ao expirar, o gestor não consegue mais fazer login até assinar.",
+        titulo: "Notificações de fatura para gestores",
+        descricao: "Quando uma nova fatura for gerada, o gestor receberá automaticamente um aviso por e-mail e/ou WhatsApp com o valor, vencimento e instruções de pagamento.",
       },
       {
-        titulo: "Próximas melhorias do fluxo",
-        descricao: "O ciclo de vida do cliente continuará evoluindo:",
-        passos: [
-          "Criação de arena pelo admin já com usuário owner vinculado",
-          "Múltiplos planos de assinatura (Básico, Premium, personalizado)",
-          "Integração com pagamento para ativação automática do plano",
-          "E-mail de boas-vindas com credenciais no ato do cadastro",
-        ],
+        titulo: "Aplicativo mobile",
+        descricao: "Versão mobile para check-in por QR Code, notificações push e acesso rápido ao painel pelo celular.",
+      },
+      {
+        titulo: "Relatórios exportáveis",
+        descricao: "Exportação de relatórios financeiros, de alunos e de comissões em PDF e Excel para uso externo.",
       },
     ],
   },
@@ -514,7 +546,7 @@ export default function HelpDialog({ open, onClose }: HelpDialogProps) {
           <DialogTitle className="flex items-center gap-2 text-xl">
             <BookOpen className="h-5 w-5 text-primary" />
             Manual do Sistema — Seven Sports
-            <Badge variant="secondary" className="ml-2 text-xs">v2.6</Badge>
+            <Badge variant="secondary" className="ml-2 text-xs">v2.7</Badge>
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1 pb-3 border-b">
             Guia completo de configuração e uso do painel do gestor.
