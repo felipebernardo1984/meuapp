@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, KeyRound } from "lucide-react";
+import { LogIn, KeyRound, Lock, Mail, Phone, MessageSquare, AlertTriangle } from "lucide-react";
 
 interface PublicSettings {
   suporteEmail: string;
@@ -24,6 +24,7 @@ export default function Login() {
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
   const [lembrarDados, setLembrarDados] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [blockedInfo, setBlockedInfo] = useState<{ message: string } | null>(null);
   const [esqueceuSenha, setEsqueceuSenha] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetEnviado, setResetEnviado] = useState(false);
@@ -50,7 +51,9 @@ export default function Login() {
 
       if (arenaRes.status === 403) {
         const data = await arenaRes.json();
-        throw new Error(data.message ?? "Acesso bloqueado");
+        const err = new Error(data.message ?? "Acesso bloqueado");
+        (err as any).isBlocked = true;
+        throw err;
       }
 
       const adminRes = await fetch("/api/admin/login", {
@@ -82,7 +85,11 @@ export default function Login() {
       }
     },
     onError: (error: any) => {
-      setLoginError(error.message ?? "Usuário ou senha incorretos");
+      if (error?.isBlocked) {
+        setBlockedInfo({ message: error.message });
+      } else {
+        setLoginError(error.message ?? "Usuário ou senha incorretos");
+      }
     },
   });
 
@@ -110,6 +117,105 @@ export default function Login() {
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleLogin();
   };
+
+  if (blockedInfo) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
+        <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
+        <div className="w-full max-w-md space-y-6">
+          <Card className="border-destructive/30">
+            <CardHeader className="text-center space-y-2 pb-2 pt-8">
+              <h1
+                className="text-4xl sm:text-5xl leading-none tracking-widest font-bold select-none"
+                style={{
+                  fontFamily: "'Bebas Neue', 'Impact', sans-serif",
+                  background: "linear-gradient(90deg, #1565C0 0%, #1E88E5 40%, #29B6F6 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                SEVEN SPORTS
+              </h1>
+            </CardHeader>
+            <CardContent className="space-y-5 pb-8">
+              <div className="flex flex-col items-center gap-3 pt-2">
+                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <Lock className="h-8 w-8 text-destructive" />
+                </div>
+                <div className="text-center space-y-1.5">
+                  <p className="font-bold text-base text-destructive">Acesso suspenso</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+                    {blockedInfo.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span className="text-xs font-semibold">Para reativar o acesso</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Efetue o pagamento da fatura pendente e entre em contato com o suporte informando o comprovante. O acesso será restaurado em instantes.
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fale com o suporte</p>
+                {publicSettings?.suporteEmail && (
+                  <a href={`mailto:${publicSettings.suporteEmail}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors" data-testid="link-suporte-email">
+                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                    {publicSettings.suporteEmail}
+                  </a>
+                )}
+                {publicSettings?.suporteTelefone && (
+                  <div className="flex items-center gap-2.5 text-sm text-foreground">
+                    <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                    {publicSettings.suporteTelefone}
+                  </div>
+                )}
+                {publicSettings?.suporteWhatsapp && (
+                  <a
+                    href={`https://wa.me/${(publicSettings.suporteWhatsapp).replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 text-sm text-green-600 dark:text-green-400 hover:underline"
+                    data-testid="link-suporte-whatsapp"
+                  >
+                    <MessageSquare className="h-4 w-4 shrink-0" />
+                    WhatsApp: {publicSettings.suporteWhatsapp}
+                  </a>
+                )}
+                {!publicSettings?.suporteEmail && !publicSettings?.suporteTelefone && !publicSettings?.suporteWhatsapp && (
+                  <a href="mailto:suporte@sevenclubsports.com.br" className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors">
+                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                    suporte@sevenclubsports.com.br
+                  </a>
+                )}
+                {publicSettings?.sacTexto && (
+                  <p className="text-xs text-muted-foreground pt-1">{publicSettings.sacTexto}</p>
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setBlockedInfo(null)}
+                data-testid="button-voltar-login-bloqueado"
+              >
+                ← Voltar ao login
+              </Button>
+            </CardContent>
+          </Card>
+
+          <p className="text-xs text-center text-muted-foreground font-medium tracking-wide">
+            SISTEMA DE GESTÃO ESPORTIVA · SEVENCLUBSPORTS.COM.BR
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
