@@ -132,7 +132,7 @@ export default function Admin() {
   const [webhookSecret, setWebhookSecret] = useState<string | null>(null);
 
   // ── Admin session ─────────────────────────────────────────────────────────
-  const { data: adminSession } = useQuery<{ isAdmin: boolean }>({
+  const { data: adminSession, isLoading: sessionLoading } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/session"],
   });
 
@@ -150,8 +150,8 @@ export default function Admin() {
   const logoutAdmin = useMutation({
     mutationFn: () => apiRequest("POST", "/api/admin/logout"),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/admin/session"] });
-      setDetailId(null);
+      qc.clear();
+      window.location.href = "/entrar";
     },
   });
 
@@ -345,54 +345,18 @@ export default function Admin() {
     setEditingPrices(true);
   }
 
-  // ── Login screen ──────────────────────────────────────────────────────────
-  if (!adminSession?.isAdmin) {
+  // ── Redirect to unified login if not authenticated ────────────────────────
+  if (sessionLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-3 sm:p-4">
-        <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
-        <Card className="w-full max-w-md border-primary/20">
-          <CardHeader className="text-center space-y-1.5 sm:space-y-2 pb-4 sm:pb-6">
-            <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              SEVEN SPORTS
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 sm:space-y-4">
-            <div className="space-y-2">
-              <Label>Login</Label>
-              <Input
-                placeholder="Digite seu login"
-                value={loginData.login}
-                onChange={(e) => setLoginData({ ...loginData, login: e.target.value })}
-                onKeyPress={(e) => e.key === "Enter" && loginAdmin.mutate(loginData)}
-                data-testid="input-admin-login"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Senha</Label>
-              <Input
-                type="password"
-                placeholder="Digite sua senha"
-                value={loginData.senha}
-                onChange={(e) => setLoginData({ ...loginData, senha: e.target.value })}
-                onKeyPress={(e) => e.key === "Enter" && loginAdmin.mutate(loginData)}
-                data-testid="input-admin-senha"
-              />
-            </div>
-            {loginError && (
-              <p className="text-sm text-destructive text-center" data-testid="text-admin-error">{loginError}</p>
-            )}
-            <Button
-              className="w-full"
-              onClick={() => loginAdmin.mutate(loginData)}
-              disabled={!loginData.login || !loginData.senha || loginAdmin.isPending}
-              data-testid="button-admin-login"
-            >
-              Entrar
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center">
+        <div className="text-muted-foreground text-sm">Carregando...</div>
       </div>
     );
+  }
+
+  if (!adminSession?.isAdmin) {
+    window.location.replace("/entrar");
+    return null;
   }
 
   // ── Detail view ───────────────────────────────────────────────────────────
