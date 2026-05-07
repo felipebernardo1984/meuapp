@@ -75,8 +75,17 @@ export class DatabaseStorage {
     return db.select().from(arenaSubscriptionPayments);
   }
 
+  async listArenaSubscriptionPaymentsByArena(arenaId: string) {
+    return db.select().from(arenaSubscriptionPayments).where(eq(arenaSubscriptionPayments.arenaId, arenaId));
+  }
+
   async createArenaSubscriptionPayment(data: any) {
     const [payment] = await db.insert(arenaSubscriptionPayments).values(data).returning();
+    return payment;
+  }
+
+  async updateArenaSubscriptionPayment(id: string, data: any) {
+    const [payment] = await db.update(arenaSubscriptionPayments).set(data).where(eq(arenaSubscriptionPayments.id, id)).returning();
     return payment;
   }
 

@@ -58,8 +58,9 @@ export const arenaSubscriptionPayments = pgTable("arena_subscription_payments", 
   planType: text("plan_type").notNull(),
   amount: text("amount").notNull(),
   referenceMonth: text("reference_month").notNull(),
+  dueDate: text("due_date"),
   paymentDate: text("payment_date"),
-  status: text("status").notNull().default("paid"),
+  status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -890,6 +890,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(payments);
   });
 
+  app.put("/api/admin/subscription-payments/:id/confirm", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { confirmSubscriptionPayment } = await import("./billingService");
+      await confirmSubscriptionPayment(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message ?? "Erro ao confirmar pagamento" });
+    }
+  });
+
   // ── Financial Routes ──────────────────────────────────────────────────────
   app.get("/api/finance/payments", async (req, res) => {
     const arenaId = requireArena(req, res);

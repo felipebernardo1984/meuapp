@@ -1,6 +1,7 @@
 import { storage } from "./storage";
 import { automationService } from "./automationService";
 import { runDatabaseBackup } from "./backupService";
+import { runDailyBillingCheck } from "./billingService";
 
 const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -116,6 +117,12 @@ async function runJob(): Promise<void> {
   /**
    * Backup automático do banco
    */
+
+  try {
+    await runDailyBillingCheck();
+  } catch (err) {
+    console.error(`${prefix()} Erro na verificação de cobrança:`, err);
+  }
 
   try {
 

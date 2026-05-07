@@ -82,6 +82,7 @@ interface ArenaSubscriptionPayment {
   planType: string;
   amount: string;
   referenceMonth: string;
+  dueDate?: string;
   paymentDate?: string;
   status: string;
   createdAt: string;
@@ -281,6 +282,17 @@ export default function Admin() {
       toast({ title: "Configurações salvas!", description: "As informações de suporte foram atualizadas." });
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível salvar as configurações.", variant: "destructive" }),
+  });
+
+  const confirmarPagamento = useMutation({
+    mutationFn: (paymentId: string) =>
+      apiRequest("PUT", `/api/admin/subscription-payments/${paymentId}/confirm`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/subscription-payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/arenas"] });
+      toast({ title: "Pagamento confirmado!", description: "Acesso da arena reativado e próxima fatura agendada." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível confirmar o pagamento.", variant: "destructive" }),
   });
 
   function resetForm() {
@@ -1108,23 +1120,44 @@ export default function Admin() {
                     <div className="border-t pt-3">
                       <div className="flex items-center gap-1.5 mb-2">
                         <History className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground">Histórico de Pagamentos</span>
+                        <span className="text-xs font-medium text-muted-foreground">Faturas de Assinatura</span>
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         {subscriptionPayments
                           .filter((p) => p.arenaId === arena.id)
+                          .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
                           .map((p) => (
-                            <div key={p.id} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1.5" data-testid={`row-sub-payment-${p.id}`}>
-                              <div className="flex flex-col gap-0.5">
-                                <span className="font-medium">{p.referenceMonth}</span>
-                                <span className="text-muted-foreground">{p.paymentDate ?? "—"}</span>
+                            <div key={p.id} className={`text-xs rounded px-2 py-2 ${p.status === "pending" ? "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" : "bg-muted/30"}`} data-testid={`row-sub-payment-${p.id}`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-medium">{p.referenceMonth}</span>
+                                  {p.status === "pending" && p.dueDate && (
+                                    <span className="text-amber-600 dark:text-amber-400">Vence: {p.dueDate}</span>
+                                  )}
+                                  {p.status === "paid" && (
+                                    <span className="text-muted-foreground">Pago em: {p.paymentDate ?? "—"}</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold">{p.amount}</span>
+                                  <Badge variant={p.status === "paid" ? "default" : "outline"} className={`text-xs px-1.5 py-0 ${p.status === "pending" ? "border-amber-400 text-amber-700 dark:text-amber-400" : ""}`}>
+                                    {p.status === "paid" ? "Pago" : "Pendente"}
+                                  </Badge>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold">{p.amount}</span>
-                                <Badge variant={p.status === "paid" ? "default" : "destructive"} className="text-xs px-1.5 py-0">
-                                  {p.status === "paid" ? "Pago" : "Pendente"}
-                                </Badge>
-                              </div>
+                              {p.status === "pending" && (
+                                <div className="mt-2">
+                                  <Button
+                                    size="sm"
+                                    className="w-full h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                    onClick={() => confirmarPagamento.mutate(p.id)}
+                                    disabled={confirmarPagamento.isPending}
+                                    data-testid={`button-confirm-payment-${p.id}`}
+                                  >
+                                    ✓ Confirmar Pagamento Recebido
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           ))}
                       </div>
