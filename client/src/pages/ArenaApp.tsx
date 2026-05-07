@@ -95,10 +95,8 @@ export default function ArenaApp() {
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/logout"),
     onSuccess: () => {
-      setGestorTab("dashboard");
-      qc.invalidateQueries({ queryKey: ["/api/session"] });
       qc.clear();
-      window.location.reload();
+      window.location.href = "/entrar";
     },
   });
 
