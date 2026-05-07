@@ -52,7 +52,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
       <div className="fixed top-4 left-4 z-50">
-        <a href="/admin" className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+        <a href="/admin" className="flex items-center gap-1.5 text-xs text-gray-300/50 hover:text-gray-400 dark:text-gray-700 dark:hover:text-gray-500 transition-colors">
           <LogIn className="h-3.5 w-3.5" />Admin
         </a>
       </div>
@@ -92,7 +92,7 @@ export default function LandingPage() {
               Criar conta gratuita
             </Button>
           </Link>
-          <a href="/admin">
+          <a href="/entrar">
             <Button
               variant="outline"
               size="lg"
@@ -220,7 +220,7 @@ export default function LandingPage() {
                 Criar conta gratuita
               </Button>
             </Link>
-            <a href="/admin">
+            <a href="/entrar">
               <Button
                 variant="outline"
                 size="lg"

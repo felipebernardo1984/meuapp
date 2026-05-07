@@ -1550,6 +1550,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Password Reset by email only (unified login flow) ──────────────────────
+  app.post("/api/password-reset/request-by-email", async (req, res) => {
+    const { gestorEmail } = req.body;
+    if (!gestorEmail) return res.status(400).json({ message: "E-mail obrigatório" });
+    try {
+      const allArenas = await storage.listArenas();
+      const arena = allArenas.find(
+        (a) => a.gestorEmail && a.gestorEmail.toLowerCase() === gestorEmail.toLowerCase()
+      );
+      if (!arena) {
+        return res.json({ ok: true });
+      }
+      const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      await storage.createPasswordResetToken(arena.id, token, expiresAt);
+
+      const resendApiKey = await storage.getPlatformSetting("resend_api_key");
+      const suporteEmail = (await storage.getPlatformSetting("suporte_email")) ?? "noreply@sevenclubsports.com.br";
+      const resetUrl = `${process.env.APP_URL || `https://${process.env.REPLIT_DEV_DOMAIN}`}/reset-senha?token=${token}`;
+
+      if (resendApiKey) {
+        const { Resend } = await import("resend");
+        const resend = new Resend(resendApiKey);
+        await resend.emails.send({
+          from: `Seven Sports <${suporteEmail}>`,
+          to: gestorEmail,
+          subject: "Redefinição de senha — Seven Sports",
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+              <h2 style="color:#1d4ed8">Seven Sports</h2>
+              <p>Olá! Recebemos uma solicitação para redefinir a senha da arena <strong>${arena.name}</strong>.</p>
+              <p>Clique no botão abaixo para redefinir sua senha. O link é válido por 2 horas.</p>
+              <a href="${resetUrl}" style="display:inline-block;background:#1d4ed8;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;margin:16px 0">Redefinir minha senha</a>
+              <p style="color:#6b7280;font-size:12px">Se você não solicitou isso, ignore este e-mail.</p>
+            </div>
+          `,
+        });
+      }
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro ao processar solicitação: " + (e?.message ?? "") });
+    }
+  });
+
   app.post("/api/password-reset/confirm", async (req, res) => {
     const { token, novaSenha } = req.body;
     if (!token || !novaSenha) return res.status(400).json({ message: "Dados incompletos" });
