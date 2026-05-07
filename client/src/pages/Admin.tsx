@@ -129,6 +129,7 @@ export default function Admin() {
     plan_descricao: "",
     plan_features: "",
   });
+  const [webhookSecret, setWebhookSecret] = useState<string | null>(null);
 
   // ── Admin session ─────────────────────────────────────────────────────────
   const { data: adminSession } = useQuery<{ isAdmin: boolean }>({
@@ -209,6 +210,9 @@ export default function Admin() {
       plan_descricao: rawPlatformSettings["plan_descricao"] ?? "",
       plan_features: rawPlatformSettings["plan_features"] ?? "",
     });
+    if (rawPlatformSettings["webhook_secret"] && !webhookSecret) {
+      setWebhookSecret("••••••••••••••••");
+    }
     setSettingsLoaded(true);
   }
 
@@ -293,6 +297,17 @@ export default function Admin() {
       toast({ title: "Pagamento confirmado!", description: "Acesso da arena reativado e próxima fatura agendada." });
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível confirmar o pagamento.", variant: "destructive" }),
+  });
+
+  const gerarWebhookSecret = useMutation({
+    mutationFn: () =>
+      apiRequest("POST", "/api/admin/webhook-secret/generate").then((r) => r.json()),
+    onSuccess: (data) => {
+      setWebhookSecret(data.secret);
+      qc.invalidateQueries({ queryKey: ["/api/admin/platform-settings"] });
+      toast({ title: "Chave gerada!", description: "Copie e guarde — não será exibida novamente." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível gerar a chave.", variant: "destructive" }),
   });
 
   function resetForm() {
@@ -779,6 +794,67 @@ export default function Admin() {
                 Opcional. Quando configurada, gestores recebem e-mail automático ao redefinir a senha.{" "}
                 <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Criar conta gratuita →</a>
               </p>
+            </div>
+
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b pt-2">Webhook de Pagamento Automático</div>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Configure seu gateway de pagamento (Asaas, MercadoPago, PagSeguro, etc.) para chamar este endpoint quando um pagamento for confirmado. O sistema liberará o acesso da arena automaticamente.
+              </p>
+              <div className="space-y-1">
+                <Label className="text-xs">URL do Webhook</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-muted rounded px-2 py-1.5 break-all select-all">
+                    {typeof window !== "undefined" ? window.location.origin : ""}/api/webhook/payment
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.origin + "/api/webhook/payment");
+                      toast({ title: "URL copiada!" });
+                    }}
+                  >Copiar</Button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Método: POST · Body JSON</Label>
+                <code className="block text-xs bg-muted rounded px-2 py-1.5 whitespace-pre-wrap">
+{`{ "secret": "<sua_chave>",
+  "arenaId": "<id_da_arena>" }`}
+                </code>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5"><KeyRound className="h-3.5 w-3.5" />Chave secreta</Label>
+                {webhookSecret ? (
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-muted rounded px-2 py-1.5 break-all select-all">{webhookSecret}</code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs shrink-0"
+                      onClick={() => {
+                        if (webhookSecret !== "••••••••••••••••") navigator.clipboard.writeText(webhookSecret);
+                      }}
+                    >Copiar</Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhuma chave configurada.</p>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs"
+                  onClick={() => gerarWebhookSecret.mutate()}
+                  disabled={gerarWebhookSecret.isPending}
+                  data-testid="button-generate-webhook-secret"
+                >
+                  <KeyRound className="h-3.5 w-3.5 mr-1.5" />
+                  {webhookSecret ? "Gerar nova chave" : "Gerar chave secreta"}
+                </Button>
+                <p className="text-xs text-muted-foreground">Gerar nova chave invalida a anterior. Copie e guarde antes de fechar.</p>
+              </div>
             </div>
 
             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b pt-2">Página de Vendas — Card do Plano</div>

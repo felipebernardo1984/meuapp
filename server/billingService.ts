@@ -66,23 +66,19 @@ export async function runDailyBillingCheck(): Promise<void> {
       const arenaPayments = allPayments.filter((p) => p.arenaId === arena.id);
       const pendingPayments = arenaPayments.filter((p) => p.status === "pending");
 
-      // ── 1. Fatura vencida → bloquear acesso ────────────────────────────────
-      const hasOverdue = pendingPayments.some(
-        (p) => p.dueDate && parseToISO(p.dueDate) < todayStr
-      );
-
-      if (hasOverdue && arena.statusConta !== "vencido") {
+      // ── 1. Já tem fatura pendente → manter acesso bloqueado se necessário ───
+      if (pendingPayments.length > 0 && arena.statusConta !== "vencido") {
         await storage.updateArena(arena.id, { statusConta: "vencido" });
-        console.log(`${PREFIX} Arena "${arena.name}" bloqueada — fatura vencida.`);
-        continue;
+        console.log(`${PREFIX} Arena "${arena.name}" mantida bloqueada — fatura pendente aguardando pagamento.`);
       }
 
-      // ── 2. Trial expirado → gerar primeira fatura ──────────────────────────
+      if (pendingPayments.length > 0) continue;
+
+      // ── 2. Trial expirado → gerar fatura e bloquear imediatamente ──────────
       if (arena.statusConta === "trial" && arena.trialExpiraEm) {
         const trialExpISO = parseToISO(arena.trialExpiraEm);
-        const jaTemPendente = pendingPayments.length > 0;
 
-        if (trialExpISO <= todayStr && !jaTemPendente) {
+        if (trialExpISO <= todayStr) {
           const amount = planValueMap[arena.subscriptionPlan] ?? "R$ 0,00";
           const dueDate = addDays(todayStr, 7);
           const refMonth = currentReferenceMonth();
@@ -98,23 +94,23 @@ export async function runDailyBillingCheck(): Promise<void> {
             status: "pending",
           });
 
+          await storage.updateArena(arena.id, { statusConta: "vencido" });
+
           console.log(
-            `${PREFIX} Fatura gerada para "${arena.name}" (trial expirado). Valor: ${amount} — Vencimento: ${toBRDate(dueDate)}`
+            `${PREFIX} Fatura gerada e arena "${arena.name}" bloqueada (trial expirado). Valor: ${amount} — Vencimento: ${toBRDate(dueDate)}`
           );
         }
       }
 
-      // ── 3. Arena ativa → verificar renovação mensal ────────────────────────
+      // ── 3. Arena ativa → verificar renovação mensal e bloquear ────────────
       if (arena.statusConta === "ativo" && arena.nextBillingDate) {
         const nextISO = parseToISO(arena.nextBillingDate);
-        const jaTemPendente = pendingPayments.some(
-          (p) => p.referenceMonth === currentReferenceMonth()
-        );
+        const refMonth = currentReferenceMonth();
+        const jaTemEsseMes = arenaPayments.some((p) => p.referenceMonth === refMonth);
 
-        if (nextISO <= todayStr && !jaTemPendente) {
+        if (nextISO <= todayStr && !jaTemEsseMes) {
           const amount = planValueMap[arena.subscriptionPlan] ?? "R$ 0,00";
           const dueDate = addDays(todayStr, 7);
-          const refMonth = currentReferenceMonth();
 
           await storage.createArenaSubscriptionPayment({
             arenaId: arena.id,
@@ -127,8 +123,10 @@ export async function runDailyBillingCheck(): Promise<void> {
             status: "pending",
           });
 
+          await storage.updateArena(arena.id, { statusConta: "vencido" });
+
           console.log(
-            `${PREFIX} Fatura mensal gerada para "${arena.name}". Valor: ${amount} — Vencimento: ${toBRDate(dueDate)}`
+            `${PREFIX} Fatura mensal gerada e arena "${arena.name}" bloqueada. Valor: ${amount} — Vencimento: ${toBRDate(dueDate)}`
           );
         }
       }

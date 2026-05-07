@@ -901,6 +901,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Webhook Secret Management ─────────────────────────────────────────────
+  app.post("/api/admin/webhook-secret/generate", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { randomBytes } = await import("crypto");
+      const secret = "ss_wh_" + randomBytes(24).toString("hex");
+      await storage.setPlatformSetting("webhook_secret", secret);
+      res.json({ secret });
+    } catch (err: any) {
+      res.status(500).json({ message: "Erro ao gerar chave" });
+    }
+  });
+
+  // ── Public Webhook: auto-confirm subscription payment ────────────────────
+  // Call from any payment gateway (MercadoPago, Asaas, PagSeguro, etc.)
+  // POST /api/webhook/payment
+  // Body: { secret, arenaId, referenceMonth? } OR { secret, paymentId }
+  app.post("/api/webhook/payment", async (req, res) => {
+    try {
+      const storedSecret = await storage.getPlatformSetting("webhook_secret");
+      if (!storedSecret) return res.status(403).json({ message: "Webhook não configurado" });
+
+      const { secret, arenaId, referenceMonth, paymentId } = req.body ?? {};
+      if (secret !== storedSecret) return res.status(403).json({ message: "Chave inválida" });
+
+      const { confirmSubscriptionPayment } = await import("./billingService");
+
+      if (paymentId) {
+        await confirmSubscriptionPayment(paymentId);
+        console.log(`[Webhook] Fatura ${paymentId} confirmada via webhook.`);
+        return res.json({ ok: true, confirmed: paymentId });
+      }
+
+      if (arenaId) {
+        const allPayments = await storage.listArenaSubscriptionPaymentsByArena(arenaId);
+        const pending = allPayments.filter((p) => p.status === "pending");
+        const target = referenceMonth
+          ? pending.find((p) => p.referenceMonth === referenceMonth)
+          : pending[0];
+        if (!target) return res.status(404).json({ message: "Fatura pendente não encontrada" });
+        await confirmSubscriptionPayment(target.id);
+        console.log(`[Webhook] Fatura da arena ${arenaId} (${target.referenceMonth}) confirmada via webhook.`);
+        return res.json({ ok: true, confirmed: target.id });
+      }
+
+      return res.status(400).json({ message: "Forneça paymentId ou arenaId" });
+    } catch (err: any) {
+      console.error("[Webhook] Erro:", err);
+      res.status(500).json({ message: err?.message ?? "Erro interno" });
+    }
+  });
+
   // ── Financial Routes ──────────────────────────────────────────────────────
   app.get("/api/finance/payments", async (req, res) => {
     const arenaId = requireArena(req, res);
