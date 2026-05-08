@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Settings, DollarSign, Zap, Save, ChevronUp, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { DollarSign, Zap, Save, ChevronUp, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -32,7 +32,6 @@ interface ModalidadeSetting {
 }
 
 interface LocalEdit {
-  valorPorCheckin: string;
   wellhubPlanoMinimo: string;
   wellhubValorCheckin: string;
   totalpassPlanoMinimo: string;
@@ -88,7 +87,6 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
 
   const [dialogCriar, setDialogCriar] = useState(false);
   const [novaModalidade, setNovaModalidade] = useState("");
-  const [novoValor, setNovoValor] = useState("0.00");
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -96,7 +94,6 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
     if (editando[modalidade]) return editando[modalidade];
     const cfg = getConfig(modalidade);
     return {
-      valorPorCheckin: cfg.valorPorCheckin ?? "0.00",
       wellhubPlanoMinimo: cfg.wellhubPlanoMinimo ?? "",
       wellhubValorCheckin: cfg.wellhubValorCheckin ?? "0.00",
       totalpassPlanoMinimo: cfg.totalpassPlanoMinimo ?? "",
@@ -123,16 +120,15 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
   });
 
   const criarMutation = useMutation({
-    mutationFn: ({ modalidade, valorPorCheckin }: { modalidade: string; valorPorCheckin: string }) =>
-      apiRequest("POST", "/api/configuracoes/modalidades", { modalidade, valorPorCheckin }).then((r) => r.json()),
+    mutationFn: (modalidade: string) =>
+      apiRequest("POST", "/api/configuracoes/modalidades", { modalidade }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/configuracoes/modalidades"] });
       setDialogCriar(false);
       setNovaModalidade("");
-      setNovoValor("0.00");
       toast({ title: "Modalidade criada", description: "Modalidade adicionada com sucesso." });
     },
-    onError: (err: any) => toast({ title: "Erro", description: err?.message ?? "Não foi possível criar.", variant: "destructive" }),
+    onError: () => toast({ title: "Erro", description: "Não foi possível criar. Verifique se o nome já existe.", variant: "destructive" }),
   });
 
   const deletarMutation = useMutation({
@@ -151,7 +147,6 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
     salvarMutation.mutate({
       modalidade,
       dados: {
-        valorPorCheckin: local.valorPorCheckin || "0.00",
         wellhubPlanoMinimo: local.wellhubPlanoMinimo || null,
         wellhubValorCheckin: local.wellhubValorCheckin || "0.00",
         totalpassPlanoMinimo: local.totalpassPlanoMinimo || null,
@@ -167,45 +162,32 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
 
       {/* Dialog Criar Modalidade */}
-      <Dialog open={dialogCriar} onOpenChange={(open) => { if (!open) { setDialogCriar(false); setNovaModalidade(""); setNovoValor("0.00"); } }}>
+      <Dialog open={dialogCriar} onOpenChange={(open) => { if (!open) { setDialogCriar(false); setNovaModalidade(""); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Criar Modalidade</DialogTitle>
             <DialogDescription>
-              Adicione uma nova modalidade à arena. O valor base é usado para check-ins avulsos e day use.
+              Informe o nome da nova modalidade para a arena.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="nova-modalidade-nome">Nome da Modalidade</Label>
-              <Input
-                id="nova-modalidade-nome"
-                placeholder="Ex: Beach Tennis, Day Use, Vôlei..."
-                value={novaModalidade}
-                onChange={(e) => setNovaModalidade(e.target.value)}
-                data-testid="input-nova-modalidade-nome"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="nova-modalidade-valor">Valor Base por Check-in (R$)</Label>
-              <Input
-                id="nova-modalidade-valor"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={novoValor}
-                onChange={(e) => setNovoValor(e.target.value)}
-                data-testid="input-nova-modalidade-valor"
-              />
-            </div>
+          <div className="py-2">
+            <Label htmlFor="nova-modalidade-nome">Nome da Modalidade</Label>
+            <Input
+              id="nova-modalidade-nome"
+              placeholder="Ex: Beach Tennis, Day Use, Vôlei..."
+              value={novaModalidade}
+              onChange={(e) => setNovaModalidade(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && novaModalidade.trim()) criarMutation.mutate(novaModalidade.trim()); }}
+              className="mt-1.5"
+              data-testid="input-nova-modalidade-nome"
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setDialogCriar(false); setNovaModalidade(""); setNovoValor("0.00"); }}>
+            <Button variant="outline" onClick={() => { setDialogCriar(false); setNovaModalidade(""); }}>
               Cancelar
             </Button>
             <Button
-              onClick={() => criarMutation.mutate({ modalidade: novaModalidade, valorPorCheckin: novoValor })}
+              onClick={() => criarMutation.mutate(novaModalidade.trim())}
               disabled={!novaModalidade.trim() || criarMutation.isPending}
               data-testid="button-confirm-criar-modalidade"
             >
@@ -244,15 +226,14 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
             <div className="flex items-center justify-between flex-wrap gap-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <DollarSign className="h-5 w-5" />
-                Modalidades e Valores por Check-in
+                Valor por Check-in por Modalidade
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setDialogCriar(true)}
-                  size="sm"
                   data-testid="button-criar-modalidade"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus className="h-4 w-4 mr-2" />
                   Criar Modalidade
                 </Button>
                 <Button
@@ -263,16 +244,16 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                   data-testid="button-toggle-modalidades"
                 >
                   {modalidadesMinimizado ? (
-                    <><ChevronDown className="h-4 w-4 mr-1" />Mostrar</>
+                    <><ChevronDown className="h-4 w-4 mr-1" />Mostrar modalidades</>
                   ) : (
-                    <><ChevronUp className="h-4 w-4 mr-1" />Minimizar</>
+                    <><ChevronUp className="h-4 w-4 mr-1" />Minimizar modalidades</>
                   )}
                 </Button>
               </div>
             </div>
             {!modalidadesMinimizado && (
               <CardDescription>
-                Configure o valor base por check-in de cada modalidade. Para integração com Wellhub ou TotalPass, preencha os valores de repasse — o sistema cruza automaticamente pelo valor e nome da modalidade.
+                Configure os valores separados por integração (Wellhub e TotalPass) para cada modalidade. Esses valores são usados para calcular a receita gerada automaticamente.
               </CardDescription>
             )}
           </CardHeader>
@@ -282,7 +263,7 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                 <p className="text-sm text-muted-foreground text-center py-6">Carregando...</p>
               ) : allModalidades.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">
-                  Nenhuma modalidade cadastrada. Clique em "Criar Modalidade" para começar.
+                  Nenhuma modalidade cadastrada. Cadastre professores ou alunos, ou clique em "Criar Modalidade".
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -323,28 +304,6 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                           </div>
                         </div>
 
-                        {/* Valor base */}
-                        <div className="border rounded-md p-3 bg-primary/5 space-y-1">
-                          <Label htmlFor={`base-valor-${modalidade}`} className="text-xs font-semibold text-foreground">
-                            Valor Base por Check-in (R$)
-                          </Label>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Usado para alunos avulsos, day use e como referência de cruzamento com integrações.
-                          </p>
-                          <Input
-                            id={`base-valor-${modalidade}`}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={local.valorPorCheckin}
-                            onChange={(e) => setLocal(modalidade, "valorPorCheckin", e.target.value)}
-                            data-testid={`input-base-valor-${modalidade}`}
-                            className="h-8 text-sm max-w-40"
-                          />
-                        </div>
-
-                        {/* Integrações */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="border rounded-md p-3 space-y-3 bg-muted/30">
                             <div className="flex items-center gap-2">
@@ -366,7 +325,7 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                             </div>
                             <div className="space-y-1">
                               <Label htmlFor={`wh-valor-${modalidade}`} className="text-xs text-muted-foreground">
-                                Valor de Repasse (R$)
+                                Valor por Check-in (R$)
                               </Label>
                               <Input
                                 id={`wh-valor-${modalidade}`}
@@ -401,7 +360,7 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                             </div>
                             <div className="space-y-1">
                               <Label htmlFor={`tp-valor-${modalidade}`} className="text-xs text-muted-foreground">
-                                Valor de Repasse (R$)
+                                Valor por Check-in (R$)
                               </Label>
                               <Input
                                 id={`tp-valor-${modalidade}`}
