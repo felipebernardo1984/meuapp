@@ -491,6 +491,12 @@ export class DatabaseStorage {
     return created;
   }
 
+  async deleteModalidadeSetting(arenaId: string, modalidade: string) {
+    await db
+      .delete(modalidadeSettings)
+      .where(and(eq(modalidadeSettings.arenaId, arenaId), eq(modalidadeSettings.modalidade, modalidade)));
+  }
+
   // INTEGRATION PLANS
   async listIntegrationPlans(arenaId: string) {
     return db.select().from(integrationPlans).where(eq(integrationPlans.arenaId, arenaId));

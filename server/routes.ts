@@ -1503,6 +1503,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(lista);
   });
 
+  app.post("/api/configuracoes/modalidades", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { modalidade, valorPorCheckin } = req.body;
+    if (!modalidade?.trim()) return res.status(400).json({ message: "Nome da modalidade é obrigatório." });
+    const existing = await storage.getModalidadeSetting(arenaId, modalidade.trim());
+    if (existing) return res.status(409).json({ message: "Modalidade já existe." });
+    const created = await storage.upsertModalidadeSetting({
+      arenaId,
+      modalidade: modalidade.trim(),
+      valorPorCheckin: valorPorCheckin ?? "0.00",
+      planoMinimo: null,
+      totalpassHabilitado: false,
+      wellhubHabilitado: false,
+      wellhubPlanoMinimo: null,
+      wellhubValorCheckin: "0.00",
+      totalpassPlanoMinimo: null,
+      totalpassValorCheckin: "0.00",
+    });
+    res.json(created);
+  });
+
+  app.delete("/api/configuracoes/modalidades/:modalidade", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.deleteModalidadeSetting(arenaId, decodeURIComponent(req.params.modalidade));
+    res.json({ ok: true });
+  });
+
   app.put("/api/configuracoes/modalidades/:modalidade", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
