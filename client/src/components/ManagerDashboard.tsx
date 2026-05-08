@@ -2696,7 +2696,6 @@ export default function ManagerDashboard({
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <CardTitle className="text-lg">Alunos</CardTitle>
               <div className="flex rounded-lg border overflow-hidden text-sm">
                 <button
                   className={`px-3 py-1 transition-colors ${abaAlunos === "ativos" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
