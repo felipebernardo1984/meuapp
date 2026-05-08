@@ -100,8 +100,6 @@ export default function Admin() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [loginData, setLoginData] = useState({ login: "", senha: "" });
-  const [loginError, setLoginError] = useState<string | null>(null);
   const [arenaForm, setArenaForm] = useState({
     name: "", subscriptionPlan: "basic",
     gestorNome: "", gestorCpf: "", gestorEmail: "", gestorTelefone: "", gestorLogin: "", gestorSenha: "",
@@ -134,17 +132,6 @@ export default function Admin() {
   // ── Admin session ─────────────────────────────────────────────────────────
   const { data: adminSession, isLoading: sessionLoading } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/session"],
-  });
-
-  const loginAdmin = useMutation({
-    mutationFn: (d: { login: string; senha: string }) =>
-      apiRequest("POST", "/api/admin/login", d).then((r) => r.json()),
-    onSuccess: () => {
-      setLoginError(null);
-      qc.invalidateQueries({ queryKey: ["/api/admin/session"] });
-      toast({ title: "Acesso concedido", description: "Bem-vindo ao painel administrativo." });
-    },
-    onError: () => setLoginError("Login ou senha inválidos"),
   });
 
   const logoutAdmin = useMutation({
