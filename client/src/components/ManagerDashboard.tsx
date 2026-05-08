@@ -1528,10 +1528,7 @@ export default function ManagerDashboard({
 
       {activeSection === "planos" && (
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Planos</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="space-y-2">
             {planos.map((plano) => (
               <div
@@ -2315,10 +2312,7 @@ export default function ManagerDashboard({
 
       {activeSection === "professores" && (
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Professores</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="space-y-2">
                 {professores.map((professor, idx) => {
               const profGradients = ["from-blue-400 to-blue-600","from-violet-400 to-purple-600","from-emerald-400 to-emerald-600","from-orange-400 to-orange-600","from-pink-400 to-rose-600","from-cyan-400 to-cyan-600"];
@@ -3624,14 +3618,6 @@ export default function ManagerDashboard({
       {/* Dialog Configuração WhatsApp */}
       {activeSection === "whatsapp" && (
         <div className="p-4 md:p-6 max-w-2xl">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-green-500" />
-              WhatsApp
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">Configure o número, mensagens e automações de envio.</p>
-          </div>
-
           {/* Tabs */}
           <div className="flex border-b mb-4 gap-0 overflow-x-auto">
             {([
@@ -4166,15 +4152,6 @@ export default function ManagerDashboard({
       {/* ── Dialog Log de Check-ins ── */}
       {activeSection === "checkins" && (
         <div className="p-4 md:p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <ListChecks className="h-5 w-5" />
-              Log de Check-ins — Referenciamento
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Visualize todos os check-ins e atribua-os a uma aula ou day-use. A comissão do professor é calculada automaticamente ao referenciar como "Aula".
-            </p>
-          </div>
           <div className="flex gap-2 mb-3">
             {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
               <Button
@@ -4282,15 +4259,6 @@ export default function ManagerDashboard({
       {/* ── Seção Comissões ── */}
       {activeSection === "comissoes" && (
         <div className="p-4 md:p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <PercentCircle className="h-5 w-5" />
-              Gestão de Comissões
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Resumo de comissões por professor e histórico de check-ins referenciados. O gestor pode aprovar, ajustar o valor e adicionar observações.
-            </p>
-          </div>
           <div className="overflow-y-auto flex-1 min-h-0 space-y-6">
             {/* Resumo por professor */}
             <div>
@@ -4472,16 +4440,6 @@ export default function ManagerDashboard({
       {/* Seção Conta Bancária */}
       {activeSection === "conta" && (
         <div className="p-4 md:p-6 max-w-2xl">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Landmark className="h-5 w-5 text-primary" />
-              Configuração da Conta
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Configure os dados bancários e chave PIX para recebimento de mensalidades.
-            </p>
-          </div>
-
           <div className="space-y-6 py-2">
             {/* Dados do recebedor */}
             <div>
