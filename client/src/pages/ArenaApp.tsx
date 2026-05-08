@@ -188,6 +188,10 @@ export default function ArenaApp() {
     mutationFn: (alunoId: string) => apiRequest("PUT", `/api/alunos/${alunoId}/reativar`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
   });
+  const excluirAlunoPermanente = useMutation({
+    mutationFn: (alunoId: string) => apiRequest("DELETE", `/api/alunos/${alunoId}/permanente`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+  });
 
   // ── Financial queries ─────────────────────────────────────────────────────
   const { data: allCharges = [] } = useQuery<any[]>({
@@ -528,6 +532,7 @@ export default function ArenaApp() {
           onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
           onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
           onReativarAluno={(alunoId: string) => reativarAluno.mutate(alunoId)}
+          onExcluirAlunoPermanente={(alunoId: string) => excluirAlunoPermanente.mutate(alunoId)}
         />
       )}
     </>

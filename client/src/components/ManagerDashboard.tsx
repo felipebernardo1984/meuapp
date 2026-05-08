@@ -161,6 +161,7 @@ interface ManagerDashboardProps {
   onRemoverCheckin: (alunoId: string, index: number) => void;
   onExcluirAluno: (alunoId: string) => void;
   onReativarAluno: (alunoId: string) => void;
+  onExcluirAlunoPermanente: (alunoId: string) => void;
 }
 
 
@@ -192,6 +193,7 @@ export default function ManagerDashboard({
   onRemoverCheckin,
   onExcluirAluno,
   onReativarAluno,
+  onExcluirAlunoPermanente,
 }: ManagerDashboardProps) {
   const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
   const [abaAlunos, setAbaAlunos] = useState<"ativos" | "inativos">("ativos");
@@ -426,6 +428,7 @@ export default function ManagerDashboard({
   const [alunoHistFinanceiroId, setAlunoHistFinanceiroId] = useState<string>("");
   const [alunoHistFinanceiroNome, setAlunoHistFinanceiroNome] = useState<string>("");
   const [confirmDeleteFinanceiro, setConfirmDeleteFinanceiro] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
+  const [confirmDeleteAluno, setConfirmDeleteAluno] = useState<{ id: string; nome: string } | null>(null);
 
   // Editar aluno state
   const [dialogEditarAluno, setDialogEditarAluno] = useState(false);
@@ -2748,14 +2751,25 @@ export default function ManagerDashboard({
                       <p className="font-medium text-sm">{a.nome}</p>
                       <p className="text-xs text-muted-foreground">{a.modalidade} · {a.planoTitulo || "Sem plano"} · Desativado em {a.desativadoEm ?? "—"}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onReativarAluno(a.id)}
-                      data-testid={`button-reativar-${a.id}`}
-                    >
-                      Reativar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onReativarAluno(a.id)}
+                        data-testid={`button-reativar-${a.id}`}
+                      >
+                        Reativar
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setConfirmDeleteAluno({ id: a.id, nome: a.nome })}
+                        data-testid={`button-excluir-permanente-${a.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}
@@ -4126,6 +4140,32 @@ export default function ManagerDashboard({
       </Dialog>
 
       {/* Dialog Confirmar Delete Financeiro */}
+      <Dialog open={!!confirmDeleteAluno} onOpenChange={(open) => { if (!open) setConfirmDeleteAluno(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Aluno Permanentemente</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir <strong>{confirmDeleteAluno?.nome}</strong> permanentemente? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteAluno(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmDeleteAluno) {
+                  onExcluirAlunoPermanente(confirmDeleteAluno.id);
+                  setConfirmDeleteAluno(null);
+                }
+              }}
+              data-testid="button-confirm-excluir-aluno"
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!confirmDeleteFinanceiro} onOpenChange={(open) => { if (!open) setConfirmDeleteFinanceiro(null); }}>
         <DialogContent>
           <DialogHeader>

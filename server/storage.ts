@@ -182,6 +182,10 @@ export class DatabaseStorage {
     await db.update(students).set({ ativo: false, desativadoEm: hoje }).where(eq(students.id, id));
   }
 
+  async permanentDeleteStudent(id: string) {
+    await db.delete(students).where(eq(students.id, id));
+  }
+
   async reactivateStudent(id: string) {
     const [student] = await db.update(students).set({ ativo: true, desativadoEm: null }).where(eq(students.id, id)).returning();
     return student;

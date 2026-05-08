@@ -494,6 +494,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true });
   });
 
+  app.delete("/api/alunos/:id/permanente", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.permanentDeleteStudent(req.params.id);
+    res.json({ ok: true });
+  });
+
   // ── Checkins ──────────────────────────────────────────────────────────────
   app.post("/api/alunos/:id/checkin", async (req, res) => {
     const arenaId = requireArena(req, res);
