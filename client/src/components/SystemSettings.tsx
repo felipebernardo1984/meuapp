@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DollarSign, Zap, Save, ChevronUp, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { Zap, Save, ChevronUp, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -224,41 +224,40 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <DollarSign className="h-5 w-5" />
-                Valor por Check-in por Modalidade
+              <CardTitle className="text-lg">
+                Modalidades e Valor por Check-in
               </CardTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => setDialogCriar(true)}
-                  data-testid="button-criar-modalidade"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Criar Modalidade
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground"
-                  onClick={() => setModalidadesMinimizado(!modalidadesMinimizado)}
-                  data-testid="button-toggle-modalidades"
-                >
-                  {modalidadesMinimizado ? (
-                    <><ChevronDown className="h-4 w-4 mr-1" />Mostrar modalidades</>
-                  ) : (
-                    <><ChevronUp className="h-4 w-4 mr-1" />Minimizar modalidades</>
-                  )}
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => setModalidadesMinimizado(!modalidadesMinimizado)}
+                data-testid="button-toggle-modalidades"
+              >
+                {modalidadesMinimizado ? (
+                  <><ChevronDown className="h-4 w-4 mr-1" />Mostrar modalidades</>
+                ) : (
+                  <><ChevronUp className="h-4 w-4 mr-1" />Minimizar modalidades</>
+                )}
+              </Button>
             </div>
             {!modalidadesMinimizado && (
               <CardDescription>
-                Configure os valores separados por integração (Wellhub e TotalPass) para cada modalidade. Esses valores são usados para calcular a receita gerada automaticamente.
+                Configure o valor base por check-in de cada modalidade. Para integração com Wellhub ou TotalPass, preencha os valores de repasse — o sistema cruza automaticamente pelo valor e nome da modalidade.
               </CardDescription>
             )}
           </CardHeader>
           {!modalidadesMinimizado && (
             <CardContent>
+              <Button
+                size="lg"
+                className="w-full h-14 text-lg mb-6"
+                onClick={() => setDialogCriar(true)}
+                data-testid="button-criar-modalidade"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Criar Modalidade
+              </Button>
               {isLoading ? (
                 <p className="text-sm text-muted-foreground text-center py-6">Carregando...</p>
               ) : allModalidades.length === 0 ? (
