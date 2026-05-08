@@ -171,19 +171,8 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-4 text-center sm:text-left">
-        <div className="flex items-center justify-center sm:justify-start gap-2 flex-1 min-w-0">
-          <Settings className="h-5 w-5 text-blue-600" />
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white" data-testid="text-financial-title">Financeiro</h1>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setDialogPix(true)} data-testid="button-pix-settings" className="w-full sm:w-auto">
-          <Settings className="h-4 w-4 mr-2" />
-          Configurar Pix
-        </Button>
-      </div>
-
       {/* Switcher Dashboard / Relatórios */}
-      <div className="flex gap-0 border-b mb-6 overflow-x-auto">
+      <div className="flex items-center justify-between border-b mb-6">
         <button
           onClick={() => setActiveView("dashboard")}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
@@ -208,6 +197,12 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
           <BarChart3 className="h-3.5 w-3.5" />
           Relatórios
         </button>
+        <div className="ml-auto pb-1">
+          <Button variant="outline" size="sm" onClick={() => setDialogPix(true)} data-testid="button-pix-settings">
+            <Settings className="h-4 w-4 mr-2" />
+            Configurar Pix
+          </Button>
+        </div>
       </div>
 
       {/* Vista Relatórios */}

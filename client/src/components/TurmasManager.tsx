@@ -457,15 +457,6 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   return (
     <div className="flex flex-col h-full min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <CalendarDays className="h-5 w-5 text-blue-600" />
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white min-w-0 truncate">
-            {professorContext?.nome ? `Agenda: ${professorContext.nome}` : "Agenda"}
-          </h1>
-        </div>
-      </div>
-
       {/* Content */}
       <div className="flex-1 overflow-auto p-4 sm:p-6">
         {isLoading ? (

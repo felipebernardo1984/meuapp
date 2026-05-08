@@ -128,16 +128,6 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-4 sm:mb-6 text-center sm:text-left">
-        <div className="flex items-center justify-center sm:justify-start gap-2 flex-1 min-w-0">
-          {headingIcon}
-          <div>
-            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{headingTitle}</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{headingDesc}</p>
-          </div>
-        </div>
-      </div>
-
       {showConfiguracoes && (
         <Card className="mb-6">
           <CardHeader>
