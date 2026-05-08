@@ -243,7 +243,7 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
             </div>
             {!modalidadesMinimizado && (
               <CardDescription>
-                Configure o valor base por check-in de cada modalidade. Para integração com Wellhub ou TotalPass, preencha os valores de repasse — o sistema cruza automaticamente pelo valor e nome da modalidade.
+                Configure o valor base por check-in de cada modalidade.<br />Para integração com Wellhub ou TotalPass, preencha os valores de repasse.
               </CardDescription>
             )}
           </CardHeader>
