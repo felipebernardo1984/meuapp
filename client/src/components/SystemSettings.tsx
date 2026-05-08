@@ -129,9 +129,6 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center gap-3 mb-4 sm:mb-6 text-center sm:text-left">
-        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-settings-top">
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
         <div className="flex items-center justify-center sm:justify-start gap-2 flex-1 min-w-0">
           {headingIcon}
           <div>

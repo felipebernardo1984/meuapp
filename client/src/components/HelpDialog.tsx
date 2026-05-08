@@ -530,6 +530,99 @@ const secoes: HelpSection[] = [
   },
 ];
 
+function HelpContent({ secaoAtiva, setSecaoAtiva }: { secaoAtiva: string; setSecaoAtiva: (id: string) => void }) {
+  const secao = secoes.find((s) => s.id === secaoAtiva) ?? secoes[0];
+  return (
+    <div className="flex h-full min-h-0">
+      {/* Sidebar de seções */}
+      <div className="w-52 shrink-0 border-r overflow-y-auto py-2">
+        {secoes.map((s) => {
+          const Icon = s.icon;
+          const ativo = s.id === secaoAtiva;
+          return (
+            <button
+              key={s.id}
+              onClick={() => setSecaoAtiva(s.id)}
+              className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors
+                ${ativo
+                  ? "bg-primary/10 text-primary font-semibold border-r-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              data-testid={`help-section-${s.id}`}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{s.title}</span>
+              {s.badge && <Badge className="ml-auto text-[10px] px-1.5 py-0">{s.badge}</Badge>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Conteúdo da seção */}
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex items-center gap-2 mb-4">
+          {(() => { const Icon = secao.icon; return <Icon className="h-5 w-5 text-primary" />; })()}
+          <h2 className="text-lg font-bold">{secao.title}</h2>
+        </div>
+
+        <div className="space-y-5">
+          {secao.content.map((item, i) => (
+            <div key={i} className="rounded-lg border bg-card p-4">
+              <div className="flex items-start gap-2 mb-2">
+                <ChevronRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <h3 className="font-semibold text-sm">{item.titulo}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2 pl-6">{item.descricao}</p>
+
+              {item.passos && (
+                <ul className="pl-6 space-y-1">
+                  {item.passos.map((passo, j) => (
+                    <li key={j} className="text-sm flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>{passo}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {item.dica && (
+                <div className="mt-3 ml-6 flex items-start gap-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2">
+                  <Zap className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300">{item.dica}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function HelpPanel() {
+  const [secaoAtiva, setSecaoAtiva] = useState("primeiros-passos");
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-6 py-4 border-b shrink-0">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold">Manual do Sistema — Seven Sports</h2>
+          <Badge variant="secondary" className="ml-1 text-xs">v2.7</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          Guia completo de configuração e uso do painel do gestor.
+        </p>
+      </div>
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <HelpContent secaoAtiva={secaoAtiva} setSecaoAtiva={setSecaoAtiva} />
+      </div>
+      <div className="px-6 py-3 border-t shrink-0">
+        <p className="text-xs text-muted-foreground">Seven Sports · Atualizado em Mai/2026</p>
+      </div>
+    </div>
+  );
+}
+
 interface HelpDialogProps {
   open: boolean;
   onClose: () => void;
@@ -537,8 +630,6 @@ interface HelpDialogProps {
 
 export default function HelpDialog({ open, onClose }: HelpDialogProps) {
   const [secaoAtiva, setSecaoAtiva] = useState("primeiros-passos");
-  const secao = secoes.find((s) => s.id === secaoAtiva) ?? secoes[0];
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0">
@@ -552,71 +643,9 @@ export default function HelpDialog({ open, onClose }: HelpDialogProps) {
             Guia completo de configuração e uso do painel do gestor.
           </p>
         </DialogHeader>
-
-        <div className="flex flex-1 min-h-0">
-          {/* Sidebar de seções */}
-          <div className="w-52 shrink-0 border-r overflow-y-auto py-2">
-            {secoes.map((s) => {
-              const Icon = s.icon;
-              const ativo = s.id === secaoAtiva;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setSecaoAtiva(s.id)}
-                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors
-                    ${ativo
-                      ? "bg-primary/10 text-primary font-semibold border-r-2 border-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                  data-testid={`help-section-${s.id}`}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{s.title}</span>
-                  {s.badge && <Badge className="ml-auto text-[10px] px-1.5 py-0">{s.badge}</Badge>}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Conteúdo da seção */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            <div className="flex items-center gap-2 mb-4">
-              {(() => { const Icon = secao.icon; return <Icon className="h-5 w-5 text-primary" />; })()}
-              <h2 className="text-lg font-bold">{secao.title}</h2>
-            </div>
-
-            <div className="space-y-5">
-              {secao.content.map((item, i) => (
-                <div key={i} className="rounded-lg border bg-card p-4">
-                  <div className="flex items-start gap-2 mb-2">
-                    <ChevronRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <h3 className="font-semibold text-sm">{item.titulo}</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2 pl-6">{item.descricao}</p>
-
-                  {item.passos && (
-                    <ul className="pl-6 space-y-1">
-                      {item.passos.map((passo, j) => (
-                        <li key={j} className="text-sm flex items-start gap-2">
-                          <span className="text-primary mt-0.5">•</span>
-                          <span>{passo}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {item.dica && (
-                    <div className="mt-3 ml-6 flex items-start gap-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2">
-                      <Zap className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-                      <p className="text-xs text-blue-700 dark:text-blue-300">{item.dica}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="flex-1 min-h-0">
+          <HelpContent secaoAtiva={secaoAtiva} setSecaoAtiva={setSecaoAtiva} />
         </div>
-
         <div className="px-6 py-3 border-t shrink-0 flex items-center justify-between">
           <p className="text-xs text-muted-foreground">Seven Sports · Atualizado em Mai/2026</p>
           <button

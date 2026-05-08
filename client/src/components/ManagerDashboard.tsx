@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PhotoCropModal } from "./PhotoCropModal";
-import HelpDialog from "@/components/HelpDialog";
+import { HelpPanel } from "@/components/HelpDialog";
 import ManagerSidebar from "@/components/ManagerSidebar";
 import TurmasManager from "@/components/TurmasManager";
 import FinancialDashboard from "@/components/FinancialDashboard";
@@ -244,7 +244,6 @@ export default function ManagerDashboard({
     queryKey: ["/api/whatsapp/dispatches"],
   });
 
-  const [showHelp, setShowHelp] = useState(false);
   const [formContaBancaria, setFormContaBancaria] = useState({
     receiverName: "",
     pixKey: "",
@@ -780,7 +779,7 @@ export default function ManagerDashboard({
     }
     if (section === "comissoes") { refetchComissoes(); setActiveSection("comissoes"); return; }
     if (section === "checkins") { setActiveSection("checkins"); return; }
-    if (section === "ajuda") { setShowHelp(true); return; }
+    if (section === "ajuda") { setActiveSection("ajuda"); return; }
     if (section === "conta") {
       setFormContaBancaria({
         receiverName: contaBancariaData?.receiverName ?? "",
@@ -861,6 +860,7 @@ export default function ManagerDashboard({
     comissoes: "Comissões",
     checkins: "Log de Check-ins",
     conta: "Conta Bancária",
+    ajuda: "Ajuda",
   };
 
   return (
@@ -3015,6 +3015,12 @@ export default function ManagerDashboard({
         <AlertPanel arenaId={arenaId ?? ""} onVoltar={() => setActiveSection("dashboard")} />
       )}
 
+      {activeSection === "ajuda" && (
+        <div className="flex-1 overflow-hidden h-full">
+          <HelpPanel />
+        </div>
+      )}
+
       {/* Dialog Registrar Pagamento */}
       <Dialog open={dialogPagamento} onOpenChange={setDialogPagamento}>
         <DialogContent>
@@ -4462,7 +4468,6 @@ export default function ManagerDashboard({
         </DialogContent>
       </Dialog>
 
-      <HelpDialog open={showHelp} onClose={() => setShowHelp(false)} />
 
       {/* Seção Conta Bancária */}
       {activeSection === "conta" && (
