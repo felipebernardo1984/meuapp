@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "EU3vxQuNa3kGVLBfAuhDI"
+uri = "file://artifacts/mockup-sandbox/public/images/hero-arena.png"
+type = "image"
+title = "Indoor beach tennis court"
+
+[[generated]]
+id = "CBO8Q72e_eZt9oflYV6Dz"
+uri = "file://artifacts/mockup-sandbox/public/images/dashboard-mockup.png"
+type = "image"
+title = "SaaS dashboard stylized"
+
+[[generated]]
+id = "3G3ENH8pqAK41AxKTZ9Vn"
+uri = "file://artifacts/mockup-sandbox/public/images/avatar-manager.png"
+type = "image"
+title = "Smiling arena manager"
+
+[[generated]]
+id = "-BxCV3gcxvn7RW3qSerrh"
+uri = "file://artifacts/mockup-sandbox/public/images/cta-arena.png"
+type = "image"
+title = "Beach tennis at night"
