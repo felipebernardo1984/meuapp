@@ -4191,7 +4191,7 @@ export default function ManagerDashboard({
       {/* ── Dialog Log de Check-ins ── */}
       {activeSection === "checkins" && (
         <div className="p-4 md:p-6">
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
               <Button
                 key={t}
@@ -4204,7 +4204,7 @@ export default function ManagerDashboard({
               </Button>
             ))}
           </div>
-          <div className="overflow-y-auto flex-1 min-h-0">
+          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -4298,10 +4298,11 @@ export default function ManagerDashboard({
       {/* ── Seção Comissões ── */}
       {activeSection === "comissoes" && (
         <div className="p-4 md:p-6">
-          <div className="overflow-y-auto flex-1 min-h-0 space-y-6">
+          <div className="overflow-x-auto flex-1 min-h-0 space-y-6">
             {/* Resumo por professor */}
             <div>
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Resumo por Professor</p>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -4337,12 +4338,14 @@ export default function ManagerDashboard({
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
 
             {/* Detalhe de comissões */}
             {todasComissoes.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico Detalhado</p>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -4430,6 +4433,7 @@ export default function ManagerDashboard({
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             )}
           </div>
