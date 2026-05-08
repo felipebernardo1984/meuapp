@@ -5,9 +5,6 @@ import { apiRequest } from "@/lib/queryClient";
 import StudentDashboard from "@/components/StudentDashboard";
 import TeacherDashboard from "@/components/TeacherDashboard";
 import ManagerDashboard from "@/components/ManagerDashboard";
-import FinancialDashboard from "@/components/FinancialDashboard";
-import SystemSettings from "@/components/SystemSettings";
-import AlertPanel from "@/components/AlertPanel";
 import TurmasManager from "@/components/TurmasManager";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -32,7 +29,6 @@ export default function ArenaApp() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [lembrarDados, setLembrarDados] = useState(false);
   const [esqueceuSenha, setEsqueceuSenha] = useState(false);
-  const [gestorTab, setGestorTab] = useState<"dashboard" | "agenda" | "financeiro" | "configuracoes" | "integracoes" | "alertas">("dashboard");
   const [professorView, setProfessorView] = useState<"dashboard" | "agenda">("dashboard");
   const [alunoView, setAlunoView] = useState<"dashboard" | "agenda">("dashboard");
   const [resetEmail, setResetEmail] = useState("");
@@ -486,79 +482,53 @@ export default function ArenaApp() {
       )}
 
       {sessao.tipo === "gestor" && (
-        <>
-          {gestorTab === "dashboard" && (
-            <ManagerDashboard
-              arenaName={sessao.arenaName ?? arena?.name}
-              gestorName={sessao.gestorName}
-              planos={planosAdaptados}
-              alunos={alunos.map((a: any) => ({
-                id: a.id,
-                nome: a.nome,
-                cpf: a.cpf,
-                email: a.email ?? undefined,
-                telefone: a.telefone ?? undefined,
-                login: a.login ?? undefined,
-                modalidade: a.modalidade,
-                plano: a.planoCheckins,
-                planoTitulo: a.planoTitulo,
-                planoValorTexto: a.planoValorTexto ?? undefined,
-                planoId: a.planoId,
-                checkinsRealizados: a.checkinsRealizados,
-                statusMensalidade: a.statusMensalidade,
-                ultimoCheckin: a.ultimoCheckin ?? undefined,
-                aprovado: a.aprovado,
-                historico: a.historico ?? [],
-                integrationType: a.integrationType ?? "none",
-                integrationPlan: a.integrationPlan ?? "",
-                professorId: a.professorId ?? undefined,
-              }))}
-              professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade, percentualComissao: p.percentualComissao, photoUrl: p.photoUrl ?? undefined }))}
-              onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
-              onCadastrarProfessor={(dados: any) => cadastrarProfessor.mutate(dados)}
-              onEditarProfessor={(profId: string, dados: any) => editarProfessor.mutate({ id: profId, ...dados })}
-              onExcluirProfessor={(profId: string) => excluirProfessor.mutate(profId)}
-              onCadastrarAluno={(dados: any) => cadastrarAluno.mutate(dados)}
-              onCriarPlano={(titulo: string, checkins: number, valorTexto?: string) => criarPlano.mutate({ titulo, checkins, valorTexto })}
-              onEditarPlano={(planId: string, titulo: string, checkins: number, valorTexto?: string) => editarPlano.mutate({ id: planId, titulo, checkins, valorTexto })}
-              onExcluirPlano={(planId: string) => excluirPlano.mutate(planId)}
-              onExportarPDF={() => alert("Exportar PDF em breve")}
-              onExportarExcel={() => alert("Exportar Excel em breve")}
-              onRegistrarPagamento={(dados: any) => registrarPagamento.mutate(dados)}
-              onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
-              onIrAgenda={() => setGestorTab("agenda")}
-              onIrFinanceiro={() => setGestorTab("financeiro")}
-              onIrConfiguracoes={() => setGestorTab("configuracoes")}
-              onIrIntegracoes={() => setGestorTab("integracoes")}
-              onIrAlertas={() => setGestorTab("alertas")}
-              onLogout={() => logoutMutation.mutate()}
-              onEditarAluno={(dados: any) => editarAluno.mutate(dados)}
-              onAlterarPlanoAluno={(alunoId: string, planoId: string) => alterarPlanoAluno2.mutate({ alunoId, planoId })}
-              onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
-              onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
-              onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
-              onReativarAluno={(alunoId: string) => reativarAluno.mutate(alunoId)}
-            />
-          )}
-          {gestorTab === "agenda" && (
-            <TurmasManager onVoltar={() => setGestorTab("dashboard")} />
-          )}
-          {gestorTab === "financeiro" && (
-            <FinancialDashboard
-              alunos={alunos.map((a: any) => ({ id: a.id, nome: a.nome, modalidade: a.modalidade, checkinsRealizados: a.checkinsRealizados }))}
-              onVoltar={() => setGestorTab("dashboard")}
-            />
-          )}
-          {gestorTab === "configuracoes" && (
-            <SystemSettings onVoltar={() => setGestorTab("dashboard")} section="configuracoes" />
-          )}
-          {gestorTab === "integracoes" && (
-            <SystemSettings onVoltar={() => setGestorTab("dashboard")} section="integracoes" />
-          )}
-          {gestorTab === "alertas" && (
-            <AlertPanel arenaId={id!} onVoltar={() => setGestorTab("dashboard")} />
-          )}
-        </>
+        <ManagerDashboard
+          arenaId={id!}
+          arenaName={sessao.arenaName ?? arena?.name}
+          gestorName={sessao.gestorName}
+          planos={planosAdaptados}
+          alunos={alunos.map((a: any) => ({
+            id: a.id,
+            nome: a.nome,
+            cpf: a.cpf,
+            email: a.email ?? undefined,
+            telefone: a.telefone ?? undefined,
+            login: a.login ?? undefined,
+            modalidade: a.modalidade,
+            plano: a.planoCheckins,
+            planoTitulo: a.planoTitulo,
+            planoValorTexto: a.planoValorTexto ?? undefined,
+            planoId: a.planoId,
+            checkinsRealizados: a.checkinsRealizados,
+            statusMensalidade: a.statusMensalidade,
+            ultimoCheckin: a.ultimoCheckin ?? undefined,
+            aprovado: a.aprovado,
+            historico: a.historico ?? [],
+            integrationType: a.integrationType ?? "none",
+            integrationPlan: a.integrationPlan ?? "",
+            professorId: a.professorId ?? undefined,
+          }))}
+          professores={professores.map((p: any) => ({ id: p.id, nome: p.nome, cpf: p.cpf, email: p.email, telefone: p.telefone, login: p.login, modalidade: p.modalidade, percentualComissao: p.percentualComissao, photoUrl: p.photoUrl ?? undefined }))}
+          onAprovarAluno={(alunoId: string) => aprovarAluno.mutate(alunoId)}
+          onCadastrarProfessor={(dados: any) => cadastrarProfessor.mutate(dados)}
+          onEditarProfessor={(profId: string, dados: any) => editarProfessor.mutate({ id: profId, ...dados })}
+          onExcluirProfessor={(profId: string) => excluirProfessor.mutate(profId)}
+          onCadastrarAluno={(dados: any) => cadastrarAluno.mutate(dados)}
+          onCriarPlano={(titulo: string, checkins: number, valorTexto?: string) => criarPlano.mutate({ titulo, checkins, valorTexto })}
+          onEditarPlano={(planId: string, titulo: string, checkins: number, valorTexto?: string) => editarPlano.mutate({ id: planId, titulo, checkins, valorTexto })}
+          onExcluirPlano={(planId: string) => excluirPlano.mutate(planId)}
+          onExportarPDF={() => alert("Exportar PDF em breve")}
+          onExportarExcel={() => alert("Exportar Excel em breve")}
+          onRegistrarPagamento={(dados: any) => registrarPagamento.mutate(dados)}
+          onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
+          onLogout={() => logoutMutation.mutate()}
+          onEditarAluno={(dados: any) => editarAluno.mutate(dados)}
+          onAlterarPlanoAluno={(alunoId: string, planoId: string) => alterarPlanoAluno2.mutate({ alunoId, planoId })}
+          onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
+          onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
+          onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
+          onReativarAluno={(alunoId: string) => reativarAluno.mutate(alunoId)}
+        />
       )}
     </>
   );

@@ -2,6 +2,10 @@ import { useState } from "react";
 import { PhotoCropModal } from "./PhotoCropModal";
 import HelpDialog from "@/components/HelpDialog";
 import ManagerSidebar from "@/components/ManagerSidebar";
+import TurmasManager from "@/components/TurmasManager";
+import FinancialDashboard from "@/components/FinancialDashboard";
+import SystemSettings from "@/components/SystemSettings";
+import AlertPanel from "@/components/AlertPanel";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -149,11 +153,7 @@ interface ManagerDashboardProps {
   onExportarExcel: () => void;
   onRegistrarPagamento: (dados: { studentId: string; description?: string; amount: string; referenceMonth: string; dueDate: string; status: string }) => void;
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
-  onIrAgenda?: () => void;
-  onIrFinanceiro: () => void;
-  onIrConfiguracoes?: () => void;
-  onIrIntegracoes?: () => void;
-  onIrAlertas?: () => void;
+  arenaId?: string;
   onLogout?: () => void;
   onEditarAluno: (dados: { id: string; nome: string; cpf: string; email: string; telefone: string; login: string; senha?: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number; planoId: string; integrationType: string; integrationPlan: string }) => void;
   onAlterarPlanoAluno: (alunoId: string, planoId: string) => void;
@@ -184,11 +184,7 @@ export default function ManagerDashboard({
   onExportarExcel,
   onRegistrarPagamento,
   onCriarCobranca,
-  onIrAgenda,
-  onIrFinanceiro,
-  onIrConfiguracoes,
-  onIrIntegracoes,
-  onIrAlertas,
+  arenaId,
   onLogout,
   onEditarAluno,
   onAlterarPlanoAluno,
@@ -205,7 +201,6 @@ export default function ManagerDashboard({
   });
 
   // WhatsApp state
-  const [dialogWhatsapp, setDialogWhatsapp] = useState(false);
   const [waTab, setWaTab] = useState<"basico" | "cobranca" | "assiduidade" | "fila">("basico");
   const [formWhatsapp, setFormWhatsapp] = useState({
     whatsapp_number: "",
@@ -247,16 +242,9 @@ export default function ManagerDashboard({
 
   const { data: pendingDispatches = [], refetch: refetchDispatches } = useQuery<any[]>({
     queryKey: ["/api/whatsapp/dispatches"],
-    enabled: dialogWhatsapp && waTab === "fila",
   });
 
-  // Commission/log dialog state — declared BEFORE the queries that depend on them
-  const [dialogComissoes, setDialogComissoes] = useState(false);
-  const [dialogLogCheckins, setDialogLogCheckins] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-
-  // Conta Bancária dialog state
-  const [dialogContaBancaria, setDialogContaBancaria] = useState(false);
   const [formContaBancaria, setFormContaBancaria] = useState({
     receiverName: "",
     pixKey: "",
@@ -272,7 +260,6 @@ export default function ManagerDashboard({
   // Conta Bancária query + mutation
   const { data: contaBancariaData } = useQuery<any>({
     queryKey: ["/api/finance/settings"],
-    enabled: dialogContaBancaria,
   });
   const salvarContaBancaria = useMutation({
     mutationFn: (data: any) => apiRequest("PUT", "/api/finance/settings", data).then((r) => r.json()),
@@ -281,17 +268,14 @@ export default function ManagerDashboard({
   // Commission queries
   const { data: resumoComissoes = [], refetch: refetchComissoes } = useQuery<any[]>({
     queryKey: ["/api/finance/comissao/resumo"],
-    enabled: dialogComissoes,
   });
 
   const { data: todasComissoes = [], refetch: refetchTodasComissoes } = useQuery<any[]>({
     queryKey: ["/api/finance/comissoes"],
-    enabled: dialogComissoes,
   });
 
   const { data: logCheckins = [], refetch: refetchLog } = useQuery<any[]>({
     queryKey: ["/api/checkins/log"],
-    enabled: dialogLogCheckins,
   });
 
   const [filtroTipoLog, setFiltroTipoLog] = useState<"todos" | "pendente" | "aula" | "dayuse" | "avulso">("todos");
@@ -765,11 +749,6 @@ export default function ManagerDashboard({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const handleSidebarAction = (section: string) => {
-    if (section === "agenda") { onIrAgenda?.(); return; }
-    if (section === "financeiro") { onIrFinanceiro(); return; }
-    if (section === "alertas") { onIrAlertas?.(); return; }
-    if (section === "configuracoes") { onIrConfiguracoes?.(); return; }
-    if (section === "integracoes") { onIrIntegracoes?.(); return; }
     if (section === "whatsapp") {
       setFormWhatsapp({
         whatsapp_number: whatsappSettings?.whatsapp_number ?? "",
@@ -796,11 +775,11 @@ export default function ManagerDashboard({
         });
       }
       setWaTab("basico");
-      setDialogWhatsapp(true);
+      setActiveSection("whatsapp");
       return;
     }
-    if (section === "comissoes") { refetchComissoes(); setDialogComissoes(true); return; }
-    if (section === "checkins") { setDialogLogCheckins(true); return; }
+    if (section === "comissoes") { refetchComissoes(); setActiveSection("comissoes"); return; }
+    if (section === "checkins") { setActiveSection("checkins"); return; }
     if (section === "ajuda") { setShowHelp(true); return; }
     if (section === "conta") {
       setFormContaBancaria({
@@ -814,7 +793,7 @@ export default function ManagerDashboard({
         bankApiKey: contaBancariaData?.bankApiKey ?? "",
         bankWebhookUrl: contaBancariaData?.bankWebhookUrl ?? "",
       });
-      setDialogContaBancaria(true);
+      setActiveSection("conta");
       return;
     }
     setActiveSection(section);
@@ -873,6 +852,15 @@ export default function ManagerDashboard({
     mensalidades: "Mensalidades",
     professores: "Professores",
     planos: "Planos",
+    agenda: "Agenda",
+    financeiro: "Financeiro",
+    configuracoes: "Configurações",
+    integracoes: "Integrações",
+    alertas: "Alertas",
+    whatsapp: "WhatsApp",
+    comissoes: "Comissões",
+    checkins: "Log de Check-ins",
+    conta: "Conta Bancária",
   };
 
   return (
@@ -903,7 +891,7 @@ export default function ManagerDashboard({
             {sectionTitle[activeSection] ?? "Painel do Gestor"}
           </h1>
         </div>
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+        <div className={["agenda","financeiro","configuracoes","integracoes","alertas"].includes(activeSection) ? "flex-1 overflow-y-auto" : "flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"}>
 
       {activeSection === "dashboard" && (
       <>
@@ -3003,6 +2991,30 @@ export default function ManagerDashboard({
       </>
       )}
 
+      {activeSection === "agenda" && (
+        <TurmasManager onVoltar={() => setActiveSection("dashboard")} />
+      )}
+
+      {activeSection === "financeiro" && (
+        <FinancialDashboard
+          arenaId={arenaId ?? ""}
+          alunos={alunos.map((a) => ({ id: a.id, nome: a.nome, modalidade: a.modalidade, checkinsRealizados: a.checkinsRealizados }))}
+          onVoltar={() => setActiveSection("dashboard")}
+        />
+      )}
+
+      {activeSection === "configuracoes" && (
+        <SystemSettings onVoltar={() => setActiveSection("dashboard")} section="configuracoes" />
+      )}
+
+      {activeSection === "integracoes" && (
+        <SystemSettings onVoltar={() => setActiveSection("dashboard")} section="integracoes" />
+      )}
+
+      {activeSection === "alertas" && (
+        <AlertPanel arenaId={arenaId ?? ""} onVoltar={() => setActiveSection("dashboard")} />
+      )}
+
       {/* Dialog Registrar Pagamento */}
       <Dialog open={dialogPagamento} onOpenChange={setDialogPagamento}>
         <DialogContent>
@@ -3604,15 +3616,15 @@ export default function ManagerDashboard({
       </Dialog>
 
       {/* Dialog Configuração WhatsApp */}
-      <Dialog open={dialogWhatsapp} onOpenChange={setDialogWhatsapp}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {activeSection === "whatsapp" && (
+        <div className="p-4 md:p-6 max-w-2xl">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-green-500" />
               WhatsApp
-            </DialogTitle>
-            <DialogDescription>Configure o número, mensagens e automações de envio.</DialogDescription>
-          </DialogHeader>
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">Configure o número, mensagens e automações de envio.</p>
+          </div>
 
           {/* Tabs */}
           <div className="flex border-b mb-4 gap-0 overflow-x-auto">
@@ -3906,11 +3918,8 @@ export default function ManagerDashboard({
             </div>
           )}
 
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDialogWhatsapp(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Dialog Confirmar Exclusão do Aluno */}
       <Dialog open={!!confirmExcluirAluno} onOpenChange={(open) => { if (!open) setConfirmExcluirAluno(null); }}>
@@ -4149,17 +4158,17 @@ export default function ManagerDashboard({
       </Dialog>
 
       {/* ── Dialog Log de Check-ins ── */}
-      <Dialog open={dialogLogCheckins} onOpenChange={setDialogLogCheckins}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {activeSection === "checkins" && (
+        <div className="p-4 md:p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
               <ListChecks className="h-5 w-5" />
               Log de Check-ins — Referenciamento
-            </DialogTitle>
-            <DialogDescription>
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
               Visualize todos os check-ins e atribua-os a uma aula ou day-use. A comissão do professor é calculada automaticamente ao referenciar como "Aula".
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          </div>
           <div className="flex gap-2 mb-3">
             {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
               <Button
@@ -4261,24 +4270,21 @@ export default function ManagerDashboard({
               </TableBody>
             </Table>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogLogCheckins(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
-      {/* ── Dialog Comissões ── */}
-      <Dialog open={dialogComissoes} onOpenChange={setDialogComissoes}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* ── Seção Comissões ── */}
+      {activeSection === "comissoes" && (
+        <div className="p-4 md:p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
               <PercentCircle className="h-5 w-5" />
               Gestão de Comissões
-            </DialogTitle>
-            <DialogDescription>
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
               Resumo de comissões por professor e histórico de check-ins referenciados. O gestor pode aprovar, ajustar o valor e adicionar observações.
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          </div>
           <div className="overflow-y-auto flex-1 min-h-0 space-y-6">
             {/* Resumo por professor */}
             <div>
@@ -4414,11 +4420,8 @@ export default function ManagerDashboard({
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogComissoes(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* ── Dialog Editar Comissão (observação) ── */}
       <Dialog open={!!editandoComissao} onOpenChange={(open) => { if (!open) setEditandoComissao(null); }}>
@@ -4461,18 +4464,18 @@ export default function ManagerDashboard({
 
       <HelpDialog open={showHelp} onClose={() => setShowHelp(false)} />
 
-      {/* Dialog Conta Bancária */}
-      <Dialog open={dialogContaBancaria} onOpenChange={setDialogContaBancaria}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* Seção Conta Bancária */}
+      {activeSection === "conta" && (
+        <div className="p-4 md:p-6 max-w-2xl">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
               <Landmark className="h-5 w-5 text-primary" />
               Configuração da Conta
-            </DialogTitle>
-            <DialogDescription>
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
               Configure os dados bancários e chave PIX para recebimento de mensalidades.
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          </div>
 
           <div className="space-y-6 py-2">
             {/* Dados do recebedor */}
@@ -4613,15 +4616,15 @@ export default function ManagerDashboard({
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogContaBancaria(false)} data-testid="button-conta-cancelar">
+          <div className="flex gap-2 mt-6">
+            <Button variant="outline" onClick={() => setActiveSection("dashboard")} data-testid="button-conta-cancelar">
               Cancelar
             </Button>
             <Button
               onClick={() => salvarContaBancaria.mutate(formContaBancaria, {
                 onSuccess: () => {
                   qc.invalidateQueries({ queryKey: ["/api/finance/settings"] });
-                  setDialogContaBancaria(false);
+                  setActiveSection("dashboard");
                 },
               })}
               disabled={salvarContaBancaria.isPending}
@@ -4630,9 +4633,9 @@ export default function ManagerDashboard({
               <Save className="h-4 w-4 mr-2" />
               {salvarContaBancaria.isPending ? "Salvando…" : "Salvar Configurações"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
         </div>
       </div>
