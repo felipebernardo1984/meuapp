@@ -86,6 +86,7 @@ import {
   Link2,
   Upload,
   QrCode,
+  RefreshCw,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -1841,22 +1842,21 @@ export default function ManagerDashboard({
             </Card>
           </div>
 
-          <Button
-            size="lg"
-            className="w-full h-14 text-lg"
-            data-testid="button-novo-mensalista"
-            onClick={() => {
-              setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
-              setDialogNovoMensalista(true);
-            }}
-          >
-            <UserPlus className="mr-2 h-5 w-5" />
-            Cadastrar Mensalista
-          </Button>
-
           {/* Filters + Table */}
           <Card>
             <CardHeader className="pb-3">
+              <Button
+                size="lg"
+                className="w-full h-14 text-lg"
+                data-testid="button-novo-mensalista"
+                onClick={() => {
+                  setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+                  setDialogNovoMensalista(true);
+                }}
+              >
+                <UserPlus className="mr-2 h-5 w-5" />
+                Cadastrar Mensalista
+              </Button>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="text-lg">Alunos Mensalistas</CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -3809,7 +3809,8 @@ export default function ManagerDashboard({
 
       {/* Dialog Configuração WhatsApp */}
       {activeSection === "whatsapp" && (
-        <div className="p-4 md:p-6 max-w-2xl">
+        <Card className="mb-6 max-w-2xl">
+          <CardContent className="pt-6">
           {/* Tabs */}
           <div className="flex border-b mb-4 gap-0 overflow-x-auto">
             {([
@@ -4102,7 +4103,8 @@ export default function ManagerDashboard({
             </div>
           )}
 
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Dialog Confirmar Exclusão do Aluno */}
@@ -4369,8 +4371,15 @@ export default function ManagerDashboard({
 
       {/* ── Dialog Log de Check-ins ── */}
       {activeSection === "checkins" && (
-        <div className="p-4 md:p-6">
-          <div className="flex flex-wrap gap-2 mb-3">
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="text-lg">Log de Check-ins</CardTitle>
+              <Button size="sm" variant="outline" onClick={() => refetchLog()} data-testid="button-refresh-checkins">
+                <RefreshCw className="w-4 h-4 mr-1" /> Atualizar
+              </Button>
+            </div>
+          <div className="flex flex-wrap gap-2 mt-2">
             {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
               <Button
                 key={t}
@@ -4383,7 +4392,9 @@ export default function ManagerDashboard({
               </Button>
             ))}
           </div>
-          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+          </CardHeader>
+          <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -4471,13 +4482,18 @@ export default function ManagerDashboard({
               </TableBody>
             </Table>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Seção Comissões ── */}
       {activeSection === "comissoes" && (
-        <div className="p-4 md:p-6">
-          <div className="overflow-x-auto flex-1 min-h-0 space-y-6">
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Comissões</CardTitle>
+          </CardHeader>
+          <CardContent>
+          <div className="space-y-6">
             {/* Resumo por professor */}
             <div>
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Resumo por Professor</p>
@@ -4616,7 +4632,8 @@ export default function ManagerDashboard({
               </div>
             )}
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Dialog Editar Comissão (observação) ── */}
@@ -4661,7 +4678,7 @@ export default function ManagerDashboard({
 
       {/* ── Seção Despesas ── */}
       {activeSection === "despesas" && (
-        <div className="p-4 md:p-6 flex flex-col gap-4 overflow-y-auto flex-1 min-h-0">
+        <div className="flex flex-col gap-4">
           {/* Resumo do mês */}
           {(() => {
             const despesasMes = (listaDespesas as any[]).filter((d) => d.data?.startsWith(filtroDespesaMes));
@@ -4691,32 +4708,35 @@ export default function ManagerDashboard({
             );
           })()}
 
-          {/* Filtro de mês e botão novo */}
-          <div className="flex flex-wrap items-center gap-3">
-            <Input
-              type="month"
-              value={filtroDespesaMes}
-              onChange={(e) => setFiltroDespesaMes(e.target.value)}
-              className="w-44"
-              data-testid="input-filtro-despesa-mes"
-            />
-            <Button
-              data-testid="button-nova-despesa"
-              onClick={() => {
-                const today = new Date();
-                const dd = String(today.getDate()).padStart(2, "0");
-                const mm = String(today.getMonth() + 1).padStart(2, "0");
-                const yyyy = today.getFullYear();
-                setDespesaEditando(null);
-                setFormDespesa({ categoria: "Outros", descricao: "", valor: "", data: `${yyyy}-${mm}-${dd}` });
-                setDialogDespesa(true);
-              }}
-            >
-              <Plus className="w-4 h-4 mr-1" /> Nova Despesa
-            </Button>
-          </div>
-
-          {/* Tabela */}
+          <Card>
+            <CardHeader className="pb-3">
+              <Button
+                data-testid="button-nova-despesa"
+                size="lg"
+                className="w-full h-14 text-lg"
+                onClick={() => {
+                  const today = new Date();
+                  const dd = String(today.getDate()).padStart(2, "0");
+                  const mm = String(today.getMonth() + 1).padStart(2, "0");
+                  const yyyy = today.getFullYear();
+                  setDespesaEditando(null);
+                  setFormDespesa({ categoria: "Outros", descricao: "", valor: "", data: `${yyyy}-${mm}-${dd}` });
+                  setDialogDespesa(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" /> Nova Despesa
+              </Button>
+              <div className="flex flex-wrap items-center gap-3 mt-1">
+                <Input
+                  type="month"
+                  value={filtroDespesaMes}
+                  onChange={(e) => setFiltroDespesaMes(e.target.value)}
+                  className="w-44"
+                  data-testid="input-filtro-despesa-mes"
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -4776,6 +4796,8 @@ export default function ManagerDashboard({
               </TableBody>
             </Table>
           </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

@@ -159,7 +159,7 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
   const showIntegracoes = !section || section === "integracoes";
 
   return (
-    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
+    <div className="p-3 sm:p-4 md:p-6 max-w-4xl mx-auto">
 
       {/* Dialog Criar Modalidade */}
       <Dialog open={dialogCriar} onOpenChange={(open) => { if (!open) { setDialogCriar(false); setNovaModalidade(""); } }}>
