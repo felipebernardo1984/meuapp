@@ -122,6 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]) {
           await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data, hora });
         }
+        await storage.createRecurso({ arenaId: defaultArena.id, nome: "Quadra 1", ativo: true });
       }
     } catch (_e) {}
 

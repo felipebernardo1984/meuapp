@@ -18,7 +18,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Plus, Pencil, Trash2, ChevronLeft, ChevronRight, LayoutGrid, Link2, CalendarDays,
+  Plus, Pencil, Trash2, ChevronLeft, ChevronRight, LayoutGrid, Link2, CalendarDays, Building2,
 } from "lucide-react";
 
 const DIAS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -69,7 +69,13 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const [view, setView] = useState<"calendario" | "lista">("calendario");
+  const [view, setView] = useState<"calendario" | "lista" | "ambientes">("calendario");
+
+  // Ambientes (recursos para aulas) state
+  const [novoAmbienteNome, setNovoAmbienteNome] = useState("");
+  const [editandoAmbienteId, setEditandoAmbienteId] = useState<string | null>(null);
+  const [editandoAmbienteNome, setEditandoAmbienteNome] = useState("");
+  const [confirmDeleteAmbiente, setConfirmDeleteAmbiente] = useState<any | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
 
   // Quadras CRUD state
@@ -90,6 +96,24 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
   // Queries
   const { data: quadrasList = [] } = useQuery<any[]>({ queryKey: ["/api/quadras"] });
   const { data: reservasList = [] } = useQuery<any[]>({ queryKey: ["/api/reservas"] });
+  const { data: ambientesList = [] } = useQuery<any[]>({ queryKey: ["/api/recursos"] });
+
+  // Ambientes mutations
+  const criarAmbiente = useMutation({
+    mutationFn: (nome: string) => apiRequest("POST", "/api/recursos", { nome, ativo: true }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/recursos"] }); setNovoAmbienteNome(""); toast({ title: "Ambiente criado!" }); },
+    onError: () => toast({ title: "Erro ao criar ambiente", variant: "destructive" }),
+  });
+  const atualizarAmbiente = useMutation({
+    mutationFn: ({ id, nome }: { id: string; nome: string }) => apiRequest("PUT", `/api/recursos/${id}`, { nome, ativo: true }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/recursos"] }); setEditandoAmbienteId(null); setEditandoAmbienteNome(""); toast({ title: "Ambiente atualizado!" }); },
+    onError: () => toast({ title: "Erro ao atualizar", variant: "destructive" }),
+  });
+  const removerAmbiente = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/recursos/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/recursos"] }); setConfirmDeleteAmbiente(null); toast({ title: "Ambiente removido." }); },
+    onError: () => toast({ title: "Erro ao remover", variant: "destructive" }),
+  });
 
   // Quadras mutations
   const criarQuadra = useMutation({
@@ -145,24 +169,38 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
 
   return (
     <div className="p-4 md:p-6 flex flex-col gap-5 overflow-y-auto flex-1 min-h-0">
+      {/* Subtítulo descritivo */}
+      <div>
+        <p className="text-sm text-muted-foreground leading-snug">
+          Crie seu ambiente de trabalho:
+          <br />
+          <span className="font-medium text-foreground">Quadra / Box / Sala de treino.</span>
+        </p>
+      </div>
+
       {/* Topo: ações e link público */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant={view === "calendario" ? "default" : "outline"} onClick={() => setView("calendario")}>
             <CalendarDays className="h-4 w-4 mr-1" /> Calendário
           </Button>
           <Button size="sm" variant={view === "lista" ? "default" : "outline"} onClick={() => setView("lista")}>
             <LayoutGrid className="h-4 w-4 mr-1" /> Quadras
           </Button>
-        </div>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, "_blank")}>
-            <Link2 className="h-4 w-4 mr-1" /> Link Público
-          </Button>
-          <Button size="sm" onClick={() => abrirNovaReserva()}>
-            <Plus className="h-4 w-4 mr-1" /> Nova Reserva
+          <Button size="sm" variant={view === "ambientes" ? "default" : "outline"} onClick={() => setView("ambientes")}>
+            <Building2 className="h-4 w-4 mr-1" /> Ambientes
           </Button>
         </div>
+        {view !== "ambientes" && (
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, "_blank")}>
+              <Link2 className="h-4 w-4 mr-1" /> Link Público
+            </Button>
+            <Button size="sm" onClick={() => abrirNovaReserva()}>
+              <Plus className="h-4 w-4 mr-1" /> Nova Reserva
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* ── VIEW: Calendário semanal ── */}
@@ -324,6 +362,111 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
               </Button>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* ── VIEW: Ambientes ── */}
+      {view === "ambientes" && (
+        <div className="space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">Ambientes para Aulas</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Espaços usados para vincular turmas e aulas dos professores.</p>
+            </div>
+          </div>
+
+          {/* Form de criação */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={novoAmbienteNome}
+              onChange={(e) => setNovoAmbienteNome(e.target.value)}
+              placeholder="Nome do ambiente (ex: Quadra 1, Box A, Sala de Treino)"
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              data-testid="input-novo-ambiente"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const nome = novoAmbienteNome.trim();
+                  if (nome) criarAmbiente.mutate(nome);
+                }
+              }}
+            />
+            <Button
+              onClick={() => { const nome = novoAmbienteNome.trim(); if (nome) criarAmbiente.mutate(nome); }}
+              disabled={criarAmbiente.isPending || !novoAmbienteNome.trim()}
+              data-testid="button-criar-ambiente"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Adicionar
+            </Button>
+          </div>
+
+          {/* Lista */}
+          {ambientesList.filter((a) => a.ativo).length === 0 ? (
+            <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              Nenhum ambiente cadastrado. Adicione acima para criar seu primeiro espaço de aula.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {ambientesList.filter((a) => a.ativo).map((a) => (
+                <div key={a.id} className="flex items-center gap-2 rounded-lg border bg-card px-4 py-3 shadow-sm">
+                  {editandoAmbienteId === a.id ? (
+                    <input
+                      type="text"
+                      value={editandoAmbienteNome}
+                      onChange={(e) => setEditandoAmbienteNome(e.target.value)}
+                      className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      data-testid={`input-editar-ambiente-${a.id}`}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const nome = editandoAmbienteNome.trim();
+                          if (nome) atualizarAmbiente.mutate({ id: a.id, nome });
+                        }
+                        if (e.key === "Escape") { setEditandoAmbienteId(null); setEditandoAmbienteNome(""); }
+                      }}
+                    />
+                  ) : (
+                    <span className="flex-1 text-sm font-medium">{a.nome}</span>
+                  )}
+                  {editandoAmbienteId === a.id ? (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => { const nome = editandoAmbienteNome.trim(); if (nome) atualizarAmbiente.mutate({ id: a.id, nome }); }}
+                        disabled={atualizarAmbiente.isPending}
+                        data-testid={`button-salvar-ambiente-${a.id}`}
+                      >
+                        Salvar
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setEditandoAmbienteId(null); setEditandoAmbienteNome(""); }}>
+                        Cancelar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => { setEditandoAmbienteId(a.id); setEditandoAmbienteNome(a.nome); }}
+                        data-testid={`button-editar-ambiente-${a.id}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                        onClick={() => setConfirmDeleteAmbiente(a)}
+                        data-testid={`button-excluir-ambiente-${a.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -509,6 +652,22 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDeleteQuadra(null)}>Cancelar</Button>
             <Button variant="destructive" disabled={deletarQuadra.isPending} onClick={() => { if (confirmDeleteQuadra) deletarQuadra.mutate(confirmDeleteQuadra.id); }}>
+              Remover
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm delete ambiente */}
+      <Dialog open={!!confirmDeleteAmbiente} onOpenChange={(open) => { if (!open) setConfirmDeleteAmbiente(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remover Ambiente</DialogTitle>
+            <DialogDescription>O ambiente <strong>{confirmDeleteAmbiente?.nome}</strong> será removido. Esta ação não pode ser desfeita.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteAmbiente(null)}>Cancelar</Button>
+            <Button variant="destructive" disabled={removerAmbiente.isPending} onClick={() => { if (confirmDeleteAmbiente) removerAmbiente.mutate(confirmDeleteAmbiente.id); }}>
               Remover
             </Button>
           </DialogFooter>
