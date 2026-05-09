@@ -248,9 +248,6 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
               <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, "_blank")} data-testid="button-link-publico">
                 <Link2 className="h-4 w-4 mr-1" /> Link Público
               </Button>
-              <Button size="sm" onClick={() => { setDialogQuadra(true); setQuadraEditando(null); setFormQuadra({ nome: "", descricao: "", cor: "#3b82f6" }); }} data-testid="button-nova-quadra">
-                <Plus className="h-4 w-4 mr-1" /> Nova Quadra
-              </Button>
             </div>
           </div>
 
