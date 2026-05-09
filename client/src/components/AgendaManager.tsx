@@ -1115,7 +1115,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                   {/* Locatário / Cliente */}
                   <div className="space-y-2">
                     <Label htmlFor="cliente-nome">
-                      {formData.tipo === "aluguel" ? "Locatário" : "Nome do cliente"}
+                      Nome do cliente
                     </Label>
                     <Input
                       id="cliente-nome"
