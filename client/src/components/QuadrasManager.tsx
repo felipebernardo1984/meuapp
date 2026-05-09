@@ -170,8 +170,8 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
       {/* Topo: ações */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-2 flex-wrap">
-          <Button variant={view === "ambientes" ? "default" : "outline"} onClick={() => { setView("ambientes"); }}>
-            <Building2 className="h-4 w-4 mr-1" /> Ambientes
+          <Button size="lg" className="h-14 text-lg px-8" variant={view === "ambientes" ? "default" : "outline"} onClick={() => { setView("ambientes"); }}>
+            <Building2 className="h-5 w-5 mr-2" /> Ambientes
           </Button>
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
