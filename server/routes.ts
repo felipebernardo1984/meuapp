@@ -1961,6 +1961,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint for recursos (no auth) — used by public calendar page
+  app.get("/api/recursos/publico/:arenaId", async (req, res) => {
+    try {
+      const list = await storage.listRecursos(req.params.arenaId);
+      res.json(list.filter((r: any) => r.ativo));
+    } catch {
+      res.json([]);
+    }
+  });
+
   app.delete("/api/turmas/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
@@ -2173,16 +2183,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/reservas", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { quadraId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao } = req.body;
-    if (!quadraId || !tipo || !data || !horaInicio || !horaFim) return res.status(400).json({ message: "Campos obrigatórios faltando" });
-    res.json(await storage.createReserva({ arenaId, quadraId, tipo, data, horaInicio, horaFim, nomeCliente: nomeCliente ?? null, telefoneCliente: telefoneCliente ?? null, valor: valor ?? null, status: status ?? "confirmado", observacao: observacao ?? null }));
+    const { recursoId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao } = req.body;
+    if (!recursoId || !tipo || !data || !horaInicio || !horaFim) return res.status(400).json({ message: "Campos obrigatórios faltando" });
+    res.json(await storage.createReserva({ arenaId, recursoId, tipo, data, horaInicio, horaFim, nomeCliente: nomeCliente ?? null, telefoneCliente: telefoneCliente ?? null, valor: valor ?? null, status: status ?? "confirmado", observacao: observacao ?? null }));
   });
 
   app.put("/api/reservas/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { quadraId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao } = req.body;
-    res.json(await storage.updateReserva(req.params.id, { quadraId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao }));
+    const { recursoId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao } = req.body;
+    res.json(await storage.updateReserva(req.params.id, { recursoId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao }));
   });
 
   app.delete("/api/reservas/:id", async (req, res) => {

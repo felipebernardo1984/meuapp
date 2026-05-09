@@ -468,7 +468,7 @@ export type Quadra = typeof quadras.$inferSelect;
 export const reservas = pgTable("reservas", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
-  quadraId: varchar("quadra_id").references(() => quadras.id, { onDelete: "cascade" }),
+  recursoId: varchar("recurso_id").references(() => recursos.id, { onDelete: "cascade" }),
   tipo: text("tipo").notNull(), // 'aluguel' | 'dayuse' | 'bloqueio'
   titulo: text("titulo"),
   data: text("data").notNull(),
