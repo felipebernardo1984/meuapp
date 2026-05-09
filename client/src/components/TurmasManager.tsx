@@ -557,7 +557,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                                   title={`${t.nome} · ${t.modalidade ?? ""} · ${t.horarioInicio}–${t.horarioFim}${t.professorNome ? ` · Prof: ${t.professorNome}` : ""}`}
                                 >
                                   <span className="truncate block">{t.nome}</span>
-                                  <span className="opacity-80 block truncate">{t.horarioInicio}–{t.horarioFim}{t.professorNome ? ` · ${t.professorNome.split(" ")[0]}` : ""}</span>
+                                  <span className="opacity-80 block truncate">{t.horarioInicio}–{t.horarioFim}{t.modalidade ? ` · ${t.modalidade}` : ""}{t.professorNome ? ` · ${t.professorNome.split(" ")[0]}` : ""}</span>
                                 </div>
                               ))}
                               {turmasDia.length === 0 && (
