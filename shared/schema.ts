@@ -107,6 +107,8 @@ export const recursos = pgTable("recursos", {
   nome: text("nome").notNull(),
   tipo: text("tipo").notNull().default("sala"),
   ativo: boolean("ativo").notNull().default(true),
+  valorAluguel: text("valor_aluguel"),
+  valorDayuse: text("valor_dayuse"),
   criadoEm: timestamp("criado_em").defaultNow(),
 });
 

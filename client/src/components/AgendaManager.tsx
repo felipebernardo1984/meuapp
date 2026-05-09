@@ -66,6 +66,8 @@ interface Recurso {
   id: string;
   nome: string;
   ativo: boolean;
+  valorAluguel?: string | null;
+  valorDayuse?: string | null;
 }
 
 interface Turma {
@@ -952,13 +954,23 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                       key={t}
                       type="button"
                       data-testid={`button-tipo-${t}`}
-                      onClick={() => setFormData((p) => ({
-                        ...p,
-                        tipo: t,
-                        cor: TIPO_CORES[t],
-                        professorId: t !== "aula" ? "" : p.professorId,
-                        modalidade: t !== "aula" ? "" : p.modalidade,
-                      }))}
+                      onClick={() => setFormData((p) => {
+                        const recurso = recursos.find((r) => r.id === p.recursoId);
+                        let novoValor = p.valorCobrado;
+                        if (recurso) {
+                          if (t === "aluguel" && recurso.valorAluguel) novoValor = recurso.valorAluguel;
+                          else if (t === "dayuse" && recurso.valorDayuse) novoValor = recurso.valorDayuse;
+                          else if (t === "aula") novoValor = "";
+                        }
+                        return {
+                          ...p,
+                          tipo: t,
+                          cor: TIPO_CORES[t],
+                          professorId: t !== "aula" ? "" : p.professorId,
+                          modalidade: t !== "aula" ? "" : p.modalidade,
+                          valorCobrado: novoValor,
+                        };
+                      })}
                       className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
                         formData.tipo === t
                           ? "text-white border-transparent"
@@ -1058,7 +1070,17 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
               <Label>Ambiente</Label>
               <Select
                 value={formData.recursoId || "none"}
-                onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "none" ? "" : v }))}
+                onValueChange={(v) => {
+                  const recurso = recursos.find((r) => r.id === v);
+                  setFormData((p) => {
+                    let novoValor = p.valorCobrado;
+                    if (v !== "none" && recurso) {
+                      if (p.tipo === "aluguel" && recurso.valorAluguel) novoValor = recurso.valorAluguel;
+                      else if (p.tipo === "dayuse" && recurso.valorDayuse) novoValor = recurso.valorDayuse;
+                    }
+                    return { ...p, recursoId: v === "none" ? "" : v, valorCobrado: novoValor };
+                  });
+                }}
               >
                 <SelectTrigger data-testid="select-turma-quadra">
                   <SelectValue placeholder="Selecionar quadra / espaço..." />
