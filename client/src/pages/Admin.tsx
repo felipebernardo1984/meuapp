@@ -1252,163 +1252,115 @@ export default function Admin() {
           </Card>
         ) : (
           /* Expanded view */
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {arenas
               .filter((a) => {
                 const q = arenaSearch.toLowerCase();
                 return !q || a.name.toLowerCase().includes(q) || a.gestorLogin.toLowerCase().includes(q);
               })
-              .map((arena) => (
-              <Card key={arena.id} data-testid={`card-arena-${arena.id}`} className="flex flex-col">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg" data-testid={`text-arena-name-${arena.id}`}>{arena.name}</CardTitle>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge variant={PLAN_BADGE[arena.subscriptionPlan]}>
-                        {PLAN_LABELS[arena.subscriptionPlan] ?? arena.subscriptionPlan}
-                      </Badge>
-                      <Badge variant={STATUS_BADGE[arena.subscriptionStatus ?? "Ativo"] ?? "secondary"} className="text-xs">
-                        {arena.subscriptionStatus ?? "Ativo"}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col gap-4">
-                  {/* Subscription info */}
-                  <div className="bg-muted/30 rounded-md p-2 text-xs space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Valor mensal</span>
-                      <span className="font-medium">{arena.subscriptionValue ?? "—"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Próx. cobrança</span>
-                      <span className="font-medium">{arena.nextBillingDate ?? "—"}</span>
-                    </div>
-                  </div>
-                  {/* Gestor credentials */}
-                  <div className="bg-muted/20 border border-border/60 rounded-md p-2 text-xs space-y-1.5">
-                    <div className="text-muted-foreground font-medium text-xs uppercase tracking-wide mb-1 flex items-center gap-1">
-                      <KeyRound className="h-3 w-3" />Acesso do Gestor
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Login</span>
-                      <span className="font-mono font-semibold">{arena.gestorLogin}</span>
-                    </div>
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="text-muted-foreground">Senha</span>
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono font-semibold">
-                          {visiblePasswords[arena.id] ? (arena.gestorSenha ?? "—") : "••••••••"}
-                        </span>
+              .map((arena) => {
+                const pendingPayments = subscriptionPayments.filter((p) => p.arenaId === arena.id && p.status === "pending");
+                const hasPending = pendingPayments.length > 0;
+                return (
+                  <Card key={arena.id} data-testid={`card-arena-${arena.id}`} className={`flex flex-col gap-0 ${hasPending ? "border-amber-300 dark:border-amber-700" : ""}`}>
+                    {/* ── Header ── */}
+                    <CardContent className="pt-4 pb-3 flex flex-col gap-3">
+                      {/* Row 1: name + badges */}
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-sm leading-tight" data-testid={`text-arena-name-${arena.id}`}>{arena.name}</p>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Badge variant={PLAN_BADGE[arena.subscriptionPlan]} className="text-xs px-1.5 py-0">
+                            {PLAN_LABELS[arena.subscriptionPlan] ?? arena.subscriptionPlan}
+                          </Badge>
+                          <Badge variant={STATUS_BADGE[arena.subscriptionStatus ?? "Ativo"] ?? "secondary"} className="text-xs px-1.5 py-0">
+                            {arena.subscriptionStatus ?? "Ativo"}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Row 2: stats inline */}
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><Users className="h-3 w-3" /><strong className="text-foreground">{arena.stats.alunosAtivos}</strong> alunos</span>
+                        <span className="text-border">·</span>
+                        <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" /><strong className="text-foreground">{arena.stats.professores}</strong> prof.</span>
+                        <span className="text-border">·</span>
+                        <span className="flex items-center gap-1"><ClipboardList className="h-3 w-3" /><strong className="text-foreground">{arena.stats.planos}</strong> planos</span>
+                      </div>
+
+                      {/* Row 3: credentials compact */}
+                      <div className="flex items-center justify-between bg-muted/40 rounded px-2.5 py-1.5 text-xs">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <KeyRound className="h-3 w-3" />
+                          <span className="font-mono font-medium text-foreground">{arena.gestorLogin}</span>
+                          <span className="text-border">·</span>
+                          <span className="font-mono">{visiblePasswords[arena.id] ? (arena.gestorSenha ?? "—") : "••••••"}</span>
+                        </div>
                         <button
-                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          className="text-muted-foreground hover:text-foreground transition-colors ml-1"
                           onClick={() => setVisiblePasswords((v) => ({ ...v, [arena.id]: !v[arena.id] }))}
                           data-testid={`button-toggle-password-${arena.id}`}
                         >
                           {visiblePasswords[arena.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                         </button>
                       </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {[
-                      { label: "Alunos ativos", value: arena.stats.alunosAtivos },
-                      { label: "Total alunos", value: arena.stats.alunos },
-                      { label: "Professores", value: arena.stats.professores },
-                      { label: "Planos", value: arena.stats.planos },
-                    ].map((s) => (
-                      <div key={s.label} className="bg-muted/40 rounded-md p-2 text-center">
-                        <p className="font-semibold text-base">{s.value}</p>
-                        <p className="text-muted-foreground text-xs">{s.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="space-y-2 mt-auto">
-                    <Link href={`/arena/${arena.id}`}>
-                      <Button variant="secondary" size="sm" className="w-full" data-testid={`button-panel-arena-${arena.id}`}>
-                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                        Abrir Painel da Arena
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      className="w-full"
-                      onClick={() => impersonate.mutate(arena.id)}
-                      disabled={impersonate.isPending}
-                      data-testid={`button-impersonate-arena-${arena.id}`}
-                    >
-                      <LogInIcon className="h-3.5 w-3.5 mr-1.5" />
-                      Entrar como Gestor
-                    </Button>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1"
-                        onClick={() => setDetailId(arena.id)} data-testid={`button-view-arena-${arena.id}`}>
-                        <Eye className="h-3.5 w-3.5 mr-1.5" />Ver dados
-                      </Button>
-                      <Button variant="outline" size="icon" className="shrink-0"
-                        onClick={() => openEdit(arena)} data-testid={`button-edit-arena-${arena.id}`}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="shrink-0 text-destructive hover:text-destructive"
-                        onClick={() => setDeletingArena(arena)} data-testid={`button-delete-arena-${arena.id}`}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
 
-                  {/* Histórico de pagamentos desta arena */}
-                  {subscriptionPayments.filter((p) => p.arenaId === arena.id).length > 0 && (
-                    <div className="border-t pt-3">
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <History className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground">Faturas de Assinatura</span>
+                      {/* Row 4: billing line */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" />{arena.subscriptionValue ?? "—"}</span>
+                        {arena.nextBillingDate && <span>próx. {arena.nextBillingDate}</span>}
                       </div>
-                      <div className="space-y-2">
-                        {subscriptionPayments
-                          .filter((p) => p.arenaId === arena.id)
-                          .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
-                          .map((p) => (
-                            <div key={p.id} className={`text-xs rounded px-2 py-2 ${p.status === "pending" ? "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" : "bg-muted/30"}`} data-testid={`row-sub-payment-${p.id}`}>
-                              <div className="flex items-center justify-between">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="font-medium">{p.referenceMonth}</span>
-                                  {p.status === "pending" && p.dueDate && (
-                                    <span className="text-amber-600 dark:text-amber-400">Vence: {p.dueDate}</span>
-                                  )}
-                                  {p.status === "paid" && (
-                                    <span className="text-muted-foreground">Pago em: {p.paymentDate ?? "—"}</span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold">{p.amount}</span>
-                                  <Badge variant={p.status === "paid" ? "default" : "outline"} className={`text-xs px-1.5 py-0 ${p.status === "pending" ? "border-amber-400 text-amber-700 dark:text-amber-400" : ""}`}>
-                                    {p.status === "paid" ? "Pago" : "Pendente"}
-                                  </Badge>
-                                </div>
+
+                      {/* Pending payment alert */}
+                      {hasPending && (
+                        <div className="rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2.5 py-2 text-xs">
+                          {pendingPayments.map((p) => (
+                            <div key={p.id} className="flex items-center justify-between gap-2" data-testid={`row-sub-payment-${p.id}`}>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-medium text-amber-800 dark:text-amber-300">{p.referenceMonth} — {p.amount}</span>
+                                {p.dueDate && <span className="text-amber-600 dark:text-amber-400">Vence: {p.dueDate}</span>}
                               </div>
-                              {p.status === "pending" && (
-                                <div className="mt-2">
-                                  <Button
-                                    size="sm"
-                                    className="w-full h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
-                                    onClick={() => confirmarPagamento.mutate(p.id)}
-                                    disabled={confirmarPagamento.isPending}
-                                    data-testid={`button-confirm-payment-${p.id}`}
-                                  >
-                                    ✓ Confirmar Pagamento Recebido
-                                  </Button>
-                                </div>
-                              )}
+                              <Button
+                                size="sm"
+                                className="h-6 text-xs bg-green-600 hover:bg-green-700 text-white px-2 shrink-0"
+                                onClick={() => confirmarPagamento.mutate(p.id)}
+                                disabled={confirmarPagamento.isPending}
+                                data-testid={`button-confirm-payment-${p.id}`}
+                              >
+                                ✓ Confirmar
+                              </Button>
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {/* ── Actions ── */}
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <Button
+                          size="sm"
+                          className="flex-1 h-7 text-xs"
+                          onClick={() => impersonate.mutate(arena.id)}
+                          disabled={impersonate.isPending}
+                          data-testid={`button-impersonate-arena-${arena.id}`}
+                        >
+                          <LogInIcon className="h-3 w-3 mr-1" />Entrar
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1 h-7 text-xs"
+                          onClick={() => setDetailId(arena.id)} data-testid={`button-view-arena-${arena.id}`}>
+                          <Eye className="h-3 w-3 mr-1" />Detalhes
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                          onClick={() => openEdit(arena)} data-testid={`button-edit-arena-${arena.id}`}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeletingArena(arena)} data-testid={`button-delete-arena-${arena.id}`}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
         )}
 
