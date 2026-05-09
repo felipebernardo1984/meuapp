@@ -724,21 +724,25 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                             >
                               <Users className="h-3.5 w-3.5 mr-1" />Alunos
                             </Button>
-                            <Button
-                              variant="outline" size="icon"
-                              data-testid={`button-editar-${t.id}`}
-                              onClick={() => openEditar(t)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="outline" size="icon"
-                              data-testid={`button-excluir-${t.id}`}
-                              onClick={() => setConfirmExcluir(t)}
-                              className="text-red-500 hover:text-red-600 hover:border-red-300"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            {(!professorContext || t.professorId === professorContext.id) && (
+                              <>
+                                <Button
+                                  variant="outline" size="icon"
+                                  data-testid={`button-editar-${t.id}`}
+                                  onClick={() => openEditar(t)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="outline" size="icon"
+                                  data-testid={`button-excluir-${t.id}`}
+                                  onClick={() => setConfirmExcluir(t)}
+                                  className="text-red-500 hover:text-red-600 hover:border-red-300"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
@@ -790,7 +794,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                           {t.alunosCount}/{t.capacidadeMaxima} alunos
                         </div>
                       </div>
-                      {!readOnly && (
+                      {!readOnly && (!professorContext || t.professorId === professorContext.id) && (
                         <div className="flex items-center gap-1 shrink-0">
                           <Button
                             size="icon"
@@ -1240,16 +1244,34 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       <AlertDialog open={!!confirmRemoverDia} onOpenChange={(open) => { if (!open) setConfirmRemoverDia(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover este agendamento?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmRemoverDia && (() => {
-                const t = confirmRemoverDia.turma;
-                const dias = t.diasSemana.split("|").filter(Boolean);
-                if (t.dataAula || dias.length <= 1) {
-                  return <>O agendamento <strong>{t.nome}</strong> será excluído permanentemente.</>;
-                }
-                return <>O dia <strong>{DIAS_SHORT[confirmRemoverDia.diaId] ?? confirmRemoverDia.diaId}</strong> será removido do agendamento <strong>{t.nome}</strong>. Os outros dias continuarão normalmente.</>;
-              })()}
+            <AlertDialogTitle>Deseja remover este agendamento?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                {confirmRemoverDia && (() => {
+                  const t = confirmRemoverDia.turma;
+                  const dias = t.diasSemana.split("|").filter(Boolean);
+                  const isUnico = !!(t.dataAula || dias.length <= 1);
+                  return (
+                    <div className="space-y-3">
+                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-1 text-sm text-gray-800 dark:text-gray-200">
+                        <p className="font-semibold">{t.modalidade ? `${t.modalidade} · ` : ""}{t.nome}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {t.dataAula
+                            ? new Date(t.dataAula + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })
+                            : dias.map((d) => DIAS_SHORT[d] ?? d).join(", ")}
+                          {" · "}{t.horarioInicio}–{t.horarioFim}
+                          {t.professorNome ? ` · Prof. ${t.professorNome}` : ""}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {isUnico
+                          ? "Este agendamento será excluído permanentemente."
+                          : <>Apenas o dia <strong>{DIAS_SHORT[confirmRemoverDia.diaId] ?? confirmRemoverDia.diaId}</strong> será removido. Os demais dias do agendamento continuarão normalmente.</>}
+                      </p>
+                    </div>
+                  );
+                })()}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
