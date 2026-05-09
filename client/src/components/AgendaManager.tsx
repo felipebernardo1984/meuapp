@@ -625,7 +625,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                                   title={`${t.nome} · ${t.horarioInicio}–${t.horarioFim}${pessoaNome ? ` · ${pessoaNome}` : ""}`}
                                 >
                                   <span className="truncate block font-semibold">{t.nome}</span>
-                                  <span className="opacity-80 block truncate">{t.horarioInicio}–{t.horarioFim}{primeiroNome ? ` · ${primeiroNome}` : ""}</span>
+                                  <span className="opacity-80 block truncate">{t.horarioInicio === t.horarioFim ? t.horarioInicio : `${t.horarioInicio}–${t.horarioFim}`}{primeiroNome ? ` · ${primeiroNome}` : ""}</span>
                                 </div>
                                 );
                               })}
@@ -1003,6 +1003,8 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                           professorId: t !== "aula" ? "" : p.professorId,
                           modalidade: t !== "aula" ? "" : p.modalidade,
                           valorCobrado: novoValor,
+                          nome: t === "dayuse" && !p.nome.trim() ? "Avulso/Dayuse" : p.nome,
+                          horarioFim: t === "dayuse" ? p.horarioInicio : p.horarioFim,
                         };
                       })}
                       className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
@@ -1122,31 +1124,33 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                   </div>
 
                   {/* Duração + Valor (auto-calculado) */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="duracao">
-                        Duração (horas)
-                        {duracaoMin > 1 && (
-                          <span className="ml-1 text-xs text-muted-foreground font-normal">mín. {duracaoMin}h</span>
-                        )}
-                      </Label>
-                      <Input
-                        id="duracao"
-                        type="number"
-                        min={duracaoMin}
-                        step={0.5}
-                        data-testid="input-duracao"
-                        value={formData.duracao}
-                        onChange={(e) => {
-                          const novaDuracao = parseFloat(e.target.value) || duracaoMin;
-                          setFormData((p) => {
-                            const recurso = recursos.find((r) => r.id === p.recursoId);
-                            const novoValor = recurso ? calcValorTotal(recurso, p.tipo, novaDuracao) : p.valorCobrado;
-                            return { ...p, duracao: novaDuracao, valorCobrado: novoValor || p.valorCobrado };
-                          });
-                        }}
-                      />
-                    </div>
+                  <div className={`grid gap-3 ${formData.tipo === "dayuse" ? "grid-cols-1" : "grid-cols-2"}`}>
+                    {formData.tipo !== "dayuse" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="duracao">
+                          Duração (horas)
+                          {duracaoMin > 1 && (
+                            <span className="ml-1 text-xs text-muted-foreground font-normal">mín. {duracaoMin}h</span>
+                          )}
+                        </Label>
+                        <Input
+                          id="duracao"
+                          type="number"
+                          min={duracaoMin}
+                          step={0.5}
+                          data-testid="input-duracao"
+                          value={formData.duracao}
+                          onChange={(e) => {
+                            const novaDuracao = parseFloat(e.target.value) || duracaoMin;
+                            setFormData((p) => {
+                              const recurso = recursos.find((r) => r.id === p.recursoId);
+                              const novoValor = recurso ? calcValorTotal(recurso, p.tipo, novaDuracao) : p.valorCobrado;
+                              return { ...p, duracao: novaDuracao, valorCobrado: novoValor || p.valorCobrado };
+                            });
+                          }}
+                        />
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="valor-cobrado">
                         Valor cobrado
@@ -1155,11 +1159,16 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                             R$ {selectedRecurso.valorAluguel}/h
                           </span>
                         )}
+                        {selectedRecurso && formData.tipo === "dayuse" && parseCurrency(selectedRecurso.valorDayuse) > 0 && (
+                          <span className="ml-1 text-xs text-muted-foreground font-normal">
+                            valor do ambiente
+                          </span>
+                        )}
                       </Label>
                       <Input
                         id="valor-cobrado"
                         data-testid="input-valor-cobrado"
-                        placeholder="Ex: 150,00"
+                        placeholder="Ex: 50,00"
                         value={formData.valorCobrado}
                         onChange={(e) => setFormData((p) => ({ ...p, valorCobrado: e.target.value }))}
                       />
@@ -1229,27 +1238,33 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
             </div>
 
             {/* Horário */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className={`grid grid-cols-1 gap-3 ${formData.tipo !== "dayuse" ? "md:grid-cols-2" : ""}`}>
               <div className="space-y-2">
-                <Label htmlFor="turma-inicio">Horário início *</Label>
+                <Label htmlFor="turma-inicio">Horário *</Label>
                 <Input
                   id="turma-inicio"
                   type="time"
                   data-testid="input-turma-inicio"
                   value={formData.horarioInicio}
-                  onChange={(e) => setFormData((p) => ({ ...p, horarioInicio: e.target.value }))}
+                  onChange={(e) => setFormData((p) => ({
+                    ...p,
+                    horarioInicio: e.target.value,
+                    horarioFim: p.tipo === "dayuse" ? e.target.value : p.horarioFim,
+                  }))}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="turma-fim">Horário fim *</Label>
-                <Input
-                  id="turma-fim"
-                  type="time"
-                  data-testid="input-turma-fim"
-                  value={formData.horarioFim}
-                  onChange={(e) => setFormData((p) => ({ ...p, horarioFim: e.target.value }))}
-                />
-              </div>
+              {formData.tipo !== "dayuse" && (
+                <div className="space-y-2">
+                  <Label htmlFor="turma-fim">Horário fim *</Label>
+                  <Input
+                    id="turma-fim"
+                    type="time"
+                    data-testid="input-turma-fim"
+                    value={formData.horarioFim}
+                    onChange={(e) => setFormData((p) => ({ ...p, horarioFim: e.target.value }))}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
