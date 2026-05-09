@@ -22,32 +22,6 @@
   ],
   "students": [
     {
-      "id": "0802fa5b-27f1-4bc7-9f07-1bd76ee1bb96",
-      "arenaId": "d60ec4ef-2dd3-4731-9d39-2727def11653",
-      "nome": "Maria Santos",
-      "login": "111",
-      "senha": "111",
-      "cpf": "987.654.321-00",
-      "email": null,
-      "telefone": null,
-      "modalidade": "Beach Tennis",
-      "planoId": "41dc331e-9664-413e-891f-0a7dda5d2637",
-      "planoTitulo": "2x por semana",
-      "planoCheckins": 12,
-      "planoValorTexto": null,
-      "checkinsRealizados": 9,
-      "statusMensalidade": "Em dia",
-      "aprovado": true,
-      "ultimoCheckin": "02/01/2025",
-      "photoUrl": null,
-      "integrationType": "none",
-      "integrationPlan": null,
-      "professorId": null,
-      "ativo": true,
-      "desativadoEm": null,
-      "criadoEm": "2026-05-08T04:51:24.291Z"
-    },
-    {
       "id": "1b46524a-0615-4e33-8d49-c24dacb57eea",
       "arenaId": "d60ec4ef-2dd3-4731-9d39-2727def11653",
       "nome": "Pedro Oliveira",
@@ -72,6 +46,32 @@
       "ativo": false,
       "desativadoEm": "08/05/2026",
       "criadoEm": "2026-05-08T04:51:24.419Z"
+    },
+    {
+      "id": "0802fa5b-27f1-4bc7-9f07-1bd76ee1bb96",
+      "arenaId": "d60ec4ef-2dd3-4731-9d39-2727def11653",
+      "nome": "Maria Santos",
+      "login": "111",
+      "senha": "111",
+      "cpf": "987.654.321-00",
+      "email": null,
+      "telefone": null,
+      "modalidade": "Beach Tennis",
+      "planoId": "41dc331e-9664-413e-891f-0a7dda5d2637",
+      "planoTitulo": "2x por semana",
+      "planoCheckins": 12,
+      "planoValorTexto": null,
+      "checkinsRealizados": 10,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "08/05/2026",
+      "photoUrl": null,
+      "integrationType": "none",
+      "integrationPlan": null,
+      "professorId": null,
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-05-08T04:51:24.291Z"
     }
   ],
   "teachers": [
@@ -246,7 +246,16 @@
       "hora": "19:00",
       "tipo": "pendente",
       "professorId": null
+    },
+    {
+      "id": "7503e7d4-5d0e-422c-befc-0fa02a656d7e",
+      "arenaId": "d60ec4ef-2dd3-4731-9d39-2727def11653",
+      "studentId": "0802fa5b-27f1-4bc7-9f07-1bd76ee1bb96",
+      "data": "08/05/2026",
+      "hora": "21:41",
+      "tipo": "pendente",
+      "professorId": null
     }
   ],
-  "createdAt": "2026-05-08T21:39:25.351Z"
+  "createdAt": "2026-05-09T02:03:14.396Z"
 }
