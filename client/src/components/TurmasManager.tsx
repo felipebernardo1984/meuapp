@@ -534,8 +534,21 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                         data-testid={date ? `cal-dia-${date.getDate()}` : `cal-vazio-${idx}`}
                         onClick={() => {
                           if (!date) return;
-                          if (turmasDia.length > 0) setDiaPopup({ date, turmas: turmasDia });
-                          else if (!readOnly) setSlotPopup({ date, horarioInicio: slotHorarioInicio, horarioFim: slotHorarioFim });
+                          if (turmasDia.length > 0) {
+                            setDiaPopup({ date, turmas: turmasDia });
+                          } else if (!readOnly) {
+                            const dayId = JS_DAY_TO_ID[date.getDay()];
+                            const isoDate = toISODate(date);
+                            setEditandoId(null);
+                            setFormData({
+                              ...emptyForm,
+                              modalidade: professorContext?.modalidade ?? "",
+                              professorId: professorContext?.id ?? "",
+                              diasSemana: [dayId],
+                            });
+                            setSessionData({ dataAula: isoDate });
+                            setDialogTurma(true);
+                          }
                         }}
                         className={`min-h-[88px] sm:min-h-[120px] p-1.5 sm:p-2 border-b border-r border-gray-100 dark:border-gray-700 ${
                           date ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/10" : "bg-gray-50 dark:bg-gray-900/30"
@@ -556,8 +569,8 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                                   style={{ backgroundColor: isHighlightedTurma(t) ? "#fef3c7" : t.cor }}
                                   title={`${t.nome} · ${t.modalidade ?? ""} · ${t.horarioInicio}–${t.horarioFim}${t.professorNome ? ` · Prof: ${t.professorNome}` : ""}`}
                                 >
-                                  <span className="truncate block">{t.nome}</span>
-                                  <span className="opacity-80 block truncate">{t.horarioInicio}–{t.horarioFim}{t.modalidade ? ` · ${t.modalidade}` : ""}{t.professorNome ? ` · ${t.professorNome.split(" ")[0]}` : ""}</span>
+                                  <span className="truncate block font-semibold">{t.modalidade ? `${t.modalidade} | ` : ""}{t.nome}</span>
+                                  <span className="opacity-80 block truncate">{t.horarioInicio}–{t.horarioFim}{t.professorNome ? ` · ${t.professorNome.split(" ")[0]}` : ""}</span>
                                 </div>
                               ))}
                               {turmasDia.length === 0 && (
