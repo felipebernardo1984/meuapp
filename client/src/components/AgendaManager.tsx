@@ -365,7 +365,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
   };
 
   const handleSalvar = async () => {
-    if (!formData.nome.trim() || !formData.horarioInicio || !formData.horarioFim) {
+    if ((formData.tipo !== "dayuse" && !formData.nome.trim()) || !formData.horarioInicio || !formData.horarioFim) {
       toast({ title: "Preencha nome e horário", variant: "destructive" });
       return;
     }
@@ -399,7 +399,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
       professorIdFinal = selectedProfessor.id;
     }
     const payload = {
-      nome: formData.nome,
+      nome: formData.tipo === "dayuse" ? "Avulso/Dayuse" : formData.nome,
       tipo: formData.tipo,
       modalidade,
       professorId: professorIdFinal,
@@ -1003,7 +1003,6 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                           professorId: t !== "aula" ? "" : p.professorId,
                           modalidade: t !== "aula" ? "" : p.modalidade,
                           valorCobrado: novoValor,
-                          nome: t === "dayuse" && !p.nome.trim() ? "Avulso/Dayuse" : p.nome,
                           horarioFim: t === "dayuse" ? p.horarioInicio : p.horarioFim,
                         };
                       })}
@@ -1056,23 +1055,23 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
               </div>
             )}
 
-            {/* Nome */}
-            <div className="space-y-2">
-              <Label htmlFor="turma-nome">
-                {formData.tipo === "aula" ? "Nível *" : formData.tipo === "aluguel" ? "Descrição da reserva *" : "Descrição *"}
-              </Label>
-              <Input
-                id="turma-nome"
-                data-testid="input-turma-nome"
-                placeholder={
-                  formData.tipo === "aula" ? "Ex: Iniciante"
-                  : formData.tipo === "aluguel" ? "Ex: Reserva Quadra 1"
-                  : "Ex: Avulso Beach Tennis"
-                }
-                value={formData.nome}
-                onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
-              />
-            </div>
+            {/* Nome — oculto para dayuse (sempre "Avulso/Dayuse") */}
+            {formData.tipo !== "dayuse" && (
+              <div className="space-y-2">
+                <Label htmlFor="turma-nome">
+                  {formData.tipo === "aula" ? "Nível *" : "Descrição da reserva *"}
+                </Label>
+                <Input
+                  id="turma-nome"
+                  data-testid="input-turma-nome"
+                  placeholder={
+                    formData.tipo === "aula" ? "Ex: Iniciante" : "Ex: Reserva Quadra 1"
+                  }
+                  value={formData.nome}
+                  onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
+                />
+              </div>
+            )}
 
             {/* RESERVA / AVULSO: Ambiente (primeiro!) + Cliente + Duração + Valor */}
             {(formData.tipo === "aluguel" || formData.tipo === "dayuse") && (() => {
