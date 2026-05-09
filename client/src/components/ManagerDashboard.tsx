@@ -87,6 +87,8 @@ import {
   Upload,
   QrCode,
   RefreshCw,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -688,6 +690,9 @@ export default function ManagerDashboard({
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível validar o pagamento.", variant: "destructive" }),
   });
+
+  // Comissão privacy toggle (false = oculto por padrão)
+  const [comissaoVisivel, setComissaoVisivel] = useState(false);
 
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
@@ -1298,21 +1303,26 @@ export default function ManagerDashboard({
                           <span className="text-white text-sm font-bold">{prof.nome.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <p className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{prof.nome}</p>
-                          {prof.modalidade && (
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{prof.modalidade}</span>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          <span className="whitespace-nowrap">Alunos: {alunosCount}</span>
-                          {prof.percentualComissao && (
-                            <Badge variant="secondary" className="h-5 px-2 text-[11px]">
-                              {prof.percentualComissao}%
+                      <div className="min-w-0 flex-1 flex items-center gap-2 overflow-hidden">
+                        <p className="font-medium truncate shrink">{prof.nome}</p>
+                        {prof.modalidade && (
+                          <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{prof.modalidade}</span>
+                        )}
+                        <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 ml-auto">Alunos: {alunosCount}</span>
+                        {prof.percentualComissao && parseFloat(prof.percentualComissao) > 0 && (
+                          <>
+                            <Badge variant="secondary" className="h-5 px-2 text-[11px] shrink-0">
+                              {comissaoVisivel ? `${prof.percentualComissao}%` : "•••"}
                             </Badge>
-                          )}
-                        </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setComissaoVisivel(v => !v); }}
+                              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                              title={comissaoVisivel ? "Ocultar comissão" : "Mostrar comissão"}
+                            >
+                              {comissaoVisivel ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -2518,13 +2528,22 @@ export default function ManagerDashboard({
                       <span className="text-white font-bold text-base">{professor.nome.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{professor.nome}</p>
-                    <p className="text-sm text-muted-foreground truncate">{professor.modalidade}</p>
+                  <div className="min-w-0 flex items-center gap-2 overflow-hidden">
+                    <p className="font-medium truncate shrink">{professor.nome}</p>
+                    <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{professor.modalidade}</span>
                     {parseFloat(professor.percentualComissao ?? "0") > 0 && (
-                      <Badge variant="secondary" className="text-xs mt-1">
-                        Comissão: {professor.percentualComissao}%
-                      </Badge>
+                      <>
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {comissaoVisivel ? `${professor.percentualComissao}%` : "•••"}
+                        </Badge>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setComissaoVisivel(v => !v); }}
+                          className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                          title={comissaoVisivel ? "Ocultar comissão" : "Mostrar comissão"}
+                        >
+                          {comissaoVisivel ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
