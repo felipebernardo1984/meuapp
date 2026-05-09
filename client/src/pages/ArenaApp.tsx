@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import StudentDashboard from "@/components/StudentDashboard";
 import TeacherDashboard from "@/components/TeacherDashboard";
 import ManagerDashboard from "@/components/ManagerDashboard";
-import TurmasManager from "@/components/TurmasManager";
+import AgendaManager from "@/components/AgendaManager";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -429,7 +429,7 @@ export default function ArenaApp() {
       )}
 
       {sessao.tipo === "aluno" && alunoView === "agenda" && (
-        <TurmasManager
+        <AgendaManager
           onVoltar={() => setAlunoView("dashboard")}
           highlightProfessorId={alunoAtual?.professorId ?? undefined}
           alunoMode
@@ -476,7 +476,7 @@ export default function ArenaApp() {
       )}
 
       {sessao.tipo === "professor" && professorView === "agenda" && (
-        <TurmasManager
+        <AgendaManager
           onVoltar={() => setProfessorView("dashboard")}
           professorContext={{
             id: sessao.professor.id,

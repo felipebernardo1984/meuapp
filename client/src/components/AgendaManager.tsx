@@ -115,7 +115,7 @@ interface AlunoTurma {
   aluno: Aluno | null;
 }
 
-interface TurmasManagerProps {
+interface AgendaManagerProps {
   onVoltar: () => void;
   professorContext?: { id: string; modalidade: string; nome?: string };
   readOnly?: boolean;
@@ -163,7 +163,7 @@ type DaySlot = {
   professorId?: string | null;
 };
 
-export default function TurmasManager({ onVoltar, professorContext, readOnly = false, highlightProfessorId, alunoMode = false }: TurmasManagerProps) {
+export default function AgendaManager({ onVoltar, professorContext, readOnly = false, highlightProfessorId, alunoMode = false }: AgendaManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [view, setView] = useState<ViewMode>("mensal");
@@ -1011,13 +1011,13 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             {/* Nome */}
             <div className="space-y-2">
               <Label htmlFor="turma-nome">
-                {formData.tipo === "aula" ? "Nome da turma *" : formData.tipo === "aluguel" ? "Descrição do aluguel *" : "Descrição *"}
+                {formData.tipo === "aula" ? "Nível *" : formData.tipo === "aluguel" ? "Descrição do aluguel *" : "Descrição *"}
               </Label>
               <Input
                 id="turma-nome"
                 data-testid="input-turma-nome"
                 placeholder={
-                  formData.tipo === "aula" ? "Ex: Beach Tennis Avançado"
+                  formData.tipo === "aula" ? "Ex:Iniciante"
                   : formData.tipo === "aluguel" ? "Ex: Aluguel Quadra 1"
                   : "Ex: Day-use Funcional"
                 }

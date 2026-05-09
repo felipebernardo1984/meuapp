@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { PhotoCropModal } from "./PhotoCropModal";
 import { HelpPanel } from "@/components/HelpDialog";
 import ManagerSidebar from "@/components/ManagerSidebar";
-import TurmasManager from "@/components/TurmasManager";
+import AgendaManager from "@/components/AgendaManager";
 import QuadrasManager from "@/components/QuadrasManager";
 import FinancialDashboard from "@/components/FinancialDashboard";
 import SystemSettings from "@/components/SystemSettings";
@@ -3174,7 +3174,7 @@ export default function ManagerDashboard({
       )}
 
       {activeSection === "agenda" && (
-        <TurmasManager onVoltar={() => setActiveSection("dashboard")} />
+        <AgendaManager onVoltar={() => setActiveSection("dashboard")} />
       )}
 
       {activeSection === "quadras" && (
