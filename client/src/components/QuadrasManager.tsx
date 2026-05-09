@@ -251,17 +251,10 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
             </div>
           </div>
 
-          {/* ── Lista de Quadras ── */}
-          <div className="space-y-3">
-            {quadrasAtivas.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <Building2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                  <p>Nenhuma quadra cadastrada ainda.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              quadrasAtivas.map((q: any) => (
+          {/* ── Lista de Quadras (só mostra se houver alguma) ── */}
+          {quadrasAtivas.length > 0 && (
+            <div className="space-y-3">
+              {quadrasAtivas.map((q: any) => (
                 <Card key={q.id} className="overflow-hidden" style={{ borderLeftColor: q.cor, borderLeftWidth: 4 }}>
                   <CardContent className="py-3 px-4 flex flex-wrap items-center gap-3">
                     <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: q.cor }} />
@@ -289,9 +282,9 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
                     </div>
                   </CardContent>
                 </Card>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* ── Seção Ambientes ── */}
           <div className="space-y-3 pt-2 border-t">
