@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -358,11 +359,10 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Remover Ambiente</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover <strong>{confirmDelete?.nome}</strong>? Esta ação não pode ser desfeita.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Tem certeza que deseja remover{" "}
-            <strong>{confirmDelete?.nome}</strong>?
-          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDelete(null)}>
               Cancelar

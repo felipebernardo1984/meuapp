@@ -591,9 +591,12 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                           } else if (!readOnly) {
                             const dayId = JS_DAY_TO_ID[date.getDay()];
                             const isoDate = toISODate(date);
+                            const defaultTipo: TipoAgendamento = alunoMode ? "aluguel" : "aula";
                             setEditandoId(null);
                             setFormData({
                               ...emptyForm,
+                              tipo: defaultTipo,
+                              cor: TIPO_CORES[defaultTipo],
                               modalidade: professorContext?.modalidade ?? "",
                               professorId: professorContext?.id ?? "",
                               diasSemana: [dayId],
@@ -697,10 +700,12 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                             {t.clienteNome && (
                               <p className="text-[9px] opacity-80 truncate mt-0.5">Cliente: {t.clienteNome}</p>
                             )}
-                            <div className="flex items-center gap-1 mt-1.5">
-                              <Users className="h-2.5 w-2.5 opacity-80" />
-                              <span className="text-[9px] opacity-90">{t.alunosCount}/{t.capacidadeMaxima}</span>
-                            </div>
+                            {t.tipo === "aula" && (
+                              <div className="flex items-center gap-1 mt-1.5">
+                                <Users className="h-2.5 w-2.5 opacity-80" />
+                                <span className="text-[9px] opacity-90">{t.alunosCount}/{t.capacidadeMaxima}</span>
+                              </div>
+                            )}
                           </div>
                         ))
                       )}
@@ -845,10 +850,12 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                         {t.clienteNome && (
                           <p className="text-xs opacity-80">Cliente: {t.clienteNome}</p>
                         )}
-                        <div className="flex items-center gap-1 mt-1 text-xs opacity-80">
-                          <Users className="h-3 w-3" />
-                          {t.alunosCount}/{t.capacidadeMaxima} alunos
-                        </div>
+                        {t.tipo === "aula" && (
+                          <div className="flex items-center gap-1 mt-1 text-xs opacity-80">
+                            <Users className="h-3 w-3" />
+                            {t.alunosCount}/{t.capacidadeMaxima} alunos
+                          </div>
+                        )}
                       </div>
                       {!readOnly && (!professorContext || t.professorId === professorContext.id) && (
                         <div className="flex items-center gap-1 shrink-0">

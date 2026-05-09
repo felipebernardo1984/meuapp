@@ -1958,7 +1958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, tipo, modalidade, professorId, recursoId, clienteNome, valorCobrado, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo, dataAula } = req.body;
+      const { nome, tipo, modalidade, professorId, recursoId, clienteNome, valorCobrado, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, ativo, dataAula, excecoes } = req.body;
       const turma = await storage.updateTurma(req.params.id, {
         nome,
         tipo: tipo || "aula",
@@ -1970,6 +1970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         diasSemana, horarioInicio, horarioFim,
         capacidadeMaxima, cor,
         dataAula: dataAula ?? undefined,
+        ...(excecoes !== undefined ? { excecoes } : {}),
         ...(ativo !== undefined ? { ativo } : {}),
       });
       res.json(turma);
