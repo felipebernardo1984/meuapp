@@ -1,8 +1,14 @@
 {
+  "createdAt": "2026-05-09T05:54:56.385Z",
   "arenas": [],
-  "students": [],
-  "teachers": [],
   "plans": [],
+  "teachers": [],
+  "students": [],
   "checkins": [],
-  "createdAt": "2026-05-09T04:46:19.336Z"
+  "payments": [],
+  "charges": [],
+  "despesas": [],
+  "turmas": [],
+  "turmaAlunos": [],
+  "recursos": []
 }
