@@ -201,7 +201,7 @@ export default function ManagerDashboard({
   onExcluirAlunoPermanente,
 }: ManagerDashboardProps) {
   const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
-  const [abaAlunos, setAbaAlunos] = useState<"ativos" | "inativos">("ativos");
+  const [abaAlunos, setAbaAlunos] = useState<"todas" | "ativos" | "inativos">("todas");
 
   const { data: alunosInativos = [] } = useQuery<any[]>({
     queryKey: ["/api/alunos/inativos"],
@@ -2873,46 +2873,36 @@ export default function ManagerDashboard({
       {/* ── Tabela de alunos ── */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="flex rounded-lg border overflow-hidden text-sm">
-                <button
-                  className={`px-3 py-1 transition-colors ${abaAlunos === "ativos" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                  onClick={() => setAbaAlunos("ativos")}
-                  data-testid="tab-alunos-ativos"
-                >
-                  Ativos <span className="ml-1 opacity-70">{alunos.length}</span>
-                </button>
-                <button
-                  className={`px-3 py-1 transition-colors ${abaAlunos === "inativos" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                  onClick={() => setAbaAlunos("inativos")}
-                  data-testid="tab-alunos-inativos"
-                >
-                  Inativos <span className="ml-1 opacity-70">{alunosInativos.length}</span>
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {abaAlunos === "ativos" && (
-                <Select value={filtroModalidade} onValueChange={setFiltroModalidade}>
-                  <SelectTrigger className="w-44" data-testid="select-modality">
-                    <SelectValue placeholder="Modalidade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas</SelectItem>
-                    {todasModalidades.map((mod) => (
-                      <SelectItem key={mod} value={mod}>{mod}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <Button variant="outline" onClick={onExportarPDF} data-testid="button-export-pdf">
-                <Download className="h-4 w-4 mr-2" />PDF
-              </Button>
-              <Button variant="outline" onClick={onExportarExcel} data-testid="button-export-excel">
-                <Download className="h-4 w-4 mr-2" />Excel
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 justify-end">
+            <Select value={abaAlunos} onValueChange={(v) => setAbaAlunos(v as any)} data-testid="select-status-alunos">
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="ativos">Ativos ({alunos.length})</SelectItem>
+                <SelectItem value="inativos">Inativos ({alunosInativos.length})</SelectItem>
+              </SelectContent>
+            </Select>
+            {abaAlunos !== "inativos" && (
+              <Select value={filtroModalidade} onValueChange={setFiltroModalidade}>
+                <SelectTrigger className="w-44" data-testid="select-modality">
+                  <SelectValue placeholder="Modalidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {todasModalidades.map((mod) => (
+                    <SelectItem key={mod} value={mod}>{mod}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button variant="outline" onClick={onExportarPDF} data-testid="button-export-pdf">
+              <Download className="h-4 w-4 mr-2" />PDF
+            </Button>
+            <Button variant="outline" onClick={onExportarExcel} data-testid="button-export-excel">
+              <Download className="h-4 w-4 mr-2" />Excel
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -2960,6 +2950,7 @@ export default function ManagerDashboard({
               )}
             </div>
           ) : (
+          <>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -3168,6 +3159,24 @@ export default function ManagerDashboard({
               </TableBody>
             </Table>
           </div>
+          {abaAlunos === "todas" && alunosInativos.length > 0 && (
+            <div className="mt-4 pt-4 border-t space-y-2">
+              <p className="text-sm font-medium text-muted-foreground mb-2">Inativos</p>
+              {alunosInativos.map((a: any) => (
+                <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30" data-testid={`row-inativo-${a.id}`}>
+                  <div>
+                    <p className="font-medium text-sm">{a.nome}</p>
+                    <p className="text-xs text-muted-foreground">{a.modalidade} · {a.planoTitulo || "Sem plano"} · Desativado em {a.desativadoEm ?? "—"}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => onReativarAluno(a.id)} data-testid={`button-reativar-${a.id}`}>Reativar</Button>
+                    <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setConfirmDeleteAluno({ id: a.id, nome: a.nome })} data-testid={`button-excluir-permanente-${a.id}`}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          </>
           )}
         </CardContent>
       </Card>
