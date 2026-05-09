@@ -1841,6 +1841,19 @@ export default function ManagerDashboard({
             </Card>
           </div>
 
+          <Button
+            size="lg"
+            className="w-full h-14 text-lg"
+            data-testid="button-novo-mensalista"
+            onClick={() => {
+              setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+              setDialogNovoMensalista(true);
+            }}
+          >
+            <UserPlus className="mr-2 h-5 w-5" />
+            Cadastrar Mensalista
+          </Button>
+
           {/* Filters + Table */}
           <Card>
             <CardHeader className="pb-3">
@@ -2062,18 +2075,6 @@ export default function ManagerDashboard({
                   </TableBody>
                 </Table>
               )}
-              <Button
-                size="lg"
-                className="w-full h-14 text-lg mt-4"
-                data-testid="button-novo-mensalista"
-                onClick={() => {
-                  setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
-                  setDialogNovoMensalista(true);
-                }}
-              >
-                <UserPlus className="mr-2 h-5 w-5" />
-                Cadastrar Mensalista
-              </Button>
             </CardContent>
           </Card>
         </div>
