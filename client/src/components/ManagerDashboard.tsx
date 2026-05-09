@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { PhotoCropModal } from "./PhotoCropModal";
 import { HelpPanel } from "@/components/HelpDialog";
 import ManagerSidebar from "@/components/ManagerSidebar";
@@ -84,6 +84,8 @@ import {
   Menu,
   FileText,
   Link2,
+  Upload,
+  QrCode,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -252,6 +254,8 @@ export default function ManagerDashboard({
   const [formContaBancaria, setFormContaBancaria] = useState({
     receiverName: "",
     pixKey: "",
+    pixQrcodeImage: "",
+    pixTipo: "chave" as "chave" | "qrcode",
     banco: "",
     agencia: "",
     numeroConta: "",
@@ -260,6 +264,16 @@ export default function ManagerDashboard({
     bankApiKey: "",
     bankWebhookUrl: "",
   });
+  const contaFileInputRef = useRef<HTMLInputElement>(null);
+  const handleFileUploadConta = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setFormContaBancaria((f) => ({ ...f, pixQrcodeImage: ev.target?.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Conta Bancária query + mutation
   const { data: contaBancariaData } = useQuery<any>({
@@ -881,9 +895,12 @@ export default function ManagerDashboard({
     if (section === "checkins") { setActiveSection("checkins"); return; }
     if (section === "ajuda") { setActiveSection("ajuda"); return; }
     if (section === "conta") {
+      const hasQrcode = !!contaBancariaData?.pixQrcodeImage;
       setFormContaBancaria({
         receiverName: contaBancariaData?.receiverName ?? "",
         pixKey: contaBancariaData?.pixKey ?? "",
+        pixQrcodeImage: contaBancariaData?.pixQrcodeImage ?? "",
+        pixTipo: hasQrcode ? "qrcode" : "chave",
         banco: contaBancariaData?.banco ?? "",
         agencia: contaBancariaData?.agencia ?? "",
         numeroConta: contaBancariaData?.numeroConta ?? "",
@@ -4944,22 +4961,102 @@ export default function ManagerDashboard({
               </div>
             </div>
 
-            {/* Chave PIX */}
+            {/* Chave PIX / QR Code */}
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
-                <Key className="h-4 w-4" />
-                Chave PIX
+                <QrCode className="h-4 w-4" />
+                Recebimento via PIX
               </h3>
-              <div className="space-y-1.5">
-                <Label htmlFor="conta-pixKey">Chave PIX</Label>
-                <Input
-                  id="conta-pixKey"
-                  value={formContaBancaria.pixKey}
-                  onChange={(e) => setFormContaBancaria({ ...formContaBancaria, pixKey: e.target.value })}
-                  placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
-                  data-testid="input-conta-pixKey"
-                />
-                <p className="text-xs text-muted-foreground">Esta chave é usada para gerar o QR Code de pagamento das mensalidades.</p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Tipo de recebimento PIX</Label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="conta-pixTipo"
+                        value="chave"
+                        checked={formContaBancaria.pixTipo === "chave"}
+                        onChange={() => setFormContaBancaria({ ...formContaBancaria, pixTipo: "chave", pixQrcodeImage: "" })}
+                        data-testid="radio-conta-pix-chave"
+                        className="accent-primary"
+                      />
+                      <span className="text-sm">Chave PIX</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="conta-pixTipo"
+                        value="qrcode"
+                        checked={formContaBancaria.pixTipo === "qrcode"}
+                        onChange={() => setFormContaBancaria({ ...formContaBancaria, pixTipo: "qrcode", pixKey: "" })}
+                        data-testid="radio-conta-pix-qrcode"
+                        className="accent-primary"
+                      />
+                      <span className="text-sm">QR Code PIX</span>
+                    </label>
+                  </div>
+                </div>
+
+                {formContaBancaria.pixTipo === "chave" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="conta-pixKey">Chave PIX</Label>
+                    <Input
+                      id="conta-pixKey"
+                      value={formContaBancaria.pixKey}
+                      onChange={(e) => setFormContaBancaria({ ...formContaBancaria, pixKey: e.target.value })}
+                      placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                      data-testid="input-conta-pixKey"
+                    />
+                    <p className="text-xs text-muted-foreground">Esta chave é exibida para o aluno na página de pagamento.</p>
+                  </div>
+                )}
+
+                {formContaBancaria.pixTipo === "qrcode" && (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label>Imagem do QR Code</Label>
+                      <input
+                        ref={contaFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileUploadConta}
+                        data-testid="input-conta-pix-file"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => contaFileInputRef.current?.click()}
+                        data-testid="button-conta-upload-qrcode"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {formContaBancaria.pixQrcodeImage ? "Trocar imagem do QR Code" : "Fazer upload do QR Code"}
+                      </Button>
+                      {formContaBancaria.pixQrcodeImage && (
+                        <div className="flex justify-center pt-2">
+                          <img
+                            src={formContaBancaria.pixQrcodeImage}
+                            alt="QR Code PIX"
+                            className="h-32 w-32 object-contain border rounded"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="conta-pixCopiacola">PIX Copia e Cola (opcional)</Label>
+                      <Input
+                        id="conta-pixCopiacola"
+                        value={formContaBancaria.pixKey}
+                        onChange={(e) => setFormContaBancaria({ ...formContaBancaria, pixKey: e.target.value })}
+                        placeholder="Cole o código PIX copia e cola aqui"
+                        data-testid="input-conta-pix-copiacola"
+                      />
+                      <p className="text-xs text-muted-foreground">Código gerado pelo seu banco para pagamento via PIX.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
