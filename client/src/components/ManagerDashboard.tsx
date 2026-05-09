@@ -200,8 +200,7 @@ export default function ManagerDashboard({
   onReativarAluno,
   onExcluirAlunoPermanente,
 }: ManagerDashboardProps) {
-  const [filtroModalidade, setFiltroModalidade] = useState<string>("todas");
-  const [abaAlunos, setAbaAlunos] = useState<"todas" | "ativos" | "inativos">("todas");
+  const [filtroAlunos, setFiltroAlunos] = useState<string>("todas");
 
   const { data: alunosInativos = [] } = useQuery<any[]>({
     queryKey: ["/api/alunos/inativos"],
@@ -851,8 +850,8 @@ export default function ManagerDashboard({
     new Set([...alunos.map((a) => a.modalidade), ...professores.map((p) => p.modalidade)].filter(Boolean))
   );
 
-  const alunosFiltrados = alunos.filter(
-    (a) => filtroModalidade === "todas" || a.modalidade === filtroModalidade
+  const alunosFiltrados = alunos.filter((a) =>
+    filtroAlunos === "todas" || filtroAlunos === "ativos" || a.modalidade === filtroAlunos
   );
   const alunosPendentes = alunos.filter((a) => !a.aprovado);
   const alunoPlanoSelecionado = alunos.find((a) => a.id === alunoPlanoId);
@@ -2874,29 +2873,19 @@ export default function ManagerDashboard({
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2 justify-end">
-            <Select value={abaAlunos} onValueChange={(v) => setAbaAlunos(v as any)} data-testid="select-status-alunos">
-              <SelectTrigger className="w-36">
+            <Select value={filtroAlunos} onValueChange={setFiltroAlunos} data-testid="select-filtro-alunos">
+              <SelectTrigger className="w-52">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas</SelectItem>
                 <SelectItem value="ativos">Ativos ({alunos.length})</SelectItem>
                 <SelectItem value="inativos">Inativos ({alunosInativos.length})</SelectItem>
+                {todasModalidades.map((mod) => (
+                  <SelectItem key={mod} value={mod}>{mod}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            {abaAlunos !== "inativos" && (
-              <Select value={filtroModalidade} onValueChange={setFiltroModalidade}>
-                <SelectTrigger className="w-44" data-testid="select-modality">
-                  <SelectValue placeholder="Modalidade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  {todasModalidades.map((mod) => (
-                    <SelectItem key={mod} value={mod}>{mod}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
             <Button variant="outline" onClick={onExportarPDF} data-testid="button-export-pdf">
               <Download className="h-4 w-4 mr-2" />PDF
             </Button>
@@ -2915,7 +2904,7 @@ export default function ManagerDashboard({
             <UserPlus className="mr-2 h-5 w-5" />
             Cadastrar Aluno
           </Button>
-          {abaAlunos === "inativos" ? (
+          {filtroAlunos === "inativos" ? (
             <div className="space-y-2">
               {alunosInativos.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">Nenhum aluno inativo.</p>
@@ -3159,7 +3148,7 @@ export default function ManagerDashboard({
               </TableBody>
             </Table>
           </div>
-          {abaAlunos === "todas" && alunosInativos.length > 0 && (
+          {filtroAlunos === "todas" && alunosInativos.length > 0 && (
             <div className="mt-4 pt-4 border-t space-y-2">
               <p className="text-sm font-medium text-muted-foreground mb-2">Inativos</p>
               {alunosInativos.map((a: any) => (
