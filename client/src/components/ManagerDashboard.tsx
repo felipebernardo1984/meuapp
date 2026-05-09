@@ -1648,6 +1648,20 @@ export default function ManagerDashboard({
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="space-y-2">
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg"
+              onClick={() => {
+                  setPlanoEditando(null);
+                  setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
+                  setDialogNovoPlano(true);
+                }}
+              data-testid="button-add-plan"
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              Criar novo plano
+            </Button>
+
             {planos.map((plano) => (
               <div
                 key={plano.id}
@@ -1679,20 +1693,6 @@ export default function ManagerDashboard({
                 </div>
               </div>
             ))}
-
-            <Button
-              size="lg"
-              className="w-full h-14 text-lg mt-2"
-              onClick={() => {
-                  setPlanoEditando(null);
-                  setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
-                  setDialogNovoPlano(true);
-                }}
-              data-testid="button-add-plan"
-            >
-              <Plus className="mr-2 h-5 w-5" />
-              Criar novo plano
-            </Button>
           </div>
         </CardContent>
       </Card>
