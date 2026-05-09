@@ -6,7 +6,7 @@ import {
   platformPlans, arenaSubscriptionPayments, modalidadeSettings,
   checkinFinanceiro, integrationPlans, integrationSettings,
   teacherCommissions, platformSettings, passwordResetTokens,
-  turmas, turmaAlunos, recursos,
+  turmas, turmaAlunos, recursos, despesas, quadras, reservas,
 } from "@shared/schema";
 
 export class DatabaseStorage {
@@ -677,6 +677,96 @@ export class DatabaseStorage {
     }
     const [created] = await db.insert(integrationSettings).values(data).returning();
     return created;
+  }
+
+  // DESPESAS
+  async listDespesas(arenaId: string) {
+    return db.select().from(despesas).where(eq(despesas.arenaId, arenaId)).orderBy(desc(despesas.data));
+  }
+
+  async createDespesa(data: any) {
+    const [d] = await db.insert(despesas).values(data).returning();
+    return d;
+  }
+
+  async updateDespesa(id: string, data: any) {
+    const [d] = await db.update(despesas).set(data).where(eq(despesas.id, id)).returning();
+    return d;
+  }
+
+  async deleteDespesa(id: string) {
+    await db.delete(despesas).where(eq(despesas.id, id));
+  }
+
+  // PAGAMENTO ONLINE
+  async listAllPaymentsForArena(arenaId: string) {
+    return db.select().from(payments).where(eq(payments.tenantId, arenaId));
+  }
+
+  async updatePaymentToken(id: string, token: string) {
+    await db.update(payments).set({ pagamentoToken: token }).where(eq(payments.id, id));
+  }
+
+  async getPaymentByToken(token: string) {
+    const [p] = await db.select().from(payments).where(eq(payments.pagamentoToken, token));
+    return p ?? null;
+  }
+
+  async updatePayment(id: string, data: { status?: string; paymentDate?: string; paymentMethod?: string }) {
+    await db.update(payments).set(data as any).where(eq(payments.id, id));
+  }
+
+  async getStudentById(id: string) {
+    return this.getStudent(id);
+  }
+
+  async getPlansForArena(arenaId: string) {
+    return this.listPlans(arenaId);
+  }
+
+  // QUADRAS
+  async listQuadras(arenaId: string) {
+    return db.select().from(quadras).where(eq(quadras.arenaId, arenaId));
+  }
+
+  async createQuadra(data: any) {
+    const [q] = await db.insert(quadras).values(data).returning();
+    return q;
+  }
+
+  async updateQuadra(id: string, data: any) {
+    const [q] = await db.update(quadras).set(data).where(eq(quadras.id, id)).returning();
+    return q;
+  }
+
+  async deleteQuadra(id: string) {
+    await db.delete(quadras).where(eq(quadras.id, id));
+  }
+
+  // RESERVAS
+  async listReservas(arenaId: string) {
+    return db.select().from(reservas).where(eq(reservas.arenaId, arenaId)).orderBy(desc(reservas.data));
+  }
+
+  async listReservasByDateRange(arenaId: string, dataInicio: string, dataFim: string) {
+    const { gte, lte } = await import("drizzle-orm");
+    return db.select().from(reservas).where(
+      and(eq(reservas.arenaId, arenaId), gte(reservas.data, dataInicio), lte(reservas.data, dataFim))
+    );
+  }
+
+  async createReserva(data: any) {
+    const [r] = await db.insert(reservas).values(data).returning();
+    return r;
+  }
+
+  async updateReserva(id: string, data: any) {
+    const [r] = await db.update(reservas).set(data).where(eq(reservas.id, id)).returning();
+    return r;
+  }
+
+  async deleteReserva(id: string) {
+    await db.delete(reservas).where(eq(reservas.id, id));
   }
 
 }

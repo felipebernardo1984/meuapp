@@ -20,6 +20,8 @@ import {
   Landmark,
   X,
   CalendarDays,
+  TrendingDown,
+  LayoutGrid,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -63,6 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "alunos", label: "Alunos", icon: Users },
       { id: "professores", label: "Professores", icon: GraduationCap },
       { id: "agenda", label: "Agenda", icon: CalendarDays },
+      { id: "quadras", label: "Quadras", icon: LayoutGrid },
       { id: "planos", label: "Planos", icon: ClipboardList },
       { id: "mensalidades", label: "Mensalidades", icon: CreditCard },
       { id: "checkins", label: "Log Check-ins", icon: CheckSquare },
@@ -72,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Financeiro",
     items: [
       { id: "financeiro", label: "Pagamentos", icon: CreditCard },
+      { id: "despesas", label: "Despesas", icon: TrendingDown },
       { id: "comissoes", label: "Comissões", icon: PercentCircle },
     ],
   },

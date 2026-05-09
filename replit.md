@@ -17,17 +17,23 @@ A multi-tenant SaaS platform for managing sports arenas (beach tennis, volleybal
 - `server/routes.ts` — All API routes
 - `client/src/pages/Admin.tsx` — Super-admin panel (arena CRUD, pricing, payment history)
 - `client/src/pages/ArenaApp.tsx` — Arena-specific app shell
-- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard with collapsible sidebar navigation (sections: Dashboard, Alunos, Mensalidades, Professores, Turmas, Planos, Financeiro, WhatsApp, Configurações, Alertas, Ajuda)
+- `client/src/components/ManagerDashboard.tsx` — Gestor dashboard with collapsible sidebar navigation (sections: Dashboard, Alunos, Mensalidades, Professores, Turmas, Quadras, Planos, Financeiro, Despesas, WhatsApp, Configurações, Alertas, Ajuda)
 - `client/src/components/TurmasManager.tsx` — Full class/schedule management: weekly calendar grid view + list view, CRUD dialogs for classes, student enrollment per class
 - `client/src/components/ManagerSidebar.tsx` — Dark collapsible sidebar with full mobile drawer support (hamburger button, overlay backdrop, fixed-position mobile drawer, smooth translate transition)
 - `client/src/components/OverviewDashboard.tsx` — Analytics overview (KPIs, student movement, financial, plan distribution)
 - `client/src/components/TeacherDashboard.tsx` — Teacher dashboard
 - `client/src/components/StudentDashboard.tsx` — Student dashboard
 
+- `client/src/components/QuadrasManager.tsx` — Court booking management: weekly calendar view + court CRUD + reserva CRUD (aluguel/dayuse/bloqueio)
+- `client/src/pages/QuadrasPublicas.tsx` — Public weekly court availability page (no login required)
+- `client/src/pages/PagamentoOnline.tsx` — Public payment page: shows PIX key, QR code, and self-confirm button
+
 ### Routes
 - `/` — Public landing page (marketing)
 - `/admin` — Super-admin panel (arena CRUD, pricing, support settings)
 - `/arena/:id` — Arena-specific login + dashboard
+- `/arena/:id/quadras` — Public court availability calendar
+- `/pagar/:token` — Public payment page (student self-confirms mensalidade)
 - `/reset-senha?token=...` — Password reset confirmation page
 - `/cadastro` — Arena registration page
 

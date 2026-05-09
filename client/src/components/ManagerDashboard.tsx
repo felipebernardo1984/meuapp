@@ -3,6 +3,7 @@ import { PhotoCropModal } from "./PhotoCropModal";
 import { HelpPanel } from "@/components/HelpDialog";
 import ManagerSidebar from "@/components/ManagerSidebar";
 import TurmasManager from "@/components/TurmasManager";
+import QuadrasManager from "@/components/QuadrasManager";
 import FinancialDashboard from "@/components/FinancialDashboard";
 import SystemSettings from "@/components/SystemSettings";
 import AlertPanel from "@/components/AlertPanel";
@@ -81,6 +82,8 @@ import {
   Camera,
   UserCircle,
   Menu,
+  FileText,
+  Link2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -464,6 +467,70 @@ export default function ManagerDashboard({
   const qc = useQueryClient();
   const { toast } = useToast();
 
+  const gerarComprovante = (params: {
+    alunoNome: string;
+    amount: string;
+    referenceMonth: string;
+    paymentDate?: string | null;
+    paymentMethod?: string | null;
+    planoTitulo?: string;
+    paymentId?: string;
+  }) => {
+    const metodoLabel: Record<string, string> = { cartao: "Cartão de Crédito/Débito", pix: "PIX", dinheiro: "Dinheiro" };
+    const metodo = metodoLabel[params.paymentMethod ?? ""] ?? params.paymentMethod ?? "—";
+    const [ano, mes] = (params.referenceMonth ?? "").split("-");
+    const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    const mesFormatado = mes ? `${meses[parseInt(mes, 10) - 1]} / ${ano}` : params.referenceMonth;
+    const dataEmissao = new Date().toLocaleDateString("pt-BR");
+    const recibo = params.paymentId ? `Ref: ${params.paymentId.slice(-10).toUpperCase()}` : "";
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Comprovante de Pagamento</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f8; display: flex; justify-content: center; padding: 40px 20px; }
+  .card { background: white; border-radius: 12px; padding: 40px; max-width: 460px; width: 100%; box-shadow: 0 2px 16px rgba(0,0,0,0.10); }
+  .header { text-align: center; margin-bottom: 28px; }
+  .logo { font-size: 24px; font-weight: 800; color: #1e3a5f; letter-spacing: 2px; }
+  .arena { font-size: 14px; color: #6b7280; margin-top: 4px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; background: #d1fae5; color: #065f46; padding: 6px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; margin: 16px 0 8px; }
+  .amount { font-size: 40px; font-weight: 800; color: #111827; text-align: center; margin: 4px 0 28px; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 12px 0; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; font-size: 14px; }
+  .label { color: #6b7280; }
+  .value { font-weight: 600; color: #111827; text-align: right; max-width: 260px; word-break: break-word; }
+  .footer { margin-top: 28px; text-align: center; font-size: 11px; color: #9ca3af; }
+  .recibo { font-size: 11px; color: #d1d5db; text-align: center; margin-top: 6px; }
+  @media print { body { background: white; padding: 0; } .card { box-shadow: none; border-radius: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="logo">SEVEN SPORTS</div>
+    ${arenaName ? `<div class="arena">${arenaName}</div>` : ""}
+    <div class="badge">✓ Pagamento Confirmado</div>
+    <div class="amount">R$&nbsp;${params.amount}</div>
+  </div>
+  <hr />
+  <div class="row"><span class="label">Aluno</span><span class="value">${params.alunoNome}</span></div>
+  ${params.planoTitulo ? `<div class="row"><span class="label">Plano</span><span class="value">${params.planoTitulo}</span></div>` : ""}
+  <div class="row"><span class="label">Referência</span><span class="value">${mesFormatado}</span></div>
+  <div class="row"><span class="label">Data do pagamento</span><span class="value">${params.paymentDate ?? dataEmissao}</span></div>
+  <div class="row"><span class="label">Forma de pagamento</span><span class="value">${metodo}</span></div>
+  <hr />
+  <div class="footer">Documento emitido em ${dataEmissao}</div>
+  <div class="recibo">${recibo}</div>
+</div>
+<script>window.onload = () => { window.print(); }</script>
+</body>
+</html>`;
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
+  };
+
   const { data: subscription } = useQuery<{
     subscriptionPlan: string;
     subscriptionStartDate?: string;
@@ -486,6 +553,36 @@ export default function ManagerDashboard({
   const { data: allPayments = [] } = useQuery<any[]>({ queryKey: ["/api/finance/payments"] });
   const { data: allCharges = [] } = useQuery<any[]>({ queryKey: ["/api/finance/charges"] });
   const { data: modalidadeSettingsList = [] } = useQuery<any[]>({ queryKey: ["/api/configuracoes/modalidades"] });
+
+  // Despesas state & queries
+  const { data: listaDespesas = [] } = useQuery<any[]>({ queryKey: ["/api/despesas"] });
+  const [dialogDespesa, setDialogDespesa] = useState(false);
+  const [despesaEditando, setDespesaEditando] = useState<any | null>(null);
+  const [formDespesa, setFormDespesa] = useState({ categoria: "Outros", descricao: "", valor: "", data: "" });
+  const [confirmDeleteDespesa, setConfirmDeleteDespesa] = useState<any | null>(null);
+  const [filtroDespesaMes, setFiltroDespesaMes] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const CATEGORIAS_DESPESA = ["Aluguel", "Energia", "Água", "Internet", "Salários", "Material", "Manutenção", "Outros"];
+
+  const criarDespesa = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/despesas", data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/despesas"] }); setDialogDespesa(false); toast({ title: "Despesa registrada!" }); },
+    onError: () => toast({ title: "Erro", description: "Não foi possível registrar.", variant: "destructive" }),
+  });
+
+  const editarDespesa = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PUT", `/api/despesas/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/despesas"] }); setDialogDespesa(false); setDespesaEditando(null); toast({ title: "Despesa atualizada!" }); },
+    onError: () => toast({ title: "Erro", description: "Não foi possível atualizar.", variant: "destructive" }),
+  });
+
+  const deletarDespesa = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/despesas/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/despesas"] }); setConfirmDeleteDespesa(null); toast({ title: "Despesa removida." }); },
+    onError: () => toast({ title: "Erro", description: "Não foi possível remover.", variant: "destructive" }),
+  });
 
   const deletePayment = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/payments/${id}`),
@@ -856,6 +953,7 @@ export default function ManagerDashboard({
     planos: "Planos",
     agenda: "Agenda",
     financeiro: "Financeiro",
+    despesas: "Despesas",
     configuracoes: "Configurações",
     integracoes: "Integrações",
     alertas: "Alertas",
@@ -863,6 +961,7 @@ export default function ManagerDashboard({
     comissoes: "Comissões",
     checkins: "Log de Check-ins",
     conta: "Conta Bancária",
+    quadras: "Quadras",
     ajuda: "Ajuda",
   };
 
@@ -1864,6 +1963,46 @@ export default function ManagerDashboard({
                                   <CheckCircle2 className="w-4 h-4 mr-1" /> Pagar
                                 </Button>
                               )}
+                              {!isPaid && row.pagMes && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  title="Gerar link de pagamento"
+                                  data-testid={`button-link-mens-${row.id}`}
+                                  onClick={async () => {
+                                    try {
+                                      const resp = await fetch(`/api/payments/${row.pagMes!.id}/link`);
+                                      if (!resp.ok) throw new Error("Erro");
+                                      const { url } = await resp.json();
+                                      await navigator.clipboard.writeText(url);
+                                      toast({ title: "Link copiado!", description: url.length > 60 ? url.slice(0, 60) + "…" : url });
+                                    } catch {
+                                      toast({ title: "Erro ao gerar link", variant: "destructive" });
+                                    }
+                                  }}
+                                >
+                                  <Link2 className="w-4 h-4 text-muted-foreground" />
+                                </Button>
+                              )}
+                              {isPaid && row.pagMes && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  title="Gerar comprovante"
+                                  data-testid={`button-comprovante-${row.id}`}
+                                  onClick={() => gerarComprovante({
+                                    alunoNome: row.nome,
+                                    amount: row.pagMes!.amount,
+                                    referenceMonth: row.pagMes!.referenceMonth,
+                                    paymentDate: row.pagMes!.paymentDate,
+                                    paymentMethod: row.pagMes!.paymentMethod,
+                                    planoTitulo: row.plano?.titulo,
+                                    paymentId: row.pagMes!.id,
+                                  })}
+                                >
+                                  <FileText className="w-4 h-4 text-muted-foreground" />
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -2103,15 +2242,35 @@ export default function ManagerDashboard({
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{p.paymentDate ?? "-"}</TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            data-testid={`button-del-hist-mens-${p.id}`}
-                            onClick={() => excluirPagamentoMens.mutate(p.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            {p.status === "paid" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="Gerar comprovante"
+                                data-testid={`button-comprovante-hist-${p.id}`}
+                                onClick={() => gerarComprovante({
+                                  alunoNome: histMensAlunoNome,
+                                  amount: p.amount,
+                                  referenceMonth: p.referenceMonth,
+                                  paymentDate: p.paymentDate,
+                                  paymentMethod: p.paymentMethod,
+                                  paymentId: p.id,
+                                })}
+                              >
+                                <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              data-testid={`button-del-hist-mens-${p.id}`}
+                              onClick={() => excluirPagamentoMens.mutate(p.id)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -3000,6 +3159,10 @@ export default function ManagerDashboard({
 
       {activeSection === "agenda" && (
         <TurmasManager onVoltar={() => setActiveSection("dashboard")} />
+      )}
+
+      {activeSection === "quadras" && (
+        <QuadrasManager arenaId={arenaId ?? ""} arenaName={arenaName} />
       )}
 
       {activeSection === "financeiro" && (
@@ -4479,6 +4642,217 @@ export default function ManagerDashboard({
         </DialogContent>
       </Dialog>
 
+
+      {/* ── Seção Despesas ── */}
+      {activeSection === "despesas" && (
+        <div className="p-4 md:p-6 flex flex-col gap-4 overflow-y-auto flex-1 min-h-0">
+          {/* Resumo do mês */}
+          {(() => {
+            const despesasMes = (listaDespesas as any[]).filter((d) => d.data?.startsWith(filtroDespesaMes));
+            const totalMes = despesasMes.reduce((acc, d) => acc + parseFloat(d.valor || "0"), 0);
+            const porCategoria = CATEGORIAS_DESPESA.map((cat) => ({
+              cat,
+              total: despesasMes.filter((d) => d.categoria === cat).reduce((acc, d) => acc + parseFloat(d.valor || "0"), 0),
+            })).filter((c) => c.total > 0);
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <Card className="sm:col-span-2 lg:col-span-1">
+                  <CardContent className="pt-5">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Total do Mês</p>
+                    <p className="text-3xl font-bold text-destructive mt-1">R$ {totalMes.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{despesasMes.length} lançamento(s)</p>
+                  </CardContent>
+                </Card>
+                {porCategoria.slice(0, 4).map((c) => (
+                  <Card key={c.cat}>
+                    <CardContent className="pt-5">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">{c.cat}</p>
+                      <p className="text-2xl font-semibold mt-1">R$ {c.total.toFixed(2)}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* Filtro de mês e botão novo */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              type="month"
+              value={filtroDespesaMes}
+              onChange={(e) => setFiltroDespesaMes(e.target.value)}
+              className="w-44"
+              data-testid="input-filtro-despesa-mes"
+            />
+            <Button
+              data-testid="button-nova-despesa"
+              onClick={() => {
+                const today = new Date();
+                const dd = String(today.getDate()).padStart(2, "0");
+                const mm = String(today.getMonth() + 1).padStart(2, "0");
+                const yyyy = today.getFullYear();
+                setDespesaEditando(null);
+                setFormDespesa({ categoria: "Outros", descricao: "", valor: "", data: `${yyyy}-${mm}-${dd}` });
+                setDialogDespesa(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-1" /> Nova Despesa
+            </Button>
+          </div>
+
+          {/* Tabela */}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(listaDespesas as any[])
+                  .filter((d) => d.data?.startsWith(filtroDespesaMes))
+                  .map((d) => (
+                    <TableRow key={d.id} data-testid={`row-despesa-${d.id}`}>
+                      <TableCell className="text-sm whitespace-nowrap">{d.data ? new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR") : "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{d.categoria}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{d.descricao || "-"}</TableCell>
+                      <TableCell className="text-sm font-medium text-destructive">R$ {parseFloat(d.valor || "0").toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            data-testid={`button-editar-despesa-${d.id}`}
+                            onClick={() => {
+                              setDespesaEditando(d);
+                              setFormDespesa({ categoria: d.categoria, descricao: d.descricao ?? "", valor: d.valor, data: d.data });
+                              setDialogDespesa(true);
+                            }}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            data-testid={`button-deletar-despesa-${d.id}`}
+                            onClick={() => setConfirmDeleteDespesa(d)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                {(listaDespesas as any[]).filter((d) => d.data?.startsWith(filtroDespesaMes)).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      Nenhuma despesa registrada neste mês.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog: Adicionar / Editar Despesa */}
+      <Dialog open={dialogDespesa} onOpenChange={(open) => { if (!open) { setDialogDespesa(false); setDespesaEditando(null); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{despesaEditando ? "Editar Despesa" : "Nova Despesa"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Categoria <span className="text-destructive">*</span></Label>
+              <Select value={formDespesa.categoria} onValueChange={(v) => setFormDespesa({ ...formDespesa, categoria: v })}>
+                <SelectTrigger data-testid="select-despesa-categoria">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIAS_DESPESA.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Descrição</Label>
+              <Input
+                placeholder="Ex: Conta de energia — maio"
+                value={formDespesa.descricao}
+                onChange={(e) => setFormDespesa({ ...formDespesa, descricao: e.target.value })}
+                data-testid="input-despesa-descricao"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Valor (R$) <span className="text-destructive">*</span></Label>
+              <Input
+                placeholder="Ex: 350,00"
+                value={formDespesa.valor}
+                onChange={(e) => setFormDespesa({ ...formDespesa, valor: e.target.value })}
+                data-testid="input-despesa-valor"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Data <span className="text-destructive">*</span></Label>
+              <Input
+                type="date"
+                value={formDespesa.data}
+                onChange={(e) => setFormDespesa({ ...formDespesa, data: e.target.value })}
+                data-testid="input-despesa-data"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDialogDespesa(false); setDespesaEditando(null); }}>Cancelar</Button>
+            <Button
+              disabled={!formDespesa.categoria || !formDespesa.valor || !formDespesa.data || criarDespesa.isPending || editarDespesa.isPending}
+              data-testid="button-confirm-despesa"
+              onClick={() => {
+                const payload = { categoria: formDespesa.categoria, descricao: formDespesa.descricao || null, valor: formDespesa.valor, data: formDespesa.data };
+                if (despesaEditando) {
+                  editarDespesa.mutate({ id: despesaEditando.id, data: payload });
+                } else {
+                  criarDespesa.mutate(payload);
+                }
+              }}
+            >
+              {criarDespesa.isPending || editarDespesa.isPending ? "Salvando..." : despesaEditando ? "Salvar" : "Registrar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Confirmar exclusão despesa */}
+      <Dialog open={!!confirmDeleteDespesa} onOpenChange={(open) => { if (!open) setConfirmDeleteDespesa(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remover Despesa</DialogTitle>
+            <DialogDescription>
+              Tem certeza? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteDespesa(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={deletarDespesa.isPending}
+              data-testid="button-confirm-delete-despesa"
+              onClick={() => { if (confirmDeleteDespesa) deletarDespesa.mutate(confirmDeleteDespesa.id); }}
+            >
+              Remover
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Seção Conta Bancária */}
       {activeSection === "conta" && (

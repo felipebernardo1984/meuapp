@@ -161,6 +161,7 @@ export const payments = pgTable("payments", {
   paymentDate: text("payment_date"),
   status: text("status").notNull().default("pending"),
   paymentMethod: text("payment_method").default("dinheiro"), // 'cartao' | 'pix' | 'dinheiro'
+  pagamentoToken: text("pagamento_token"),
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: text("created_by"),
 });
@@ -432,3 +433,55 @@ export const whatsappDispatchLog = pgTable("whatsapp_dispatch_log", {
   criado_em: timestamp("criado_em").defaultNow(),
   enviado_em: timestamp("enviado_em"),
 });
+
+// ── Despesas (Saídas de Caixa) ────────────────────────────────────────────────
+export const despesas = pgTable("despesas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  categoria: text("categoria").notNull(),
+  descricao: text("descricao"),
+  valor: text("valor").notNull(),
+  data: text("data").notNull(),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
+
+export const insertDespesaSchema = createInsertSchema(despesas).omit({ id: true, criadoEm: true });
+export type InsertDespesa = z.infer<typeof insertDespesaSchema>;
+export type Despesa = typeof despesas.$inferSelect;
+
+// ── Quadras (Courts) ──────────────────────────────────────────────────────────
+export const quadras = pgTable("quadras", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  nome: text("nome").notNull(),
+  descricao: text("descricao"),
+  cor: text("cor").notNull().default("#3b82f6"),
+  ativo: boolean("ativo").notNull().default(true),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
+
+export const insertQuadraSchema = createInsertSchema(quadras).omit({ id: true, criadoEm: true });
+export type InsertQuadra = z.infer<typeof insertQuadraSchema>;
+export type Quadra = typeof quadras.$inferSelect;
+
+// ── Reservas (Bookings) ───────────────────────────────────────────────────────
+export const reservas = pgTable("reservas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
+  quadraId: varchar("quadra_id").references(() => quadras.id, { onDelete: "cascade" }),
+  tipo: text("tipo").notNull(), // 'aluguel' | 'dayuse' | 'bloqueio'
+  titulo: text("titulo"),
+  data: text("data").notNull(),
+  horaInicio: text("hora_inicio").notNull(),
+  horaFim: text("hora_fim").notNull(),
+  nomeCliente: text("nome_cliente"),
+  telefoneCliente: text("telefone_cliente"),
+  valor: text("valor"),
+  status: text("status").notNull().default("confirmado"),
+  observacao: text("observacao"),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
+
+export const insertReservaSchema = createInsertSchema(reservas).omit({ id: true, criadoEm: true });
+export type InsertReserva = z.infer<typeof insertReservaSchema>;
+export type Reserva = typeof reservas.$inferSelect;

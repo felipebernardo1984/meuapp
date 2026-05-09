@@ -2049,6 +2049,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch { res.status(500).json({ message: "Erro ao buscar turma do aluno" }); }
   });
 
+  // ── Pagamento Online (public payment links) ───────────────────────────────────
+  // Generate / retrieve payment link token (auth required — gestor)
+  app.get("/api/payments/:id/link", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const allPays = await storage.listAllPaymentsForArena(arenaId);
+      const pay = allPays?.find((p: any) => p.id === req.params.id);
+      if (!pay) return res.status(404).json({ message: "Pagamento não encontrado" });
+      // Generate token if not exists
+      let token = pay.pagamentoToken;
+      if (!token) {
+        const { randomUUID } = await import("crypto");
+        token = randomUUID();
+        await storage.updatePaymentToken(pay.id, token);
+      }
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : `http://localhost:5000`;
+      res.json({ url: `${baseUrl}/pagar/${token}`, token });
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message ?? "Erro" });
+    }
+  });
+
+  // Public: get payment info by token (no auth)
+  app.get("/api/pagamento/publico/:token", async (req, res) => {
+    try {
+      const info = await storage.getPaymentByToken(req.params.token);
+      if (!info) return res.status(404).json({ message: "Token inválido" });
+      // Get arena PIX settings
+      const pixSettings = await storage.getPaymentSettings(info.tenantId!);
+      // Get student name
+      const student = await storage.getStudentById?.(info.studentId!);
+      // Get arena name
+      const arena = await storage.getArena(info.tenantId!);
+      // Get plan
+      const plans = await storage.getPlansForArena(info.tenantId!);
+      const plan = plans?.find((p: any) => p.id === info.planId);
+      res.json({
+        id: info.id,
+        status: info.status,
+        amount: info.amount,
+        referenceMonth: info.referenceMonth,
+        dueDate: info.dueDate,
+        studentName: student?.nome ?? "Aluno",
+        arenaName: arena?.name ?? "Arena",
+        planName: plan?.titulo ?? null,
+        pixKey: pixSettings?.pixKey ?? null,
+        pixQrcodeImage: pixSettings?.pixQrcodeImage ?? null,
+        receiverName: pixSettings?.receiverName ?? null,
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message ?? "Erro" });
+    }
+  });
+
+  // Public: student self-confirms payment
+  app.post("/api/pagamento/publico/:token/confirmar", async (req, res) => {
+    try {
+      const info = await storage.getPaymentByToken(req.params.token);
+      if (!info) return res.status(404).json({ message: "Token inválido" });
+      if (info.status === "paid") return res.json({ ok: true, message: "Já confirmado" });
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, "0");
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const yyyy = today.getFullYear();
+      await storage.updatePayment(info.id, {
+        status: "paid",
+        paymentDate: `${yyyy}-${mm}-${dd}`,
+        paymentMethod: "pix",
+      });
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message ?? "Erro" });
+    }
+  });
+
+  // ── Quadras Routes ────────────────────────────────────────────────────────────
+  app.get("/api/quadras", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    res.json(await storage.listQuadras(arenaId));
+  });
+
+  app.post("/api/quadras", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { nome, descricao, cor } = req.body;
+    if (!nome) return res.status(400).json({ message: "Nome obrigatório" });
+    res.json(await storage.createQuadra({ arenaId, nome, descricao: descricao ?? null, cor: cor ?? "#3b82f6" }));
+  });
+
+  app.put("/api/quadras/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { nome, descricao, cor, ativo } = req.body;
+    res.json(await storage.updateQuadra(req.params.id, { nome, descricao, cor, ativo }));
+  });
+
+  app.delete("/api/quadras/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.deleteQuadra(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // Public endpoint (no auth) — used by public calendar page
+  app.get("/api/quadras/publico/:arenaId", async (req, res) => {
+    const list = await storage.listQuadras(req.params.arenaId);
+    res.json(list);
+  });
+
+  // ── Reservas Routes ───────────────────────────────────────────────────────────
+  app.get("/api/reservas", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    res.json(await storage.listReservas(arenaId));
+  });
+
+  app.post("/api/reservas", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { quadraId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao } = req.body;
+    if (!quadraId || !tipo || !data || !horaInicio || !horaFim) return res.status(400).json({ message: "Campos obrigatórios faltando" });
+    res.json(await storage.createReserva({ arenaId, quadraId, tipo, data, horaInicio, horaFim, nomeCliente: nomeCliente ?? null, telefoneCliente: telefoneCliente ?? null, valor: valor ?? null, status: status ?? "confirmado", observacao: observacao ?? null }));
+  });
+
+  app.put("/api/reservas/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { quadraId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao } = req.body;
+    res.json(await storage.updateReserva(req.params.id, { quadraId, tipo, data, horaInicio, horaFim, nomeCliente, telefoneCliente, valor, status, observacao }));
+  });
+
+  app.delete("/api/reservas/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.deleteReserva(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // Public endpoint (no auth)
+  app.get("/api/reservas/publico/:arenaId", async (req, res) => {
+    const { dataInicio, dataFim } = req.query;
+    if (dataInicio && dataFim) {
+      const list = await storage.listReservasByDateRange(req.params.arenaId, String(dataInicio), String(dataFim));
+      return res.json(list);
+    }
+    res.json(await storage.listReservas(req.params.arenaId));
+  });
+
+  // ── Despesas Routes ──────────────────────────────────────────────────────────
+  app.get("/api/despesas", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const list = await storage.listDespesas(arenaId);
+    res.json(list);
+  });
+
+  app.post("/api/despesas", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { categoria, descricao, valor, data } = req.body;
+    if (!categoria || !valor || !data) return res.status(400).json({ message: "Campos obrigatórios faltando" });
+    const d = await storage.createDespesa({ arenaId, categoria, descricao: descricao ?? null, valor, data });
+    res.json(d);
+  });
+
+  app.put("/api/despesas/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { categoria, descricao, valor, data } = req.body;
+    const d = await storage.updateDespesa(req.params.id, { categoria, descricao, valor, data });
+    res.json(d);
+  });
+
+  app.delete("/api/despesas/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.deleteDespesa(req.params.id);
+    res.json({ ok: true });
+  });
+
   return createServer(app);
 }
 

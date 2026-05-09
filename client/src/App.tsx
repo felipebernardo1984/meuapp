@@ -9,6 +9,8 @@ import Cadastro from "@/pages/Cadastro";
 import LandingPage from "@/pages/LandingPage";
 import Login from "@/pages/Login";
 import ResetSenha from "@/pages/ResetSenha";
+import QuadrasPublicas from "@/pages/QuadrasPublicas";
+import PagamentoOnline from "@/pages/PagamentoOnline";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +20,8 @@ function Router() {
       <Route path="/entrar" component={Login} />
       <Route path="/admin" component={Admin} />
       <Route path="/cadastro" component={Cadastro} />
+      <Route path="/arena/:id/quadras" component={QuadrasPublicas} />
+      <Route path="/pagar/:token" component={PagamentoOnline} />
       <Route path="/arena/:id" component={ArenaApp} />
       <Route path="/reset-senha" component={ResetSenha} />
       <Route component={NotFound} />
