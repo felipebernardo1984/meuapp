@@ -408,7 +408,15 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
 
   const turmasForDate = (date: Date): Turma[] => {
     const dayId = JS_DAY_TO_ID[date.getDay()];
-    return turmas.filter((t) => t.diasSemana.split("|").includes(dayId));
+    const isoDate = toISODate(date);
+    return turmas.filter((t) => {
+      if (t.dataAula) {
+        // Single-date event: only show on the exact date
+        return t.dataAula === isoDate;
+      }
+      // Recurring: show on any day matching the weekday
+      return t.diasSemana.split("|").includes(dayId);
+    });
   };
 
   const isHighlightedTurma = (t: Turma) => {
@@ -608,6 +616,9 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                               </Badge>
                             </div>
                             <p className="text-[10px] opacity-90 mt-0.5">{t.horarioInicio}–{t.horarioFim}</p>
+                            {t.modalidade && (
+                              <p className="text-[9px] opacity-80 truncate mt-0.5">{t.modalidade}</p>
+                            )}
                             {t.recursoNome && (
                               <p className="text-[9px] opacity-80 truncate mt-0.5">Sala: {t.recursoNome}</p>
                             )}
@@ -859,10 +870,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                       cor: "#1565C0",
                     });
                     setEditandoId(null);
-                    setFormData((prev) => ({
-                      ...prev,
-                      dataAula: dia,
-                    }));
+                    setSessionData({ dataAula: dia });
                     setDiaPopup(null);
                     setSlotPopup(null);
                     setDialogTurma(true);
