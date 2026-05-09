@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-05-09T06:35:08.587Z",
+  "createdAt": "2026-05-09T17:46:55.468Z",
   "arenas": [
     {
       "id": "0cbc583d-3ff8-433f-8949-76abd054baf5",
@@ -176,6 +176,50 @@
       "excecoes": "",
       "statusAluguel": "ativo",
       "expiresAt": null
+    },
+    {
+      "id": "490134fc-f141-46b3-beab-1a72fdfd8f09",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "professorId": "cd9ed688-6b08-4a35-9892-9d418b1afa61",
+      "recursoId": "d13fa02f-dc4b-46ca-a81b-b825e893fbff",
+      "nome": "INICIANTES",
+      "tipo": "aula",
+      "modalidade": "Vôlei de Praia",
+      "clienteNome": null,
+      "valorCobrado": null,
+      "diasSemana": "qua",
+      "horarioInicio": "08:00",
+      "horarioFim": "09:00",
+      "capacidadeMaxima": 20,
+      "cor": "#BF360C",
+      "ativo": true,
+      "criadaEm": "2026-05-09T06:38:06.511Z",
+      "dataAula": null,
+      "excecoes": "",
+      "statusAluguel": "ativo",
+      "expiresAt": null
+    },
+    {
+      "id": "2238fffe-90eb-4369-bcc5-8d567f92fe82",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "professorId": null,
+      "recursoId": "7ca276bc-f09d-4761-ae36-1ae10a09e9b9",
+      "nome": "QUADRA 1",
+      "tipo": "aluguel",
+      "modalidade": "",
+      "clienteNome": "MARIA",
+      "valorCobrado": "90,00",
+      "diasSemana": "qui",
+      "horarioInicio": "08:00",
+      "horarioFim": "09:00",
+      "capacidadeMaxima": 20,
+      "cor": "#2E7D32",
+      "ativo": true,
+      "criadaEm": "2026-05-09T06:44:39.082Z",
+      "dataAula": "2026-05-28",
+      "excecoes": "",
+      "statusAluguel": "pendente",
+      "expiresAt": "2026-05-09T07:44:39.080Z"
     }
   ],
   "turmaAlunos": [],
