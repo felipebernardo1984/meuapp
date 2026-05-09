@@ -3,13 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -62,19 +62,19 @@ interface QuadrasManagerProps {
   arenaName?: string;
 }
 
-export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerProps) {
+export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const [view, setView] = useState<"quadras" | "reservas" | "ambientes">("quadras");
+  const [view, setView] = useState<"quadras" | "reservas">("quadras");
   const [quadraReservas, setQuadraReservas] = useState<any | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  // Ambientes (recursos para aulas) state
+  // Ambientes state
   const [novoAmbienteNome, setNovoAmbienteNome] = useState("");
   const [editandoAmbienteId, setEditandoAmbienteId] = useState<string | null>(null);
   const [editandoAmbienteNome, setEditandoAmbienteNome] = useState("");
   const [confirmDeleteAmbiente, setConfirmDeleteAmbiente] = useState<any | null>(null);
-  const [weekOffset, setWeekOffset] = useState(0);
 
   // Quadras CRUD state
   const [dialogQuadra, setDialogQuadra] = useState(false);
@@ -164,79 +164,14 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
   }
 
   const quadrasAtivas = (quadrasList as any[]).filter((q) => q.ativo);
+  const ambientesAtivos = (ambientesList as any[]).filter((a) => a.ativo);
 
   return (
     <div className="p-4 md:p-6 flex flex-col gap-5 overflow-y-auto flex-1 min-h-0">
-      {/* Topo: ações */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-2 flex-wrap">
-          <Button size="lg" className="h-14 text-lg px-8" variant={view === "ambientes" ? "default" : "outline"} onClick={() => { setView("ambientes"); }}>
-            <Building2 className="h-5 w-5 mr-2" /> Ambientes
-          </Button>
-        </div>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, "_blank")}>
-            <Link2 className="h-4 w-4 mr-1" /> Link Público
-          </Button>
-          {(view === "quadras" || view === "reservas") && (
-            <Button size="sm" onClick={() => { setDialogQuadra(true); setQuadraEditando(null); setFormQuadra({ nome: "", descricao: "", cor: "#3b82f6" }); }}>
-              <Plus className="h-4 w-4 mr-1" /> Nova Quadra
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* ── VIEW: Lista de Quadras (default) ── */}
-      {view === "quadras" && (
-        <div className="space-y-3">
-          {quadrasAtivas.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <Building2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="mb-4">Nenhuma quadra cadastrada ainda.</p>
-                <Button onClick={() => { setQuadraEditando(null); setFormQuadra({ nome: "", descricao: "", cor: "#3b82f6" }); setDialogQuadra(true); }}>
-                  <Plus className="h-4 w-4 mr-1" /> Cadastrar primeira quadra
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            quadrasAtivas.map((q: any) => (
-              <Card key={q.id} className="overflow-hidden" style={{ borderLeftColor: q.cor, borderLeftWidth: 4 }}>
-                <CardContent className="py-3 px-4 flex flex-wrap items-center gap-3">
-                  <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: q.cor }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm">{q.nome}</p>
-                    {q.descricao && <p className="text-xs text-muted-foreground">{q.descricao}</p>}
-                  </div>
-                  <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50 dark:bg-green-950/20 dark:text-green-400">Ativa</Badge>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="outline" className="h-8 text-xs gap-1"
-                      onClick={() => { setQuadraReservas(q); setWeekOffset(0); setView("reservas"); }}
-                      data-testid={`button-reservas-quadra-${q.id}`}>
-                      <CalendarDays className="h-3.5 w-3.5" /> Reservas
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0"
-                      onClick={() => { setQuadraEditando(q); setFormQuadra({ nome: q.nome, descricao: q.descricao ?? "", cor: q.cor }); setDialogQuadra(true); }}
-                      data-testid={`button-editar-quadra-${q.id}`}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      onClick={() => setConfirmDeleteQuadra(q)}
-                      data-testid={`button-deletar-quadra-${q.id}`}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
 
       {/* ── VIEW: Reservas de uma Quadra ── */}
       {view === "reservas" && quadraReservas && (
         <div className="space-y-4">
-          {/* Header com back + nome da quadra + nova reserva */}
           <div className="flex flex-wrap items-center gap-3">
             <Button size="sm" variant="ghost" className="gap-1 pl-0 text-muted-foreground hover:text-foreground"
               onClick={() => { setView("quadras"); setQuadraReservas(null); }}>
@@ -251,7 +186,6 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
             </Button>
           </div>
 
-          {/* Navegação semanal */}
           <div className="flex items-center justify-between">
             <Button variant="outline" size="sm" onClick={() => setWeekOffset((o) => o - 1)}>
               <ChevronLeft className="h-4 w-4" />
@@ -264,7 +198,6 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
             </Button>
           </div>
 
-          {/* Calendário semanal da quadra selecionada */}
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <div className="grid min-w-[560px]" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
@@ -306,109 +239,166 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
         </div>
       )}
 
-      {/* ── VIEW: Ambientes ── */}
-      {view === "ambientes" && (
-        <div className="space-y-5">
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">Ambientes para Aulas</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Espaços usados para vincular turmas e aulas dos professores.</p>
+      {/* ── VIEW: Quadras + Ambientes (página principal) ── */}
+      {view === "quadras" && (
+        <>
+          {/* Topo: ações */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="ml-auto flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, "_blank")} data-testid="button-link-publico">
+                <Link2 className="h-4 w-4 mr-1" /> Link Público
+              </Button>
+              <Button size="sm" onClick={() => { setDialogQuadra(true); setQuadraEditando(null); setFormQuadra({ nome: "", descricao: "", cor: "#3b82f6" }); }} data-testid="button-nova-quadra">
+                <Plus className="h-4 w-4 mr-1" /> Nova Quadra
+              </Button>
             </div>
           </div>
 
-          {/* Form de criação */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={novoAmbienteNome}
-              onChange={(e) => setNovoAmbienteNome(e.target.value)}
-              placeholder="Nome do ambiente (ex: Quadra 1, Box A, Sala de Treino)"
-              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              data-testid="input-novo-ambiente"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const nome = novoAmbienteNome.trim();
-                  if (nome) criarAmbiente.mutate(nome);
-                }
-              }}
-            />
-            <Button
-              onClick={() => { const nome = novoAmbienteNome.trim(); if (nome) criarAmbiente.mutate(nome); }}
-              disabled={criarAmbiente.isPending || !novoAmbienteNome.trim()}
-              data-testid="button-criar-ambiente"
-            >
-              <Plus className="h-4 w-4 mr-1" /> Adicionar
-            </Button>
+          {/* ── Lista de Quadras ── */}
+          <div className="space-y-3">
+            {quadrasAtivas.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <Building2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                  <p>Nenhuma quadra cadastrada ainda.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              quadrasAtivas.map((q: any) => (
+                <Card key={q.id} className="overflow-hidden" style={{ borderLeftColor: q.cor, borderLeftWidth: 4 }}>
+                  <CardContent className="py-3 px-4 flex flex-wrap items-center gap-3">
+                    <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: q.cor }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm">{q.nome}</p>
+                      {q.descricao && <p className="text-xs text-muted-foreground">{q.descricao}</p>}
+                    </div>
+                    <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50 dark:bg-green-950/20 dark:text-green-400">Ativa</Badge>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1"
+                        onClick={() => { setQuadraReservas(q); setWeekOffset(0); setView("reservas"); }}
+                        data-testid={`button-reservas-quadra-${q.id}`}>
+                        <CalendarDays className="h-3.5 w-3.5" /> Reservas
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0"
+                        onClick={() => { setQuadraEditando(q); setFormQuadra({ nome: q.nome, descricao: q.descricao ?? "", cor: q.cor }); setDialogQuadra(true); }}
+                        data-testid={`button-editar-quadra-${q.id}`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        onClick={() => setConfirmDeleteQuadra(q)}
+                        data-testid={`button-deletar-quadra-${q.id}`}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
 
-          {/* Lista */}
-          {ambientesList.filter((a) => a.ativo).length === 0 ? (
-            <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-              Nenhum ambiente cadastrado. Adicione acima para criar seu primeiro espaço de aula.
+          {/* ── Seção Ambientes ── */}
+          <div className="space-y-3 pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <Building2 className="h-4 w-4 text-muted-foreground" /> Ambientes para Aulas
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Espaços usados para vincular turmas e aulas dos professores.</p>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {ambientesList.filter((a) => a.ativo).map((a) => (
-                <div key={a.id} className="flex items-center gap-2 rounded-lg border bg-card px-4 py-3 shadow-sm">
-                  {editandoAmbienteId === a.id ? (
-                    <input
-                      type="text"
-                      value={editandoAmbienteNome}
-                      onChange={(e) => setEditandoAmbienteNome(e.target.value)}
-                      className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      data-testid={`input-editar-ambiente-${a.id}`}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          const nome = editandoAmbienteNome.trim();
-                          if (nome) atualizarAmbiente.mutate({ id: a.id, nome });
-                        }
-                        if (e.key === "Escape") { setEditandoAmbienteId(null); setEditandoAmbienteNome(""); }
-                      }}
-                    />
-                  ) : (
-                    <span className="flex-1 text-sm font-medium">{a.nome}</span>
-                  )}
-                  {editandoAmbienteId === a.id ? (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => { const nome = editandoAmbienteNome.trim(); if (nome) atualizarAmbiente.mutate({ id: a.id, nome }); }}
-                        disabled={atualizarAmbiente.isPending}
-                        data-testid={`button-salvar-ambiente-${a.id}`}
-                      >
-                        Salvar
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setEditandoAmbienteId(null); setEditandoAmbienteNome(""); }}>
-                        Cancelar
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => { setEditandoAmbienteId(a.id); setEditandoAmbienteNome(a.nome); }}
-                        data-testid={`button-editar-ambiente-${a.id}`}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
-                        onClick={() => setConfirmDeleteAmbiente(a)}
-                        data-testid={`button-excluir-ambiente-${a.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              ))}
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={novoAmbienteNome}
+                onChange={(e) => setNovoAmbienteNome(e.target.value)}
+                placeholder="Nome do ambiente (ex: Quadra 1, Box A, Sala de Treino)"
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                data-testid="input-novo-ambiente"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const nome = novoAmbienteNome.trim();
+                    if (nome) criarAmbiente.mutate(nome);
+                  }
+                }}
+              />
+              <Button
+                onClick={() => { const nome = novoAmbienteNome.trim(); if (nome) criarAmbiente.mutate(nome); }}
+                disabled={criarAmbiente.isPending || !novoAmbienteNome.trim()}
+                data-testid="button-criar-ambiente"
+              >
+                <Plus className="h-4 w-4 mr-1" /> Adicionar
+              </Button>
             </div>
-          )}
-        </div>
+
+            {ambientesAtivos.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                Nenhum ambiente cadastrado. Adicione acima para criar seu primeiro espaço de aula.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {ambientesAtivos.map((a) => (
+                  <div key={a.id} className="flex items-center gap-2 rounded-lg border bg-card px-4 py-3 shadow-sm">
+                    {editandoAmbienteId === a.id ? (
+                      <input
+                        type="text"
+                        value={editandoAmbienteNome}
+                        onChange={(e) => setEditandoAmbienteNome(e.target.value)}
+                        className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        data-testid={`input-editar-ambiente-${a.id}`}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const nome = editandoAmbienteNome.trim();
+                            if (nome) atualizarAmbiente.mutate({ id: a.id, nome });
+                          }
+                          if (e.key === "Escape") { setEditandoAmbienteId(null); setEditandoAmbienteNome(""); }
+                        }}
+                      />
+                    ) : (
+                      <span className="flex-1 text-sm font-medium">{a.nome}</span>
+                    )}
+                    {editandoAmbienteId === a.id ? (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => { const nome = editandoAmbienteNome.trim(); if (nome) atualizarAmbiente.mutate({ id: a.id, nome }); }}
+                          disabled={atualizarAmbiente.isPending}
+                          data-testid={`button-salvar-ambiente-${a.id}`}
+                        >
+                          Salvar
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditandoAmbienteId(null); setEditandoAmbienteNome(""); }}>
+                          Cancelar
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => { setEditandoAmbienteId(a.id); setEditandoAmbienteNome(a.nome); }}
+                          data-testid={`button-editar-ambiente-${a.id}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          onClick={() => setConfirmDeleteAmbiente(a)}
+                          data-testid={`button-excluir-ambiente-${a.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Dialog: Quadra */}
@@ -450,7 +440,7 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
             {quadraEditando && (
               <div className="space-y-1">
                 <Label>Status</Label>
-                <Select value={String(formQuadra.nome ? "ativo" : "ativo")} onValueChange={() => {}}>
+                <Select value="ativo" onValueChange={() => {}}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ativo">Ativa</SelectItem>
@@ -542,29 +532,27 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
               <>
                 <div className="space-y-1">
                   <Label>Nome do cliente</Label>
-                  <Input placeholder="Ex: João Silva" value={formReserva.nomeCliente} onChange={(e) => setFormReserva({ ...formReserva, nomeCliente: e.target.value })} data-testid="input-reserva-cliente" />
+                  <Input placeholder="Nome completo" value={formReserva.nomeCliente} onChange={(e) => setFormReserva({ ...formReserva, nomeCliente: e.target.value })} data-testid="input-reserva-cliente" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label>Telefone</Label>
-                    <Input placeholder="(11) 99999-9999" value={formReserva.telefoneCliente} onChange={(e) => setFormReserva({ ...formReserva, telefoneCliente: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Valor (R$)</Label>
-                    <Input placeholder="Ex: 80,00" value={formReserva.valor} onChange={(e) => setFormReserva({ ...formReserva, valor: e.target.value })} />
-                  </div>
+                <div className="space-y-1">
+                  <Label>Telefone</Label>
+                  <Input placeholder="(00) 00000-0000" value={formReserva.telefoneCliente} onChange={(e) => setFormReserva({ ...formReserva, telefoneCliente: e.target.value })} data-testid="input-reserva-telefone" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Valor (R$)</Label>
+                  <Input placeholder="Ex: 80,00" value={formReserva.valor} onChange={(e) => setFormReserva({ ...formReserva, valor: e.target.value })} data-testid="input-reserva-valor" />
                 </div>
               </>
             )}
             <div className="space-y-1">
-              <Label>Observação</Label>
-              <Textarea placeholder="Observações opcionais..." value={formReserva.observacao} onChange={(e) => setFormReserva({ ...formReserva, observacao: e.target.value })} className="resize-none h-16" />
+              <Label>Observações</Label>
+              <Textarea placeholder="Observações opcionais..." value={formReserva.observacao} onChange={(e) => setFormReserva({ ...formReserva, observacao: e.target.value })} className="resize-none h-16" data-testid="input-reserva-obs" />
             </div>
           </div>
-          <DialogFooter className="flex-wrap gap-2">
+          <DialogFooter>
             {reservaEditando && (
-              <Button variant="destructive" size="sm" className="mr-auto" onClick={() => { setDialogReserva(false); setConfirmDeleteReserva(reservaEditando); }}>
-                <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover
+              <Button variant="destructive" size="sm" className="mr-auto" onClick={() => { setDialogReserva(false); setConfirmDeleteReserva(reservaEditando); }} data-testid="button-delete-reserva">
+                Excluir
               </Button>
             )}
             <Button variant="outline" onClick={() => { setDialogReserva(false); setReservaEditando(null); }}>Cancelar</Button>
@@ -572,59 +560,64 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
               disabled={!formReserva.quadraId || !formReserva.data || !formReserva.horaInicio || !formReserva.horaFim || criarReserva.isPending || editarReserva.isPending}
               data-testid="button-confirm-reserva"
               onClick={() => {
-                const payload = { quadraId: formReserva.quadraId, tipo: formReserva.tipo, data: formReserva.data, horaInicio: formReserva.horaInicio, horaFim: formReserva.horaFim, nomeCliente: formReserva.nomeCliente || null, telefoneCliente: formReserva.telefoneCliente || null, valor: formReserva.valor || null, status: formReserva.status, observacao: formReserva.observacao || null };
+                const payload = {
+                  quadraId: formReserva.quadraId, tipo: formReserva.tipo, data: formReserva.data,
+                  horaInicio: formReserva.horaInicio, horaFim: formReserva.horaFim,
+                  nomeCliente: formReserva.nomeCliente || null, telefoneCliente: formReserva.telefoneCliente || null,
+                  valor: formReserva.valor || null, status: formReserva.status, observacao: formReserva.observacao || null,
+                };
                 if (reservaEditando) editarReserva.mutate({ id: reservaEditando.id, data: payload });
                 else criarReserva.mutate(payload);
               }}
             >
-              {criarReserva.isPending || editarReserva.isPending ? "Salvando..." : reservaEditando ? "Salvar" : "Criar Reserva"}
+              {criarReserva.isPending || editarReserva.isPending ? "Salvando..." : reservaEditando ? "Salvar" : "Criar"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Confirm delete quadra */}
+      {/* Dialog: Confirmar excluir Quadra */}
       <Dialog open={!!confirmDeleteQuadra} onOpenChange={(open) => { if (!open) setConfirmDeleteQuadra(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Remover Quadra</DialogTitle>
-            <DialogDescription>Todas as reservas desta quadra também serão removidas. Deseja continuar?</DialogDescription>
           </DialogHeader>
+          <p className="text-sm text-muted-foreground">Tem certeza que deseja remover <strong>{confirmDeleteQuadra?.nome}</strong>? Esta ação não pode ser desfeita.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDeleteQuadra(null)}>Cancelar</Button>
-            <Button variant="destructive" disabled={deletarQuadra.isPending} onClick={() => { if (confirmDeleteQuadra) deletarQuadra.mutate(confirmDeleteQuadra.id); }}>
+            <Button variant="destructive" onClick={() => { if (confirmDeleteQuadra) deletarQuadra.mutate(confirmDeleteQuadra.id); }} disabled={deletarQuadra.isPending} data-testid="button-confirm-delete-quadra">
               Remover
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Confirm delete ambiente */}
-      <Dialog open={!!confirmDeleteAmbiente} onOpenChange={(open) => { if (!open) setConfirmDeleteAmbiente(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Remover Ambiente</DialogTitle>
-            <DialogDescription>O ambiente <strong>{confirmDeleteAmbiente?.nome}</strong> será removido. Esta ação não pode ser desfeita.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDeleteAmbiente(null)}>Cancelar</Button>
-            <Button variant="destructive" disabled={removerAmbiente.isPending} onClick={() => { if (confirmDeleteAmbiente) removerAmbiente.mutate(confirmDeleteAmbiente.id); }}>
-              Remover
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirm delete reserva */}
+      {/* Dialog: Confirmar excluir Reserva */}
       <Dialog open={!!confirmDeleteReserva} onOpenChange={(open) => { if (!open) setConfirmDeleteReserva(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Remover Reserva</DialogTitle>
-            <DialogDescription>Tem certeza que deseja remover esta reserva?</DialogDescription>
           </DialogHeader>
+          <p className="text-sm text-muted-foreground">Tem certeza que deseja remover esta reserva?</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDeleteReserva(null)}>Cancelar</Button>
-            <Button variant="destructive" disabled={deletarReserva.isPending} onClick={() => { if (confirmDeleteReserva) deletarReserva.mutate(confirmDeleteReserva.id); }}>
+            <Button variant="destructive" onClick={() => { if (confirmDeleteReserva) deletarReserva.mutate(confirmDeleteReserva.id); }} disabled={deletarReserva.isPending} data-testid="button-confirm-delete-reserva">
+              Remover
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Confirmar excluir Ambiente */}
+      <Dialog open={!!confirmDeleteAmbiente} onOpenChange={(open) => { if (!open) setConfirmDeleteAmbiente(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remover Ambiente</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Tem certeza que deseja remover <strong>{confirmDeleteAmbiente?.nome}</strong>?</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteAmbiente(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => { if (confirmDeleteAmbiente) removerAmbiente.mutate(confirmDeleteAmbiente.id); }} disabled={removerAmbiente.isPending} data-testid="button-confirm-delete-ambiente">
               Remover
             </Button>
           </DialogFooter>
