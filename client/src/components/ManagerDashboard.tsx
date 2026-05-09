@@ -1010,7 +1010,7 @@ export default function ManagerDashboard({
             {sectionTitle[activeSection] ?? "Painel do Gestor"}
           </h1>
         </div>
-        <div className={["agenda","financeiro","configuracoes","integracoes","alertas"].includes(activeSection) ? "flex-1 overflow-y-auto" : "flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"}>
+        <div className={["agenda","financeiro","alertas"].includes(activeSection) ? "flex-1 overflow-y-auto" : "flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"}>
 
       {activeSection === "dashboard" && (
       <>
@@ -3809,7 +3809,7 @@ export default function ManagerDashboard({
 
       {/* Dialog Configuração WhatsApp */}
       {activeSection === "whatsapp" && (
-        <Card className="mb-6 max-w-2xl">
+        <Card className="mb-6">
           <CardContent className="pt-6">
           {/* Tabs */}
           <div className="flex border-b mb-4 gap-0 overflow-x-auto">
@@ -4894,7 +4894,8 @@ export default function ManagerDashboard({
 
       {/* Seção Conta Bancária */}
       {activeSection === "conta" && (
-        <div className="p-4 md:p-6 max-w-2xl">
+        <Card className="mb-6">
+          <CardContent className="pt-6">
           <div className="space-y-6 py-2">
             {/* Dados do recebedor */}
             <div>
@@ -5132,7 +5133,8 @@ export default function ManagerDashboard({
               {salvarContaBancaria.isPending ? "Salvando…" : "Salvar Configurações"}
             </Button>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
         </div>
