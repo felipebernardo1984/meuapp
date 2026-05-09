@@ -15,10 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Plus, Pencil, Trash2, ChevronLeft, ChevronRight, LayoutGrid, Link2, CalendarDays, Building2,
+  Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Link2, CalendarDays, Building2,
 } from "lucide-react";
 
 const DIAS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -69,7 +66,8 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const [view, setView] = useState<"calendario" | "lista" | "ambientes">("calendario");
+  const [view, setView] = useState<"quadras" | "reservas" | "ambientes">("quadras");
+  const [quadraReservas, setQuadraReservas] = useState<any | null>(null);
 
   // Ambientes (recursos para aulas) state
   const [novoAmbienteNome, setNovoAmbienteNome] = useState("");
@@ -178,35 +176,91 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
         </p>
       </div>
 
-      {/* Topo: ações e link público */}
+      {/* Topo: ações */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant={view === "calendario" ? "default" : "outline"} onClick={() => setView("calendario")}>
-            <CalendarDays className="h-4 w-4 mr-1" /> Calendário
-          </Button>
-          <Button size="sm" variant={view === "lista" ? "default" : "outline"} onClick={() => setView("lista")}>
-            <LayoutGrid className="h-4 w-4 mr-1" /> Quadras
-          </Button>
-          <Button size="sm" variant={view === "ambientes" ? "default" : "outline"} onClick={() => setView("ambientes")}>
+          <Button size="sm" variant={view === "ambientes" ? "default" : "outline"} onClick={() => { setView("ambientes"); }}>
             <Building2 className="h-4 w-4 mr-1" /> Ambientes
           </Button>
         </div>
-        {view !== "ambientes" && (
-          <div className="ml-auto flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, "_blank")}>
-              <Link2 className="h-4 w-4 mr-1" /> Link Público
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={() => window.open(publicUrl, "_blank")}>
+            <Link2 className="h-4 w-4 mr-1" /> Link Público
+          </Button>
+          {(view === "quadras" || view === "reservas") && (
+            <Button size="sm" onClick={() => { setDialogQuadra(true); setQuadraEditando(null); setFormQuadra({ nome: "", descricao: "", cor: "#3b82f6" }); }}>
+              <Plus className="h-4 w-4 mr-1" /> Nova Quadra
             </Button>
-            <Button size="sm" onClick={() => abrirNovaReserva()}>
-              <Plus className="h-4 w-4 mr-1" /> Nova Reserva
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* ── VIEW: Calendário semanal ── */}
-      {view === "calendario" && (
-        <>
-          {/* Week nav */}
+      {/* ── VIEW: Lista de Quadras (default) ── */}
+      {view === "quadras" && (
+        <div className="space-y-3">
+          {quadrasAtivas.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Building2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="mb-4">Nenhuma quadra cadastrada ainda.</p>
+                <Button onClick={() => { setQuadraEditando(null); setFormQuadra({ nome: "", descricao: "", cor: "#3b82f6" }); setDialogQuadra(true); }}>
+                  <Plus className="h-4 w-4 mr-1" /> Cadastrar primeira quadra
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            quadrasAtivas.map((q: any) => (
+              <Card key={q.id} className="overflow-hidden" style={{ borderLeftColor: q.cor, borderLeftWidth: 4 }}>
+                <CardContent className="py-3 px-4 flex flex-wrap items-center gap-3">
+                  <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: q.cor }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm">{q.nome}</p>
+                    {q.descricao && <p className="text-xs text-muted-foreground">{q.descricao}</p>}
+                  </div>
+                  <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50 dark:bg-green-950/20 dark:text-green-400">Ativa</Badge>
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="outline" className="h-8 text-xs gap-1"
+                      onClick={() => { setQuadraReservas(q); setWeekOffset(0); setView("reservas"); }}
+                      data-testid={`button-reservas-quadra-${q.id}`}>
+                      <CalendarDays className="h-3.5 w-3.5" /> Reservas
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0"
+                      onClick={() => { setQuadraEditando(q); setFormQuadra({ nome: q.nome, descricao: q.descricao ?? "", cor: q.cor }); setDialogQuadra(true); }}
+                      data-testid={`button-editar-quadra-${q.id}`}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      onClick={() => setConfirmDeleteQuadra(q)}
+                      data-testid={`button-deletar-quadra-${q.id}`}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ── VIEW: Reservas de uma Quadra ── */}
+      {view === "reservas" && quadraReservas && (
+        <div className="space-y-4">
+          {/* Header com back + nome da quadra + nova reserva */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="sm" variant="ghost" className="gap-1 pl-0 text-muted-foreground hover:text-foreground"
+              onClick={() => { setView("quadras"); setQuadraReservas(null); }}>
+              <ChevronLeft className="h-4 w-4" /> Quadras
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: quadraReservas.cor }} />
+              <span className="font-semibold text-sm">{quadraReservas.nome}</span>
+            </div>
+            <Button size="sm" className="ml-auto gap-1" onClick={() => abrirNovaReserva(quadraReservas.id)}>
+              <Plus className="h-4 w-4" /> Nova Reserva
+            </Button>
+          </div>
+
+          {/* Navegação semanal */}
           <div className="flex items-center justify-between">
             <Button variant="outline" size="sm" onClick={() => setWeekOffset((o) => o - 1)}>
               <ChevronLeft className="h-4 w-4" />
@@ -219,148 +273,44 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
             </Button>
           </div>
 
-          {quadrasAtivas.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <LayoutGrid className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p>Nenhuma quadra cadastrada ainda.</p>
-                <Button className="mt-4" onClick={() => { setQuadraEditando(null); setFormQuadra({ nome: "", descricao: "", cor: "#3b82f6" }); setDialogQuadra(true); }}>
-                  <Plus className="h-4 w-4 mr-1" /> Cadastrar primeira quadra
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            quadrasAtivas.map((quadra: any) => (
-              <Card key={quadra.id} className="overflow-hidden">
-                <CardHeader className="py-3 px-4 flex-row items-center gap-3 space-y-0 border-b" style={{ borderLeftColor: quadra.cor, borderLeftWidth: 4 }}>
-                  <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: quadra.cor }} />
-                  <CardTitle className="text-base font-semibold">{quadra.nome}</CardTitle>
-                  {quadra.descricao && <span className="text-sm text-muted-foreground">{quadra.descricao}</span>}
-                  <div className="ml-auto flex gap-1">
-                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => abrirNovaReserva(quadra.id)}>
-                      <Plus className="h-3 w-3 mr-1" /> Reservar
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-7" onClick={() => { setQuadraEditando(quadra); setFormQuadra({ nome: quadra.nome, descricao: quadra.descricao ?? "", cor: quadra.cor }); setDialogQuadra(true); }}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <div className="overflow-x-auto">
-                  <div className="grid min-w-[600px]" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
-                    {weekDays.map((day, i) => {
-                      const iso = toISO(day);
-                      const isToday = iso === toISO(today);
-                      const reservas = reservasPorDia(quadra.id, iso);
-                      return (
-                        <div key={i} className={`border-r last:border-r-0 min-h-[90px] cursor-pointer hover:bg-muted/30 transition-colors ${isToday ? "bg-primary/5" : ""}`}
-                          onClick={() => abrirNovaReserva(quadra.id, iso)}>
-                          <div className={`text-center text-xs py-1 border-b font-medium ${isToday ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
-                            <div>{DIAS_PT[day.getDay()]}</div>
-                            <div className="text-sm font-bold">{day.getDate()}</div>
-                          </div>
-                          <div className="p-1 space-y-0.5">
-                            {reservas.map((r: any) => (
-                              <div
-                                key={r.id}
-                                className={`rounded px-1 py-0.5 text-[10px] border leading-tight cursor-pointer ${TIPO_COLORS[r.tipo] ?? "bg-muted text-foreground border-border"}`}
-                                onClick={(e) => { e.stopPropagation(); setReservaEditando(r); setFormReserva({ quadraId: r.quadraId, tipo: r.tipo, data: r.data, horaInicio: r.horaInicio, horaFim: r.horaFim, nomeCliente: r.nomeCliente ?? "", telefoneCliente: r.telefoneCliente ?? "", valor: r.valor ?? "", status: r.status, observacao: r.observacao ?? "" }); setDialogReserva(true); }}
-                              >
-                                <div className="font-semibold">{r.horaInicio}–{r.horaFim}</div>
-                                <div className="truncate">{TIPO_LABEL[r.tipo] ?? r.tipo}{r.nomeCliente ? ` · ${r.nomeCliente}` : ""}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </Card>
-            ))
-          )}
-        </>
-      )}
-
-      {/* ── VIEW: Gestão de Quadras ── */}
-      {view === "lista" && (
-        <div className="space-y-4">
-          <Button onClick={() => { setQuadraEditando(null); setFormQuadra({ nome: "", descricao: "", cor: "#3b82f6" }); setDialogQuadra(true); }}>
-            <Plus className="h-4 w-4 mr-1" /> Nova Quadra
-          </Button>
-
-          {(quadrasList as any[]).length === 0 ? (
-            <Card>
-              <CardContent className="py-10 text-center text-muted-foreground">
-                Nenhuma quadra cadastrada.
-              </CardContent>
-            </Card>
-          ) : (
+          {/* Calendário semanal da quadra selecionada */}
+          <Card className="overflow-hidden">
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Quadra</TableHead>
-                    <TableHead>Cor</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(quadrasList as any[]).map((q: any) => (
-                    <TableRow key={q.id} data-testid={`row-quadra-${q.id}`}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: q.cor }} />
-                          <div>
-                            <p className="font-medium">{q.nome}</p>
-                            {q.descricao && <p className="text-xs text-muted-foreground">{q.descricao}</p>}
+              <div className="grid min-w-[560px]" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
+                {weekDays.map((day, i) => {
+                  const iso = toISO(day);
+                  const isToday = iso === toISO(today);
+                  const reservas = reservasPorDia(quadraReservas.id, iso);
+                  return (
+                    <div key={i}
+                      className={`border-r last:border-r-0 min-h-[100px] cursor-pointer hover:bg-muted/30 transition-colors ${isToday ? "bg-primary/5" : ""}`}
+                      onClick={() => abrirNovaReserva(quadraReservas.id, iso)}>
+                      <div className={`text-center text-xs py-1.5 border-b font-medium ${isToday ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
+                        <div>{DIAS_PT[day.getDay()]}</div>
+                        <div className="text-sm font-bold">{day.getDate()}</div>
+                      </div>
+                      <div className="p-1 space-y-0.5">
+                        {reservas.map((r: any) => (
+                          <div
+                            key={r.id}
+                            className={`rounded px-1 py-0.5 text-[10px] border leading-tight cursor-pointer ${TIPO_COLORS[r.tipo] ?? "bg-muted text-foreground border-border"}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReservaEditando(r);
+                              setFormReserva({ quadraId: r.quadraId, tipo: r.tipo, data: r.data, horaInicio: r.horaInicio, horaFim: r.horaFim, nomeCliente: r.nomeCliente ?? "", telefoneCliente: r.telefoneCliente ?? "", valor: r.valor ?? "", status: r.status, observacao: r.observacao ?? "" });
+                              setDialogReserva(true);
+                            }}
+                          >
+                            <div className="font-semibold">{r.horaInicio}–{r.horaFim}</div>
+                            <div className="truncate">{TIPO_LABEL[r.tipo] ?? r.tipo}{r.nomeCliente ? ` · ${r.nomeCliente}` : ""}</div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-4 w-4 rounded border" style={{ backgroundColor: q.cor }} />
-                          <span className="text-xs text-muted-foreground">{q.cor}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={q.ativo ? "default" : "secondary"} className={q.ativo ? "bg-green-100 text-green-700" : ""}>
-                          {q.ativo ? "Ativa" : "Inativa"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button size="sm" variant="ghost" data-testid={`button-editar-quadra-${q.id}`}
-                            onClick={() => { setQuadraEditando(q); setFormQuadra({ nome: q.nome, descricao: q.descricao ?? "", cor: q.cor }); setDialogQuadra(true); }}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" data-testid={`button-deletar-quadra-${q.id}`}
-                            onClick={() => setConfirmDeleteQuadra(q)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {/* Link público */}
-          <Card>
-            <CardContent className="pt-4 flex flex-wrap items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium mb-1">Link público para clientes</p>
-                <p className="text-xs text-muted-foreground truncate">{publicUrl}</p>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast({ title: "Link copiado!" }); }}>
-                Copiar Link
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => window.open(publicUrl, "_blank")}>
-                Abrir
-              </Button>
-            </CardContent>
+            </div>
           </Card>
         </div>
       )}
