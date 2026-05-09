@@ -471,7 +471,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                   className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5 justify-center"
                 >
                   <Plus className="h-5 w-5" />
-                  Horário de Aulas
+                  Reservas
                 </Button>
               )}
               {readOnly && (
@@ -766,7 +766,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={() => openHorarioAulas(JS_DAY_TO_ID[diaPopup.date.getDay()])}
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1" />Horário de Aulas
+                    <Plus className="h-3.5 w-3.5 mr-1" />Reservas
                   </Button>
                 )}
               </DialogFooter>
@@ -962,7 +962,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             )}
 
             <div className="space-y-2">
-              <Label>Quadra</Label>
+              <Label>Ambiente</Label>
               <Select
                 value={formData.recursoId || "none"}
                 onValueChange={(v) => setFormData((p) => ({ ...p, recursoId: v === "none" ? "" : v }))}
