@@ -2916,6 +2916,15 @@ export default function ManagerDashboard({
           </div>
         </CardHeader>
         <CardContent>
+          <Button
+            size="lg"
+            className="w-full h-14 text-lg mb-4"
+            onClick={() => setDialogNovoAluno(true)}
+            data-testid="button-add-student-manager"
+          >
+            <UserPlus className="mr-2 h-5 w-5" />
+            Cadastrar Aluno
+          </Button>
           {abaAlunos === "inativos" ? (
             <div className="space-y-2">
               {alunosInativos.length === 0 ? (
@@ -3160,15 +3169,6 @@ export default function ManagerDashboard({
             </Table>
           </div>
           )}
-          <Button
-            size="lg"
-            className="w-full h-14 text-lg mt-4"
-            onClick={() => setDialogNovoAluno(true)}
-            data-testid="button-add-student-manager"
-          >
-            <UserPlus className="mr-2 h-5 w-5" />
-            Cadastrar Aluno
-          </Button>
         </CardContent>
       </Card>
       </>
