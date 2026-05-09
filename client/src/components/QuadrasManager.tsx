@@ -167,19 +167,10 @@ export default function QuadrasManager({ arenaId, arenaName }: QuadrasManagerPro
 
   return (
     <div className="p-4 md:p-6 flex flex-col gap-5 overflow-y-auto flex-1 min-h-0">
-      {/* Subtítulo descritivo */}
-      <div>
-        <p className="text-sm text-muted-foreground leading-snug">
-          Crie seu ambiente de trabalho:
-          <br />
-          <span className="font-medium text-foreground">Quadra / Box / Sala de treino.</span>
-        </p>
-      </div>
-
       {/* Topo: ações */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant={view === "ambientes" ? "default" : "outline"} onClick={() => { setView("ambientes"); }}>
+          <Button variant={view === "ambientes" ? "default" : "outline"} onClick={() => { setView("ambientes"); }}>
             <Building2 className="h-4 w-4 mr-1" /> Ambientes
           </Button>
         </div>
