@@ -973,24 +973,6 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               )}
             </div>
 
-            {/* Nome */}
-            <div className="space-y-2">
-              <Label htmlFor="turma-nome">
-                {formData.tipo === "aula" ? "Nome da turma *" : formData.tipo === "aluguel" ? "Descrição do aluguel *" : "Descrição *"}
-              </Label>
-              <Input
-                id="turma-nome"
-                data-testid="input-turma-nome"
-                placeholder={
-                  formData.tipo === "aula" ? "Ex: Beach Tennis Avançado"
-                  : formData.tipo === "aluguel" ? "Ex: Aluguel Quadra 1"
-                  : "Ex: Day-use Funcional"
-                }
-                value={formData.nome}
-                onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
-              />
-            </div>
-
             {/* AULA: Professor + Modalidade */}
             {formData.tipo === "aula" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1009,7 +991,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                     <SelectContent>
                       {professores.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {p.nome} — {p.modalidade}
+                          {p.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1025,6 +1007,24 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                 </div>
               </div>
             )}
+
+            {/* Nome */}
+            <div className="space-y-2">
+              <Label htmlFor="turma-nome">
+                {formData.tipo === "aula" ? "Nome da turma *" : formData.tipo === "aluguel" ? "Descrição do aluguel *" : "Descrição *"}
+              </Label>
+              <Input
+                id="turma-nome"
+                data-testid="input-turma-nome"
+                placeholder={
+                  formData.tipo === "aula" ? "Ex: Beach Tennis Avançado"
+                  : formData.tipo === "aluguel" ? "Ex: Aluguel Quadra 1"
+                  : "Ex: Day-use Funcional"
+                }
+                value={formData.nome}
+                onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
+              />
+            </div>
 
             {/* ALUGUEL / DAYUSE: Cliente + Valor */}
             {(formData.tipo === "aluguel" || formData.tipo === "dayuse") && (
