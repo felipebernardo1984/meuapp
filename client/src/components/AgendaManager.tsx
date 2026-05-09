@@ -78,13 +78,17 @@ function parseCurrency(val: string | null | undefined): number {
 }
 
 function calcValorTotal(recurso: Recurso, tipo: TipoAgendamento, duracao: number): string {
-  const valorBase = tipo === "aluguel" ? parseCurrency(recurso.valorAluguel) : parseCurrency(recurso.valorDayuse);
-  if (!valorBase) return "";
-  const duracaoMin = recurso.duracaoMinima ?? 1;
-  const horasExtras = Math.max(0, duracao - duracaoMin);
-  const valorExtra = parseCurrency(recurso.valorHoraAdicional);
-  const total = valorBase + horasExtras * valorExtra;
-  return total.toFixed(2).replace(".", ",");
+  if (tipo === "aluguel") {
+    const valorPorHora = parseCurrency(recurso.valorAluguel);
+    if (!valorPorHora) return "";
+    return (valorPorHora * duracao).toFixed(2).replace(".", ",");
+  }
+  if (tipo === "dayuse") {
+    const valor = parseCurrency(recurso.valorDayuse);
+    if (!valor) return "";
+    return valor.toFixed(2).replace(".", ",");
+  }
+  return "";
 }
 
 interface Turma {
@@ -164,8 +168,8 @@ const emptySession = {
 
 const TIPO_LABELS: Record<TipoAgendamento, string> = {
   aula: "Aula",
-  aluguel: "Aluguel",
-  dayuse: "Day-use",
+  aluguel: "Reserva",
+  dayuse: "Avulso",
 };
 
 const TIPO_CORES: Record<TipoAgendamento, string> = {
@@ -1049,28 +1053,57 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
             {/* Nome */}
             <div className="space-y-2">
               <Label htmlFor="turma-nome">
-                {formData.tipo === "aula" ? "Nível *" : formData.tipo === "aluguel" ? "Descrição do aluguel *" : "Descrição *"}
+                {formData.tipo === "aula" ? "Nível *" : formData.tipo === "aluguel" ? "Descrição da reserva *" : "Descrição *"}
               </Label>
               <Input
                 id="turma-nome"
                 data-testid="input-turma-nome"
                 placeholder={
-                  formData.tipo === "aula" ? "Ex:Iniciante"
-                  : formData.tipo === "aluguel" ? "Ex: Aluguel Quadra 1"
-                  : "Ex: Day-use Funcional"
+                  formData.tipo === "aula" ? "Ex: Iniciante"
+                  : formData.tipo === "aluguel" ? "Ex: Reserva Quadra 1"
+                  : "Ex: Avulso Beach Tennis"
                 }
                 value={formData.nome}
                 onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
               />
             </div>
 
-            {/* ALUGUEL / DAYUSE: Cliente + Duração + Valor */}
+            {/* RESERVA / AVULSO: Ambiente (primeiro!) + Cliente + Duração + Valor */}
             {(formData.tipo === "aluguel" || formData.tipo === "dayuse") && (() => {
               const selectedRecurso = recursos.find((r) => r.id === formData.recursoId);
               const duracaoMin = selectedRecurso?.duracaoMinima ?? 1;
-              const hasHoraAdicional = selectedRecurso && parseCurrency(selectedRecurso.valorHoraAdicional) > 0;
               return (
                 <div className="space-y-3">
+                  {/* Ambiente PRIMEIRO — auto-preenche o valor */}
+                  <div className="space-y-2">
+                    <Label>Ambiente</Label>
+                    <Select
+                      value={formData.recursoId || "none"}
+                      onValueChange={(v) => {
+                        const recurso = recursos.find((r) => r.id === v);
+                        setFormData((p) => {
+                          const novaDuracao = recurso?.duracaoMinima ?? p.duracao;
+                          const novoValor = v !== "none" && recurso ? calcValorTotal(recurso, p.tipo, novaDuracao) : p.valorCobrado;
+                          return { ...p, recursoId: v === "none" ? "" : v, duracao: novaDuracao, valorCobrado: novoValor };
+                        });
+                      }}
+                    >
+                      <SelectTrigger data-testid="select-turma-quadra">
+                        <SelectValue placeholder="Selecionar quadra / espaço..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {recursos.filter((r) => r.ativo).map((r) => (
+                          <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {recursos.filter((r) => r.ativo).length === 0 && (
+                      <p className="text-xs text-muted-foreground">Nenhum espaço cadastrado. Crie em Quadras → Ambientes.</p>
+                    )}
+                  </div>
+
+                  {/* Locatário / Cliente */}
                   <div className="space-y-2">
                     <Label htmlFor="cliente-nome">
                       {formData.tipo === "aluguel" ? "Locatário" : "Nome do cliente"}
@@ -1083,6 +1116,8 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                       onChange={(e) => setFormData((p) => ({ ...p, clienteNome: e.target.value }))}
                     />
                   </div>
+
+                  {/* Duração + Valor (auto-calculado) */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label htmlFor="duracao">
@@ -1111,8 +1146,10 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                     <div className="space-y-2">
                       <Label htmlFor="valor-cobrado">
                         Valor cobrado
-                        {hasHoraAdicional && (
-                          <span className="ml-1 text-xs text-muted-foreground font-normal">calculado</span>
+                        {selectedRecurso && formData.tipo === "aluguel" && parseCurrency(selectedRecurso.valorAluguel) > 0 && (
+                          <span className="ml-1 text-xs text-muted-foreground font-normal">
+                            R$ {selectedRecurso.valorAluguel}/h
+                          </span>
                         )}
                       </Label>
                       <Input
@@ -1128,36 +1165,28 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
               );
             })()}
 
-            <div className="space-y-2">
-              <Label>Ambiente</Label>
-              <Select
-                value={formData.recursoId || "none"}
-                onValueChange={(v) => {
-                  const recurso = recursos.find((r) => r.id === v);
-                  setFormData((p) => {
-                    const novaDuracao = recurso?.duracaoMinima ?? 1;
-                    let novoValor = p.valorCobrado;
-                    if (v !== "none" && recurso && (p.tipo === "aluguel" || p.tipo === "dayuse")) {
-                      novoValor = calcValorTotal(recurso, p.tipo, novaDuracao);
-                    }
-                    return { ...p, recursoId: v === "none" ? "" : v, duracao: novaDuracao, valorCobrado: novoValor };
-                  });
-                }}
-              >
-                <SelectTrigger data-testid="select-turma-quadra">
-                  <SelectValue placeholder="Selecionar quadra / espaço..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {recursos.filter((r) => r.ativo).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {recursos.filter((r) => r.ativo).length === 0 && (
-                <p className="text-xs text-muted-foreground">Nenhum espaço cadastrado. Crie em Quadras → Ambientes.</p>
-              )}
-            </div>
+            {/* AULA: Ambiente (opcional) */}
+            {formData.tipo === "aula" && (
+              <div className="space-y-2">
+                <Label>Ambiente (opcional)</Label>
+                <Select
+                  value={formData.recursoId || "none"}
+                  onValueChange={(v) =>
+                    setFormData((p) => ({ ...p, recursoId: v === "none" ? "" : v }))
+                  }
+                >
+                  <SelectTrigger data-testid="select-turma-quadra">
+                    <SelectValue placeholder="Selecionar quadra / espaço..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {recursos.filter((r) => r.ativo).map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Dias da semana */}
             <div className="space-y-2">
