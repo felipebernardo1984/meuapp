@@ -83,6 +83,9 @@ interface Turma {
   horarioInicio: string;
   horarioFim: string;
   dataAula?: string | null;
+  excecoes?: string | null;
+  statusAluguel?: string | null;
+  expiresAt?: string | null;
   capacidadeMaxima: number;
   cor: string;
   ativo: boolean;
@@ -185,7 +188,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   const [slotPopup, setSlotPopup] = useState<{ date: Date; horarioInicio: string; horarioFim: string } | null>(null);
   const [slotHorarioInicio, setSlotHorarioInicio] = useState("08:00");
   const [slotHorarioFim, setSlotHorarioFim] = useState("09:00");
-  const [confirmRemoverDia, setConfirmRemoverDia] = useState<{ turma: Turma; diaId: string } | null>(null);
+  const [confirmRemoverDia, setConfirmRemoverDia] = useState<{ turma: Turma; diaId: string; isoDate: string } | null>(null);
 
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
@@ -249,10 +252,23 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
     setDialogTurma(true);
   };
 
-  const openHorarioAulas = (diaPre?: string) => {
+  const openHorarioAulas = (diaPre?: string, date?: Date) => {
+    const defaultTipo: TipoAgendamento = alunoMode ? "aluguel" : "aula";
+    setEditandoId(null);
+    setFormData({
+      ...emptyForm,
+      tipo: defaultTipo,
+      cor: TIPO_CORES[defaultTipo],
+      diasSemana: diaPre ? [diaPre] : [],
+      modalidade: professorContext?.modalidade ?? "",
+      professorId: professorContext?.id ?? "",
+    });
+    setSessionData(date ? { dataAula: toISODate(date) } : emptySession);
+    setSlotHorarioInicio(emptyForm.horarioInicio);
+    setSlotHorarioFim(emptyForm.horarioFim);
     setDiaPopup(null);
     setSlotPopup(null);
-    openNova(diaPre);
+    setDialogTurma(true);
   };
 
   const openEditar = (t: Turma) => {
@@ -275,22 +291,16 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
     setDialogTurma(true);
   };
 
-  const removerDiaDoAgendamento = async (t: Turma, diaId: string) => {
-    // Single-date event → just delete the whole record
+  const removerDiaDoAgendamento = async (t: Turma, isoDate: string) => {
+    // Single-date event → delete the whole record
     if (t.dataAula) {
       await excluirTurma.mutateAsync(t.id);
       setDiaPopup(null);
       return;
     }
-    // Recurring: remove this specific weekday from diasSemana
-    const dias = t.diasSemana.split("|").filter(Boolean);
-    if (dias.length <= 1) {
-      // Only one day left → delete the whole turma
-      await excluirTurma.mutateAsync(t.id);
-      setDiaPopup(null);
-      return;
-    }
-    const newDias = dias.filter((d) => d !== diaId).join("|");
+    // Recurring: add the specific ISO date to excecoes so only this occurrence is skipped
+    const current = t.excecoes ? t.excecoes.split("|").filter(Boolean) : [];
+    const newExcecoes = [...current, isoDate].join("|");
     await editarTurma.mutateAsync({
       id: t.id,
       data: {
@@ -301,12 +311,13 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
         recursoId: t.recursoId ?? null,
         clienteNome: t.clienteNome ?? null,
         valorCobrado: t.valorCobrado ?? null,
-        diasSemana: newDias,
+        diasSemana: t.diasSemana,
         horarioInicio: t.horarioInicio,
         horarioFim: t.horarioFim,
         capacidadeMaxima: t.capacidadeMaxima,
         cor: t.cor,
         dataAula: null,
+        excecoes: newExcecoes,
       },
     });
     setDiaPopup(null);
@@ -417,6 +428,11 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       if (t.dataAula) {
         // Single-date event: only show on the exact date
         return t.dataAula === isoDate;
+      }
+      // Skip if this specific date is in the excecoes list
+      if (t.excecoes) {
+        const excecoesList = t.excecoes.split("|").filter(Boolean);
+        if (excecoesList.includes(isoDate)) return false;
       }
       // Recurring: show on any day matching the weekday
       return t.diasSemana.split("|").includes(dayId);
@@ -815,7 +831,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                             variant="ghost"
                             className="h-7 px-2 bg-white/15 text-white hover:bg-red-500/60 text-xs"
                             data-testid={`button-remover-dia-${t.id}-${JS_DAY_TO_ID[diaPopup.date.getDay()]}`}
-                            onClick={() => setConfirmRemoverDia({ turma: t, diaId: JS_DAY_TO_ID[diaPopup.date.getDay()] })}
+                            onClick={() => setConfirmRemoverDia({ turma: t, diaId: JS_DAY_TO_ID[diaPopup.date.getDay()], isoDate: toISODate(diaPopup.date) })}
                           >
                             Remover
                           </Button>
@@ -831,7 +847,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                   <Button
                     size="sm"
                     className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() => openHorarioAulas(JS_DAY_TO_ID[diaPopup.date.getDay()])}
+                    onClick={() => openHorarioAulas(JS_DAY_TO_ID[diaPopup.date.getDay()], diaPopup.date)}
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" />Novo Agendamento
                   </Button>
@@ -1283,7 +1299,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {isUnico
                           ? "Este agendamento será excluído permanentemente."
-                          : <>Apenas o dia <strong>{DIAS_SHORT[confirmRemoverDia.diaId] ?? confirmRemoverDia.diaId}</strong> será removido. Os demais dias do agendamento continuarão normalmente.</>}
+                          : <>Apenas a ocorrência de <strong>{new Date(confirmRemoverDia.isoDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}</strong> será removida. As demais ocorrências continuarão normalmente.</>}
                       </p>
                     </div>
                   );
@@ -1297,7 +1313,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
               className="bg-red-600 hover:bg-red-700"
               onClick={() => {
                 if (confirmRemoverDia) {
-                  removerDiaDoAgendamento(confirmRemoverDia.turma, confirmRemoverDia.diaId);
+                  removerDiaDoAgendamento(confirmRemoverDia.turma, confirmRemoverDia.isoDate);
                   setConfirmRemoverDia(null);
                   setDiaPopup(null);
                 }

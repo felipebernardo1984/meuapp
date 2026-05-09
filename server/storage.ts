@@ -600,6 +600,10 @@ export class DatabaseStorage {
     return db.select().from(turmas).where(and(eq(turmas.professorId, professorId), eq(turmas.ativo, true)));
   }
 
+  async listAllTurmasPendentes() {
+    return db.select().from(turmas).where(eq(turmas.statusAluguel, "pendente"));
+  }
+
   // TURMA ALUNOS (Enrollments)
   async listTurmaAlunos(turmaId: string) {
     return db.select().from(turmaAlunos).where(and(eq(turmaAlunos.turmaId, turmaId), eq(turmaAlunos.ativo, true)));

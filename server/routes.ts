@@ -1920,9 +1920,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     try {
       const { nome, tipo, modalidade, professorId, recursoId, clienteNome, valorCobrado, diasSemana, horarioInicio, horarioFim, capacidadeMaxima, cor, dataAula } = req.body;
+      const tipoFinal = tipo || "aula";
+      // For aluguel bookings: set status pendente + 1-hour expiry
+      const isAluguel = tipoFinal === "aluguel";
+      const expiresAt = isAluguel
+        ? new Date(Date.now() + 60 * 60 * 1000).toISOString()
+        : null;
       const turma = await storage.createTurma({
         arenaId, nome,
-        tipo: tipo || "aula",
+        tipo: tipoFinal,
         modalidade: modalidade || "",
         professorId: professorId || null,
         recursoId: recursoId || null,
@@ -1934,6 +1940,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cor: cor || "#1565C0",
         ativo: true,
         dataAula: dataAula || null,
+        statusAluguel: isAluguel ? "pendente" : "ativo",
+        expiresAt,
       });
       res.json(turma);
     } catch (e: any) {
@@ -2286,6 +2294,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     await storage.deleteDespesa(req.params.id);
     res.json({ ok: true });
+  });
+
+  // ── Mercado Pago — stub routes (ready to wire per-arena when credentials are configured) ────────
+  // Each arena will store its own MP access_token via platform_settings or a future mp_settings table.
+  // The stub returns 501 until the token is configured.
+
+  app.get("/api/mercadopago/config", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    // TODO: read mp_access_token from arena settings once the config UI is built
+    res.json({ configured: false, message: "Mercado Pago ainda não configurado para esta arena. Adicione o access_token nas configurações." });
+  });
+
+  app.post("/api/mercadopago/preference", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    // TODO: use arena's mp_access_token to create a preference and return init_point
+    // const { title, amount, turmaId } = req.body;
+    // const mp = new MercadoPagoConfig({ accessToken: arenaToken });
+    // const preference = await new Preference(mp).create({ body: { items: [{ title, unit_price: amount, quantity: 1 }] } });
+    // return res.json({ init_point: preference.init_point, id: preference.id });
+    res.status(501).json({ message: "Mercado Pago não configurado. Configure o access_token da arena para ativar pagamentos automáticos." });
+  });
+
+  app.post("/api/mercadopago/webhook/:arenaId", async (req, res) => {
+    // Public endpoint — no auth required (called by MP servers)
+    // TODO: validate X-Signature header, then update turma statusAluguel → "confirmado"
+    // const { type, data } = req.body;
+    // if (type === "payment") { const payment = await mp.payment.get(data.id); ... }
+    res.json({ received: true });
+  });
+
+  // ── Turma aluguel — confirm payment (manual, by gestor) ──────────────────────────────────────────
+  app.put("/api/turmas/:id/confirmar-pagamento", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.updateTurma(req.params.id, { statusAluguel: "confirmado", expiresAt: null });
+    res.json({ ok: true });
+  });
+
+  // ── Expire stale pendente aluguéis (called internally by scheduler) ─────────────────────────────
+  app.post("/api/turmas/expirar-pendentes", async (req, res) => {
+    // Only admin or internal calls
+    if (!req.session.isAdmin && !req.headers["x-internal-key"]) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const now = new Date().toISOString();
+    const all = await storage.listAllTurmasPendentes();
+    let expired = 0;
+    for (const t of all) {
+      if (t.expiresAt && t.expiresAt < now) {
+        await storage.updateTurma(t.id, { statusAluguel: "expirado" });
+        expired++;
+      }
+    }
+    res.json({ expired });
   });
 
   return createServer(app);

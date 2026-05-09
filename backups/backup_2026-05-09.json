@@ -1,14 +1,200 @@
 {
-  "createdAt": "2026-05-09T05:54:56.385Z",
-  "arenas": [],
-  "plans": [],
-  "teachers": [],
-  "students": [],
-  "checkins": [],
+  "createdAt": "2026-05-09T06:35:08.587Z",
+  "arenas": [
+    {
+      "id": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "name": "Arena Padrão",
+      "subscriptionPlan": "premium",
+      "gestorLogin": "333",
+      "gestorSenha": "333",
+      "gestorNome": null,
+      "gestorCpf": null,
+      "gestorEmail": null,
+      "gestorTelefone": null,
+      "subscriptionStartDate": "09/05/2026",
+      "subscriptionValue": "R$ 199,00",
+      "subscriptionStatus": "Ativo",
+      "nextBillingDate": "16/05/2026",
+      "statusConta": "ativo",
+      "trialExpiraEm": null,
+      "createdAt": "2026-05-09T05:54:57.210Z",
+      "updatedAt": "2026-05-09T05:54:57.210Z"
+    }
+  ],
+  "plans": [
+    {
+      "id": "132ac7ee-e355-4c62-be18-bc8ec19b9ff2",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "titulo": "1x por semana",
+      "checkins": 8,
+      "valorTexto": null
+    },
+    {
+      "id": "73f5392f-01b0-4777-b680-3d863dc6a3da",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "titulo": "2x por semana",
+      "checkins": 12,
+      "valorTexto": null
+    },
+    {
+      "id": "e9e54d75-e00a-4fdf-9ece-5a19b69a4e0b",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "titulo": "Mensalista",
+      "checkins": 0,
+      "valorTexto": "R$ 140,00"
+    }
+  ],
+  "teachers": [
+    {
+      "id": "cd9ed688-6b08-4a35-9892-9d418b1afa61",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "nome": "Felipe Bernardo",
+      "login": "222",
+      "senha": "222",
+      "cpf": null,
+      "email": null,
+      "telefone": null,
+      "modalidade": "Vôlei de Praia",
+      "percentualComissao": "0.00",
+      "photoUrl": null
+    }
+  ],
+  "students": [
+    {
+      "id": "ff7ba674-8b29-41c1-ab8a-b563cc90092c",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "nome": "Maria Santos",
+      "login": "111",
+      "senha": "111",
+      "cpf": "987.654.321-00",
+      "email": null,
+      "telefone": null,
+      "modalidade": "Vôlei de Praia",
+      "planoId": "73f5392f-01b0-4777-b680-3d863dc6a3da",
+      "planoTitulo": "2x por semana",
+      "planoCheckins": 12,
+      "planoValorTexto": null,
+      "checkinsRealizados": 2,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "02/01/2025",
+      "photoUrl": null,
+      "integrationType": "none",
+      "integrationPlan": null,
+      "professorId": null,
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-05-09T05:54:57.263Z"
+    }
+  ],
+  "checkins": [
+    {
+      "id": "5133a4da-02b8-4dad-9da7-1a7e8cc66cb7",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "studentId": "ff7ba674-8b29-41c1-ab8a-b563cc90092c",
+      "data": "01/01/2025",
+      "hora": "19:30",
+      "tipo": "pendente",
+      "professorId": null
+    },
+    {
+      "id": "f0179085-327d-4326-aa07-0cd0bc8174d2",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "studentId": "ff7ba674-8b29-41c1-ab8a-b563cc90092c",
+      "data": "02/01/2025",
+      "hora": "18:30",
+      "tipo": "pendente",
+      "professorId": null
+    }
+  ],
   "payments": [],
   "charges": [],
   "despesas": [],
-  "turmas": [],
+  "turmas": [
+    {
+      "id": "73f66a05-4f07-454f-b416-a41e24d1de6c",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "professorId": "cd9ed688-6b08-4a35-9892-9d418b1afa61",
+      "recursoId": "7ca276bc-f09d-4761-ae36-1ae10a09e9b9",
+      "nome": "Avançado",
+      "tipo": "aula",
+      "modalidade": "Vôlei de Praia",
+      "clienteNome": null,
+      "valorCobrado": null,
+      "diasSemana": "qui",
+      "horarioInicio": "08:00",
+      "horarioFim": "09:00",
+      "capacidadeMaxima": 20,
+      "cor": "#E65100",
+      "ativo": true,
+      "criadaEm": "2026-05-09T06:04:10.969Z",
+      "dataAula": "2026-05-21",
+      "excecoes": "",
+      "statusAluguel": "ativo",
+      "expiresAt": null
+    },
+    {
+      "id": "9437a9fa-89b3-44ac-bf3e-f035851dc821",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "professorId": "cd9ed688-6b08-4a35-9892-9d418b1afa61",
+      "recursoId": "7ca276bc-f09d-4761-ae36-1ae10a09e9b9",
+      "nome": "Avançado",
+      "tipo": "aula",
+      "modalidade": "Vôlei de Praia",
+      "clienteNome": null,
+      "valorCobrado": null,
+      "diasSemana": "qui",
+      "horarioInicio": "08:00",
+      "horarioFim": "09:00",
+      "capacidadeMaxima": 20,
+      "cor": "#F57F17",
+      "ativo": true,
+      "criadaEm": "2026-05-09T06:23:39.343Z",
+      "dataAula": "2026-05-07",
+      "excecoes": "",
+      "statusAluguel": "ativo",
+      "expiresAt": null
+    },
+    {
+      "id": "cfaf160e-3a05-4da8-9df7-9f2a00d411ad",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "professorId": "cd9ed688-6b08-4a35-9892-9d418b1afa61",
+      "recursoId": "7ca276bc-f09d-4761-ae36-1ae10a09e9b9",
+      "nome": "Avançado",
+      "tipo": "aula",
+      "modalidade": "Vôlei de Praia",
+      "clienteNome": null,
+      "valorCobrado": null,
+      "diasSemana": "ter",
+      "horarioInicio": "08:00",
+      "horarioFim": "09:00",
+      "capacidadeMaxima": 20,
+      "cor": "#1565C0",
+      "ativo": true,
+      "criadaEm": "2026-05-09T06:31:14.942Z",
+      "dataAula": "2026-05-12",
+      "excecoes": "",
+      "statusAluguel": "ativo",
+      "expiresAt": null
+    }
+  ],
   "turmaAlunos": [],
-  "recursos": []
+  "recursos": [
+    {
+      "id": "7ca276bc-f09d-4761-ae36-1ae10a09e9b9",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "nome": "Quadra 1",
+      "tipo": "sala",
+      "ativo": true,
+      "criadoEm": "2026-05-09T05:54:57.281Z"
+    },
+    {
+      "id": "d13fa02f-dc4b-46ca-a81b-b825e893fbff",
+      "arenaId": "0cbc583d-3ff8-433f-8949-76abd054baf5",
+      "nome": "Quadra 2",
+      "tipo": "sala",
+      "ativo": true,
+      "criadoEm": "2026-05-09T06:33:21.933Z"
+    }
+  ]
 }

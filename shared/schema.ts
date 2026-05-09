@@ -401,6 +401,12 @@ export const turmas = pgTable("turmas", {
   ativo: boolean("ativo").notNull().default(true),
   criadaEm: timestamp("criada_em").defaultNow(),
   dataAula: text("data_aula"),
+  // Pipe-separated ISO dates excluded from a recurring schedule (e.g. "2026-05-04|2026-05-11")
+  excecoes: text("excecoes").notNull().default(""),
+  // For aluguel bookings: pendente | confirmado | expirado | ativo
+  statusAluguel: text("status_aluguel").notNull().default("ativo"),
+  // ISO datetime — when a pendente aluguel booking expires (default: 1h after creation)
+  expiresAt: text("expires_at"),
 });
 
 export const insertTurmaSchema = createInsertSchema(turmas).omit({ id: true, criadaEm: true });
