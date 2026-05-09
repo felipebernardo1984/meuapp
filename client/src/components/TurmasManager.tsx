@@ -117,6 +117,7 @@ interface TurmasManagerProps {
   professorContext?: { id: string; modalidade: string; nome?: string };
   readOnly?: boolean;
   highlightProfessorId?: string;
+  alunoMode?: boolean;
 }
 
 const emptyForm = {
@@ -159,7 +160,7 @@ type DaySlot = {
   professorId?: string | null;
 };
 
-export default function TurmasManager({ onVoltar, professorContext, readOnly = false, highlightProfessorId }: TurmasManagerProps) {
+export default function TurmasManager({ onVoltar, professorContext, readOnly = false, highlightProfessorId, alunoMode = false }: TurmasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [view, setView] = useState<ViewMode>("mensal");
@@ -233,8 +234,11 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   // Helpers
   const openNova = (diaPre?: string) => {
     setEditandoId(null);
+    const defaultTipo: TipoAgendamento = alunoMode ? "aluguel" : "aula";
     setFormData({
       ...emptyForm,
+      tipo: defaultTipo,
+      cor: TIPO_CORES[defaultTipo],
       diasSemana: diaPre ? [diaPre] : [],
       modalidade: professorContext?.modalidade ?? "",
       professorId: professorContext?.id ?? "",
@@ -914,30 +918,43 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
             {/* Tipo selector */}
             <div className="space-y-2">
               <Label>Tipo *</Label>
-              <div className="flex gap-2">
-                {(["aula", "aluguel", "dayuse"] as TipoAgendamento[]).map((t) => (
+              {alunoMode ? (
+                <div className="flex gap-2">
                   <button
-                    key={t}
                     type="button"
-                    data-testid={`button-tipo-${t}`}
-                    onClick={() => setFormData((p) => ({
-                      ...p,
-                      tipo: t,
-                      cor: TIPO_CORES[t],
-                      professorId: t !== "aula" ? "" : p.professorId,
-                      modalidade: t !== "aula" ? "" : p.modalidade,
-                    }))}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      formData.tipo === t
-                        ? "text-white border-transparent"
-                        : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400"
-                    }`}
-                    style={formData.tipo === t ? { backgroundColor: TIPO_CORES[t] } : {}}
+                    disabled
+                    className="flex-1 py-2 rounded-lg text-sm font-medium border text-white border-transparent"
+                    style={{ backgroundColor: TIPO_CORES["aluguel"] }}
                   >
-                    {TIPO_LABELS[t]}
+                    Aluguel de Quadra
                   </button>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  {(["aula", "aluguel", "dayuse"] as TipoAgendamento[]).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      data-testid={`button-tipo-${t}`}
+                      onClick={() => setFormData((p) => ({
+                        ...p,
+                        tipo: t,
+                        cor: TIPO_CORES[t],
+                        professorId: t !== "aula" ? "" : p.professorId,
+                        modalidade: t !== "aula" ? "" : p.modalidade,
+                      }))}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        formData.tipo === t
+                          ? "text-white border-transparent"
+                          : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-gray-400"
+                      }`}
+                      style={formData.tipo === t ? { backgroundColor: TIPO_CORES[t] } : {}}
+                    >
+                      {TIPO_LABELS[t]}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Nome */}

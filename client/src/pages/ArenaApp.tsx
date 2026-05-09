@@ -432,6 +432,7 @@ export default function ArenaApp() {
         <TurmasManager
           onVoltar={() => setAlunoView("dashboard")}
           highlightProfessorId={alunoAtual?.professorId ?? undefined}
+          alunoMode
         />
       )}
 
