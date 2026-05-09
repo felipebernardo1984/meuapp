@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-05-09T18:27:49.708Z",
+  "createdAt": "2026-05-09T19:01:06.005Z",
   "arenas": [
     {
       "id": "654f304a-2ae3-42e9-ae66-be45a998bb54",
@@ -119,6 +119,10 @@
       "nome": "Quadra 1",
       "tipo": "sala",
       "ativo": true,
+      "valorAluguel": null,
+      "valorDayuse": null,
+      "duracaoMinima": 1,
+      "valorHoraAdicional": null,
       "criadoEm": "2026-05-09T18:10:15.898Z"
     }
   ]

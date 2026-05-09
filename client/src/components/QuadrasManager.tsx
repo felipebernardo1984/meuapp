@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Building2, DollarSign } from "lucide-react";
+import { Plus, Trash2, Building2, DollarSign, Check, Loader2 } from "lucide-react";
 
 const RECURSO_COLORS = [
   "#3b82f6",
@@ -40,16 +40,27 @@ interface Ambiente {
   valorHoraAdicional?: string | null;
 }
 
-const emptyEdit = { nome: "", valorAluguel: "", valorDayuse: "", duracaoMinima: "1", valorHoraAdicional: "" };
+type AmbienteLocal = {
+  nome: string;
+  valorAluguel: string;
+  valorDayuse: string;
+  duracaoMinima: string;
+  valorHoraAdicional: string;
+};
+
+type SaveStatus = "idle" | "saving" | "saved";
 
 export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
 
   const [novoNome, setNovoNome] = useState("");
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState(emptyEdit);
   const [confirmDelete, setConfirmDelete] = useState<Ambiente | null>(null);
+
+  // Per-ambiente local state for always-visible inline editing
+  const [localForms, setLocalForms] = useState<Record<string, AmbienteLocal>>({});
+  const [saveStatus, setSaveStatus] = useState<Record<string, SaveStatus>>({});
+  const debounceRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const { data: ambientesList = [] } = useQuery<Ambiente[]>({
     queryKey: ["/api/recursos"],
@@ -61,28 +72,25 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/recursos"] });
       setNovoNome("");
-      toast({ title: "Ambiente criado!" });
     },
     onError: () =>
       toast({ title: "Erro ao criar ambiente", variant: "destructive" }),
   });
 
   const atualizarAmbiente = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: typeof emptyEdit & { ativo: boolean };
-    }) => apiRequest("PUT", `/api/recursos/${id}`, data),
-    onSuccess: () => {
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiRequest("PUT", `/api/recursos/${id}`, data),
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["/api/recursos"] });
-      setEditandoId(null);
-      setEditForm(emptyEdit);
-      toast({ title: "Ambiente atualizado!" });
+      setSaveStatus((p) => ({ ...p, [variables.id]: "saved" }));
+      setTimeout(() => {
+        setSaveStatus((p) => ({ ...p, [variables.id]: "idle" }));
+      }, 2000);
     },
-    onError: () =>
-      toast({ title: "Erro ao atualizar", variant: "destructive" }),
+    onError: (_err, variables) => {
+      setSaveStatus((p) => ({ ...p, [variables.id]: "idle" }));
+      toast({ title: "Erro ao salvar ambiente", variant: "destructive" });
+    },
   });
 
   const removerAmbiente = useMutation({
@@ -90,38 +98,52 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/recursos"] });
       setConfirmDelete(null);
-      toast({ title: "Ambiente removido." });
     },
     onError: () => toast({ title: "Erro ao remover", variant: "destructive" }),
   });
 
   const ambientesAtivos = ambientesList.filter((a) => a.ativo);
 
-  const openEditar = (a: Ambiente) => {
-    setEditandoId(a.id);
-    setEditForm({
+  // Get local form values, initializing from server data if not yet edited
+  const getLocal = (a: Ambiente): AmbienteLocal =>
+    localForms[a.id] ?? {
       nome: a.nome,
       valorAluguel: a.valorAluguel ?? "",
       valorDayuse: a.valorDayuse ?? "",
       duracaoMinima: String(a.duracaoMinima ?? 1),
       valorHoraAdicional: a.valorHoraAdicional ?? "",
-    });
+    };
+
+  const setField = (id: string, field: keyof AmbienteLocal, value: string, serverAmb: Ambiente) => {
+    const current = getLocal(serverAmb);
+    const updated = { ...current, [field]: value };
+    setLocalForms((p) => ({ ...p, [id]: updated }));
   };
 
-  const handleSalvar = (a: Ambiente) => {
-    const nome = editForm.nome.trim();
-    if (!nome) return;
-    atualizarAmbiente.mutate({
-      id: a.id,
-      data: {
-        nome,
-        valorAluguel: editForm.valorAluguel,
-        valorDayuse: editForm.valorDayuse,
-        duracaoMinima: editForm.duracaoMinima,
-        valorHoraAdicional: editForm.valorHoraAdicional,
-        ativo: true,
-      },
-    });
+  // Trigger save immediately (called on blur)
+  const saveAmb = useCallback(
+    (id: string, form: AmbienteLocal) => {
+      if (debounceRefs.current[id]) clearTimeout(debounceRefs.current[id]);
+      if (!form.nome.trim()) return;
+      setSaveStatus((p) => ({ ...p, [id]: "saving" }));
+      atualizarAmbiente.mutate({
+        id,
+        data: {
+          nome: form.nome.trim(),
+          valorAluguel: form.valorAluguel || null,
+          valorDayuse: form.valorDayuse || null,
+          duracaoMinima: form.duracaoMinima ? Number(form.duracaoMinima) : 1,
+          valorHoraAdicional: form.valorHoraAdicional || null,
+          ativo: true,
+        },
+      });
+    },
+    [atualizarAmbiente]
+  );
+
+  const handleBlur = (id: string, form: AmbienteLocal) => {
+    if (debounceRefs.current[id]) clearTimeout(debounceRefs.current[id]);
+    debounceRefs.current[id] = setTimeout(() => saveAmb(id, form), 300);
   };
 
   return (
@@ -133,7 +155,7 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
           quadras, boxes e salas disponíveis para aulas e reservas.
         </h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Configure também os valores padrão de reserva e avulso por ambiente.
+          As alterações são salvas automaticamente ao sair de cada campo.
         </p>
       </div>
 
@@ -168,206 +190,117 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
       {/* Lista */}
       {ambientesAtivos.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          Nenhum ambiente cadastrado. Adicione acima para criar seu primeiro
-          espaço.
+          Nenhum ambiente cadastrado. Adicione acima para criar seu primeiro espaço.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {ambientesAtivos.map((a, idx) => {
             const cor = RECURSO_COLORS[idx % RECURSO_COLORS.length];
-            const isEditing = editandoId === a.id;
+            const local = getLocal(a);
+            const status = saveStatus[a.id] ?? "idle";
             return (
               <div
                 key={a.id}
                 className="rounded-lg border bg-card shadow-sm overflow-hidden"
                 style={{ borderLeftColor: cor, borderLeftWidth: 4 }}
               >
-                {/* Header row */}
+                {/* Header row: nome + status + delete */}
                 <div className="flex items-center gap-3 px-4 py-3">
                   <div
                     className="h-3 w-3 rounded-full shrink-0"
                     style={{ backgroundColor: cor }}
                   />
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editForm.nome}
-                      onChange={(e) =>
-                        setEditForm((p) => ({ ...p, nome: e.target.value }))
-                      }
-                      className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      data-testid={`input-editar-ambiente-${a.id}`}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Escape") {
-                          setEditandoId(null);
-                          setEditForm(emptyEdit);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span className="flex-1 text-sm font-medium">{a.nome}</span>
-                  )}
-
-                  {isEditing ? (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSalvar(a)}
-                        disabled={atualizarAmbiente.isPending}
-                        data-testid={`button-salvar-ambiente-${a.id}`}
-                      >
-                        Salvar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditandoId(null);
-                          setEditForm(emptyEdit);
-                        }}
-                      >
-                        Cancelar
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 shrink-0"
-                        onClick={() => openEditar(a)}
-                        data-testid={`button-editar-ambiente-${a.id}`}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
-                        onClick={() => setConfirmDelete(a)}
-                        data-testid={`button-excluir-ambiente-${a.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
+                  <input
+                    type="text"
+                    value={local.nome}
+                    onChange={(e) => setField(a.id, "nome", e.target.value, a)}
+                    onBlur={() => handleBlur(a.id, { ...local })}
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    data-testid={`input-nome-ambiente-${a.id}`}
+                    placeholder="Nome do ambiente"
+                  />
+                  {/* Save indicator */}
+                  <div className="w-5 shrink-0 flex items-center justify-center">
+                    {status === "saving" && (
+                      <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                    )}
+                    {status === "saved" && (
+                      <Check className="h-4 w-4 text-green-500" />
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    onClick={() => setConfirmDelete(a)}
+                    data-testid={`button-excluir-ambiente-${a.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
 
-                {/* Prices row */}
-                {isEditing ? (
-                  <div className="border-t border-border px-4 py-3 space-y-3 bg-muted/30">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" /> Valor aluguel
-                        </Label>
-                        <Input
-                          value={editForm.valorAluguel}
-                          onChange={(e) =>
-                            setEditForm((p) => ({
-                              ...p,
-                              valorAluguel: e.target.value,
-                            }))
-                          }
-                          placeholder="Ex: 150,00"
-                          className="h-8 text-sm"
-                          data-testid={`input-valor-aluguel-${a.id}`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" /> Valor day-use
-                        </Label>
-                        <Input
-                          value={editForm.valorDayuse}
-                          onChange={(e) =>
-                            setEditForm((p) => ({
-                              ...p,
-                              valorDayuse: e.target.value,
-                            }))
-                          }
-                          placeholder="Ex: 80,00"
-                          className="h-8 text-sm"
-                          data-testid={`input-valor-dayuse-${a.id}`}
-                        />
-                      </div>
+                {/* Price fields — always visible */}
+                <div className="border-t border-border px-4 py-3 space-y-3 bg-muted/20">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" /> Valor aluguel
+                      </Label>
+                      <Input
+                        value={local.valorAluguel}
+                        onChange={(e) => setField(a.id, "valorAluguel", e.target.value, a)}
+                        onBlur={() => handleBlur(a.id, { ...local, valorAluguel: local.valorAluguel })}
+                        placeholder="Ex: 90,00"
+                        className="h-8 text-sm"
+                        data-testid={`input-valor-aluguel-${a.id}`}
+                      />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
-                          Duração mínima (horas)
-                        </Label>
-                        <Input
-                          type="number"
-                          min={0.5}
-                          step={0.5}
-                          value={editForm.duracaoMinima}
-                          onChange={(e) =>
-                            setEditForm((p) => ({
-                              ...p,
-                              duracaoMinima: e.target.value,
-                            }))
-                          }
-                          placeholder="Ex: 1"
-                          className="h-8 text-sm"
-                          data-testid={`input-duracao-minima-${a.id}`}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" /> Hora adicional
-                        </Label>
-                        <Input
-                          value={editForm.valorHoraAdicional}
-                          onChange={(e) =>
-                            setEditForm((p) => ({
-                              ...p,
-                              valorHoraAdicional: e.target.value,
-                            }))
-                          }
-                          placeholder="Ex: 40,00"
-                          className="h-8 text-sm"
-                          data-testid={`input-hora-adicional-${a.id}`}
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" /> Valor day-use
+                      </Label>
+                      <Input
+                        value={local.valorDayuse}
+                        onChange={(e) => setField(a.id, "valorDayuse", e.target.value, a)}
+                        onBlur={() => handleBlur(a.id, { ...local, valorDayuse: local.valorDayuse })}
+                        placeholder="Ex: 50,00"
+                        className="h-8 text-sm"
+                        data-testid={`input-valor-dayuse-${a.id}`}
+                      />
                     </div>
                   </div>
-                ) : a.valorAluguel || a.valorDayuse ? (
-                  <div className="border-t border-border px-4 py-2 flex flex-wrap gap-4 bg-muted/20">
-                    {a.valorAluguel && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        Aluguel:{" "}
-                        <span className="font-medium text-foreground">
-                          R$ {a.valorAluguel}
-                        </span>
-                      </span>
-                    )}
-                    {a.valorDayuse && (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        Day-use:{" "}
-                        <span className="font-medium text-foreground">
-                          R$ {a.valorDayuse}
-                        </span>
-                      </span>
-                    )}
-                    {(a.duracaoMinima && a.duracaoMinima > 1) && (
-                      <span className="text-xs text-muted-foreground">
-                        Mín. {a.duracaoMinima}h
-                        {a.valorHoraAdicional && (
-                          <> · +R$ {a.valorHoraAdicional}/h</>
-                        )}
-                      </span>
-                    )}
-                    {(a.duracaoMinima === 1 || !a.duracaoMinima) && a.valorHoraAdicional && (
-                      <span className="text-xs text-muted-foreground">
-                        +R$ {a.valorHoraAdicional}/h adicional
-                      </span>
-                    )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        Duração mínima (horas)
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0.5}
+                        step={0.5}
+                        value={local.duracaoMinima}
+                        onChange={(e) => setField(a.id, "duracaoMinima", e.target.value, a)}
+                        onBlur={() => handleBlur(a.id, { ...local, duracaoMinima: local.duracaoMinima })}
+                        placeholder="1"
+                        className="h-8 text-sm"
+                        data-testid={`input-duracao-minima-${a.id}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" /> Hora adicional
+                      </Label>
+                      <Input
+                        value={local.valorHoraAdicional}
+                        onChange={(e) => setField(a.id, "valorHoraAdicional", e.target.value, a)}
+                        onBlur={() => handleBlur(a.id, { ...local, valorHoraAdicional: local.valorHoraAdicional })}
+                        placeholder="Ex: 40,00"
+                        className="h-8 text-sm"
+                        data-testid={`input-hora-adicional-${a.id}`}
+                      />
+                    </div>
                   </div>
-                ) : null}
+                </div>
               </div>
             );
           })}

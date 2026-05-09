@@ -346,7 +346,8 @@ export class DatabaseStorage {
     try {
       const [row] = await db.update(recursos).set(data).where(eq(recursos.id, id)).returning();
       return row;
-    } catch {
+    } catch (e: any) {
+      console.error("[updateRecurso] Erro ao atualizar recurso:", e?.message ?? e);
       return null;
     }
   }
