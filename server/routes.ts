@@ -95,32 +95,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const p1 = await storage.createPlan({ arenaId: defaultArena.id, titulo: "1x por semana", checkins: 8, valorTexto: null });
         const p2 = await storage.createPlan({ arenaId: defaultArena.id, titulo: "2x por semana", checkins: 12, valorTexto: null });
         await storage.createPlan({ arenaId: defaultArena.id, titulo: "Mensalista", checkins: 0, valorTexto: "R$ 140,00" });
-        await storage.createTeacher({ arenaId: defaultArena.id, nome: "Carlos Mendes", login: "222", senha: "222", modalidade: "Beach Tennis" });
-        await storage.createTeacher({ arenaId: defaultArena.id, nome: "Fernanda Lima", login: "fernanda", senha: "admin", modalidade: "Vôlei de Praia" });
-        await storage.createTeacher({ arenaId: defaultArena.id, nome: "Ricardo Souza", login: "ricardo", senha: "admin", modalidade: "Futevôlei" });
+        await storage.createTeacher({ arenaId: defaultArena.id, nome: "Felipe Bernardo", login: "222", senha: "222", modalidade: "Vôlei de Praia" });
         const a1 = await storage.createStudent({
           arenaId: defaultArena.id, nome: "Maria Santos", login: "111", senha: "111",
-          cpf: "987.654.321-00", modalidade: "Beach Tennis",
+          cpf: "987.654.321-00", modalidade: "Vôlei de Praia",
           planoId: p2.id, planoTitulo: p2.titulo, planoCheckins: p2.checkins, planoValorTexto: null,
-          checkinsRealizados: 9, statusMensalidade: "Em dia", aprovado: true, ultimoCheckin: "02/01/2025", photoUrl: null,
+          checkinsRealizados: 2, statusMensalidade: "Em dia", aprovado: true, ultimoCheckin: "02/01/2025", photoUrl: null,
         });
         for (const [data, hora] of [
-          ["15/12/2024","18:30"],["18/12/2024","19:00"],["22/12/2024","18:45"],
-          ["25/12/2024","19:15"],["29/12/2024","18:20"],["30/12/2024","18:00"],
-          ["31/12/2024","17:45"],["01/01/2025","19:30"],["02/01/2025","18:30"],
+          ["01/01/2025","19:30"],["02/01/2025","18:30"],
         ]) {
           await storage.addCheckin({ arenaId: defaultArena.id, studentId: a1.id, data, hora });
-        }
-        const a2 = await storage.createStudent({
-          arenaId: defaultArena.id, nome: "Pedro Oliveira", login: "pedro", senha: "admin",
-          cpf: "456.789.123-00", modalidade: "Vôlei de Praia",
-          planoId: p1.id, planoTitulo: p1.titulo, planoCheckins: p1.checkins, planoValorTexto: null,
-          checkinsRealizados: 3, statusMensalidade: "Pendente", aprovado: true, ultimoCheckin: "30/12/2024", photoUrl: null,
-        });
-        for (const [data, hora] of [
-          ["20/12/2024","18:00"],["25/12/2024","19:00"],["30/12/2024","19:00"],
-        ]) {
-          await storage.addCheckin({ arenaId: defaultArena.id, studentId: a2.id, data, hora });
         }
         await storage.createRecurso({ arenaId: defaultArena.id, nome: "Quadra 1", ativo: true });
       }
