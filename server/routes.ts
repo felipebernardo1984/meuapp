@@ -323,10 +323,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/recursos/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, ativo } = req.body;
+    const { nome, ativo, valorAluguel, valorDayuse, duracaoMinima, valorHoraAdicional } = req.body;
     const updated = await storage.updateRecurso(req.params.id, {
       ...(nome !== undefined ? { nome } : {}),
       ...(ativo !== undefined ? { ativo } : {}),
+      valorAluguel: valorAluguel || null,
+      valorDayuse: valorDayuse || null,
+      duracaoMinima: duracaoMinima !== undefined ? Number(duracaoMinima) : 1,
+      valorHoraAdicional: valorHoraAdicional || null,
     });
     res.json(updated);
   });
@@ -1990,9 +1994,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, ativo, valorAluguel, valorDayuse } = req.body;
+      const { nome, ativo, valorAluguel, valorDayuse, duracaoMinima, valorHoraAdicional } = req.body;
       if (!nome?.trim()) return res.status(400).json({ message: "Nome é obrigatório" });
-      const recurso = await storage.createRecurso({ arenaId, nome: nome.trim(), ativo: ativo ?? true, tipo: "sala", valorAluguel: valorAluguel || null, valorDayuse: valorDayuse || null });
+      const recurso = await storage.createRecurso({ arenaId, nome: nome.trim(), ativo: ativo ?? true, tipo: "sala", valorAluguel: valorAluguel || null, valorDayuse: valorDayuse || null, duracaoMinima: duracaoMinima !== undefined ? Number(duracaoMinima) : 1, valorHoraAdicional: valorHoraAdicional || null });
       if (!recurso) return res.status(500).json({ message: "Não foi possível salvar a sala" });
       res.json(recurso);
     } catch (e: any) {
@@ -2004,8 +2008,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     try {
-      const { nome, ativo, valorAluguel, valorDayuse } = req.body;
-      const recurso = await storage.updateRecurso(req.params.id, { nome, ativo, valorAluguel: valorAluguel || null, valorDayuse: valorDayuse || null });
+      const { nome, ativo, valorAluguel, valorDayuse, duracaoMinima, valorHoraAdicional } = req.body;
+      const recurso = await storage.updateRecurso(req.params.id, { nome, ativo, valorAluguel: valorAluguel || null, valorDayuse: valorDayuse || null, duracaoMinima: duracaoMinima !== undefined ? Number(duracaoMinima) : 1, valorHoraAdicional: valorHoraAdicional || null });
       if (!recurso) return res.status(500).json({ message: "Não foi possível atualizar a sala" });
       res.json(recurso);
     } catch (e: any) {

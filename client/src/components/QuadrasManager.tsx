@@ -36,9 +36,11 @@ interface Ambiente {
   ativo: boolean;
   valorAluguel?: string | null;
   valorDayuse?: string | null;
+  duracaoMinima?: number | null;
+  valorHoraAdicional?: string | null;
 }
 
-const emptyEdit = { nome: "", valorAluguel: "", valorDayuse: "" };
+const emptyEdit = { nome: "", valorAluguel: "", valorDayuse: "", duracaoMinima: "1", valorHoraAdicional: "" };
 
 export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
   const qc = useQueryClient();
@@ -101,6 +103,8 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
       nome: a.nome,
       valorAluguel: a.valorAluguel ?? "",
       valorDayuse: a.valorDayuse ?? "",
+      duracaoMinima: String(a.duracaoMinima ?? 1),
+      valorHoraAdicional: a.valorHoraAdicional ?? "",
     });
   };
 
@@ -113,6 +117,8 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
         nome,
         valorAluguel: editForm.valorAluguel,
         valorDayuse: editForm.valorDayuse,
+        duracaoMinima: editForm.duracaoMinima,
+        valorHoraAdicional: editForm.valorHoraAdicional,
         ativo: true,
       },
     });
@@ -250,50 +256,91 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
 
                 {/* Prices row */}
                 {isEditing ? (
-                  <div className="border-t border-border px-4 py-3 grid grid-cols-2 gap-3 bg-muted/30">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" /> Valor aluguel
-                      </Label>
-                      <Input
-                        value={editForm.valorAluguel}
-                        onChange={(e) =>
-                          setEditForm((p) => ({
-                            ...p,
-                            valorAluguel: e.target.value,
-                          }))
-                        }
-                        placeholder="Ex: R$ 150,00"
-                        className="h-8 text-sm"
-                        data-testid={`input-valor-aluguel-${a.id}`}
-                      />
+                  <div className="border-t border-border px-4 py-3 space-y-3 bg-muted/30">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" /> Valor aluguel
+                        </Label>
+                        <Input
+                          value={editForm.valorAluguel}
+                          onChange={(e) =>
+                            setEditForm((p) => ({
+                              ...p,
+                              valorAluguel: e.target.value,
+                            }))
+                          }
+                          placeholder="Ex: 150,00"
+                          className="h-8 text-sm"
+                          data-testid={`input-valor-aluguel-${a.id}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" /> Valor day-use
+                        </Label>
+                        <Input
+                          value={editForm.valorDayuse}
+                          onChange={(e) =>
+                            setEditForm((p) => ({
+                              ...p,
+                              valorDayuse: e.target.value,
+                            }))
+                          }
+                          placeholder="Ex: 80,00"
+                          className="h-8 text-sm"
+                          data-testid={`input-valor-dayuse-${a.id}`}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                        <DollarSign className="h-3 w-3" /> Valor day-use
-                      </Label>
-                      <Input
-                        value={editForm.valorDayuse}
-                        onChange={(e) =>
-                          setEditForm((p) => ({
-                            ...p,
-                            valorDayuse: e.target.value,
-                          }))
-                        }
-                        placeholder="Ex: R$ 80,00"
-                        className="h-8 text-sm"
-                        data-testid={`input-valor-dayuse-${a.id}`}
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">
+                          Duração mínima (horas)
+                        </Label>
+                        <Input
+                          type="number"
+                          min={0.5}
+                          step={0.5}
+                          value={editForm.duracaoMinima}
+                          onChange={(e) =>
+                            setEditForm((p) => ({
+                              ...p,
+                              duracaoMinima: e.target.value,
+                            }))
+                          }
+                          placeholder="Ex: 1"
+                          className="h-8 text-sm"
+                          data-testid={`input-duracao-minima-${a.id}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" /> Hora adicional
+                        </Label>
+                        <Input
+                          value={editForm.valorHoraAdicional}
+                          onChange={(e) =>
+                            setEditForm((p) => ({
+                              ...p,
+                              valorHoraAdicional: e.target.value,
+                            }))
+                          }
+                          placeholder="Ex: 40,00"
+                          className="h-8 text-sm"
+                          data-testid={`input-hora-adicional-${a.id}`}
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : a.valorAluguel || a.valorDayuse ? (
-                  <div className="border-t border-border px-4 py-2 flex gap-4 bg-muted/20">
+                  <div className="border-t border-border px-4 py-2 flex flex-wrap gap-4 bg-muted/20">
                     {a.valorAluguel && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
                         Aluguel:{" "}
                         <span className="font-medium text-foreground">
-                          {a.valorAluguel}
+                          R$ {a.valorAluguel}
                         </span>
                       </span>
                     )}
@@ -302,8 +349,21 @@ export default function QuadrasManager({ arenaId }: QuadrasManagerProps) {
                         <DollarSign className="h-3 w-3" />
                         Day-use:{" "}
                         <span className="font-medium text-foreground">
-                          {a.valorDayuse}
+                          R$ {a.valorDayuse}
                         </span>
+                      </span>
+                    )}
+                    {(a.duracaoMinima && a.duracaoMinima > 1) && (
+                      <span className="text-xs text-muted-foreground">
+                        Mín. {a.duracaoMinima}h
+                        {a.valorHoraAdicional && (
+                          <> · +R$ {a.valorHoraAdicional}/h</>
+                        )}
+                      </span>
+                    )}
+                    {(a.duracaoMinima === 1 || !a.duracaoMinima) && a.valorHoraAdicional && (
+                      <span className="text-xs text-muted-foreground">
+                        +R$ {a.valorHoraAdicional}/h adicional
                       </span>
                     )}
                   </div>

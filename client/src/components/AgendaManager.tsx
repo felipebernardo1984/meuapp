@@ -68,6 +68,23 @@ interface Recurso {
   ativo: boolean;
   valorAluguel?: string | null;
   valorDayuse?: string | null;
+  duracaoMinima?: number | null;
+  valorHoraAdicional?: string | null;
+}
+
+function parseCurrency(val: string | null | undefined): number {
+  if (!val) return 0;
+  return parseFloat(val.replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
+}
+
+function calcValorTotal(recurso: Recurso, tipo: TipoAgendamento, duracao: number): string {
+  const valorBase = tipo === "aluguel" ? parseCurrency(recurso.valorAluguel) : parseCurrency(recurso.valorDayuse);
+  if (!valorBase) return "";
+  const duracaoMin = recurso.duracaoMinima ?? 1;
+  const horasExtras = Math.max(0, duracao - duracaoMin);
+  const valorExtra = parseCurrency(recurso.valorHoraAdicional);
+  const total = valorBase + horasExtras * valorExtra;
+  return total.toFixed(2).replace(".", ",");
 }
 
 interface Turma {
@@ -133,6 +150,7 @@ const emptyForm = {
   recursoId: "",
   clienteNome: "",
   valorCobrado: "",
+  duracao: 1,
   diasSemana: [] as string[],
   horarioInicio: "08:00",
   horarioFim: "09:00",
@@ -275,6 +293,13 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
 
   const openEditar = (t: Turma) => {
     setEditandoId(t.id);
+    // Derive duracao from horario times
+    const calcDuracao = (inicio: string, fim: string) => {
+      const [hI, mI] = inicio.split(":").map(Number);
+      const [hF, mF] = fim.split(":").map(Number);
+      const diff = (hF * 60 + mF - (hI * 60 + mI)) / 60;
+      return diff > 0 ? diff : 1;
+    };
     setFormData({
       nome: t.nome,
       tipo: (t.tipo as TipoAgendamento) || "aula",
@@ -283,6 +308,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
       recursoId: t.recursoId ?? "",
       clienteNome: t.clienteNome ?? "",
       valorCobrado: t.valorCobrado ?? "",
+      duracao: calcDuracao(t.horarioInicio, t.horarioFim),
       diasSemana: t.diasSemana ? t.diasSemana.split("|").filter(Boolean) : [],
       horarioInicio: t.horarioInicio,
       horarioFim: t.horarioFim,
@@ -957,10 +983,10 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                       onClick={() => setFormData((p) => {
                         const recurso = recursos.find((r) => r.id === p.recursoId);
                         let novoValor = p.valorCobrado;
-                        if (recurso) {
-                          if (t === "aluguel" && recurso.valorAluguel) novoValor = recurso.valorAluguel;
-                          else if (t === "dayuse" && recurso.valorDayuse) novoValor = recurso.valorDayuse;
-                          else if (t === "aula") novoValor = "";
+                        if (recurso && t !== "aula") {
+                          novoValor = calcValorTotal(recurso, t, p.duracao);
+                        } else if (t === "aula") {
+                          novoValor = "";
                         }
                         return {
                           ...p,
@@ -1038,33 +1064,69 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
               />
             </div>
 
-            {/* ALUGUEL / DAYUSE: Cliente + Valor */}
-            {(formData.tipo === "aluguel" || formData.tipo === "dayuse") && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="cliente-nome">
-                    {formData.tipo === "aluguel" ? "Locatário" : "Nome do cliente"}
-                  </Label>
-                  <Input
-                    id="cliente-nome"
-                    data-testid="input-cliente-nome"
-                    placeholder="Nome da pessoa ou empresa"
-                    value={formData.clienteNome}
-                    onChange={(e) => setFormData((p) => ({ ...p, clienteNome: e.target.value }))}
-                  />
+            {/* ALUGUEL / DAYUSE: Cliente + Duração + Valor */}
+            {(formData.tipo === "aluguel" || formData.tipo === "dayuse") && (() => {
+              const selectedRecurso = recursos.find((r) => r.id === formData.recursoId);
+              const duracaoMin = selectedRecurso?.duracaoMinima ?? 1;
+              const hasHoraAdicional = selectedRecurso && parseCurrency(selectedRecurso.valorHoraAdicional) > 0;
+              return (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="cliente-nome">
+                      {formData.tipo === "aluguel" ? "Locatário" : "Nome do cliente"}
+                    </Label>
+                    <Input
+                      id="cliente-nome"
+                      data-testid="input-cliente-nome"
+                      placeholder="Nome da pessoa ou empresa"
+                      value={formData.clienteNome}
+                      onChange={(e) => setFormData((p) => ({ ...p, clienteNome: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="duracao">
+                        Duração (horas)
+                        {duracaoMin > 1 && (
+                          <span className="ml-1 text-xs text-muted-foreground font-normal">mín. {duracaoMin}h</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="duracao"
+                        type="number"
+                        min={duracaoMin}
+                        step={0.5}
+                        data-testid="input-duracao"
+                        value={formData.duracao}
+                        onChange={(e) => {
+                          const novaDuracao = parseFloat(e.target.value) || duracaoMin;
+                          setFormData((p) => {
+                            const recurso = recursos.find((r) => r.id === p.recursoId);
+                            const novoValor = recurso ? calcValorTotal(recurso, p.tipo, novaDuracao) : p.valorCobrado;
+                            return { ...p, duracao: novaDuracao, valorCobrado: novoValor || p.valorCobrado };
+                          });
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="valor-cobrado">
+                        Valor cobrado
+                        {hasHoraAdicional && (
+                          <span className="ml-1 text-xs text-muted-foreground font-normal">calculado</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="valor-cobrado"
+                        data-testid="input-valor-cobrado"
+                        placeholder="Ex: 150,00"
+                        value={formData.valorCobrado}
+                        onChange={(e) => setFormData((p) => ({ ...p, valorCobrado: e.target.value }))}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="valor-cobrado">Valor cobrado</Label>
-                  <Input
-                    id="valor-cobrado"
-                    data-testid="input-valor-cobrado"
-                    placeholder="Ex: R$ 150,00"
-                    value={formData.valorCobrado}
-                    onChange={(e) => setFormData((p) => ({ ...p, valorCobrado: e.target.value }))}
-                  />
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="space-y-2">
               <Label>Ambiente</Label>
@@ -1073,12 +1135,12 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                 onValueChange={(v) => {
                   const recurso = recursos.find((r) => r.id === v);
                   setFormData((p) => {
+                    const novaDuracao = recurso?.duracaoMinima ?? 1;
                     let novoValor = p.valorCobrado;
-                    if (v !== "none" && recurso) {
-                      if (p.tipo === "aluguel" && recurso.valorAluguel) novoValor = recurso.valorAluguel;
-                      else if (p.tipo === "dayuse" && recurso.valorDayuse) novoValor = recurso.valorDayuse;
+                    if (v !== "none" && recurso && (p.tipo === "aluguel" || p.tipo === "dayuse")) {
+                      novoValor = calcValorTotal(recurso, p.tipo, novaDuracao);
                     }
-                    return { ...p, recursoId: v === "none" ? "" : v, valorCobrado: novoValor };
+                    return { ...p, recursoId: v === "none" ? "" : v, duracao: novaDuracao, valorCobrado: novoValor };
                   });
                 }}
               >
