@@ -12,6 +12,9 @@ import { getWhatsappSettings, saveWhatsappSettings } from "./whatsappSettings";
 import { sendWhatsappMessage } from "./whatsappApi";
 import { getAutomationConfig, saveAutomationConfig, getPendingDispatches, markDispatchSent, markAllDispatchesSent, runWhatsappAutomation } from "./whatsappAutomation";
 import { calcularComissao, getResumoPorProfessor } from "./commissionService";
+import { listBackups, getArenaBackupPreview, restoreArenaFromBackup, runDatabaseBackup, BACKUP_DIR } from "./backupService";
+import fs from "fs";
+import path from "path";
 
 const MemoryStoreSession = MemoryStore(session);
 
@@ -840,6 +843,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.session.userType = "gestor";
     req.session.userId = arena.id;
     res.json({ ok: true, arenaId: arena.id, arenaName: arena.name });
+  });
+
+  // ── Admin Backup Routes ─────────────────────────────────────────────────────
+
+  app.get("/api/admin/backups", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      res.json(listBackups());
+    } catch (err) {
+      res.status(500).json({ message: "Erro ao listar backups" });
+    }
+  });
+
+  app.post("/api/admin/backups/create", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      await runDatabaseBackup();
+      res.json({ ok: true, backups: listBackups() });
+    } catch (err) {
+      res.status(500).json({ message: "Erro ao criar backup" });
+    }
+  });
+
+  app.get("/api/admin/backups/:filename/preview/:arenaId", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const preview = getArenaBackupPreview(req.params.arenaId, req.params.filename);
+      res.json(preview);
+    } catch (err: any) {
+      res.status(404).json({ message: err.message ?? "Backup não encontrado" });
+    }
+  });
+
+  app.post("/api/admin/backups/:arenaId/restore", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const { filename } = req.body as { filename: string };
+    if (!filename) return res.status(400).json({ message: "filename obrigatório" });
+    try {
+      const result = await restoreArenaFromBackup(req.params.arenaId, filename);
+      res.json({ ok: true, ...result });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message ?? "Erro ao restaurar arena" });
+    }
+  });
+
+  app.get("/api/admin/backups/download/:filename", (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const filename = req.params.filename;
+    if (!filename.startsWith("backup_") || !filename.endsWith(".json")) {
+      return res.status(400).json({ message: "Arquivo inválido" });
+    }
+    const filePath = path.join(BACKUP_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Arquivo não encontrado" });
+    }
+    res.download(filePath, filename);
   });
 
   // ── Public platform plan (single plan for landing page) ────────────────────

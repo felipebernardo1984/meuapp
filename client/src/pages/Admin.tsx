@@ -25,7 +25,7 @@ import {
   LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye, EyeOff,
   CheckCircle, XCircle, ArrowLeft, ClipboardList, ExternalLink, LogIn as LogInIcon, KeyRound,
   ChevronDown, ChevronUp, DollarSign, CreditCard, History, Settings, Mail, Phone, MessageSquare, Key,
-  Clock, AlertCircle,
+  Clock, AlertCircle, Database, Download, RotateCcw, HardDrive,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -73,6 +73,24 @@ interface ArenaDetail extends ArenaCard {
 interface PlatformPlan {
   planType: string;
   monthlyValue: string;
+}
+
+interface BackupFile {
+  filename: string;
+  date: string;
+  sizeKb: number;
+}
+
+interface BackupPreview {
+  planos: number;
+  professores: number;
+  alunos: number;
+  checkins: number;
+  pagamentos: number;
+  "cobranças": number;
+  despesas: number;
+  turmas: number;
+  recursos: number;
 }
 
 interface ArenaSubscriptionPayment {
@@ -128,6 +146,8 @@ export default function Admin() {
     plan_features: "",
   });
   const [webhookSecret, setWebhookSecret] = useState<string | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<{ arenaId: string; arenaName: string; filename: string } | null>(null);
+  const [selectedBackupForPreview, setSelectedBackupForPreview] = useState<string | null>(null);
 
   // ── Admin session ─────────────────────────────────────────────────────────
   const { data: adminSession, isLoading: sessionLoading } = useQuery<{ isAdmin: boolean }>({
@@ -182,6 +202,19 @@ export default function Admin() {
   const { data: passwordResetHistory = [] } = useQuery<PasswordResetHistoryItem[]>({
     queryKey: ["/api/admin/password-reset-history"],
     enabled: !!adminSession?.isAdmin,
+  });
+
+  const { data: backupList = [], refetch: refetchBackups } = useQuery<BackupFile[]>({
+    queryKey: ["/api/admin/backups"],
+    enabled: !!adminSession?.isAdmin,
+  });
+
+  const { data: backupPreview, isLoading: previewLoading } = useQuery<BackupPreview>({
+    queryKey: ["/api/admin/backups", selectedBackupForPreview, "preview", detailId],
+    enabled: !!selectedBackupForPreview && !!detailId,
+    queryFn: () =>
+      fetch(`/api/admin/backups/${selectedBackupForPreview}/preview/${detailId}`)
+        .then((r) => r.json()),
   });
 
   // Populate form when settings are loaded
@@ -295,6 +328,32 @@ export default function Admin() {
       toast({ title: "Chave gerada!", description: "Copie e guarde — não será exibida novamente." });
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível gerar a chave.", variant: "destructive" }),
+  });
+
+  const criarBackupAgora = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/backups/create").then((r) => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/admin/backups"] });
+      toast({ title: "Backup criado!", description: "Snapshot completo do banco salvo com sucesso." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível criar o backup.", variant: "destructive" }),
+  });
+
+  const restaurarArena = useMutation({
+    mutationFn: ({ arenaId, filename }: { arenaId: string; filename: string }) =>
+      apiRequest("POST", `/api/admin/backups/${arenaId}/restore`, { filename }).then((r) => r.json()),
+    onSuccess: (data) => {
+      setRestoreTarget(null);
+      qc.invalidateQueries({ queryKey: ["/api/admin/arenas"] });
+      if (detailId) qc.invalidateQueries({ queryKey: ["/api/admin/arenas", detailId] });
+      const r = data.restored as Record<string, number>;
+      const summary = Object.entries(r)
+        .filter(([, v]) => v > 0)
+        .map(([k, v]) => `${v} ${k}`)
+        .join(", ");
+      toast({ title: "Arena restaurada!", description: `Restaurado: ${summary || "nenhum registro"}` });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível restaurar a arena.", variant: "destructive" }),
   });
 
   function resetForm() {
@@ -447,6 +506,9 @@ export default function Admin() {
                   <TabsTrigger value="professores" data-testid="tab-professores">Professores ({arenaDetail.stats.professores})</TabsTrigger>
                   <TabsTrigger value="planos" data-testid="tab-planos">Planos ({arenaDetail.stats.planos})</TabsTrigger>
                   <TabsTrigger value="redefinicoessenha" data-testid="tab-reset">Redefinições de Senha</TabsTrigger>
+                  <TabsTrigger value="backups" data-testid="tab-backups" className="flex items-center gap-1.5">
+                    <Database className="h-3.5 w-3.5" />Backups
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="alunos">
@@ -602,7 +664,161 @@ export default function Admin() {
                     );
                   })()}
                 </TabsContent>
+
+                <TabsContent value="backups">
+                  <div className="space-y-4">
+                    {/* Header com botões globais */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold flex items-center gap-2"><HardDrive className="h-4 w-4" />Backups disponíveis</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {backupList.length === 0
+                            ? "Nenhum backup encontrado. Crie o primeiro agora."
+                            : `${backupList.length} backup(s) — selecione para ver o conteúdo e restaurar`}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => criarBackupAgora.mutate()}
+                        disabled={criarBackupAgora.isPending}
+                        data-testid="button-create-backup"
+                      >
+                        {criarBackupAgora.isPending ? (
+                          <span className="flex items-center gap-1.5"><RotateCcw className="h-3.5 w-3.5 animate-spin" />Criando...</span>
+                        ) : (
+                          <span className="flex items-center gap-1.5"><Database className="h-3.5 w-3.5" />Criar backup agora</span>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Lista de backups */}
+                    {backupList.length === 0 ? (
+                      <Card>
+                        <CardContent className="text-center py-12 text-muted-foreground">
+                          <Database className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                          <p className="text-sm">Nenhum backup disponível.</p>
+                          <p className="text-xs mt-1">O backup automático roda diariamente. Ou clique em "Criar backup agora".</p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="space-y-2">
+                        {backupList.map((bk) => {
+                          const isSelected = selectedBackupForPreview === bk.filename;
+                          const [year, month, day] = bk.date.split("-");
+                          const dateLabel = `${day}/${month}/${year}`;
+                          return (
+                            <Card
+                              key={bk.filename}
+                              className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-primary" : "hover:border-primary/50"}`}
+                              onClick={() => setSelectedBackupForPreview(isSelected ? null : bk.filename)}
+                              data-testid={`card-backup-${bk.date}`}
+                            >
+                              <CardContent className="py-3 px-4">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className={`p-2 rounded-md ${isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                      <HardDrive className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-sm">{dateLabel}</p>
+                                      <p className="text-xs text-muted-foreground">{bk.filename} — {bk.sizeKb} KB</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => { e.stopPropagation(); window.open(`/api/admin/backups/download/${bk.filename}`, "_blank"); }}
+                                      data-testid={`button-download-${bk.date}`}
+                                      title="Baixar backup"
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setRestoreTarget({ arenaId: arenaDetail.id, arenaName: arenaDetail.name, filename: bk.filename });
+                                      }}
+                                      data-testid={`button-restore-${bk.date}`}
+                                      title="Restaurar esta arena para este backup"
+                                    >
+                                      <RotateCcw className="h-3.5 w-3.5 mr-1" />Restaurar
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {/* Preview expandível */}
+                                {isSelected && (
+                                  <div className="mt-3 pt-3 border-t">
+                                    {previewLoading ? (
+                                      <p className="text-xs text-muted-foreground">Carregando conteúdo do backup...</p>
+                                    ) : backupPreview ? (
+                                      <div>
+                                        <p className="text-xs font-semibold text-muted-foreground mb-2">Conteúdo para {arenaDetail.name}:</p>
+                                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                          {Object.entries(backupPreview).map(([key, val]) => (
+                                            <div key={key} className="text-center bg-muted rounded p-2">
+                                              <p className="text-lg font-bold">{val as number}</p>
+                                              <p className="text-xs text-muted-foreground capitalize">{key}</p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-muted-foreground">Nenhum dado desta arena neste backup.</p>
+                                    )}
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Atenção:</strong> restaurar um backup substitui permanentemente todos os dados atuais da arena (alunos, professores, planos, check-ins, pagamentos e despesas). Esta ação não pode ser desfeita.
+                      </span>
+                    </div>
+                  </div>
+                </TabsContent>
               </Tabs>
+
+              {/* Restore confirmation dialog */}
+              <AlertDialog open={!!restoreTarget} onOpenChange={(o) => { if (!o) setRestoreTarget(null); }}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <RotateCcw className="h-5 w-5 text-destructive" />
+                      Restaurar Arena
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <span className="block">
+                        Você está prestes a restaurar <strong>{restoreTarget?.arenaName}</strong> a partir do backup:
+                      </span>
+                      <span className="block font-mono text-xs bg-muted px-2 py-1 rounded">{restoreTarget?.filename}</span>
+                      <span className="block text-destructive font-medium">
+                        Todos os dados atuais da arena serão apagados e substituídos. Esta ação é irreversível.
+                      </span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setRestoreTarget(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => restoreTarget && restaurarArena.mutate({ arenaId: restoreTarget.arenaId, filename: restoreTarget.filename })}
+                      disabled={restaurarArena.isPending}
+                      className="bg-destructive hover:bg-destructive/90"
+                      data-testid="button-confirm-restore"
+                    >
+                      {restaurarArena.isPending ? "Restaurando..." : "Sim, restaurar"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>
