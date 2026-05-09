@@ -614,17 +614,21 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                               {date.getDate()}
                             </div>
                             <div className="flex flex-col gap-0.5">
-                              {turmasDia.slice(0, 3).map((t) => (
+                              {turmasDia.slice(0, 3).map((t) => {
+                                const pessoaNome = t.clienteNome || t.professorNome;
+                                const primeiroNome = pessoaNome ? pessoaNome.split(" ")[0] : null;
+                                return (
                                 <div
                                   key={t.id}
                                   className={`rounded px-1 py-0.5 text-[9px] sm:text-[10px] font-medium leading-tight border ${isHighlightedTurma(t) ? "ring-2 ring-yellow-300 border-yellow-200 text-gray-900" : "text-white border-transparent"}`}
                                   style={{ backgroundColor: isHighlightedTurma(t) ? "#fef3c7" : t.cor }}
-                                  title={`${t.nome} · ${t.modalidade ?? ""} · ${t.horarioInicio}–${t.horarioFim}${t.professorNome ? ` · Prof: ${t.professorNome}` : ""}`}
+                                  title={`${t.nome} · ${t.horarioInicio}–${t.horarioFim}${pessoaNome ? ` · ${pessoaNome}` : ""}`}
                                 >
-                                  <span className="truncate block font-semibold">{t.modalidade ? `${t.modalidade} | ` : ""}{t.nome}</span>
-                                  <span className="opacity-80 block truncate">{t.horarioInicio}–{t.horarioFim}{t.professorNome ? ` · ${t.professorNome.split(" ")[0]}` : ""}</span>
+                                  <span className="truncate block font-semibold">{t.nome}</span>
+                                  <span className="opacity-80 block truncate">{t.horarioInicio}–{t.horarioFim}{primeiroNome ? ` · ${primeiroNome}` : ""}</span>
                                 </div>
-                              ))}
+                                );
+                              })}
                               {turmasDia.length === 0 && (
                                 <div className="text-[9px] sm:text-[10px] text-gray-300 dark:text-gray-600 px-1">Sem aula</div>
                               )}
