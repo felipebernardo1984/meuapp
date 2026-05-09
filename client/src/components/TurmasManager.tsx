@@ -184,6 +184,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   const [slotPopup, setSlotPopup] = useState<{ date: Date; horarioInicio: string; horarioFim: string } | null>(null);
   const [slotHorarioInicio, setSlotHorarioInicio] = useState("08:00");
   const [slotHorarioFim, setSlotHorarioFim] = useState("09:00");
+  const [confirmRemoverDia, setConfirmRemoverDia] = useState<{ turma: Turma; diaId: string } | null>(null);
 
   // Data
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
@@ -270,22 +271,22 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
     setDialogTurma(true);
   };
 
-  const removerDiaDoAgendamento = async (t: Turma, diaIso: string) => {
-    const dataAula = t.dataAula;
-    if (dataAula && dataAula !== diaIso) {
-      toast({ title: "Esse agendamento não é dessa data", variant: "destructive" });
-      return;
-    }
-    if (!dataAula) {
+  const removerDiaDoAgendamento = async (t: Turma, diaId: string) => {
+    // Single-date event → just delete the whole record
+    if (t.dataAula) {
       await excluirTurma.mutateAsync(t.id);
-      toast({ title: "Agendamento excluído" });
+      setDiaPopup(null);
       return;
     }
-    if (t.diasSemana.split("|").filter(Boolean).length === 1) {
+    // Recurring: remove this specific weekday from diasSemana
+    const dias = t.diasSemana.split("|").filter(Boolean);
+    if (dias.length <= 1) {
+      // Only one day left → delete the whole turma
       await excluirTurma.mutateAsync(t.id);
-      toast({ title: "Agendamento excluído" });
+      setDiaPopup(null);
       return;
     }
+    const newDias = dias.filter((d) => d !== diaId).join("|");
     await editarTurma.mutateAsync({
       id: t.id,
       data: {
@@ -296,7 +297,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
         recursoId: t.recursoId ?? null,
         clienteNome: t.clienteNome ?? null,
         valorCobrado: t.valorCobrado ?? null,
-        diasSemana: t.diasSemana,
+        diasSemana: newDias,
         horarioInicio: t.horarioInicio,
         horarioFim: t.horarioFim,
         capacidadeMaxima: t.capacidadeMaxima,
@@ -304,7 +305,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
         dataAula: null,
       },
     });
-    toast({ title: "Ocorrência removida da data" });
+    setDiaPopup(null);
   };
 
   const toggleDia = (dia: string) => {
@@ -317,10 +318,27 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
   };
 
   const handleSalvar = async () => {
-    if (!formData.nome || !formData.horarioInicio || !formData.horarioFim || formData.diasSemana.length === 0) {
-      toast({ title: "Preencha nome, horário e dias da semana", variant: "destructive" });
+    if (!formData.nome.trim() || !formData.horarioInicio || !formData.horarioFim) {
+      toast({ title: "Preencha nome e horário", variant: "destructive" });
       return;
     }
+    const dataAula = slotPopup ? slotPopup.date.toISOString().slice(0, 10) : undefined;
+    const dataAulaFinal = sessionData.dataAula || dataAula || undefined;
+
+    // diasSemana is required only when no specific date is given
+    if (formData.diasSemana.length === 0 && !dataAulaFinal) {
+      toast({ title: "Selecione ao menos um dia da semana ou informe uma data única", variant: "destructive" });
+      return;
+    }
+
+    // If data única and no days selected, derive the weekday automatically
+    let diasSemanaFinal = formData.diasSemana;
+    if (dataAulaFinal && formData.diasSemana.length === 0) {
+      const d = new Date(dataAulaFinal + "T12:00:00");
+      const dayId = JS_DAY_TO_ID[d.getDay()];
+      if (dayId) diasSemanaFinal = [dayId];
+    }
+
     let modalidade = formData.modalidade;
     let professorIdFinal: string | null = null;
 
@@ -333,9 +351,6 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       modalidade = selectedProfessor.modalidade;
       professorIdFinal = selectedProfessor.id;
     }
-
-    const dataAula = slotPopup ? slotPopup.date.toISOString().slice(0, 10) : undefined;
-    const dataAulaFinal = sessionData.dataAula || dataAula || undefined;
     const payload = {
       nome: formData.nome,
       tipo: formData.tipo,
@@ -344,7 +359,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
       recursoId: formData.recursoId || null,
       clienteNome: formData.clienteNome || null,
       valorCobrado: formData.valorCobrado || null,
-      diasSemana: formData.diasSemana.join("|"),
+      diasSemana: diasSemanaFinal.join("|"),
       horarioInicio: formData.horarioInicio,
       horarioFim: formData.horarioFim,
       capacidadeMaxima: formData.capacidadeMaxima,
@@ -471,7 +486,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                   className="bg-blue-600 hover:bg-blue-700 text-white w-full h-14 text-lg gap-1.5 justify-center"
                 >
                   <Plus className="h-5 w-5" />
-                  Reservas
+                  Novo Agendamento
                 </Button>
               )}
               {readOnly && (
@@ -526,21 +541,22 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                               {date.getDate()}
                             </div>
                             <div className="flex flex-col gap-0.5">
-                              {turmasDia.slice(0, 4).map((t) => (
+                              {turmasDia.slice(0, 3).map((t) => (
                                 <div
                                   key={t.id}
-                                  className={`rounded px-1 py-0.5 text-[9px] sm:text-[10px] font-medium truncate leading-tight border ${isHighlightedTurma(t) ? "ring-2 ring-yellow-300 border-yellow-200 text-gray-900" : "text-white border-transparent"}`}
+                                  className={`rounded px-1 py-0.5 text-[9px] sm:text-[10px] font-medium leading-tight border ${isHighlightedTurma(t) ? "ring-2 ring-yellow-300 border-yellow-200 text-gray-900" : "text-white border-transparent"}`}
                                   style={{ backgroundColor: isHighlightedTurma(t) ? "#fef3c7" : t.cor }}
-                                  title={`${t.nome} ${t.horarioInicio}–${t.horarioFim}`}
+                                  title={`${t.nome} · ${t.modalidade ?? ""} · ${t.horarioInicio}–${t.horarioFim}${t.professorNome ? ` · Prof: ${t.professorNome}` : ""}`}
                                 >
-                                  {t.nome}
+                                  <span className="truncate block">{t.nome}</span>
+                                  <span className="opacity-80 block truncate">{t.horarioInicio}–{t.horarioFim}{t.professorNome ? ` · ${t.professorNome.split(" ")[0]}` : ""}</span>
                                 </div>
                               ))}
                               {turmasDia.length === 0 && (
                                 <div className="text-[9px] sm:text-[10px] text-gray-300 dark:text-gray-600 px-1">Sem aula</div>
                               )}
-                              {turmasDia.length > 4 && (
-                                <span className="text-[9px] sm:text-[10px] text-gray-400 pl-1">+{turmasDia.length - 4} mais</span>
+                              {turmasDia.length > 3 && (
+                                <span className="text-[9px] sm:text-[10px] text-gray-400 pl-1">+{turmasDia.length - 3} mais</span>
                               )}
                             </div>
                           </>
@@ -726,33 +742,52 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                 {diaPopup.turmas.map((t) => (
                   <div
                     key={t.id}
-                    className="flex items-center justify-between gap-2 p-3 rounded-lg text-white"
+                    className="p-3 rounded-lg text-white space-y-2"
                     style={{ backgroundColor: t.cor }}
                   >
-                    <div>
-                      <p className="font-semibold text-sm">{t.nome}</p>
-                      <p className="text-xs opacity-90">{t.horarioInicio}–{t.horarioFim}</p>
-                      {t.professorNome && <p className="text-xs opacity-80">{t.professorNome}</p>}
-                      {t.recursoNome && <p className="text-xs opacity-80">Sala: {t.recursoNome}</p>}
-                      {t.clienteNome && <p className="text-xs opacity-80">Cliente: {t.clienteNome}</p>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right text-xs opacity-90">
-                        <div className="flex items-center gap-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm leading-tight">{t.nome}</p>
+                        <p className="text-xs opacity-90 mt-0.5">
+                          {t.horarioInicio}–{t.horarioFim}
+                          {t.modalidade ? ` · ${t.modalidade}` : ""}
+                        </p>
+                        {t.professorNome && (
+                          <p className="text-xs opacity-80 mt-0.5">Prof.: {t.professorNome}</p>
+                        )}
+                        {t.recursoNome && (
+                          <p className="text-xs opacity-80">Ambiente: {t.recursoNome}</p>
+                        )}
+                        {t.clienteNome && (
+                          <p className="text-xs opacity-80">Cliente: {t.clienteNome}</p>
+                        )}
+                        <div className="flex items-center gap-1 mt-1 text-xs opacity-80">
                           <Users className="h-3 w-3" />
-                          {t.alunosCount}/{t.capacidadeMaxima}
+                          {t.alunosCount}/{t.capacidadeMaxima} alunos
                         </div>
                       </div>
                       {!readOnly && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-8 bg-white/20 text-white hover:bg-white/30"
-                          data-testid={`button-remover-dia-${t.id}-${JS_DAY_TO_ID[diaPopup.date.getDay()]}`}
-                          onClick={() => removerDiaDoAgendamento(t, JS_DAY_TO_ID[diaPopup.date.getDay()])}
-                        >
-                          Remover dia
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 bg-white/15 text-white hover:bg-white/30"
+                            data-testid={`button-editar-dia-${t.id}`}
+                            onClick={() => { setDiaPopup(null); openEditar(t); }}
+                            title="Editar agendamento"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 bg-white/15 text-white hover:bg-red-500/60 text-xs"
+                            data-testid={`button-remover-dia-${t.id}-${JS_DAY_TO_ID[diaPopup.date.getDay()]}`}
+                            onClick={() => setConfirmRemoverDia({ turma: t, diaId: JS_DAY_TO_ID[diaPopup.date.getDay()] })}
+                          >
+                            Remover
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -766,7 +801,7 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={() => openHorarioAulas(JS_DAY_TO_ID[diaPopup.date.getDay()])}
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1" />Reservas
+                    <Plus className="h-3.5 w-3.5 mr-1" />Novo Agendamento
                   </Button>
                 )}
               </DialogFooter>
@@ -1179,6 +1214,40 @@ export default function TurmasManager({ onVoltar, professorContext, readOnly = f
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Alert: Confirm Remover Dia */}
+      <AlertDialog open={!!confirmRemoverDia} onOpenChange={(open) => { if (!open) setConfirmRemoverDia(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover este agendamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmRemoverDia && (() => {
+                const t = confirmRemoverDia.turma;
+                const dias = t.diasSemana.split("|").filter(Boolean);
+                if (t.dataAula || dias.length <= 1) {
+                  return <>O agendamento <strong>{t.nome}</strong> será excluído permanentemente.</>;
+                }
+                return <>O dia <strong>{DIAS_SHORT[confirmRemoverDia.diaId] ?? confirmRemoverDia.diaId}</strong> será removido do agendamento <strong>{t.nome}</strong>. Os outros dias continuarão normalmente.</>;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmRemoverDia(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (confirmRemoverDia) {
+                  removerDiaDoAgendamento(confirmRemoverDia.turma, confirmRemoverDia.diaId);
+                  setConfirmRemoverDia(null);
+                  setDiaPopup(null);
+                }
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Alert: Confirm Delete */}
       <AlertDialog open={!!confirmExcluir} onOpenChange={(open) => { if (!open) setConfirmExcluir(null); }}>
