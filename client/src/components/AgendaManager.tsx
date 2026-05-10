@@ -1078,9 +1078,9 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
               )}
             </div>
 
-            {/* AULA: Professor + Modalidade */}
+            {/* AULA: Professor + Modalidade + Nível (mesma linha) */}
             {formData.tipo === "aula" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="space-y-2">
                   <Label>Professor *</Label>
                   <Select
@@ -1115,30 +1115,35 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                     className="bg-gray-50 dark:bg-gray-900"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="turma-nome">Nível *</Label>
+                  <Input
+                    id="turma-nome"
+                    data-testid="input-turma-nome"
+                    placeholder="Ex: Iniciante"
+                    value={formData.nome}
+                    onChange={(e) => setFormData((p) => ({ ...p, nome: e.target.value }))}
+                  />
+                </div>
               </div>
             )}
 
-            {/* Nome */}
-            <div className="space-y-2">
-              <Label htmlFor="turma-nome">
-                {formData.tipo === "aula" ? "Nível *" : "Descrição"}
-              </Label>
-              <Input
-                id="turma-nome"
-                data-testid="input-turma-nome"
-                readOnly={formData.tipo === "dayuse" || formData.tipo === "aluguel"}
-                className={formData.tipo === "dayuse" || formData.tipo === "aluguel" ? "bg-muted text-muted-foreground cursor-default" : ""}
-                placeholder="Ex: Iniciante"
-                value={
-                  formData.tipo === "dayuse" ? "Avulso | Dayuse"
-                  : formData.tipo === "aluguel" ? "Reserva | Aluguel"
-                  : formData.nome
-                }
-                onChange={(e) => {
-                  if (formData.tipo === "aula") setFormData((p) => ({ ...p, nome: e.target.value }));
-                }}
-              />
-            </div>
+            {/* Nome — apenas para Reserva / Avulso */}
+            {formData.tipo !== "aula" && (
+              <div className="space-y-2">
+                <Label htmlFor="turma-nome">Descrição</Label>
+                <Input
+                  id="turma-nome"
+                  data-testid="input-turma-nome"
+                  readOnly
+                  className="bg-muted text-muted-foreground cursor-default"
+                  value={
+                    formData.tipo === "dayuse" ? "Avulso | Dayuse"
+                    : "Reserva | Aluguel"
+                  }
+                />
+              </div>
+            )}
 
             {/* RESERVA / AVULSO: Ambiente (primeiro!) + Cliente + Duração + Valor */}
             {(formData.tipo === "aluguel" || formData.tipo === "dayuse") && (() => {
