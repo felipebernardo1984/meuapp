@@ -686,7 +686,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                             onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
                           >
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="font-semibold text-[11px] leading-tight truncate">{t.nome}</p>
+                              <p className="font-semibold text-[11px] leading-tight truncate">{t.nome.replace(/\|/g, ' | ')}</p>
                               <Badge className="h-4 px-1.5 text-[9px] bg-white/20 text-white border-0">
                                 {TIPO_LABELS[t.tipo as TipoAgendamento] ?? t.tipo}
                               </Badge>
@@ -728,7 +728,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                           <div className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: t.cor }} />
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-semibold text-gray-900 dark:text-white">{t.nome}</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{t.nome.replace(/\|/g, ' | ')}</p>
                               <Badge
                                 variant="outline"
                                 className="text-xs text-white border-0"
@@ -840,7 +840,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm leading-tight">{t.nome}</p>
+                        <p className="font-semibold text-sm leading-tight">{t.nome.replace(/\|/g, ' | ')}</p>
                         <p className="text-xs opacity-90 mt-0.5">
                           {t.horarioInicio}–{t.horarioFim}
                           {t.modalidade ? ` · ${t.modalidade}` : ""}
@@ -1440,7 +1440,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                   return (
                     <div className="space-y-3">
                       <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-1 text-sm text-gray-800 dark:text-gray-200">
-                        <p className="font-semibold">{t.modalidade ? `${t.modalidade} · ` : ""}{t.nome}</p>
+                        <p className="font-semibold">{t.modalidade ? `${t.modalidade} · ` : ""}{t.nome.replace(/\|/g, ' | ')}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {t.dataAula
                             ? new Date(t.dataAula + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })
