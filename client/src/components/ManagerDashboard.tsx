@@ -146,6 +146,7 @@ interface NovoAlunoDados {
   planoId: string;
   integrationType: string;
   integrationPlan: string;
+  professorId?: string;
 }
 
 interface ManagerDashboardProps {
@@ -719,6 +720,7 @@ export default function ManagerDashboard({
     planoId: "",
     integrationType: "",
     integrationPlan: "",
+    professorId: "",
   });
 
   // Plano state
@@ -854,7 +856,7 @@ export default function ManagerDashboard({
       (!exigePlanoIntegracao || novoAluno.integrationPlan)
     ) {
       onCadastrarAluno(novoAluno);
-      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", integrationType: "", integrationPlan: "" });
+      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", integrationType: "", integrationPlan: "", professorId: "" });
       setDialogNovoAluno(false);
     }
   };
@@ -1636,6 +1638,23 @@ export default function ManagerDashboard({
                   })()}
                 </div>
               )}
+              <div className="col-span-2 space-y-1">
+                <Label>Professor responsável</Label>
+                <Select
+                  value={novoAluno.professorId || "__none__"}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, professorId: v === "__none__" ? "" : v })}
+                >
+                  <SelectTrigger data-testid="select-manager-student-professor">
+                    <SelectValue placeholder="Selecionar professor (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
+                    {professores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome} — {p.modalidade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
