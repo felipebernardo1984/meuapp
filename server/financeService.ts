@@ -71,8 +71,8 @@ function getValorCheckin(modalidadeSetting: ModalidadeSettings | undefined, stud
   if (integrationType === "totalpass") {
     return parseFloat(modalidadeSetting.totalpassValorCheckin || "0");
   }
-  // 'none' — no integration revenue
-  return 0;
+  // 'none' — use configured base check-in value
+  return parseFloat(modalidadeSetting.valorPorCheckin || "0");
 }
 
 // Snapshot: determine plan type at check-in time

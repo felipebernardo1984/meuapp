@@ -1182,9 +1182,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
     const checkinsFinanceiros = await storage.listCheckinFinanceiro(arenaId) || [];
-    const receitaWellhub = checkinsFinanceiros.filter(c => c.integrationType === "wellhub").reduce((acc, c) => acc + Number(c.valorTotal), 0);
-    const receitaTotalpass = checkinsFinanceiros.filter(c => c.integrationType === "totalpass").reduce((acc, c) => acc + Number(c.valorTotal), 0);
-    const receitaNormal = checkinsFinanceiros.filter(c => c.integrationType === "none").reduce((acc, c) => acc + Number(c.valorTotal), 0);
+    const activeFinanceiros = checkinsFinanceiros.filter(c => c.status !== "cancelado" && c.tipoPlanoNoMomento !== "mensalista");
+    const receitaWellhub = activeFinanceiros.filter(c => c.integrationType === "wellhub").reduce((acc, c) => acc + Number(c.valorTotal), 0);
+    const receitaTotalpass = activeFinanceiros.filter(c => c.integrationType === "totalpass").reduce((acc, c) => acc + Number(c.valorTotal), 0);
+    const receitaNormal = activeFinanceiros.filter(c => c.integrationType === "none").reduce((acc, c) => acc + Number(c.valorTotal), 0);
     res.json({ receitaWellhub, receitaTotalpass, receitaNormal });
   });
 
@@ -1224,9 +1225,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cfMap = new Map(monthCF.map(cf => [cf.checkinId, cf]));
 
       const receitaMensalidades = monthPayments.filter(p => p.status === "paid").reduce((a, p) => a + parseFloat(p.amount?.replace(/[^0-9.]/g, "") || "0"), 0);
-      const receitaCheckins = monthCF.reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
-      const receitaWellhub = monthCF.filter(cf => cf.integrationType === "wellhub").reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
-      const receitaTotalpass = monthCF.filter(cf => cf.integrationType === "totalpass").reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
+      const activeCF = monthCF.filter(cf => cf.status !== "cancelado" && cf.tipoPlanoNoMomento !== "mensalista");
+      const receitaCheckins = activeCF.reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
+      const receitaWellhub = activeCF.filter(cf => cf.integrationType === "wellhub").reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
+      const receitaTotalpass = activeCF.filter(cf => cf.integrationType === "totalpass").reduce((a, cf) => a + parseFloat(cf.valorTotal || "0"), 0);
 
       const porTipo: Record<string, { count: number; receita: number }> = {};
       const porModalidade: Record<string, { count: number; receita: number; visitantes: Set<string> }> = {};
@@ -1593,11 +1595,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } = req.body;
     const whVal = parseFloat(wellhubValorCheckin ?? "0") || 0;
     const tpVal = parseFloat(totalpassValorCheckin ?? "0") || 0;
-    const derivedValor = Math.max(whVal, tpVal);
+    const existingConfig = await storage.getModalidadeSetting(arenaId, modalidade);
     const setting = await storage.upsertModalidadeSetting({
       arenaId,
       modalidade,
-      valorPorCheckin: derivedValor > 0 ? derivedValor.toFixed(2) : (valorPorCheckin ?? "0.00"),
+      valorPorCheckin: valorPorCheckin ?? existingConfig?.valorPorCheckin ?? "0.00",
       planoMinimo: planoMinimo ?? null,
       totalpassHabilitado: totalpassHabilitado ?? tpVal > 0,
       wellhubHabilitado: wellhubHabilitado ?? whVal > 0,
