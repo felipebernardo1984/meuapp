@@ -22,8 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, Clock, AlertCircle, Settings, CheckCircle, Trash2, ChevronLeft, CalendarRange, BarChart3 } from "lucide-react";
-import FinancialReports from "./FinancialReports";
+import { DollarSign, TrendingUp, Clock, AlertCircle, Settings, CheckCircle, Trash2, ChevronLeft } from "lucide-react";
+import { DateRangePicker, DateRange, currentMonthRange } from "@/components/ui/date-range-picker";
 
 interface ModalidadeSetting {
   id: string;
@@ -57,17 +57,12 @@ interface ReceitaSummary {
 
 export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashboardProps) {
   const qc = useQueryClient();
-  const [activeView, setActiveView] = useState<"dashboard" | "relatorios">("dashboard");
-
   const [confirmDelete, setConfirmDelete] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
-
-  const today = new Date().toISOString().split("T")[0];
-  const [dataInicio, setDataInicio] = useState("");
-  const [dataFim, setDataFim] = useState(today);
+  const [receitaRange, setReceitaRange] = useState<DateRange | null>(currentMonthRange());
 
   const receitaParams = new URLSearchParams(
     Object.fromEntries(
-      Object.entries({ dataInicio, dataFim }).filter(([, v]) => v !== "")
+      Object.entries({ dataInicio: receitaRange?.inicio ?? "", dataFim: receitaRange?.fim ?? "" }).filter(([, v]) => v !== "")
     )
   ).toString();
 
@@ -76,7 +71,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
   const { data: charges = [] } = useQuery<any[]>({ queryKey: ["/api/finance/charges"] });
   const { data: modalidadeSettings = [] } = useQuery<ModalidadeSetting[]>({ queryKey: ["/api/configuracoes/modalidades"] });
   const { data: receitaSummary } = useQuery<ReceitaSummary>({
-    queryKey: ["/api/finance/receita/summary", dataInicio, dataFim],
+    queryKey: ["/api/finance/receita/summary", receitaRange?.inicio, receitaRange?.fim],
     queryFn: () => fetch(`/api/finance/receita/summary?${receitaParams}`).then((r) => r.json()),
   });
 
@@ -136,39 +131,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 max-w-7xl mx-auto">
-      {/* Switcher Dashboard / Relatórios */}
-      <div className="flex items-center justify-between border-b mb-6">
-        <button
-          onClick={() => setActiveView("dashboard")}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-            activeView === "dashboard"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-          }`}
-          data-testid="tab-dashboard"
-        >
-          <DollarSign className="h-3.5 w-3.5" />
-          Dashboard
-        </button>
-        <button
-          onClick={() => setActiveView("relatorios")}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-            activeView === "relatorios"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-          }`}
-          data-testid="tab-relatorios"
-        >
-          <BarChart3 className="h-3.5 w-3.5" />
-          Relatórios
-        </button>
-      </div>
-
-      {/* Vista Relatórios */}
-      {activeView === "relatorios" && <FinancialReports />}
-
-      {/* Vista Dashboard (existing content) */}
-      {activeView === "dashboard" && (<>
+      <>
 
       {/* Summary cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-6">
@@ -236,27 +199,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                 Receita por Check-in
               </CardTitle>
               <div className="flex items-center gap-2 flex-wrap">
-                <CalendarRange className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs text-muted-foreground">De</Label>
-                  <Input
-                    type="date"
-                    value={dataInicio}
-                    onChange={(e) => setDataInicio(e.target.value)}
-                    className="h-8 text-xs w-36 [&::-webkit-calendar-picker-indicator]:hidden"
-                    data-testid="input-data-inicio"
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs text-muted-foreground">Até</Label>
-                  <Input
-                    type="date"
-                    value={dataFim}
-                    onChange={(e) => setDataFim(e.target.value)}
-                    className="h-8 text-xs w-36 [&::-webkit-calendar-picker-indicator]:hidden"
-                    data-testid="input-data-fim"
-                  />
-                </div>
+                <DateRangePicker value={receitaRange} onChange={setReceitaRange} align="end" />
               </div>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-muted-foreground">
@@ -506,7 +449,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
         </DialogContent>
       </Dialog>
 
-      </>)}
+      </>
     </div>
   );
 }

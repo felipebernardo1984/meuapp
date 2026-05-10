@@ -102,20 +102,13 @@ export default function OverviewDashboard({ alunos = [], onBack }: OverviewDashb
     <div className="space-y-6" data-testid="overview-dashboard">
 
       {/* Bloco 1 — Cartões de resumo */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Alunos Ativos"
           value={a.total ?? 0}
           sub={`+${a.novosMes ?? 0} este mês`}
           icon={Users}
           variant="default"
-        />
-        <StatCard
-          title="Receita do Mês"
-          value={fmt(f.receitaMes ?? "0")}
-          sub="pagamentos confirmados"
-          icon={TrendingUp}
-          variant="success"
         />
         <StatCard
           title="Valor Pendente"

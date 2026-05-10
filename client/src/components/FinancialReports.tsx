@@ -3,13 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   TrendingUp, Users, Activity, DollarSign, Search,
-  CalendarRange, BarChart3, ChevronDown, CheckCircle, Clock, AlertCircle
+  BarChart3, ChevronDown, CheckCircle, Clock, AlertCircle
 } from "lucide-react";
+import { DateRangePicker, DateRange, currentMonthRange } from "@/components/ui/date-range-picker";
 
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -77,10 +76,10 @@ function StatCard({
 // ── Visão Geral ───────────────────────────────────────────────────────────────
 function VisaoGeral() {
   const now = new Date();
-  const [mes, setMes] = useState(String(now.getMonth() + 1));
-  const [ano, setAno] = useState(String(now.getFullYear()));
+  const [range, setRange] = useState<DateRange | null>(currentMonthRange());
 
-  const anos = Array.from({ length: 4 }, (_, i) => String(now.getFullYear() - i));
+  const mes = range ? range.inicio.slice(5, 7) : String(now.getMonth() + 1);
+  const ano = range ? range.inicio.slice(0, 4) : String(now.getFullYear());
 
   const { data: vg, isLoading } = useQuery<any>({
     queryKey: ["/api/finance/relatorio/visao-geral", mes, ano],
@@ -94,29 +93,9 @@ function VisaoGeral() {
 
   return (
     <div className="space-y-6">
-      {/* Seletor de mês/ano */}
+      {/* Seletor de período */}
       <div className="flex items-center gap-3 flex-wrap">
-        <CalendarRange className="h-4 w-4 text-muted-foreground" />
-        <div className="flex items-center gap-2">
-          <Select value={mes} onValueChange={setMes}>
-            <SelectTrigger className="w-36 h-8 text-sm" data-testid="select-mes">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MESES.map((m, i) => (
-                <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={ano} onValueChange={setAno}>
-            <SelectTrigger className="w-24 h-8 text-sm" data-testid="select-ano">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {anos.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        <DateRangePicker value={range} onChange={setRange} align="start" />
         <span className="text-sm text-muted-foreground">{MESES[parseInt(mes) - 1]} de {ano}</span>
         {isLoading && <span className="text-xs text-muted-foreground animate-pulse">Carregando...</span>}
       </div>
@@ -308,11 +287,12 @@ function VisaoGeral() {
 
 // ── Pagamento por Visitante ───────────────────────────────────────────────────
 function PagamentoPorVisitante() {
-  const today = new Date().toISOString().split("T")[0];
-  const [inicio, setInicio] = useState("");
-  const [fim, setFim] = useState(today);
+  const [range, setRange] = useState<DateRange | null>(currentMonthRange());
   const [busca, setBusca] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  const inicio = range?.inicio ?? "";
+  const fim = range?.fim ?? "";
 
   const params = new URLSearchParams(Object.fromEntries(
     Object.entries({ dataInicio: inicio, dataFim: fim }).filter(([, v]) => v)
@@ -334,17 +314,7 @@ function PagamentoPorVisitante() {
     <div className="space-y-5">
       {/* Controles */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          <CalendarRange className="h-4 w-4 text-muted-foreground" />
-          <div className="flex items-center gap-1">
-            <Label className="text-xs text-muted-foreground whitespace-nowrap">De</Label>
-            <Input type="date" value={inicio} onChange={e => setInicio(e.target.value)} className="h-8 text-xs w-36 [&::-webkit-calendar-picker-indicator]:hidden" data-testid="input-pv-inicio" />
-          </div>
-          <div className="flex items-center gap-1">
-            <Label className="text-xs text-muted-foreground whitespace-nowrap">Até</Label>
-            <Input type="date" value={fim} onChange={e => setFim(e.target.value)} className="h-8 text-xs w-36 [&::-webkit-calendar-picker-indicator]:hidden" data-testid="input-pv-fim" />
-          </div>
-        </div>
+        <DateRangePicker value={range} onChange={setRange} align="start" />
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input placeholder="Buscar por nome ou CPF..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-8 h-8 text-sm" data-testid="input-pv-busca" />
@@ -463,9 +433,10 @@ function PagamentoPorVisitante() {
 
 // ── Detalhes de Check-ins ─────────────────────────────────────────────────────
 function DetalhesCheckins() {
-  const today = new Date().toISOString().split("T")[0];
-  const [inicio, setInicio] = useState("");
-  const [fim, setFim] = useState(today);
+  const [range, setRange] = useState<DateRange | null>(currentMonthRange());
+
+  const inicio = range?.inicio ?? "";
+  const fim = range?.fim ?? "";
 
   const params = new URLSearchParams(Object.fromEntries(
     Object.entries({ dataInicio: inicio, dataFim: fim }).filter(([, v]) => v)
@@ -483,15 +454,7 @@ function DetalhesCheckins() {
     <div className="space-y-5">
       {/* Controles */}
       <div className="flex items-center gap-2 flex-wrap">
-        <CalendarRange className="h-4 w-4 text-muted-foreground" />
-        <div className="flex items-center gap-1">
-          <Label className="text-xs text-muted-foreground whitespace-nowrap">De</Label>
-          <Input type="date" value={inicio} onChange={e => setInicio(e.target.value)} className="h-8 text-xs w-36 [&::-webkit-calendar-picker-indicator]:hidden" data-testid="input-det-inicio" />
-        </div>
-        <div className="flex items-center gap-1">
-          <Label className="text-xs text-muted-foreground whitespace-nowrap">Até</Label>
-          <Input type="date" value={fim} onChange={e => setFim(e.target.value)} className="h-8 text-xs w-36 [&::-webkit-calendar-picker-indicator]:hidden" data-testid="input-det-fim" />
-        </div>
+        <DateRangePicker value={range} onChange={setRange} align="start" />
       </div>
 
       {/* Resumo */}

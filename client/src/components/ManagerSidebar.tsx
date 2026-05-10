@@ -22,6 +22,7 @@ import {
   CalendarDays,
   TrendingDown,
   LayoutGrid,
+  BarChart3,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Financeiro",
     items: [
       { id: "financeiro", label: "Pagamentos", icon: CreditCard },
+      { id: "relatorios", label: "Relatórios", icon: BarChart3 },
       { id: "despesas", label: "Despesas", icon: TrendingDown },
       { id: "comissoes", label: "Comissões", icon: PercentCircle },
     ],
