@@ -614,6 +614,10 @@ export class DatabaseStorage {
     return db.select().from(turmaAlunos).where(and(eq(turmaAlunos.turmaId, turmaId), eq(turmaAlunos.ativo, true)));
   }
 
+  async listAllTurmaAlunosByArena(arenaId: string) {
+    return db.select().from(turmaAlunos).where(and(eq(turmaAlunos.arenaId, arenaId), eq(turmaAlunos.ativo, true)));
+  }
+
   async getAlunoTurma(alunoId: string) {
     const [enrollment] = await db.select().from(turmaAlunos).where(and(eq(turmaAlunos.alunoId, alunoId), eq(turmaAlunos.ativo, true)));
     return enrollment;

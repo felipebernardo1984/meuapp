@@ -576,63 +576,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/checkins/log", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const [checkins, students, teachers, modalidades, checkinFin] = await Promise.all([
+
+    const [checkins, students, teachers, modalidades, checkinFin, todasTurmaAlunos, todasTurmasArena] = await Promise.all([
       storage.listAllCheckinsByArena(arenaId),
       storage.listStudents(arenaId),
       storage.listTeachers(arenaId),
       storage.listModalidadeSettings(arenaId),
       storage.listCheckinFinanceiro(arenaId),
+      storage.listAllTurmaAlunosByArena(arenaId),
+      storage.listTurmas(arenaId),
     ]);
+
     const studentMap = new Map(students.map(s => [s.id, s]));
     const teacherMap = new Map(teachers.map(t => [t.id, t]));
     const cfMap = new Map(checkinFin.map(cf => [cf.checkinId, cf]));
     const modalidadeMap = new Map(modalidades.map(m => [m.modalidade, m]));
+    const turmaMap = new Map(todasTurmasArena.map(t => [t.id, t]));
 
-    const result = checkins.map(c => {
+    // Build student → active aula-turmas map
+    const studentTurmasMap = new Map<string, (typeof todasTurmasArena)>();
+    for (const ta of todasTurmaAlunos) {
+      const turma = turmaMap.get(ta.turmaId ?? "");
+      if (turma && turma.tipo === "aula" && turma.ativo) {
+        if (!studentTurmasMap.has(ta.alunoId ?? "")) studentTurmasMap.set(ta.alunoId ?? "", []);
+        studentTurmasMap.get(ta.alunoId ?? "")!.push(turma);
+      }
+    }
+
+    // Optional month filter: mes=MM/YYYY
+    const { mes } = req.query as { mes?: string };
+
+    const result = checkins
+      .filter(c => !mes || c.data.substring(3) === mes)
+      .map(c => {
+        const student = studentMap.get(c.studentId ?? "");
+        const fin = cfMap.get(c.id);
+        const valorCheckin = parseFloat(fin?.valorTotal || "0");
+
+        let sugestaoTipo: string | null = null;
+        let sugestaoProfessorId: string | null = null;
+        let sugestaoConfianca: string | null = null;
+
+        if (c.tipo === "pendente" && student) {
+          // 1. Turma-based: match modalidade + professor from enrollment
+          const alunoTurmas = studentTurmasMap.get(student.id) ?? [];
+          const turmasMatch = alunoTurmas.filter(t => t.modalidade === student.modalidade && t.professorId);
+
+          if (turmasMatch.length >= 1) {
+            const uniqueProfs = new Set(turmasMatch.map(t => t.professorId));
+            if (uniqueProfs.size === 1) {
+              sugestaoTipo = "aula";
+              sugestaoProfessorId = turmasMatch[0].professorId ?? null;
+              sugestaoConfianca = "alta";
+            } else {
+              sugestaoTipo = "aula";
+              sugestaoConfianca = "baixa";
+            }
+          } else if (student.integrationType === "wellhub" || student.integrationType === "totalpass") {
+            // 2. Integration value matching as fallback
+            const modalConfig = modalidadeMap.get(student.modalidade ?? "");
+            const valorAula = parseFloat(
+              student.integrationType === "wellhub"
+                ? (modalConfig?.wellhubValorCheckin || "0")
+                : (modalConfig?.totalpassValorCheckin || "0")
+            );
+            if (valorAula > 0 && Math.abs(valorCheckin - valorAula) < 0.01) {
+              sugestaoTipo = "aula";
+              sugestaoProfessorId = student.professorId ?? null;
+              sugestaoConfianca = student.professorId ? "alta" : "media";
+            } else if (valorAula > 0 && valorCheckin < valorAula) {
+              sugestaoTipo = "dayuse";
+              sugestaoConfianca = "alta";
+            } else if (student.professorId) {
+              sugestaoTipo = "aula";
+              sugestaoProfessorId = student.professorId;
+              sugestaoConfianca = "media";
+            }
+          }
+        }
+
+        return {
+          ...c,
+          alunoNome: student?.nome ?? "—",
+          alunoCpf: student?.cpf ?? null,
+          alunoModalidade: student?.modalidade ?? "—",
+          alunoIntegrationType: student?.integrationType ?? "none",
+          professorNome: c.professorId ? (teacherMap.get(c.professorId)?.nome ?? "—") : null,
+          valorCheckin,
+          sugestaoTipo,
+          sugestaoProfessorId,
+          sugestaoConfianca,
+          sugestaoProfessorNome: sugestaoProfessorId ? (teacherMap.get(sugestaoProfessorId)?.nome ?? null) : null,
+        };
+      });
+    res.json(result);
+  });
+
+  // ── Auto-atribuir em lote (alta confiança) ────────────────────────────────
+  app.post("/api/checkins/auto-atribuir", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+
+    const { mes } = req.body as { mes?: string }; // MM/YYYY optional filter
+
+    const [checkins, students, modalidades, checkinFin, todasTurmaAlunos, todasTurmasArena] = await Promise.all([
+      storage.listAllCheckinsByArena(arenaId),
+      storage.listStudents(arenaId),
+      storage.listModalidadeSettings(arenaId),
+      storage.listCheckinFinanceiro(arenaId),
+      storage.listAllTurmaAlunosByArena(arenaId),
+      storage.listTurmas(arenaId),
+    ]);
+
+    const studentMap = new Map(students.map(s => [s.id, s]));
+    const cfMap = new Map(checkinFin.map(cf => [cf.checkinId, cf]));
+    const modalidadeMap = new Map(modalidades.map(m => [m.modalidade, m]));
+    const turmaMap = new Map(todasTurmasArena.map(t => [t.id, t]));
+
+    const studentTurmasMap = new Map<string, (typeof todasTurmasArena)>();
+    for (const ta of todasTurmaAlunos) {
+      const turma = turmaMap.get(ta.turmaId ?? "");
+      if (turma && turma.tipo === "aula" && turma.ativo) {
+        if (!studentTurmasMap.has(ta.alunoId ?? "")) studentTurmasMap.set(ta.alunoId ?? "", []);
+        studentTurmasMap.get(ta.alunoId ?? "")!.push(turma);
+      }
+    }
+
+    const pendentes = checkins.filter(c => c.tipo === "pendente" && (!mes || c.data.substring(3) === mes));
+
+    let atribuidos = 0;
+    const erros: string[] = [];
+
+    for (const c of pendentes) {
       const student = studentMap.get(c.studentId ?? "");
-      const fin = cfMap.get(c.id);
-      const valorCheckin = parseFloat(fin?.valorTotal || "0");
+      if (!student) continue;
 
       let sugestaoTipo: string | null = null;
       let sugestaoProfessorId: string | null = null;
-      let sugestaoConfianca: string | null = null;
+      let confianca: string | null = null;
 
-      if (student && (student.integrationType === "wellhub" || student.integrationType === "totalpass")) {
+      const alunoTurmas = studentTurmasMap.get(student.id) ?? [];
+      const turmasMatch = alunoTurmas.filter(t => t.modalidade === student.modalidade && t.professorId);
+
+      if (turmasMatch.length >= 1) {
+        const uniqueProfs = new Set(turmasMatch.map(t => t.professorId));
+        if (uniqueProfs.size === 1) {
+          sugestaoTipo = "aula";
+          sugestaoProfessorId = turmasMatch[0].professorId ?? null;
+          confianca = "alta";
+        }
+      } else if (student.integrationType === "wellhub" || student.integrationType === "totalpass") {
+        const fin = cfMap.get(c.id);
+        const valorCheckin = parseFloat(fin?.valorTotal || "0");
         const modalConfig = modalidadeMap.get(student.modalidade ?? "");
         const valorAula = parseFloat(
           student.integrationType === "wellhub"
             ? (modalConfig?.wellhubValorCheckin || "0")
             : (modalConfig?.totalpassValorCheckin || "0")
         );
-        if (valorAula > 0 && Math.abs(valorCheckin - valorAula) < 0.01) {
-          sugestaoTipo = "aula";
-          sugestaoProfessorId = student.professorId ?? null;
-          sugestaoConfianca = student.professorId ? "alta" : "media";
-        } else if (valorAula > 0 && valorCheckin < valorAula) {
-          sugestaoTipo = "dayuse";
-          sugestaoConfianca = "alta";
-        } else if (student.professorId) {
+        if (valorAula > 0 && Math.abs(valorCheckin - valorAula) < 0.01 && student.professorId) {
           sugestaoTipo = "aula";
           sugestaoProfessorId = student.professorId;
-          sugestaoConfianca = "media";
+          confianca = "alta";
+        } else if (valorAula > 0 && valorCheckin < valorAula) {
+          sugestaoTipo = "dayuse";
+          confianca = "alta";
         }
       }
 
-      return {
-        ...c,
-        alunoNome: student?.nome ?? "—",
-        alunoCpf: student?.cpf ?? null,
-        alunoModalidade: student?.modalidade ?? "—",
-        alunoIntegrationType: student?.integrationType ?? "none",
-        professorNome: c.professorId ? (teacherMap.get(c.professorId)?.nome ?? "—") : null,
-        valorCheckin,
-        sugestaoTipo,
-        sugestaoProfessorId,
-        sugestaoConfianca,
-        sugestaoProfessorNome: sugestaoProfessorId ? (teacherMap.get(sugestaoProfessorId)?.nome ?? null) : null,
-      };
-    });
-    res.json(result);
+      if (confianca !== "alta" || !sugestaoTipo) continue;
+
+      try {
+        await storage.atribuirCheckin(c.id, sugestaoTipo, sugestaoProfessorId ?? null);
+        if (sugestaoTipo === "aula" && sugestaoProfessorId) {
+          const finEntry = await storage.getCheckinFinanceiroByCheckinId(c.id);
+          const valorCheckin = finEntry?.valorTotal ?? "0.00";
+          await calcularComissao(arenaId, c.id, sugestaoProfessorId, c.studentId ?? "", valorCheckin, c.data);
+        }
+        atribuidos++;
+      } catch (_e) {
+        erros.push(c.id);
+      }
+    }
+
+    res.json({ atribuidos, erros: erros.length });
   });
 
   // ── Atribuir check-in (tipo + professor) ─────────────────────────────────

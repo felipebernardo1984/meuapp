@@ -307,10 +307,17 @@ export default function ManagerDashboard({
   });
 
   const [filtroTipoLog, setFiltroTipoLog] = useState<"todos" | "pendente" | "aula" | "dayuse" | "avulso">("todos");
+  const [filtroMesLog, setFiltroMesLog] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [atribuindoCheckin, setAtribuindoCheckin] = useState<string | null>(null);
   const [atribuirForm, setAtribuirForm] = useState<{ tipo: string; professorId: string }>({ tipo: "aula", professorId: "" });
   const [editandoComissao, setEditandoComissao] = useState<any | null>(null);
   const [editComissaoForm, setEditComissaoForm] = useState({ valorComissao: "", status: "", observacao: "" });
+  const [filtroProfComissao, setFiltroProfComissao] = useState<string>("todos");
+  const [filtroMesComissao, setFiltroMesComissao] = useState<string>("");
+  const [sortComissao, setSortComissao] = useState<{ field: "data" | "alunoNome"; dir: "asc" | "desc" }>({ field: "data", dir: "desc" });
 
   const qcComissao = useQueryClient();
 
@@ -323,6 +330,21 @@ export default function ManagerDashboard({
       qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissao/resumo"] });
       setAtribuindoCheckin(null);
       toast({ title: "Check-in referenciado com sucesso!" });
+    },
+  });
+
+  const autoAtribuirMutation = useMutation({
+    mutationFn: (mes: string) =>
+      apiRequest("POST", "/api/checkins/auto-atribuir", { mes }).then((r) => r.json()),
+    onSuccess: (data: { atribuidos: number; erros: number }) => {
+      qcComissao.invalidateQueries({ queryKey: ["/api/checkins/log"] });
+      qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissoes"] });
+      qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissao/resumo"] });
+      toast({
+        title: data.atribuidos > 0
+          ? `${data.atribuidos} check-in(s) atribuídos automaticamente!`
+          : "Nenhum check-in com atribuição automática disponível.",
+      });
     },
   });
 
@@ -4498,27 +4520,60 @@ export default function ManagerDashboard({
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle className="text-lg">Log de Check-ins</CardTitle>
-              <Button size="sm" variant="outline" onClick={() => refetchLog()} data-testid="button-refresh-checkins">
-                <RefreshCw className="w-4 h-4 mr-1" /> Atualizar
-              </Button>
+              <div className="flex items-center gap-2">
+                <input
+                  type="month"
+                  value={filtroMesLog}
+                  onChange={(e) => setFiltroMesLog(e.target.value)}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  data-testid="input-mes-log"
+                />
+                <Button size="sm" variant="outline" onClick={() => refetchLog()} data-testid="button-refresh-checkins">
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
-              <Button
-                key={t}
-                size="sm"
-                variant={filtroTipoLog === t ? "default" : "outline"}
-                onClick={() => setFiltroTipoLog(t)}
-                className="capitalize"
-              >
-                {t === "todos" ? "Todos" : t === "pendente" ? "Pendentes" : t === "aula" ? "Aula" : t === "dayuse" ? "Day-use" : "Avulso"}
-              </Button>
-            ))}
-          </div>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
+                <Button
+                  key={t}
+                  size="sm"
+                  variant={filtroTipoLog === t ? "default" : "outline"}
+                  onClick={() => setFiltroTipoLog(t)}
+                  className="capitalize"
+                >
+                  {t === "todos" ? "Todos" : t === "pendente" ? "Pendentes" : t === "aula" ? "Aula" : t === "dayuse" ? "Day-use" : "Avulso"}
+                </Button>
+              ))}
+              {(() => {
+                const mesFormatado = filtroMesLog ? filtroMesLog.split("-").reverse().join("/") : "";
+                const autoAtribuiveis = (logCheckins as any[]).filter(
+                  c => c.tipo === "pendente" && c.sugestaoConfianca === "alta" && (!mesFormatado || c.data.substring(3) === mesFormatado)
+                ).length;
+                return autoAtribuiveis > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto text-green-700 border-green-300 hover:bg-green-50"
+                    disabled={autoAtribuirMutation.isPending}
+                    onClick={() => autoAtribuirMutation.mutate(mesFormatado)}
+                    data-testid="button-auto-atribuir"
+                  >
+                    <Zap className="w-3.5 h-3.5 mr-1" />
+                    Auto-atribuir {autoAtribuiveis} pendente{autoAtribuiveis !== 1 ? "s" : ""}
+                  </Button>
+                ) : null;
+              })()}
+            </div>
           </CardHeader>
           <CardContent className="p-0">
           {(() => {
-            const logFiltrado = (logCheckins as any[]).filter((c) => filtroTipoLog === "todos" || c.tipo === filtroTipoLog);
+            const mesFormatado = filtroMesLog ? filtroMesLog.split("-").reverse().join("/") : "";
+            const logFiltrado = (logCheckins as any[]).filter((c) => {
+              const tipoOk = filtroTipoLog === "todos" || c.tipo === filtroTipoLog;
+              const mesOk = !mesFormatado || c.data.substring(3) === mesFormatado;
+              return tipoOk && mesOk;
+            });
             const comissaoMap = new Map((todasComissoes as any[]).map((c) => [c.checkinId, c]));
             const totalReceita = logFiltrado.filter(c => c.tipo !== "pendente").reduce((s, c) => s + (c.valorCheckin ?? 0), 0);
             const totalComissao = logFiltrado.reduce((s, c) => {
@@ -4560,8 +4615,9 @@ export default function ManagerDashboard({
                                   <Badge variant="outline" className="text-orange-600 border-orange-300 w-fit">Pendente</Badge>
                                   {c.sugestaoTipo && (
                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${c.sugestaoConfianca === "alta" ? "bg-green-500" : "bg-yellow-500"}`} />
-                                      {c.sugestaoTipo === "aula" ? "Sugestão: Aula" : "Sugestão: Day-use"}
+                                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${c.sugestaoConfianca === "alta" ? "bg-green-500" : c.sugestaoConfianca === "media" ? "bg-yellow-500" : "bg-red-400"}`} />
+                                      {c.sugestaoConfianca === "alta" ? "Auto: " : c.sugestaoConfianca === "media" ? "Sugestão: " : "Ambíguo: "}
+                                      {c.sugestaoTipo === "aula" ? "Aula" : c.sugestaoTipo === "dayuse" ? "Day-use" : "Avulso"}
                                     </span>
                                   )}
                                 </div>
@@ -4647,7 +4703,7 @@ export default function ManagerDashboard({
                                   }}
                                   data-testid={`button-atribuir-${c.id}`}
                                 >
-                                  Editar
+                                  {c.tipo === "pendente" && c.sugestaoConfianca === "alta" ? "✓ Confirmar" : "Editar"}
                                 </Button>
                               )}
                             </TableCell>
@@ -4656,7 +4712,7 @@ export default function ManagerDashboard({
                       })}
                       {logFiltrado.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum check-in encontrado</TableCell>
+                          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum check-in encontrado para este período.</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -4690,179 +4746,301 @@ export default function ManagerDashboard({
       {activeSection === "comissoes" && (
         <Card className="mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Comissões</CardTitle>
-          </CardHeader>
-          <CardContent>
-          <div className="space-y-6">
-            {/* Resumo por professor */}
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Resumo por Professor</p>
-              <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Professor</TableHead>
-                    <TableHead>Comissão (%)</TableHead>
-                    <TableHead>Check-ins</TableHead>
-                    <TableHead>Receita Gerada</TableHead>
-                    <TableHead>Comissão Total</TableHead>
-                    <TableHead>Pendentes</TableHead>
-                    <TableHead>Aprovados</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(resumoComissoes as any[]).map((r) => (
-                    <TableRow key={r.teacherId} data-testid={`comissao-resumo-${r.teacherId}`}>
-                      <TableCell className="font-medium">{r.nome}</TableCell>
-                      <TableCell>{r.percentual}%</TableCell>
-                      <TableCell>{r.totalCheckins}</TableCell>
-                      <TableCell>R$ {r.totalReceita.toFixed(2)}</TableCell>
-                      <TableCell className="font-semibold text-green-700 dark:text-green-400">R$ {r.totalComissao.toFixed(2)}</TableCell>
-                      <TableCell>
-                        {r.pendente > 0 ? <Badge variant="outline" className="text-orange-600 border-orange-300">{r.pendente}</Badge> : <span className="text-muted-foreground">0</span>}
-                      </TableCell>
-                      <TableCell>
-                        {r.aprovado > 0 ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{r.aprovado}</Badge> : <span className="text-muted-foreground">0</span>}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {resumoComissoes.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-6">Nenhuma comissão registrada. Referencie check-ins como "Aula" para gerar comissões.</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-                {resumoComissoes.length > 1 && (() => {
-                  const totCheckins = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalCheckins ?? 0), 0);
-                  const totReceita = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalReceita ?? 0), 0);
-                  const totComissao = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalComissao ?? 0), 0);
-                  const totPendente = (resumoComissoes as any[]).reduce((s, r) => s + (r.pendente ?? 0), 0);
-                  const totAprovado = (resumoComissoes as any[]).reduce((s, r) => s + (r.aprovado ?? 0), 0);
-                  return (
-                    <tfoot>
-                      <TableRow className="border-t-2 bg-muted/30 font-semibold text-sm">
-                        <TableCell className="py-2">Total</TableCell>
-                        <TableCell>—</TableCell>
-                        <TableCell>{totCheckins}</TableCell>
-                        <TableCell>R$ {totReceita.toFixed(2)}</TableCell>
-                        <TableCell className="text-green-700 dark:text-green-400">R$ {totComissao.toFixed(2)}</TableCell>
-                        <TableCell>{totPendente > 0 ? <Badge variant="outline" className="text-orange-600 border-orange-300">{totPendente}</Badge> : <span className="font-normal text-muted-foreground">0</span>}</TableCell>
-                        <TableCell>{totAprovado > 0 ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{totAprovado}</Badge> : <span className="font-normal text-muted-foreground">0</span>}</TableCell>
-                      </TableRow>
-                    </tfoot>
-                  );
-                })()}
-              </Table>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="text-lg">Comissões</CardTitle>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Select value={filtroProfComissao} onValueChange={(v) => setFiltroProfComissao(v)}>
+                  <SelectTrigger className="h-8 w-48 text-sm" data-testid="select-prof-comissao">
+                    <SelectValue placeholder="Todos os professores" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os professores</SelectItem>
+                    {(resumoComissoes as any[]).map((r) => (
+                      <SelectItem key={r.teacherId} value={r.teacherId}>{r.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <input
+                  type="month"
+                  value={filtroMesComissao}
+                  onChange={(e) => setFiltroMesComissao(e.target.value)}
+                  className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  data-testid="input-mes-comissao"
+                />
               </div>
             </div>
+          </CardHeader>
+          <CardContent>
+          {(() => {
+            const mesComissaoFmt = filtroMesComissao ? filtroMesComissao.split("-").reverse().join("/") : "";
+            const comissoesFiltradas = (todasComissoes as any[]).filter(c => {
+              const profOk = filtroProfComissao === "todos" || c.teacherId === filtroProfComissao;
+              const mesOk = !mesComissaoFmt || c.data.substring(3) === mesComissaoFmt;
+              return profOk && mesOk;
+            });
 
-            {/* Detalhe de comissões */}
-            {todasComissoes.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico Detalhado</p>
-                <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Professor</TableHead>
-                      <TableHead>Aluno</TableHead>
-                      <TableHead>Valor Check-in</TableHead>
-                      <TableHead>%</TableHead>
-                      <TableHead>Comissão</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(todasComissoes as any[]).map((c) => (
-                      <TableRow key={c.id} data-testid={`comissao-${c.id}`}>
-                        <TableCell className="text-xs whitespace-nowrap">{c.data}</TableCell>
-                        <TableCell className="text-sm">{c.professorNome}</TableCell>
-                        <TableCell className="text-sm">{c.alunoNome}</TableCell>
-                        <TableCell className="text-sm">R$ {c.valorCheckin}</TableCell>
-                        <TableCell className="text-sm">{c.percentual}%</TableCell>
-                        <TableCell className="font-medium text-sm">
-                          {editandoComissao?.id === c.id ? (
-                            <Input
-                              className="h-7 w-24 text-xs"
-                              value={editComissaoForm.valorComissao}
-                              onChange={(e) => setEditComissaoForm({ ...editComissaoForm, valorComissao: e.target.value })}
-                            />
-                          ) : (
-                            `R$ ${c.valorComissao}`
+            const profSelecionado = filtroProfComissao !== "todos"
+              ? (resumoComissoes as any[]).find(r => r.teacherId === filtroProfComissao)
+              : null;
+
+            // Sort helper
+            const sortedComissoes = [...comissoesFiltradas].sort((a, b) => {
+              const { field, dir } = sortComissao;
+              let va = field === "alunoNome" ? (a.alunoNome ?? "") : (a.data ?? "");
+              let vb = field === "alunoNome" ? (b.alunoNome ?? "") : (b.data ?? "");
+              if (field === "data") {
+                // DD/MM/YYYY → sort as YYYY/MM/DD
+                const toISO = (d: string) => d.split("/").reverse().join("-");
+                va = toISO(va); vb = toISO(vb);
+              }
+              return dir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+            });
+
+            const SortBtn = ({ field, label }: { field: "data" | "alunoNome"; label: string }) => (
+              <button
+                className="flex items-center gap-0.5 hover:text-foreground transition-colors"
+                onClick={() => setSortComissao(prev =>
+                  prev.field === field
+                    ? { field, dir: prev.dir === "asc" ? "desc" : "asc" }
+                    : { field, dir: "asc" }
+                )}
+              >
+                {label}
+                <span className="text-xs ml-0.5">{sortComissao.field === field ? (sortComissao.dir === "asc" ? "↑" : "↓") : "↕"}</span>
+              </button>
+            );
+
+            return (
+              <div className="space-y-6">
+
+                {/* ── Resumo geral por professor (vista "todos") ── */}
+                {filtroProfComissao === "todos" && (
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Resumo por Professor</p>
+                    <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Professor</TableHead>
+                          <TableHead>Comissão (%)</TableHead>
+                          <TableHead>Check-ins</TableHead>
+                          <TableHead>Receita Gerada</TableHead>
+                          <TableHead>Comissão Total</TableHead>
+                          <TableHead>Pendentes</TableHead>
+                          <TableHead>Aprovados</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(resumoComissoes as any[]).map((r) => (
+                          <TableRow
+                            key={r.teacherId}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => setFiltroProfComissao(r.teacherId)}
+                            data-testid={`comissao-resumo-${r.teacherId}`}
+                          >
+                            <TableCell className="font-medium">{r.nome}</TableCell>
+                            <TableCell>{r.percentual}%</TableCell>
+                            <TableCell>{r.totalCheckins}</TableCell>
+                            <TableCell>R$ {r.totalReceita.toFixed(2)}</TableCell>
+                            <TableCell className="font-semibold text-green-700 dark:text-green-400">R$ {r.totalComissao.toFixed(2)}</TableCell>
+                            <TableCell>{r.pendente > 0 ? <Badge variant="outline" className="text-orange-600 border-orange-300">{r.pendente}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
+                            <TableCell>{r.aprovado > 0 ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{r.aprovado}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
+                          </TableRow>
+                        ))}
+                        {resumoComissoes.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-muted-foreground py-6">Nenhuma comissão registrada. Referencie check-ins como "Aula" para gerar comissões.</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                      {resumoComissoes.length > 1 && (() => {
+                        const totC = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalCheckins ?? 0), 0);
+                        const totR = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalReceita ?? 0), 0);
+                        const totCom = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalComissao ?? 0), 0);
+                        const totP = (resumoComissoes as any[]).reduce((s, r) => s + (r.pendente ?? 0), 0);
+                        const totA = (resumoComissoes as any[]).reduce((s, r) => s + (r.aprovado ?? 0), 0);
+                        return (
+                          <tfoot>
+                            <TableRow className="border-t-2 bg-muted/30 font-semibold text-sm">
+                              <TableCell className="py-2">Total</TableCell>
+                              <TableCell>—</TableCell>
+                              <TableCell>{totC}</TableCell>
+                              <TableCell>R$ {totR.toFixed(2)}</TableCell>
+                              <TableCell className="text-green-700 dark:text-green-400">R$ {totCom.toFixed(2)}</TableCell>
+                              <TableCell>{totP > 0 ? <Badge variant="outline" className="text-orange-600 border-orange-300">{totP}</Badge> : <span className="font-normal text-muted-foreground">0</span>}</TableCell>
+                              <TableCell>{totA > 0 ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{totA}</Badge> : <span className="font-normal text-muted-foreground">0</span>}</TableCell>
+                            </TableRow>
+                          </tfoot>
+                        );
+                      })()}
+                    </Table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Clique em um professor para ver o detalhamento por aluno.</p>
+                  </div>
+                )}
+
+                {/* ── Vista de professor específico: resumo por aluno ── */}
+                {profSelecionado && (() => {
+                  // Group by student
+                  const byAluno = new Map<string, { nome: string; checkins: number; receita: number; comissao: number; pendentes: number }>();
+                  for (const c of comissoesFiltradas) {
+                    if (c.status === "cancelado") continue;
+                    const key = c.studentId ?? c.alunoNome;
+                    if (!byAluno.has(key)) byAluno.set(key, { nome: c.alunoNome, checkins: 0, receita: 0, comissao: 0, pendentes: 0 });
+                    const entry = byAluno.get(key)!;
+                    entry.checkins++;
+                    entry.receita += parseFloat(c.valorCheckin ?? "0");
+                    entry.comissao += parseFloat(c.valorComissao ?? "0");
+                    if (c.status === "pendente") entry.pendentes++;
+                  }
+                  const alunoList = [...byAluno.values()].sort((a, b) => a.nome.localeCompare(b.nome));
+                  const totCheckins = alunoList.reduce((s, a) => s + a.checkins, 0);
+                  const totReceita = alunoList.reduce((s, a) => s + a.receita, 0);
+                  const totComissao = alunoList.reduce((s, a) => s + a.comissao, 0);
+
+                  return (
+                    <div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                          {profSelecionado.nome} — Resumo por Aluno
+                          {mesComissaoFmt && <span className="ml-2 font-normal normal-case">({mesComissaoFmt})</span>}
+                        </p>
+                        <Button size="sm" variant="ghost" className="h-6 text-xs ml-auto" onClick={() => setFiltroProfComissao("todos")}>← Todos</Button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3 mb-4">
+                        <div className="rounded-lg border p-3">
+                          <p className="text-xs text-muted-foreground">Check-ins</p>
+                          <p className="text-xl font-bold">{totCheckins}</p>
+                        </div>
+                        <div className="rounded-lg border p-3">
+                          <p className="text-xs text-muted-foreground">Receita Gerada</p>
+                          <p className="text-xl font-bold">R$ {totReceita.toFixed(2)}</p>
+                        </div>
+                        <div className="rounded-lg border p-3">
+                          <p className="text-xs text-muted-foreground">Comissão Total</p>
+                          <p className="text-xl font-bold text-green-700 dark:text-green-400">R$ {totComissao.toFixed(2)}</p>
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Aluno</TableHead>
+                            <TableHead className="text-right">Check-ins</TableHead>
+                            <TableHead className="text-right">Receita</TableHead>
+                            <TableHead className="text-right">Comissão</TableHead>
+                            <TableHead className="text-right">Pendentes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {alunoList.map((a) => (
+                            <TableRow key={a.nome}>
+                              <TableCell className="font-medium text-sm">{a.nome}</TableCell>
+                              <TableCell className="text-right text-sm">{a.checkins}</TableCell>
+                              <TableCell className="text-right text-sm">R$ {a.receita.toFixed(2)}</TableCell>
+                              <TableCell className="text-right text-sm font-medium text-green-700 dark:text-green-400">R$ {a.comissao.toFixed(2)}</TableCell>
+                              <TableCell className="text-right text-sm">
+                                {a.pendentes > 0 ? <Badge variant="outline" className="text-orange-600 border-orange-300">{a.pendentes}</Badge> : <span className="text-muted-foreground">—</span>}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {alunoList.length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center text-muted-foreground py-4">Nenhuma comissão no período.</TableCell>
+                            </TableRow>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          {c.status === "aprovado" || c.status === "editado" ? (
-                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
-                              {c.status === "editado" ? "Editado" : "Aprovado"}
-                            </Badge>
-                          ) : c.status === "cancelado" ? (
-                            <Badge variant="destructive" className="text-xs">Cancelado</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">Pendente</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {editandoComissao?.id === c.id ? (
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                className="h-7 text-xs"
-                                disabled={salvarComissao.isPending}
-                                onClick={() => salvarComissao.mutate({ id: c.id, valorComissao: editComissaoForm.valorComissao, status: "editado", observacao: editComissaoForm.observacao })}
-                                data-testid={`button-salvar-comissao-${c.id}`}
-                              >
-                                Salvar
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditandoComissao(null)}>✕</Button>
-                            </div>
-                          ) : c.status !== "cancelado" ? (
-                            <div className="flex gap-1">
-                              {(c.status === "pendente") && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs text-green-700 border-green-300 hover:bg-green-50"
-                                  disabled={salvarComissao.isPending}
-                                  onClick={() => salvarComissao.mutate({ id: c.id, status: "aprovado" })}
-                                  data-testid={`button-aprovar-comissao-${c.id}`}
-                                >
-                                  Aprovar
-                                </Button>
+                        </TableBody>
+                        {alunoList.length > 1 && (
+                          <tfoot>
+                            <TableRow className="border-t-2 bg-muted/30 font-semibold text-sm">
+                              <TableCell className="py-2">Total</TableCell>
+                              <TableCell className="text-right">{totCheckins}</TableCell>
+                              <TableCell className="text-right">R$ {totReceita.toFixed(2)}</TableCell>
+                              <TableCell className="text-right text-green-700 dark:text-green-400">R$ {totComissao.toFixed(2)}</TableCell>
+                              <TableCell />
+                            </TableRow>
+                          </tfoot>
+                        )}
+                      </Table>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── Histórico detalhado ── */}
+                {comissoesFiltradas.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Histórico Detalhado</p>
+                    <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="cursor-pointer select-none"><SortBtn field="data" label="Data" /></TableHead>
+                          {filtroProfComissao === "todos" && <TableHead>Professor</TableHead>}
+                          <TableHead className="cursor-pointer select-none"><SortBtn field="alunoNome" label="Aluno" /></TableHead>
+                          <TableHead>Valor Check-in</TableHead>
+                          <TableHead>%</TableHead>
+                          <TableHead>Comissão</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sortedComissoes.map((c) => (
+                          <TableRow key={c.id} data-testid={`comissao-${c.id}`}>
+                            <TableCell className="text-xs whitespace-nowrap">{c.data}</TableCell>
+                            {filtroProfComissao === "todos" && <TableCell className="text-sm">{c.professorNome}</TableCell>}
+                            <TableCell className="text-sm">{c.alunoNome}</TableCell>
+                            <TableCell className="text-sm">R$ {c.valorCheckin}</TableCell>
+                            <TableCell className="text-sm">{c.percentual}%</TableCell>
+                            <TableCell className="font-medium text-sm">
+                              {editandoComissao?.id === c.id ? (
+                                <Input
+                                  className="h-7 w-24 text-xs"
+                                  value={editComissaoForm.valorComissao}
+                                  onChange={(e) => setEditComissaoForm({ ...editComissaoForm, valorComissao: e.target.value })}
+                                />
+                              ) : (
+                                `R$ ${c.valorComissao}`
                               )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs"
-                                onClick={() => { setEditandoComissao(c); setEditComissaoForm({ valorComissao: c.valorComissao, status: c.status, observacao: c.observacao ?? "" }); }}
-                                data-testid={`button-editar-comissao-${c.id}`}
-                              >
-                                Editar
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-xs text-destructive hover:bg-destructive/10"
-                              disabled={excluirComissao.isPending}
-                              onClick={() => setConfirmExcluirComissao(c.id)}
-                              data-testid={`button-excluir-comissao-${c.id}`}
-                            >
-                              Excluir
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                </div>
+                            </TableCell>
+                            <TableCell>
+                              {c.status === "aprovado" || c.status === "editado" ? (
+                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">{c.status === "editado" ? "Editado" : "Aprovado"}</Badge>
+                              ) : c.status === "cancelado" ? (
+                                <Badge variant="destructive" className="text-xs">Cancelado</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">Pendente</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {editandoComissao?.id === c.id ? (
+                                <div className="flex gap-1">
+                                  <Button size="sm" className="h-7 text-xs" disabled={salvarComissao.isPending} onClick={() => salvarComissao.mutate({ id: c.id, valorComissao: editComissaoForm.valorComissao, status: "editado", observacao: editComissaoForm.observacao })} data-testid={`button-salvar-comissao-${c.id}`}>Salvar</Button>
+                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditandoComissao(null)}>✕</Button>
+                                </div>
+                              ) : c.status !== "cancelado" ? (
+                                <div className="flex gap-1">
+                                  {c.status === "pendente" && (
+                                    <Button size="sm" variant="outline" className="h-7 text-xs text-green-700 border-green-300 hover:bg-green-50" disabled={salvarComissao.isPending} onClick={() => salvarComissao.mutate({ id: c.id, status: "aprovado" })} data-testid={`button-aprovar-comissao-${c.id}`}>Aprovar</Button>
+                                  )}
+                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setEditandoComissao(c); setEditComissaoForm({ valorComissao: c.valorComissao, status: c.status, observacao: c.observacao ?? "" }); }} data-testid={`button-editar-comissao-${c.id}`}>Editar</Button>
+                                </div>
+                              ) : (
+                                <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive hover:bg-destructive/10" disabled={excluirComissao.isPending} onClick={() => setConfirmExcluirComissao(c.id)} data-testid={`button-excluir-comissao-${c.id}`}>Excluir</Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    </div>
+                  </div>
+                )}
+
               </div>
-            )}
-          </div>
+            );
+          })()}
           </CardContent>
         </Card>
       )}
