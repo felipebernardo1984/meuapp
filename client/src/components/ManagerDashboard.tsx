@@ -4485,6 +4485,7 @@ export default function ManagerDashboard({
                   <TableHead>Data/Hora</TableHead>
                   <TableHead>Aluno</TableHead>
                   <TableHead>Modalidade</TableHead>
+                  <TableHead>Valor</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Professor</TableHead>
                   <TableHead></TableHead>
@@ -4498,9 +4499,20 @@ export default function ManagerDashboard({
                     <TableCell className="text-xs whitespace-nowrap">{c.data} {c.hora}</TableCell>
                     <TableCell className="font-medium text-sm">{c.alunoNome}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{c.alunoModalidade}</TableCell>
+                    <TableCell className="text-sm font-medium">
+                      {c.valorCheckin > 0 ? `R$ ${c.valorCheckin.toFixed(2).replace(".", ",")}` : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                     <TableCell>
                       {c.tipo === "pendente" ? (
-                        <Badge variant="outline" className="text-orange-600 border-orange-300">Pendente</Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant="outline" className="text-orange-600 border-orange-300 w-fit">Pendente</Badge>
+                          {c.sugestaoTipo && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${c.sugestaoConfianca === "alta" ? "bg-green-500" : "bg-yellow-500"}`} />
+                              {c.sugestaoTipo === "aula" ? "Sugestão: Aula" : "Sugestão: Day-use"}
+                            </span>
+                          )}
+                        </div>
                       ) : c.tipo === "aula" ? (
                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Aula</Badge>
                       ) : c.tipo === "dayuse" ? (
@@ -4509,7 +4521,14 @@ export default function ManagerDashboard({
                         <Badge variant="secondary">Avulso</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">{c.professorNome ?? "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      {c.tipo !== "pendente"
+                        ? (c.professorNome ?? <span className="text-muted-foreground">—</span>)
+                        : c.sugestaoProfessorNome
+                          ? <span className="text-muted-foreground text-xs">{c.sugestaoProfessorNome}</span>
+                          : <span className="text-muted-foreground">—</span>
+                      }
+                    </TableCell>
                     <TableCell>
                       {atribuindoCheckin === c.id ? (
                         <div className="flex flex-col gap-1 min-w-[220px]">
@@ -4539,7 +4558,7 @@ export default function ManagerDashboard({
                               onClick={() => atribuirCheckin.mutate({ id: c.id, tipo: atribuirForm.tipo, professorId: atribuirForm.tipo === "aula" ? atribuirForm.professorId : undefined })}
                               data-testid={`button-confirmar-atribuir-${c.id}`}
                             >
-                              Confirmar
+                              Salvar
                             </Button>
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAtribuindoCheckin(null)}>✕</Button>
                           </div>
@@ -4549,10 +4568,16 @@ export default function ManagerDashboard({
                           size="sm"
                           variant="outline"
                           className="h-7 text-xs"
-                          onClick={() => { setAtribuindoCheckin(c.id); setAtribuirForm({ tipo: c.tipo !== "pendente" ? c.tipo : "aula", professorId: c.professorId ?? "" }); }}
+                          onClick={() => {
+                            setAtribuindoCheckin(c.id);
+                            setAtribuirForm({
+                              tipo: c.tipo !== "pendente" ? c.tipo : (c.sugestaoTipo ?? "aula"),
+                              professorId: c.professorId ?? c.sugestaoProfessorId ?? "",
+                            });
+                          }}
                           data-testid={`button-atribuir-${c.id}`}
                         >
-                          {c.tipo === "pendente" ? "Referenciar" : "Alterar"}
+                          Editar
                         </Button>
                       )}
                     </TableCell>
@@ -4560,7 +4585,7 @@ export default function ManagerDashboard({
                 ))}
                 {logCheckins.filter((c: any) => filtroTipoLog === "todos" || c.tipo === filtroTipoLog).length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum check-in encontrado</TableCell>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhum check-in encontrado</TableCell>
                   </TableRow>
                 )}
               </TableBody>

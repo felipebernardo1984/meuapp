@@ -576,17 +576,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/checkins/log", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const checkins = await storage.listAllCheckinsByArena(arenaId);
-    const students = await storage.listStudents(arenaId);
-    const teachers = await storage.listTeachers(arenaId);
+    const [checkins, students, teachers, modalidades, checkinFin] = await Promise.all([
+      storage.listAllCheckinsByArena(arenaId),
+      storage.listStudents(arenaId),
+      storage.listTeachers(arenaId),
+      storage.listModalidadeSettings(arenaId),
+      storage.listCheckinFinanceiro(arenaId),
+    ]);
     const studentMap = new Map(students.map(s => [s.id, s]));
     const teacherMap = new Map(teachers.map(t => [t.id, t]));
-    const result = checkins.map(c => ({
-      ...c,
-      alunoNome: studentMap.get(c.studentId ?? "")?.nome ?? "—",
-      alunoModalidade: studentMap.get(c.studentId ?? "")?.modalidade ?? "—",
-      professorNome: c.professorId ? (teacherMap.get(c.professorId)?.nome ?? "—") : null,
-    }));
+    const cfMap = new Map(checkinFin.map(cf => [cf.checkinId, cf]));
+    const modalidadeMap = new Map(modalidades.map(m => [m.modalidade, m]));
+
+    const result = checkins.map(c => {
+      const student = studentMap.get(c.studentId ?? "");
+      const fin = cfMap.get(c.id);
+      const valorCheckin = parseFloat(fin?.valorTotal || "0");
+
+      let sugestaoTipo: string | null = null;
+      let sugestaoProfessorId: string | null = null;
+      let sugestaoConfianca: string | null = null;
+
+      if (student && (student.integrationType === "wellhub" || student.integrationType === "totalpass")) {
+        const modalConfig = modalidadeMap.get(student.modalidade ?? "");
+        const valorAula = parseFloat(
+          student.integrationType === "wellhub"
+            ? (modalConfig?.wellhubValorCheckin || "0")
+            : (modalConfig?.totalpassValorCheckin || "0")
+        );
+        if (valorAula > 0 && Math.abs(valorCheckin - valorAula) < 0.01) {
+          sugestaoTipo = "aula";
+          sugestaoProfessorId = student.professorId ?? null;
+          sugestaoConfianca = student.professorId ? "alta" : "media";
+        } else if (valorAula > 0 && valorCheckin < valorAula) {
+          sugestaoTipo = "dayuse";
+          sugestaoConfianca = "alta";
+        } else if (student.professorId) {
+          sugestaoTipo = "aula";
+          sugestaoProfessorId = student.professorId;
+          sugestaoConfianca = "media";
+        }
+      }
+
+      return {
+        ...c,
+        alunoNome: student?.nome ?? "—",
+        alunoCpf: student?.cpf ?? null,
+        alunoModalidade: student?.modalidade ?? "—",
+        alunoIntegrationType: student?.integrationType ?? "none",
+        professorNome: c.professorId ? (teacherMap.get(c.professorId)?.nome ?? "—") : null,
+        valorCheckin,
+        sugestaoTipo,
+        sugestaoProfessorId,
+        sugestaoConfianca,
+        sugestaoProfessorNome: sugestaoProfessorId ? (teacherMap.get(sugestaoProfessorId)?.nome ?? null) : null,
+      };
+    });
     res.json(result);
   });
 

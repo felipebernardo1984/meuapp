@@ -476,7 +476,7 @@ export default function ArenaApp() {
           payments={allPayments}
           onCheckinManual={(alunoId: string, data?: string, hora?: string) => checkinManual.mutate({ id: alunoId, data, hora })}
           onAlterarPlano={(alunoId: string, planoId: string) => alterarPlanoAluno.mutate({ alunoId, planoId })}
-          onCadastrarAluno={(dados: any) => cadastrarAluno.mutate({ ...dados, modalidade: sessao.professor.modalidade })}
+          onCadastrarAluno={(dados: any) => cadastrarAluno.mutate({ ...dados, modalidade: sessao.professor.modalidade, professorId: sessao.professor.id })}
           onEditarAluno={(alunoId: string, dados: any) => editarAluno.mutate({ id: alunoId, ...dados })}
           onExcluirAluno={(alunoId: string) => excluirAluno.mutate(alunoId)}
           onRemoverCheckin={(alunoId: string, index: number) => removerCheckin.mutate({ id: alunoId, index })}
