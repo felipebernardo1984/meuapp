@@ -401,27 +401,27 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">TotalPass</h3>
-                  <Badge variant="outline" className="text-muted-foreground">Em breve</Badge>
+                  <Badge variant="outline" className="text-muted-foreground">Código do Provedor</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Integração com TotalPass para check-ins automáticos e faturamento por plano (TP1, TP2, TP3...).
+                  Integração com TotalPass para check-ins automáticos e controle de beneficiários.
                 </p>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Chave de API</Label>
-                  <Input placeholder="Disponível em breve" disabled className="text-xs" />
+                  <Input placeholder="Código do Provedor" disabled className="text-xs" />
                 </div>
               </div>
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">Wellhub (Gympass)</h3>
-                  <Badge variant="outline" className="text-muted-foreground">Em breve</Badge>
+                  <Badge variant="outline" className="text-muted-foreground">Id da academia</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Integração com Wellhub para check-ins automáticos e controle de beneficiários.
                 </p>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Chave de API</Label>
-                  <Input placeholder="Disponível em breve" disabled className="text-xs" />
+                  <Input placeholder="Id da Academia" disabled className="text-xs" />
                 </div>
               </div>
             </div>
