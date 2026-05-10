@@ -686,15 +686,12 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                             onClick={() => { setTurmaAlunos(t); setDialogAlunos(true); }}
                           >
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="font-semibold text-[11px] leading-tight truncate">{t.nome.replace(/\|/g, ' | ')}</p>
+                              <p className="font-semibold text-[11px] leading-tight truncate">{t.modalidade ? `${t.modalidade} | ${t.nome.replace(/\|/g, ' | ')}` : t.nome.replace(/\|/g, ' | ')}</p>
                               <Badge className="h-4 px-1.5 text-[9px] bg-white/20 text-white border-0">
                                 {TIPO_LABELS[t.tipo as TipoAgendamento] ?? t.tipo}
                               </Badge>
                             </div>
                             <p className="text-[10px] opacity-90 mt-0.5">{t.horarioInicio}–{t.horarioFim}</p>
-                            {t.modalidade && (
-                              <p className="text-[9px] opacity-80 truncate mt-0.5">{t.modalidade}</p>
-                            )}
                             {t.recursoNome && (
                               <p className="text-[9px] opacity-80 truncate mt-0.5">Sala: {t.recursoNome}</p>
                             )}
@@ -840,10 +837,9 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-sm leading-tight">{t.nome.replace(/\|/g, ' | ')}</p>
+                        <p className="font-semibold text-sm leading-tight">{t.modalidade ? `${t.modalidade} | ${t.nome.replace(/\|/g, ' | ')}` : t.nome.replace(/\|/g, ' | ')}</p>
                         <p className="text-xs opacity-90 mt-0.5">
                           {t.horarioInicio}–{t.horarioFim}
-                          {t.modalidade ? ` · ${t.modalidade}` : ""}
                         </p>
                         {t.professorNome && (
                           <p className="text-xs opacity-80 mt-0.5">Prof.: {t.professorNome}</p>
