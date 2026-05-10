@@ -180,6 +180,47 @@ interface ManagerDashboardProps {
   onExcluirAlunoPermanente: (alunoId: string) => void;
 }
 
+const MESES_PT = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+function MonthPicker({ value, onChange, className = "" }: { value: string; onChange: (v: string) => void; className?: string }) {
+  const now = new Date();
+  const parsed = value ? { y: parseInt(value.slice(0,4)), m: parseInt(value.slice(5,7)) } : { y: now.getFullYear(), m: now.getMonth() + 1 };
+  const label = value ? `${MESES_PT[parsed.m - 1]} ${parsed.y}` : "Todos os meses";
+
+  const navigate = (delta: number) => {
+    let m = parsed.m + delta;
+    let y = parsed.y;
+    if (m > 12) { m = 1; y++; }
+    if (m < 1) { m = 12; y--; }
+    onChange(`${y}-${String(m).padStart(2,"0")}`);
+  };
+
+  return (
+    <div className={`flex items-center rounded-md border border-input bg-background h-8 overflow-hidden select-none ${className}`}>
+      <button
+        type="button"
+        className="px-2 h-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        onClick={() => navigate(-1)}
+        aria-label="Mês anterior"
+      >‹</button>
+      <span className="px-2 text-sm font-medium text-foreground min-w-[130px] text-center">{label}</span>
+      <button
+        type="button"
+        className="px-2 h-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        onClick={() => navigate(1)}
+        aria-label="Próximo mês"
+      >›</button>
+      {value && (
+        <button
+          type="button"
+          className="px-2 h-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border-l border-input text-xs"
+          onClick={() => onChange("")}
+          aria-label="Limpar filtro"
+        >✕</button>
+      )}
+    </div>
+  );
+}
 
 export default function ManagerDashboard({
   gestorName,
@@ -4521,13 +4562,7 @@ export default function ManagerDashboard({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle className="text-lg">Log de Check-ins</CardTitle>
               <div className="flex items-center gap-2">
-                <input
-                  type="month"
-                  value={filtroMesLog}
-                  onChange={(e) => setFiltroMesLog(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-                  data-testid="input-mes-log"
-                />
+                <MonthPicker value={filtroMesLog} onChange={setFiltroMesLog} data-testid="input-mes-log" />
                 <Button size="sm" variant="outline" onClick={() => refetchLog()} data-testid="button-refresh-checkins">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
@@ -4760,13 +4795,7 @@ export default function ManagerDashboard({
                     ))}
                   </SelectContent>
                 </Select>
-                <input
-                  type="month"
-                  value={filtroMesComissao}
-                  onChange={(e) => setFiltroMesComissao(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-                  data-testid="input-mes-comissao"
-                />
+                <MonthPicker value={filtroMesComissao} onChange={setFiltroMesComissao} data-testid="input-mes-comissao" />
               </div>
             </div>
           </CardHeader>
@@ -5164,13 +5193,7 @@ export default function ManagerDashboard({
                 <Plus className="w-4 h-4 mr-2" /> Nova Despesa
               </Button>
               <div className="flex flex-wrap items-center gap-3 mt-1">
-                <Input
-                  type="month"
-                  value={filtroDespesaMes}
-                  onChange={(e) => setFiltroDespesaMes(e.target.value)}
-                  className="w-44"
-                  data-testid="input-filtro-despesa-mes"
-                />
+                <MonthPicker value={filtroDespesaMes} onChange={setFiltroDespesaMes} data-testid="input-filtro-despesa-mes" />
               </div>
             </CardHeader>
             <CardContent className="p-0">
