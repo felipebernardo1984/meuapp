@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, LogOut, KeyRound } from "lucide-react";
+import { LogIn, LogOut, KeyRound, ArrowLeft } from "lucide-react";
 import type { Plano } from "./Home";
 
 interface PublicSettings {
@@ -397,9 +397,19 @@ export default function ArenaApp() {
     <>
       {sessao.tipo !== "gestor" && (
         <div className="fixed top-4 right-4 z-50 flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => logoutMutation.mutate()} data-testid="button-logout">
-            <LogOut className="h-5 w-5" />
-          </Button>
+          {sessao.tipo === "aluno" && alunoView === "agenda" ? (
+            <Button variant="outline" size="icon" onClick={() => setAlunoView("dashboard")} data-testid="button-voltar-agenda" title="Voltar">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          ) : sessao.tipo === "professor" && professorView === "agenda" ? (
+            <Button variant="outline" size="icon" onClick={() => setProfessorView("dashboard")} data-testid="button-voltar-agenda" title="Voltar">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Button variant="outline" size="icon" onClick={() => logoutMutation.mutate()} data-testid="button-logout" title="Sair">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          )}
           <ThemeToggle />
         </div>
       )}
