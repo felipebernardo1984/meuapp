@@ -119,6 +119,7 @@ interface Professor {
   id: string;
   nome: string;
   modalidade: string;
+  cor?: string | null;
 }
 
 interface ModalidadeSetting {
@@ -1003,10 +1004,12 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                         } else if (t === "aula") {
                           novoValor = "";
                         }
+                        const prof = professores.find((pr) => pr.id === p.professorId);
+                        const novaCor = t === "aula" ? (prof?.cor || TIPO_CORES["aula"]) : TIPO_CORES[t];
                         return {
                           ...p,
                           tipo: t,
-                          cor: TIPO_CORES[t],
+                          cor: novaCor,
                           professorId: t !== "aula" ? "" : p.professorId,
                           modalidade: t !== "aula" ? "" : p.modalidade,
                           valorCobrado: novoValor,
@@ -1036,7 +1039,12 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                     value={formData.professorId}
                     onValueChange={(v) => {
                       const selected = professores.find((p) => p.id === v);
-                      setFormData((p) => ({ ...p, professorId: v, modalidade: selected?.modalidade ?? p.modalidade }));
+                      setFormData((p) => ({
+                        ...p,
+                        professorId: v,
+                        modalidade: selected?.modalidade ?? p.modalidade,
+                        cor: p.tipo === "aula" ? (selected?.cor || TIPO_CORES["aula"]) : p.cor,
+                      }));
                     }}
                   >
                     <SelectTrigger data-testid="select-turma-professor">

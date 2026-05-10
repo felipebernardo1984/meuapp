@@ -116,6 +116,12 @@ interface AlunoGestor {
   photoUrl?: string | null;
 }
 
+const PROF_COR_OPTIONS = [
+  "#1565C0","#1976D2","#0288D1","#00838F","#2E7D32",
+  "#558B2F","#F57F17","#E65100","#BF360C","#6A1B9A",
+  "#AD1457","#37474F",
+];
+
 interface ProfessorGestor {
   id: string;
   nome: string;
@@ -126,6 +132,7 @@ interface ProfessorGestor {
   modalidade: string;
   percentualComissao?: string;
   photoUrl?: string | null;
+  cor?: string;
 }
 
 interface NovoAlunoDados {
@@ -697,7 +704,7 @@ export default function ManagerDashboard({
   // Professor state
   const [dialogProfessor, setDialogProfessor] = useState(false);
   const [professorEditando, setProfessorEditando] = useState<ProfessorGestor | null>(null);
-  const [formProfessor, setFormProfessor] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "" });
+  const [formProfessor, setFormProfessor] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "", cor: "#1565C0" });
 
   // Aluno state
   const [dialogNovoAluno, setDialogNovoAluno] = useState(false);
@@ -791,7 +798,7 @@ export default function ManagerDashboard({
   // ── Professores ──────────────────────────────────────────────────────────
   const abrirEditarProfessor = (p: ProfessorGestor) => {
     setProfessorEditando(p);
-    setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade, percentualComissao: p.percentualComissao || "", photoUrl: p.photoUrl || "" });
+    setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade, percentualComissao: p.percentualComissao || "", photoUrl: p.photoUrl || "", cor: p.cor || "#1565C0" });
   };
 
   const [cropSrcProfessor, setCropSrcProfessor] = useState<string | null>(null);
@@ -809,7 +816,7 @@ export default function ManagerDashboard({
       ? parseFloat(formProfessor.percentualComissao.replace(",", ".")).toFixed(2)
       : "0.00";
     if (professorEditando) {
-      const dados: { nome: string; cpf?: string; email?: string; telefone?: string; login?: string; senha?: string; modalidade: string; percentualComissao?: string } = {
+      const dados: any = {
         nome: formProfessor.nome,
         cpf: formProfessor.cpf || undefined,
         email: formProfessor.email || undefined,
@@ -817,17 +824,18 @@ export default function ManagerDashboard({
         login: formProfessor.login || undefined,
         modalidade: formProfessor.modalidade,
         percentualComissao,
+        cor: formProfessor.cor || "#1565C0",
       };
       if (formProfessor.senha) dados.senha = formProfessor.senha;
-      if (formProfessor.photoUrl) (dados as any).photoUrl = formProfessor.photoUrl;
+      if (formProfessor.photoUrl) dados.photoUrl = formProfessor.photoUrl;
       onEditarProfessor(professorEditando.id, dados);
       setProfessorEditando(null);
     } else {
       if (!formProfessor.login || !formProfessor.senha) return;
-      onCadastrarProfessor({ nome: formProfessor.nome, cpf: formProfessor.cpf, email: formProfessor.email, telefone: formProfessor.telefone, login: formProfessor.login, senha: formProfessor.senha, modalidade: formProfessor.modalidade, percentualComissao });
+      onCadastrarProfessor({ nome: formProfessor.nome, cpf: formProfessor.cpf, email: formProfessor.email, telefone: formProfessor.telefone, login: formProfessor.login, senha: formProfessor.senha, modalidade: formProfessor.modalidade, percentualComissao, cor: formProfessor.cor || "#1565C0" } as any);
       setDialogProfessor(false);
     }
-    setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "" });
+    setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "", cor: "#1565C0" });
   };
 
   // ── Alunos ───────────────────────────────────────────────────────────────
@@ -2506,7 +2514,12 @@ export default function ManagerDashboard({
             <Button
               size="lg"
               className="w-full h-14 text-lg"
-              onClick={() => { setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "" }); setDialogProfessor(true); }}
+              onClick={() => {
+                const coresUsadas = professores.map((p) => p.cor).filter(Boolean);
+                const primeiraLivre = PROF_COR_OPTIONS.find((c) => !coresUsadas.includes(c)) || "#37474F";
+                setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "", cor: primeiraLivre });
+                setDialogProfessor(true);
+              }}
               data-testid="button-add-teacher"
             >
               <UserPlus className="mr-2 h-5 w-5" />
@@ -2529,6 +2542,11 @@ export default function ManagerDashboard({
                     )}
                   </div>
                   <div className="min-w-0 flex items-center gap-2 overflow-hidden">
+                    <span
+                      className="h-3 w-3 rounded-full shrink-0 border border-white shadow-sm"
+                      style={{ backgroundColor: professor.cor || "#1565C0" }}
+                      title="Cor na agenda"
+                    />
                     <p className="font-medium truncate shrink">{professor.nome}</p>
                     <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{professor.modalidade}</span>
                     {parseFloat(professor.percentualComissao ?? "0") > 0 && (
@@ -2701,6 +2719,29 @@ export default function ManagerDashboard({
                 />
                 <p className="text-xs text-muted-foreground">Percentual sobre a receita gerada por check-ins atribuídos a este professor</p>
               </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Cor na agenda</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {PROF_COR_OPTIONS.map((cor) => {
+                    const usada = professores.some((p) => p.cor === cor);
+                    const selecionada = formProfessor.cor === cor;
+                    return (
+                      <button
+                        key={cor}
+                        type="button"
+                        title={usada ? "Cor em uso por outro professor" : cor}
+                        disabled={usada}
+                        onClick={() => setFormProfessor((prev) => ({ ...prev, cor }))}
+                        className={`h-7 w-7 rounded-full transition-transform ${
+                          selecionada ? "ring-2 ring-offset-2 ring-gray-500 scale-110" : ""
+                        } ${usada ? "opacity-25 cursor-not-allowed" : "hover:scale-110 cursor-pointer"}`}
+                        style={{ backgroundColor: cor }}
+                      />
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">Cores acinzentadas já estão em uso por outros professores</p>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -2841,6 +2882,29 @@ export default function ManagerDashboard({
                 data-testid="input-edit-teacher-comissao"
               />
               <p className="text-xs text-muted-foreground">Percentual sobre a receita gerada por check-ins atribuídos a este professor</p>
+            </div>
+            <div className="space-y-1">
+              <Label>Cor na agenda</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {PROF_COR_OPTIONS.map((cor) => {
+                  const usadaPorOutro = professores.some((p) => p.cor === cor && p.id !== professorEditando?.id);
+                  const selecionada = formProfessor.cor === cor;
+                  return (
+                    <button
+                      key={cor}
+                      type="button"
+                      title={usadaPorOutro ? "Cor em uso por outro professor" : cor}
+                      disabled={usadaPorOutro}
+                      onClick={() => setFormProfessor((prev) => ({ ...prev, cor }))}
+                      className={`h-7 w-7 rounded-full transition-transform ${
+                        selecionada ? "ring-2 ring-offset-2 ring-gray-500 scale-110" : ""
+                      } ${usadaPorOutro ? "opacity-25 cursor-not-allowed" : "hover:scale-110 cursor-pointer"}`}
+                      style={{ backgroundColor: cor }}
+                    />
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">Cores acinzentadas já estão em uso por outros professores</p>
             </div>
           </div>
           <DialogFooter>

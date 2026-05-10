@@ -338,17 +338,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/professores", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, modalidade, cpf, email, telefone, percentualComissao } = req.body;
+    const { nome, modalidade, cpf, email, telefone, percentualComissao, cor } = req.body;
     const login = req.body.login?.trim() || gerarLogin(nome);
     const senha = req.body.senha?.trim() || "admin";
-    const teacher = await storage.createTeacher({ arenaId, nome, login, senha, cpf: cpf ?? null, email: email ?? null, telefone: telefone ?? null, modalidade, percentualComissao: percentualComissao ?? "0.00" });
+    const teacher = await storage.createTeacher({ arenaId, nome, login, senha, cpf: cpf ?? null, email: email ?? null, telefone: telefone ?? null, modalidade, percentualComissao: percentualComissao ?? "0.00", cor: cor || "#1565C0" });
     res.json({ ...teacher, senha: undefined, loginGerado: login, senhaGerada: senha });
   });
 
   app.put("/api/professores/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { nome, cpf, email, telefone, login, senha, modalidade, percentualComissao } = req.body;
+    const { nome, cpf, email, telefone, login, senha, modalidade, percentualComissao, cor } = req.body;
     const updateData: Record<string, any> = { nome, modalidade };
     if (cpf !== undefined) updateData.cpf = cpf || null;
     if (email !== undefined) updateData.email = email || null;
@@ -357,6 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (senha) updateData.senha = senha;
     if (percentualComissao !== undefined) updateData.percentualComissao = percentualComissao;
     if (req.body.photoUrl !== undefined) updateData.photoUrl = req.body.photoUrl || null;
+    if (cor !== undefined) updateData.cor = cor || "#1565C0";
     const teacher = await storage.updateTeacher(req.params.id, updateData);
     res.json(teacher);
   });

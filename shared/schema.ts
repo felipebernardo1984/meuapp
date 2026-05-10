@@ -94,6 +94,7 @@ export const teachers = pgTable("teachers", {
   modalidade: text("modalidade").notNull(),
   percentualComissao: text("percentual_comissao").notNull().default("0.00"),
   photoUrl: text("photo_url"),
+  cor: text("cor").default("#1565C0"),
 });
 
 export const insertTeacherSchema = createInsertSchema(teachers).omit({ id: true });
