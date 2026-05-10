@@ -1980,44 +1980,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/recursos", async (req, res) => {
-    const arenaId = requireArena(req, res);
-    if (!arenaId) return;
-    try {
-      const list = await storage.listRecursos(arenaId);
-      res.json(list);
-    } catch {
-      res.json([]);
-    }
-  });
-
-  app.post("/api/recursos", async (req, res) => {
-    const arenaId = requireArena(req, res);
-    if (!arenaId) return;
-    try {
-      const { nome, ativo, valorAluguel, valorDayuse, duracaoMinima, valorHoraAdicional } = req.body;
-      if (!nome?.trim()) return res.status(400).json({ message: "Nome é obrigatório" });
-      const recurso = await storage.createRecurso({ arenaId, nome: nome.trim(), ativo: ativo ?? true, tipo: "sala", valorAluguel: valorAluguel || null, valorDayuse: valorDayuse || null, duracaoMinima: duracaoMinima !== undefined ? Number(duracaoMinima) : 1, valorHoraAdicional: valorHoraAdicional || null });
-      if (!recurso) return res.status(500).json({ message: "Não foi possível salvar a sala" });
-      res.json(recurso);
-    } catch (e: any) {
-      res.status(500).json({ message: e?.message || "Não foi possível salvar a sala" });
-    }
-  });
-
-  app.put("/api/recursos/:id", async (req, res) => {
-    const arenaId = requireArena(req, res);
-    if (!arenaId) return;
-    try {
-      const { nome, ativo, valorAluguel, valorDayuse, duracaoMinima, valorHoraAdicional } = req.body;
-      const recurso = await storage.updateRecurso(req.params.id, { nome, ativo, valorAluguel: valorAluguel || null, valorDayuse: valorDayuse || null, duracaoMinima: duracaoMinima !== undefined ? Number(duracaoMinima) : 1, valorHoraAdicional: valorHoraAdicional || null });
-      if (!recurso) return res.status(500).json({ message: "Não foi possível atualizar a sala" });
-      res.json(recurso);
-    } catch (e: any) {
-      res.status(500).json({ message: e?.message || "Não foi possível atualizar a sala" });
-    }
-  });
-
   // Public endpoint for recursos (no auth) — used by public calendar page
   app.get("/api/recursos/publico/:arenaId", async (req, res) => {
     try {
