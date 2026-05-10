@@ -89,7 +89,9 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Calendar,
 } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
 
@@ -182,43 +184,191 @@ interface ManagerDashboardProps {
 
 const MESES_PT = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 
-function MonthPicker({ value, onChange, className = "" }: { value: string; onChange: (v: string) => void; className?: string }) {
-  const now = new Date();
-  const parsed = value ? { y: parseInt(value.slice(0,4)), m: parseInt(value.slice(5,7)) } : { y: now.getFullYear(), m: now.getMonth() + 1 };
-  const label = value ? `${MESES_PT[parsed.m - 1]} ${parsed.y}` : "Todos os meses";
+type DateRange = { inicio: string; fim: string }; // YYYY-MM-DD
 
-  const navigate = (delta: number) => {
-    let m = parsed.m + delta;
-    let y = parsed.y;
-    if (m > 12) { m = 1; y++; }
-    if (m < 1) { m = 12; y--; }
-    onChange(`${y}-${String(m).padStart(2,"0")}`);
+function isoFromDMY(dmy: string): string {
+  if (!dmy || dmy.length < 10) return "";
+  const [d, m, y] = dmy.split("/");
+  return `${y}-${m}-${d}`;
+}
+
+function currentMonthRange(): DateRange {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const last = new Date(y, m, 0).getDate();
+  return {
+    inicio: `${y}-${String(m).padStart(2,"0")}-01`,
+    fim: `${y}-${String(m).padStart(2,"0")}-${String(last).padStart(2,"0")}`,
+  };
+}
+
+function drpLabel(value: DateRange | null, presets: { id: string; label: string; range: DateRange | null }[]): string {
+  if (!value) return "Todo o período";
+  const match = presets.find(p => p.range && p.range.inicio === value.inicio && p.range.fim === value.fim);
+  if (match) return match.label;
+  const fmtDay = (iso: string) => iso.slice(8) + "/" + iso.slice(5,7);
+  if (value.inicio === value.fim) return `${fmtDay(value.inicio)}/${value.inicio.slice(0,4)}`;
+  if (value.inicio.slice(0,7) === value.fim.slice(0,7)) {
+    return `${fmtDay(value.inicio)} — ${fmtDay(value.fim)}/${value.fim.slice(0,4)}`;
+  }
+  return `${fmtDay(value.inicio)}/${value.inicio.slice(0,4)} — ${fmtDay(value.fim)}/${value.fim.slice(0,4)}`;
+}
+
+function DateRangePicker({ value, onChange, align = "end" }: { value: DateRange | null; onChange: (r: DateRange | null) => void; align?: "start" | "end" | "center" }) {
+  const [open, setOpen] = useState(false);
+  const [activePreset, setActivePreset] = useState<string>("mes_atual");
+  const [customStart, setCustomStart] = useState<string | null>(null);
+  const [customEnd, setCustomEnd] = useState<string | null>(null);
+  const [hover, setHover] = useState<string | null>(null);
+  const [calY, setCalY] = useState(() => new Date().getFullYear());
+  const [calM, setCalM] = useState(() => new Date().getMonth() + 1);
+
+  const todayISO = (() => { const n = new Date(); return n.toISOString().slice(0,10); })();
+
+  const buildPresets = () => {
+    const now = new Date();
+    const y = now.getFullYear(); const m = now.getMonth();
+    const sub = (days: number) => new Date(now.getTime() - days * 86400000).toISOString().slice(0,10);
+    const firstMonth = `${y}-${String(m+1).padStart(2,"0")}-01`;
+    const lastMonth = new Date(y, m+1, 0).toISOString().slice(0,10);
+    const firstPrev = `${m === 0 ? y-1 : y}-${String(m === 0 ? 12 : m).padStart(2,"0")}-01`;
+    const lastPrev = new Date(y, m, 0).toISOString().slice(0,10);
+    return [
+      { id: "hoje",     label: "Hoje",             range: { inicio: todayISO, fim: todayISO } },
+      { id: "7dias",    label: "Últimos 7 dias",    range: { inicio: sub(6),   fim: todayISO } },
+      { id: "30dias",   label: "Últimos 30 dias",   range: { inicio: sub(29),  fim: todayISO } },
+      { id: "60dias",   label: "Últimos 60 dias",   range: { inicio: sub(59),  fim: todayISO } },
+      { id: "mes_atual",label: "Mês atual",         range: { inicio: firstMonth, fim: lastMonth } },
+      { id: "mes_ant",  label: "Mês anterior",      range: { inicio: firstPrev,  fim: lastPrev } },
+      { id: "custom",   label: "Definir período",   range: null },
+    ];
   };
 
+  const presets = buildPresets();
+
+  const navCal = (delta: number) => {
+    let nm = calM + delta; let ny = calY;
+    if (nm > 12) { nm = 1; ny++; } if (nm < 1) { nm = 12; ny--; }
+    setCalM(nm); setCalY(ny);
+  };
+
+  const effectiveRange = (): DateRange | null => {
+    if (activePreset === "custom") {
+      if (!customStart) return null;
+      const fim = customEnd ?? customStart;
+      return customStart <= fim ? { inicio: customStart, fim } : { inicio: fim, fim: customStart };
+    }
+    return presets.find(p => p.id === activePreset)?.range ?? null;
+  };
+
+  const handleDayClick = (iso: string) => {
+    setActivePreset("custom");
+    if (!customStart || (customStart && customEnd)) {
+      setCustomStart(iso); setCustomEnd(null);
+    } else {
+      if (iso < customStart) { setCustomEnd(customStart); setCustomStart(iso); }
+      else setCustomEnd(iso);
+    }
+  };
+
+  const handleApply = () => {
+    const r = effectiveRange();
+    onChange(r);
+    setOpen(false);
+  };
+
+  const handleClear = () => {
+    onChange(null);
+    setActivePreset("mes_atual");
+    setCustomStart(null); setCustomEnd(null);
+    setOpen(false);
+  };
+
+  const hoverEnd = activePreset === "custom" && customStart && !customEnd && hover
+    ? (hover > customStart ? hover : customStart) : null;
+  const selStart = effectiveRange()?.inicio ?? null;
+  const selEnd = effectiveRange()?.fim ?? hoverEnd ?? null;
+
+  const days = new Date(calY, calM, 0).getDate();
+  const offset = (new Date(calY, calM - 1, 1).getDay() + 6) % 7; // Mon-first
+
   return (
-    <div className={`flex items-center rounded-md border border-input bg-background h-8 overflow-hidden select-none ${className}`}>
-      <button
-        type="button"
-        className="px-2 h-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        onClick={() => navigate(-1)}
-        aria-label="Mês anterior"
-      >‹</button>
-      <span className="px-2 text-sm font-medium text-foreground min-w-[130px] text-center">{label}</span>
-      <button
-        type="button"
-        className="px-2 h-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        onClick={() => navigate(1)}
-        aria-label="Próximo mês"
-      >›</button>
-      {value && (
-        <button
-          type="button"
-          className="px-2 h-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border-l border-input text-xs"
-          onClick={() => onChange("")}
-          aria-label="Limpar filtro"
-        >✕</button>
-      )}
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 text-sm gap-1.5 font-normal" data-testid="drp-trigger">
+          <Calendar className="w-3.5 h-3.5 shrink-0" />
+          <span>{drpLabel(value, presets)}</span>
+          <ChevronDown className="w-3.5 h-3.5 shrink-0 ml-auto opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align={align} className="p-0 w-auto">
+        <div className="flex">
+          {/* Presets */}
+          <div className="p-3 border-r min-w-[168px] flex flex-col gap-0.5">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1 px-1">Período</p>
+            {presets.map(p => (
+              <button
+                key={p.id}
+                onClick={() => { setActivePreset(p.id); if (p.id !== "custom") { setCustomStart(null); setCustomEnd(null); } }}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-left transition-colors hover:bg-muted w-full ${activePreset === p.id ? "bg-muted font-medium" : ""}`}
+              >
+                <span className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center ${activePreset === p.id ? "border-primary bg-primary" : "border-muted-foreground/40"}`}>
+                  {activePreset === p.id && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </span>
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {/* Calendar */}
+          <div className="p-3">
+            <div className="flex items-center justify-between mb-2 gap-4">
+              <button onClick={() => navCal(-1)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground">‹</button>
+              <span className="text-sm font-semibold capitalize">{MESES_PT[calM-1]} {calY}</span>
+              <button onClick={() => navCal(1)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground">›</button>
+            </div>
+            <div className="grid grid-cols-7 gap-px">
+              {["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map(d => (
+                <div key={d} className="text-[10px] text-muted-foreground text-center w-8 h-6 flex items-center justify-center">{d}</div>
+              ))}
+              {Array.from({ length: offset }).map((_, i) => <div key={`e${i}`} className="w-8 h-7" />)}
+              {Array.from({ length: days }).map((_, i) => {
+                const day = i + 1;
+                const iso = `${calY}-${String(calM).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                const isToday = iso === todayISO;
+                const isStart = iso === selStart;
+                const isEnd = iso === selEnd;
+                const inSel = selStart && selEnd && iso > selStart && iso < selEnd;
+                return (
+                  <button
+                    key={day}
+                    onClick={() => handleDayClick(iso)}
+                    onMouseEnter={() => setHover(iso)}
+                    onMouseLeave={() => setHover(null)}
+                    className={[
+                      "w-8 h-7 text-xs rounded transition-colors",
+                      isStart || isEnd ? "bg-primary text-primary-foreground font-semibold" : "",
+                      inSel ? "bg-primary/15 rounded-none" : "",
+                      isToday && !isStart && !isEnd ? "ring-1 ring-primary ring-inset" : "",
+                      !isStart && !isEnd && !inSel ? "hover:bg-muted" : "",
+                    ].filter(Boolean).join(" ")}
+                  >{day}</button>
+                );
+              })}
+            </div>
+            {activePreset === "custom" && (
+              <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                {customStart ? customStart.split("-").reverse().join("/") : "Clique no dia inicial"}{customStart && !customEnd ? " → clique no dia final" : ""}{customEnd ? ` → ${customEnd.split("-").reverse().join("/")}` : ""}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 p-2 border-t">
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleClear}>Limpar</Button>
+          <Button size="sm" className="h-7 text-xs" onClick={handleApply}>Aplicar</Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -348,16 +498,13 @@ export default function ManagerDashboard({
   });
 
   const [filtroTipoLog, setFiltroTipoLog] = useState<"todos" | "pendente" | "aula" | "dayuse" | "avulso">("todos");
-  const [filtroMesLog, setFiltroMesLog] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
+  const [filtroRangeLog, setFiltroRangeLog] = useState<DateRange | null>(currentMonthRange);
   const [atribuindoCheckin, setAtribuindoCheckin] = useState<string | null>(null);
   const [atribuirForm, setAtribuirForm] = useState<{ tipo: string; professorId: string }>({ tipo: "aula", professorId: "" });
   const [editandoComissao, setEditandoComissao] = useState<any | null>(null);
   const [editComissaoForm, setEditComissaoForm] = useState({ valorComissao: "", status: "", observacao: "" });
   const [filtroProfComissao, setFiltroProfComissao] = useState<string>("todos");
-  const [filtroMesComissao, setFiltroMesComissao] = useState<string>("");
+  const [filtroRangeComissao, setFiltroRangeComissao] = useState<DateRange | null>(null);
   const [sortComissao, setSortComissao] = useState<{ field: "data" | "alunoNome"; dir: "asc" | "desc" }>({ field: "data", dir: "desc" });
 
   const qcComissao = useQueryClient();
@@ -667,10 +814,7 @@ export default function ManagerDashboard({
   const [despesaEditando, setDespesaEditando] = useState<any | null>(null);
   const [formDespesa, setFormDespesa] = useState({ categoria: "Outros", descricao: "", valor: "", data: "" });
   const [confirmDeleteDespesa, setConfirmDeleteDespesa] = useState<any | null>(null);
-  const [filtroDespesaMes, setFiltroDespesaMes] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
+  const [filtroRangeDespesa, setFiltroRangeDespesa] = useState<DateRange | null>(currentMonthRange);
   const CATEGORIAS_DESPESA = ["Aluguel", "Energia", "Água", "Internet", "Salários", "Material", "Manutenção", "Outros"];
 
   const criarDespesa = useMutation({
@@ -4562,7 +4706,7 @@ export default function ManagerDashboard({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle className="text-lg">Log de Check-ins</CardTitle>
               <div className="flex items-center gap-2">
-                <MonthPicker value={filtroMesLog} onChange={setFiltroMesLog} data-testid="input-mes-log" />
+                <DateRangePicker value={filtroRangeLog} onChange={setFiltroRangeLog} />
                 <Button size="sm" variant="outline" onClick={() => refetchLog()} data-testid="button-refresh-checkins">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
@@ -4581,17 +4725,19 @@ export default function ManagerDashboard({
                 </Button>
               ))}
               {(() => {
-                const mesFormatado = filtroMesLog ? filtroMesLog.split("-").reverse().join("/") : "";
-                const autoAtribuiveis = (logCheckins as any[]).filter(
-                  c => c.tipo === "pendente" && c.sugestaoConfianca === "alta" && (!mesFormatado || c.data.substring(3) === mesFormatado)
-                ).length;
+                const autoAtribuiveis = (logCheckins as any[]).filter(c => {
+                  if (c.tipo !== "pendente" || c.sugestaoConfianca !== "alta") return false;
+                  if (!filtroRangeLog) return true;
+                  const iso = isoFromDMY(c.data);
+                  return iso >= filtroRangeLog.inicio && iso <= filtroRangeLog.fim;
+                }).length;
                 return autoAtribuiveis > 0 ? (
                   <Button
                     size="sm"
                     variant="outline"
                     className="ml-auto text-green-700 border-green-300 hover:bg-green-50"
                     disabled={autoAtribuirMutation.isPending}
-                    onClick={() => autoAtribuirMutation.mutate(mesFormatado)}
+                    onClick={() => autoAtribuirMutation.mutate("")}
                     data-testid="button-auto-atribuir"
                   >
                     <Zap className="w-3.5 h-3.5 mr-1" />
@@ -4603,11 +4749,13 @@ export default function ManagerDashboard({
           </CardHeader>
           <CardContent className="p-0">
           {(() => {
-            const mesFormatado = filtroMesLog ? filtroMesLog.split("-").reverse().join("/") : "";
             const logFiltrado = (logCheckins as any[]).filter((c) => {
               const tipoOk = filtroTipoLog === "todos" || c.tipo === filtroTipoLog;
-              const mesOk = !mesFormatado || c.data.substring(3) === mesFormatado;
-              return tipoOk && mesOk;
+              const rangeOk = !filtroRangeLog || (() => {
+                const iso = isoFromDMY(c.data);
+                return iso >= filtroRangeLog.inicio && iso <= filtroRangeLog.fim;
+              })();
+              return tipoOk && rangeOk;
             });
             const comissaoMap = new Map((todasComissoes as any[]).map((c) => [c.checkinId, c]));
             const totalReceita = logFiltrado.filter(c => c.tipo !== "pendente").reduce((s, c) => s + (c.valorCheckin ?? 0), 0);
@@ -4795,17 +4943,19 @@ export default function ManagerDashboard({
                     ))}
                   </SelectContent>
                 </Select>
-                <MonthPicker value={filtroMesComissao} onChange={setFiltroMesComissao} data-testid="input-mes-comissao" />
+                <DateRangePicker value={filtroRangeComissao} onChange={setFiltroRangeComissao} />
               </div>
             </div>
           </CardHeader>
           <CardContent>
           {(() => {
-            const mesComissaoFmt = filtroMesComissao ? filtroMesComissao.split("-").reverse().join("/") : "";
             const comissoesFiltradas = (todasComissoes as any[]).filter(c => {
               const profOk = filtroProfComissao === "todos" || c.teacherId === filtroProfComissao;
-              const mesOk = !mesComissaoFmt || c.data.substring(3) === mesComissaoFmt;
-              return profOk && mesOk;
+              const rangeOk = !filtroRangeComissao || (() => {
+                const iso = isoFromDMY(c.data);
+                return iso >= filtroRangeComissao.inicio && iso <= filtroRangeComissao.fim;
+              })();
+              return profOk && rangeOk;
             });
 
             const profSelecionado = filtroProfComissao !== "todos"
@@ -5147,7 +5297,7 @@ export default function ManagerDashboard({
         <div className="flex flex-col gap-4">
           {/* Resumo do mês */}
           {(() => {
-            const despesasMes = (listaDespesas as any[]).filter((d) => d.data?.startsWith(filtroDespesaMes));
+            const despesasMes = (listaDespesas as any[]).filter((d) => !filtroRangeDespesa || (d.data >= filtroRangeDespesa.inicio && d.data <= filtroRangeDespesa.fim));
             const totalMes = despesasMes.reduce((acc, d) => acc + parseFloat(d.valor || "0"), 0);
             const porCategoria = CATEGORIAS_DESPESA.map((cat) => ({
               cat,
@@ -5193,7 +5343,7 @@ export default function ManagerDashboard({
                 <Plus className="w-4 h-4 mr-2" /> Nova Despesa
               </Button>
               <div className="flex flex-wrap items-center gap-3 mt-1">
-                <MonthPicker value={filtroDespesaMes} onChange={setFiltroDespesaMes} data-testid="input-filtro-despesa-mes" />
+                <DateRangePicker value={filtroRangeDespesa} onChange={setFiltroRangeDespesa} align="start" />
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -5210,7 +5360,7 @@ export default function ManagerDashboard({
               </TableHeader>
               <TableBody>
                 {(listaDespesas as any[])
-                  .filter((d) => d.data?.startsWith(filtroDespesaMes))
+                  .filter((d) => !filtroRangeDespesa || (d.data >= filtroRangeDespesa.inicio && d.data <= filtroRangeDespesa.fim))
                   .map((d) => (
                     <TableRow key={d.id} data-testid={`row-despesa-${d.id}`}>
                       <TableCell className="text-sm whitespace-nowrap">{d.data ? new Date(d.data + "T12:00:00").toLocaleDateString("pt-BR") : "-"}</TableCell>
@@ -5246,7 +5396,7 @@ export default function ManagerDashboard({
                       </TableCell>
                     </TableRow>
                   ))}
-                {(listaDespesas as any[]).filter((d) => d.data?.startsWith(filtroDespesaMes)).length === 0 && (
+                {(listaDespesas as any[]).filter((d) => !filtroRangeDespesa || (d.data >= filtroRangeDespesa.inicio && d.data <= filtroRangeDespesa.fim)).length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                       Nenhuma despesa registrada neste mês.
