@@ -338,6 +338,16 @@ export default function ManagerDashboard({
 
   const excluirComissao = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/comissao/${id}`),
+    onMutate: async (id) => {
+      await qcComissao.cancelQueries({ queryKey: ["/api/finance/comissoes"] });
+      const prev = qcComissao.getQueryData<any[]>(["/api/finance/comissoes"]);
+      qcComissao.setQueryData(["/api/finance/comissoes"], (old: any[] = []) => old.filter((c) => c.id !== id));
+      return { prev };
+    },
+    onError: (_err, _id, ctx: any) => {
+      if (ctx?.prev) qcComissao.setQueryData(["/api/finance/comissoes"], ctx.prev);
+      toast({ title: "Erro ao excluir comissão", variant: "destructive" });
+    },
     onSuccess: () => {
       qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissoes"] });
       qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissao/resumo"] });
@@ -4506,119 +4516,171 @@ export default function ManagerDashboard({
           </div>
           </CardHeader>
           <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data/Hora</TableHead>
-                  <TableHead>Aluno</TableHead>
-                  <TableHead>Modalidade</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Professor</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(logCheckins as any[])
-                  .filter((c) => filtroTipoLog === "todos" || c.tipo === filtroTipoLog)
-                  .map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="text-xs whitespace-nowrap">{c.data} {c.hora}</TableCell>
-                    <TableCell className="font-medium text-sm">{c.alunoNome}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.alunoModalidade}</TableCell>
-                    <TableCell className="text-sm font-medium">
-                      {c.valorCheckin > 0 ? `R$ ${c.valorCheckin.toFixed(2).replace(".", ",")}` : <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell>
-                      {c.tipo === "pendente" ? (
-                        <div className="flex flex-col gap-1">
-                          <Badge variant="outline" className="text-orange-600 border-orange-300 w-fit">Pendente</Badge>
-                          {c.sugestaoTipo && (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${c.sugestaoConfianca === "alta" ? "bg-green-500" : "bg-yellow-500"}`} />
-                              {c.sugestaoTipo === "aula" ? "Sugestão: Aula" : "Sugestão: Day-use"}
-                            </span>
-                          )}
-                        </div>
-                      ) : c.tipo === "aula" ? (
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Aula</Badge>
-                      ) : c.tipo === "dayuse" ? (
-                        <Badge variant="secondary">Day-use</Badge>
-                      ) : (
-                        <Badge variant="secondary">Avulso</Badge>
+          {(() => {
+            const logFiltrado = (logCheckins as any[]).filter((c) => filtroTipoLog === "todos" || c.tipo === filtroTipoLog);
+            const comissaoMap = new Map((todasComissoes as any[]).map((c) => [c.checkinId, c]));
+            const totalReceita = logFiltrado.filter(c => c.tipo !== "pendente").reduce((s, c) => s + (c.valorCheckin ?? 0), 0);
+            const totalComissao = logFiltrado.reduce((s, c) => {
+              const com = comissaoMap.get(c.id);
+              return s + (com && com.status !== "cancelado" ? parseFloat(com.valorComissao ?? "0") : 0);
+            }, 0);
+            const totalAtribuidos = logFiltrado.filter(c => c.tipo !== "pendente").length;
+            const totalPendentes = logFiltrado.filter(c => c.tipo === "pendente").length;
+            return (
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data/Hora</TableHead>
+                        <TableHead>Aluno</TableHead>
+                        <TableHead>Modalidade</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Professor</TableHead>
+                        <TableHead>Comissão</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {logFiltrado.map((c) => {
+                        const comissao = comissaoMap.get(c.id);
+                        return (
+                          <TableRow key={c.id}>
+                            <TableCell className="text-xs whitespace-nowrap">{c.data} {c.hora}</TableCell>
+                            <TableCell className="font-medium text-sm">{c.alunoNome}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{c.alunoModalidade}</TableCell>
+                            <TableCell className="text-sm font-medium">
+                              {c.valorCheckin > 0 ? `R$ ${c.valorCheckin.toFixed(2).replace(".", ",")}` : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell>
+                              {c.tipo === "pendente" ? (
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant="outline" className="text-orange-600 border-orange-300 w-fit">Pendente</Badge>
+                                  {c.sugestaoTipo && (
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${c.sugestaoConfianca === "alta" ? "bg-green-500" : "bg-yellow-500"}`} />
+                                      {c.sugestaoTipo === "aula" ? "Sugestão: Aula" : "Sugestão: Day-use"}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : c.tipo === "aula" ? (
+                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Aula</Badge>
+                              ) : c.tipo === "dayuse" ? (
+                                <Badge variant="secondary">Day-use</Badge>
+                              ) : (
+                                <Badge variant="secondary">Avulso</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {c.tipo !== "pendente"
+                                ? (c.professorNome ?? <span className="text-muted-foreground">—</span>)
+                                : c.sugestaoProfessorNome
+                                  ? <span className="text-muted-foreground text-xs">{c.sugestaoProfessorNome}</span>
+                                  : <span className="text-muted-foreground">—</span>
+                              }
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {comissao && comissao.status !== "cancelado" ? (
+                                <span className="font-medium text-green-700 dark:text-green-400">
+                                  R$ {parseFloat(comissao.valorComissao ?? "0").toFixed(2).replace(".", ",")}
+                                  {comissao.status === "aprovado" || comissao.status === "editado" ? (
+                                    <span className="ml-1 text-xs text-green-600">✓</span>
+                                  ) : (
+                                    <span className="ml-1 text-xs text-orange-500">·</span>
+                                  )}
+                                </span>
+                              ) : comissao?.status === "cancelado" ? (
+                                <span className="text-xs text-muted-foreground line-through">cancelado</span>
+                              ) : c.tipo === "aula" ? (
+                                <span className="text-xs text-orange-500">sem registro</span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {atribuindoCheckin === c.id ? (
+                                <div className="flex flex-col gap-1 min-w-[220px]">
+                                  <Select value={atribuirForm.tipo} onValueChange={(v) => setAtribuirForm({ ...atribuirForm, tipo: v, professorId: v !== "aula" ? "" : atribuirForm.professorId })}>
+                                    <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="aula">Aula</SelectItem>
+                                      <SelectItem value="dayuse">Day-use</SelectItem>
+                                      <SelectItem value="avulso">Avulso</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {atribuirForm.tipo === "aula" && (
+                                    <Select value={atribuirForm.professorId} onValueChange={(v) => setAtribuirForm({ ...atribuirForm, professorId: v })}>
+                                      <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecionar professor" /></SelectTrigger>
+                                      <SelectContent>
+                                        {professores.map((p) => (
+                                          <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      className="h-7 text-xs flex-1"
+                                      disabled={atribuirCheckin.isPending || (atribuirForm.tipo === "aula" && !atribuirForm.professorId)}
+                                      onClick={() => atribuirCheckin.mutate({ id: c.id, tipo: atribuirForm.tipo, professorId: atribuirForm.tipo === "aula" ? atribuirForm.professorId : undefined })}
+                                      data-testid={`button-confirmar-atribuir-${c.id}`}
+                                    >
+                                      Salvar
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAtribuindoCheckin(null)}>✕</Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                  onClick={() => {
+                                    setAtribuindoCheckin(c.id);
+                                    setAtribuirForm({
+                                      tipo: c.tipo !== "pendente" ? c.tipo : (c.sugestaoTipo ?? "aula"),
+                                      professorId: c.professorId ?? c.sugestaoProfessorId ?? "",
+                                    });
+                                  }}
+                                  data-testid={`button-atribuir-${c.id}`}
+                                >
+                                  Editar
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {logFiltrado.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum check-in encontrado</TableCell>
+                        </TableRow>
                       )}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {c.tipo !== "pendente"
-                        ? (c.professorNome ?? <span className="text-muted-foreground">—</span>)
-                        : c.sugestaoProfessorNome
-                          ? <span className="text-muted-foreground text-xs">{c.sugestaoProfessorNome}</span>
-                          : <span className="text-muted-foreground">—</span>
-                      }
-                    </TableCell>
-                    <TableCell>
-                      {atribuindoCheckin === c.id ? (
-                        <div className="flex flex-col gap-1 min-w-[220px]">
-                          <Select value={atribuirForm.tipo} onValueChange={(v) => setAtribuirForm({ ...atribuirForm, tipo: v, professorId: v !== "aula" ? "" : atribuirForm.professorId })}>
-                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="aula">Aula</SelectItem>
-                              <SelectItem value="dayuse">Day-use</SelectItem>
-                              <SelectItem value="avulso">Avulso</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {atribuirForm.tipo === "aula" && (
-                            <Select value={atribuirForm.professorId} onValueChange={(v) => setAtribuirForm({ ...atribuirForm, professorId: v })}>
-                              <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecionar professor" /></SelectTrigger>
-                              <SelectContent>
-                                {professores.map((p) => (
-                                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              className="h-7 text-xs flex-1"
-                              disabled={atribuirCheckin.isPending || (atribuirForm.tipo === "aula" && !atribuirForm.professorId)}
-                              onClick={() => atribuirCheckin.mutate({ id: c.id, tipo: atribuirForm.tipo, professorId: atribuirForm.tipo === "aula" ? atribuirForm.professorId : undefined })}
-                              data-testid={`button-confirmar-atribuir-${c.id}`}
-                            >
-                              Salvar
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAtribuindoCheckin(null)}>✕</Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            setAtribuindoCheckin(c.id);
-                            setAtribuirForm({
-                              tipo: c.tipo !== "pendente" ? c.tipo : (c.sugestaoTipo ?? "aula"),
-                              professorId: c.professorId ?? c.sugestaoProfessorId ?? "",
-                            });
-                          }}
-                          data-testid={`button-atribuir-${c.id}`}
-                        >
-                          Editar
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {logCheckins.filter((c: any) => filtroTipoLog === "todos" || c.tipo === filtroTipoLog).length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhum check-in encontrado</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                    </TableBody>
+                    {logFiltrado.length > 0 && (
+                      <tfoot>
+                        <TableRow className="border-t-2 bg-muted/30 font-semibold">
+                          <TableCell colSpan={3} className="text-xs text-muted-foreground py-2 pl-4">
+                            {totalAtribuidos} atribuído{totalAtribuidos !== 1 ? "s" : ""}{totalPendentes > 0 ? ` · ${totalPendentes} pendente${totalPendentes !== 1 ? "s" : ""}` : ""}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {totalReceita > 0 ? `R$ ${totalReceita.toFixed(2).replace(".", ",")}` : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell colSpan={2} />
+                          <TableCell className="text-sm text-green-700 dark:text-green-400">
+                            {totalComissao > 0 ? `R$ ${totalComissao.toFixed(2).replace(".", ",")}` : <span className="text-muted-foreground font-normal">—</span>}
+                          </TableCell>
+                          <TableCell />
+                        </TableRow>
+                      </tfoot>
+                    )}
+                  </Table>
+                </div>
+              </>
+            );
+          })()}
           </CardContent>
         </Card>
       )}
@@ -4669,6 +4731,26 @@ export default function ManagerDashboard({
                     </TableRow>
                   )}
                 </TableBody>
+                {resumoComissoes.length > 1 && (() => {
+                  const totCheckins = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalCheckins ?? 0), 0);
+                  const totReceita = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalReceita ?? 0), 0);
+                  const totComissao = (resumoComissoes as any[]).reduce((s, r) => s + (r.totalComissao ?? 0), 0);
+                  const totPendente = (resumoComissoes as any[]).reduce((s, r) => s + (r.pendente ?? 0), 0);
+                  const totAprovado = (resumoComissoes as any[]).reduce((s, r) => s + (r.aprovado ?? 0), 0);
+                  return (
+                    <tfoot>
+                      <TableRow className="border-t-2 bg-muted/30 font-semibold text-sm">
+                        <TableCell className="py-2">Total</TableCell>
+                        <TableCell>—</TableCell>
+                        <TableCell>{totCheckins}</TableCell>
+                        <TableCell>R$ {totReceita.toFixed(2)}</TableCell>
+                        <TableCell className="text-green-700 dark:text-green-400">R$ {totComissao.toFixed(2)}</TableCell>
+                        <TableCell>{totPendente > 0 ? <Badge variant="outline" className="text-orange-600 border-orange-300">{totPendente}</Badge> : <span className="font-normal text-muted-foreground">0</span>}</TableCell>
+                        <TableCell>{totAprovado > 0 ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{totAprovado}</Badge> : <span className="font-normal text-muted-foreground">0</span>}</TableCell>
+                      </TableRow>
+                    </tfoot>
+                  );
+                })()}
               </Table>
               </div>
             </div>
