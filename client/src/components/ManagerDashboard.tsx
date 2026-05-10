@@ -2759,12 +2759,11 @@ export default function ManagerDashboard({
 
       {/* Dialog editar professor */}
       <Dialog open={!!professorEditando} onOpenChange={(open) => { if (!open) setProfessorEditando(null); }}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar Professor</DialogTitle>
-            <DialogDescription>Atualize os dados do professor.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
+          <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
             {/* Photo upload */}
             <div className="flex flex-col items-center gap-1.5 pb-1">
               <div className="relative">
@@ -2803,108 +2802,110 @@ export default function ManagerDashboard({
                 />
               )}
             </div>
-            <div className="space-y-1">
-              <Label>Nome Completo *</Label>
-              <Input
-                placeholder="Nome completo"
-                value={formProfessor.nome}
-                onChange={(e) => setFormProfessor({ ...formProfessor, nome: e.target.value })}
-                data-testid="input-edit-teacher-name"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>CPF</Label>
-              <Input
-                placeholder="000.000.000-00"
-                value={formProfessor.cpf}
-                onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value })}
-                data-testid="input-edit-teacher-cpf"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                placeholder="email@exemplo.com"
-                value={formProfessor.email}
-                onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value })}
-                data-testid="input-edit-teacher-email"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Telefone</Label>
-              <Input
-                placeholder="(00) 00000-0000"
-                value={formProfessor.telefone}
-                onChange={(e) => setFormProfessor({ ...formProfessor, telefone: e.target.value })}
-                data-testid="input-edit-teacher-phone"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                placeholder="email@exemplo.com"
-                value={formProfessor.login}
-                onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
-                data-testid="input-edit-teacher-login"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Nova Senha <span className="text-muted-foreground text-xs">(deixe em branco para não alterar)</span></Label>
-              <Input
-                type="password"
-                placeholder="Nova senha (opcional)"
-                value={formProfessor.senha}
-                onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
-                data-testid="input-edit-teacher-password"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Modalidade *</Label>
-              <Input
-                placeholder="Ex: Beach Tennis, Futevôlei, Surf..."
-                value={formProfessor.modalidade}
-                onChange={(e) => setFormProfessor({ ...formProfessor, modalidade: e.target.value })}
-                data-testid="input-edit-teacher-modality"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Comissão (%)</Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                placeholder="Ex: 30"
-                value={formProfessor.percentualComissao}
-                onChange={(e) => setFormProfessor({ ...formProfessor, percentualComissao: e.target.value })}
-                data-testid="input-edit-teacher-comissao"
-              />
-              <p className="text-xs text-muted-foreground">Percentual sobre a receita gerada por check-ins atribuídos a este professor</p>
-            </div>
-            <div className="space-y-1">
-              <Label>Cor na agenda</Label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {PROF_COR_OPTIONS.map((cor) => {
-                  const usadaPorOutro = professores.some((p) => p.cor === cor && p.id !== professorEditando?.id);
-                  const selecionada = formProfessor.cor === cor;
-                  return (
-                    <button
-                      key={cor}
-                      type="button"
-                      title={usadaPorOutro ? "Cor em uso por outro professor" : cor}
-                      disabled={usadaPorOutro}
-                      onClick={() => setFormProfessor((prev) => ({ ...prev, cor }))}
-                      className={`h-7 w-7 rounded-full transition-transform ${
-                        selecionada ? "ring-2 ring-offset-2 ring-gray-500 scale-110" : ""
-                      } ${usadaPorOutro ? "opacity-25 cursor-not-allowed" : "hover:scale-110 cursor-pointer"}`}
-                      style={{ backgroundColor: cor }}
-                    />
-                  );
-                })}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1">
+                <Label>Nome do Professor <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Nome completo"
+                  value={formProfessor.nome}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, nome: e.target.value })}
+                  data-testid="input-edit-teacher-name"
+                />
               </div>
-              <p className="text-xs text-muted-foreground">Cores acinzentadas já estão em uso por outros professores</p>
+              <div className="space-y-1">
+                <Label>CPF</Label>
+                <Input
+                  placeholder="000.000.000-00"
+                  value={formProfessor.cpf}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, cpf: e.target.value })}
+                  data-testid="input-edit-teacher-cpf"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Telefone</Label>
+                <Input
+                  placeholder="(00) 00000-0000"
+                  value={formProfessor.telefone}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, telefone: e.target.value })}
+                  data-testid="input-edit-teacher-phone"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={formProfessor.email}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, email: e.target.value })}
+                  data-testid="input-edit-teacher-email"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login</Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={formProfessor.login}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, login: e.target.value })}
+                  data-testid="input-edit-teacher-login"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Nova Senha <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+                <Input
+                  type="text"
+                  placeholder="Deixe em branco para não alterar"
+                  value={formProfessor.senha}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, senha: e.target.value })}
+                  data-testid="input-edit-teacher-password"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Modalidade <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Ex: Beach Tennis, Futevôlei, Surf..."
+                  value={formProfessor.modalidade}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, modalidade: e.target.value })}
+                  data-testid="input-edit-teacher-modality"
+                />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Comissão (%)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="Ex: 30"
+                  value={formProfessor.percentualComissao}
+                  onChange={(e) => setFormProfessor({ ...formProfessor, percentualComissao: e.target.value })}
+                  data-testid="input-edit-teacher-comissao"
+                />
+                <p className="text-xs text-muted-foreground">Percentual sobre a receita gerada por check-ins atribuídos a este professor</p>
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Cor na agenda</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {PROF_COR_OPTIONS.map((cor) => {
+                    const usadaPorOutro = professores.some((p) => p.cor === cor && p.id !== professorEditando?.id);
+                    const selecionada = formProfessor.cor === cor;
+                    return (
+                      <button
+                        key={cor}
+                        type="button"
+                        title={usadaPorOutro ? "Cor em uso por outro professor" : cor}
+                        disabled={usadaPorOutro}
+                        onClick={() => setFormProfessor((prev) => ({ ...prev, cor }))}
+                        className={`h-7 w-7 rounded-full transition-transform ${
+                          selecionada ? "ring-2 ring-offset-2 ring-gray-500 scale-110" : ""
+                        } ${usadaPorOutro ? "opacity-25 cursor-not-allowed" : "hover:scale-110 cursor-pointer"}`}
+                        style={{ backgroundColor: cor }}
+                      />
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">Cores acinzentadas já estão em uso por outros professores</p>
+              </div>
             </div>
           </div>
           <DialogFooter>
