@@ -25,7 +25,7 @@ export function currentMonthRange(): DateRange {
 }
 
 function drpLabel(value: DateRange | null, presets: { id: string; label: string; range: DateRange | null }[]): string {
-  if (!value) return "Todo o período";
+  if (!value) return "Mês Atual";
   const match = presets.find(p => p.range && p.range.inicio === value.inicio && p.range.fim === value.fim);
   if (match) return match.label;
   const fmtDay = (iso: string) => iso.slice(8) + "/" + iso.slice(5,7);
