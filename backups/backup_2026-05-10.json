@@ -1,8 +1,8 @@
 {
-  "createdAt": "2026-05-10T03:02:46.447Z",
+  "createdAt": "2026-05-10T03:19:27.725Z",
   "arenas": [
     {
-      "id": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
+      "id": "d14438ff-bbc6-491d-a41a-b934718fc63b",
       "name": "Arena Padrão",
       "subscriptionPlan": "premium",
       "gestorLogin": "333",
@@ -17,28 +17,28 @@
       "nextBillingDate": "17/05/2026",
       "statusConta": "ativo",
       "trialExpiraEm": null,
-      "createdAt": "2026-05-10T03:02:35.353Z",
-      "updatedAt": "2026-05-10T03:02:35.353Z"
+      "createdAt": "2026-05-10T03:17:36.371Z",
+      "updatedAt": "2026-05-10T03:17:36.371Z"
     }
   ],
   "plans": [
     {
-      "id": "31d6c61c-6534-4f0b-a448-5065355465a1",
-      "arenaId": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
+      "id": "6b423ce2-c094-447f-9602-50e61a62ddbb",
+      "arenaId": "d14438ff-bbc6-491d-a41a-b934718fc63b",
       "titulo": "1x por semana",
       "checkins": 8,
       "valorTexto": null
     },
     {
-      "id": "bd64ae76-ab4c-4039-9a02-255cb29d9f3c",
-      "arenaId": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
+      "id": "beccc098-7935-461f-b8cb-c36233b0090b",
+      "arenaId": "d14438ff-bbc6-491d-a41a-b934718fc63b",
       "titulo": "2x por semana",
       "checkins": 12,
       "valorTexto": null
     },
     {
-      "id": "3b721223-fe97-4de7-ac66-ce828998f176",
-      "arenaId": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
+      "id": "58994c22-01b7-4471-bf26-74eca39ed717",
+      "arenaId": "d14438ff-bbc6-491d-a41a-b934718fc63b",
       "titulo": "Mensalista",
       "checkins": 0,
       "valorTexto": "R$ 140,00"
@@ -46,8 +46,8 @@
   ],
   "teachers": [
     {
-      "id": "e320939a-2bbc-472b-bdd5-c560946d9fb3",
-      "arenaId": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
+      "id": "18cbea20-6c27-4777-8eae-07f4b13f667f",
+      "arenaId": "d14438ff-bbc6-491d-a41a-b934718fc63b",
       "nome": "Felipe Bernardo",
       "login": "222",
       "senha": "222",
@@ -62,8 +62,8 @@
   ],
   "students": [
     {
-      "id": "fb9a77a6-b0cd-4bb1-b61b-0a5893780646",
-      "arenaId": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
+      "id": "be531342-6cb9-4822-a538-8b6686862caf",
+      "arenaId": "d14438ff-bbc6-491d-a41a-b934718fc63b",
       "nome": "Maria Santos",
       "login": "111",
       "senha": "111",
@@ -71,7 +71,7 @@
       "email": null,
       "telefone": null,
       "modalidade": "Vôlei de Praia",
-      "planoId": "bd64ae76-ab4c-4039-9a02-255cb29d9f3c",
+      "planoId": "beccc098-7935-461f-b8cb-c36233b0090b",
       "planoTitulo": "2x por semana",
       "planoCheckins": 12,
       "planoValorTexto": null,
@@ -85,23 +85,23 @@
       "professorId": null,
       "ativo": true,
       "desativadoEm": null,
-      "criadoEm": "2026-05-10T03:02:35.372Z"
+      "criadoEm": "2026-05-10T03:17:36.454Z"
     }
   ],
   "checkins": [
     {
-      "id": "2cadb8a5-76c3-4258-be6b-65b2a0e2f8d1",
-      "arenaId": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
-      "studentId": "fb9a77a6-b0cd-4bb1-b61b-0a5893780646",
+      "id": "892c5bdc-e71a-4722-b2a8-1fc5a878f693",
+      "arenaId": "d14438ff-bbc6-491d-a41a-b934718fc63b",
+      "studentId": "be531342-6cb9-4822-a538-8b6686862caf",
       "data": "01/01/2025",
       "hora": "19:30",
       "tipo": "pendente",
       "professorId": null
     },
     {
-      "id": "24e81ca4-c5b5-4401-be69-ebff03709a34",
-      "arenaId": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
-      "studentId": "fb9a77a6-b0cd-4bb1-b61b-0a5893780646",
+      "id": "a1359a44-dce9-4afb-99e1-eb636d529908",
+      "arenaId": "d14438ff-bbc6-491d-a41a-b934718fc63b",
+      "studentId": "be531342-6cb9-4822-a538-8b6686862caf",
       "data": "02/01/2025",
       "hora": "18:30",
       "tipo": "pendente",
@@ -115,8 +115,8 @@
   "turmaAlunos": [],
   "recursos": [
     {
-      "id": "7d08a536-7d34-4f61-b04b-0ea8f44ce675",
-      "arenaId": "e1699c77-124c-4c5f-be7d-12b43ab61f80",
+      "id": "e28b0ba2-dffe-45c1-b2ab-f2ebd009f995",
+      "arenaId": "d14438ff-bbc6-491d-a41a-b934718fc63b",
       "nome": "Quadra 1",
       "tipo": "sala",
       "ativo": true,
@@ -124,7 +124,7 @@
       "valorDayuse": null,
       "duracaoMinima": 1,
       "valorHoraAdicional": null,
-      "criadoEm": "2026-05-10T03:02:35.386Z"
+      "criadoEm": "2026-05-10T03:17:36.499Z"
     }
   ]
 }
