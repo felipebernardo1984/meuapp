@@ -705,6 +705,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(updated);
   });
 
+  app.delete("/api/finance/comissao/:id", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    await storage.deleteCommission(req.params.id);
+    res.json({ ok: true });
+  });
+
   // ── Arena subscription info (for gestor) ──────────────────────────────────
   app.get("/api/subscription", async (req, res) => {
     const arenaId = requireArena(req, res);

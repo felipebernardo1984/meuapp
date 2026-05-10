@@ -90,6 +90,7 @@ interface TeacherDashboardProps {
   teacherName: string;
   photoUrl?: string;
   modalidade: string;
+  percentualComissao?: string;
   planos: Plano[];
   alunos: AlunoView[];
   charges?: Cobranca[];
@@ -108,6 +109,7 @@ export default function TeacherDashboard({
   teacherName,
   photoUrl,
   modalidade,
+  percentualComissao,
   planos,
   alunos,
   charges = [],
@@ -1141,19 +1143,21 @@ export default function TeacherDashboard({
             <div className="py-8 text-center text-sm text-muted-foreground">Carregando...</div>
           ) : receitaAlunoData ? (
             <div className="space-y-3 py-2">
-              {/* Check-in revenue (shown only when student uses check-ins) */}
-              {receitaAlunoData.checkins > 0 && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Check-ins</p>
-                    <p className="text-2xl font-bold" data-testid="dialog-receita-checkins">{receitaAlunoData.checkins}</p>
-                  </div>
-                  <div className="rounded-lg border p-3 text-center">
-                    <p className="text-xs text-muted-foreground">Valor/Check-in</p>
-                    <p className="text-2xl font-bold">R$ {receitaAlunoData.valorUnitario.toFixed(2).replace(".", ",")}</p>
-                  </div>
+              {/* Check-in stats — always show when valorUnitario is configured */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Check-ins</p>
+                  <p className="text-2xl font-bold" data-testid="dialog-receita-checkins">{receitaAlunoData.checkins}</p>
                 </div>
-              )}
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Valor/Check-in</p>
+                  <p className="text-2xl font-bold">
+                    {receitaAlunoData.valorUnitario > 0
+                      ? `R$ ${receitaAlunoData.valorUnitario.toFixed(2).replace(".", ",")}`
+                      : <span className="text-muted-foreground text-base">Não configurado</span>}
+                  </p>
+                </div>
+              </div>
 
               {/* Breakdown rows */}
               <div className="rounded-lg border divide-y text-sm">
@@ -1189,6 +1193,22 @@ export default function TeacherDashboard({
                   R$ {receitaAlunoData.receitaTotal.toFixed(2).replace(".", ",")}
                 </p>
               </div>
+
+              {/* Commission info */}
+              {percentualComissao && parseFloat(percentualComissao) > 0 && (
+                <div className="rounded-lg border divide-y text-sm">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-muted-foreground">Sua comissão (%)</span>
+                    <span className="font-medium">{percentualComissao}%</span>
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-muted-foreground">Comissão sobre check-ins</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      R$ {(receitaAlunoData.receitaCheckins * parseFloat(percentualComissao) / 100).toFixed(2).replace(".", ",")}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
           <DialogFooter>

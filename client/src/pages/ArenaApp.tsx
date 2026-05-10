@@ -451,6 +451,7 @@ export default function ArenaApp() {
           teacherName={sessao.professor.nome}
           photoUrl={sessao.professor.photoUrl ?? undefined}
           modalidade={sessao.professor.modalidade}
+          percentualComissao={sessao.professor.percentualComissao ?? undefined}
           planos={planosAdaptados}
           alunos={alunos
             .filter((a: any) => a.modalidade === sessao.professor.modalidade)

@@ -336,6 +336,15 @@ export default function ManagerDashboard({
     },
   });
 
+  const excluirComissao = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/comissao/${id}`),
+    onSuccess: () => {
+      qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissoes"] });
+      qcComissao.invalidateQueries({ queryKey: ["/api/finance/comissao/resumo"] });
+      toast({ title: "Registro removido." });
+    },
+  });
+
   const qcWa = useQueryClient();
   const salvarWhatsapp = useMutation({
     mutationFn: (d: any) => apiRequest("POST", "/api/whatsapp/settings", d),
@@ -4750,7 +4759,18 @@ export default function ManagerDashboard({
                                 Editar
                               </Button>
                             </div>
-                          ) : null}
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                              disabled={excluirComissao.isPending}
+                              onClick={() => { if (confirm("Remover este registro cancelado?")) excluirComissao.mutate(c.id); }}
+                              data-testid={`button-excluir-comissao-${c.id}`}
+                            >
+                              Excluir
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

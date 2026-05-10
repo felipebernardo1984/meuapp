@@ -380,6 +380,10 @@ export class DatabaseStorage {
     await db.update(teacherCommissions).set({ status: "cancelado", updatedAt: new Date() }).where(eq(teacherCommissions.checkinId, checkinId));
   }
 
+  async deleteCommission(id: string) {
+    await db.delete(teacherCommissions).where(eq(teacherCommissions.id, id));
+  }
+
   // PAYMENTS
   async listPayments(tenantId: string) {
     return db.select().from(payments).where(eq(payments.tenantId, tenantId));
