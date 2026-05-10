@@ -400,7 +400,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
       professorIdFinal = selectedProfessor.id;
     }
     const payload = {
-      nome: formData.tipo === "dayuse" ? "Avulso|Dayuse" : formData.tipo === "aluguel" ? "Reserva|Aluguel" : formData.nome,
+      nome: formData.tipo === "dayuse" ? "Avulso | Dayuse" : formData.tipo === "aluguel" ? "Reserva | Aluguel" : formData.nome,
       tipo: formData.tipo,
       modalidade,
       professorId: professorIdFinal,
@@ -629,9 +629,9 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                                   key={t.id}
                                   className={`rounded px-1 py-0.5 text-[9px] sm:text-[10px] font-medium leading-tight border ${isHighlightedTurma(t) ? "ring-2 ring-yellow-300 border-yellow-200 text-gray-900" : "text-white border-transparent"}`}
                                   style={{ backgroundColor: isHighlightedTurma(t) ? "#fef3c7" : t.cor }}
-                                  title={`${t.modalidade} | ${t.nome} · ${t.horarioInicio}–${t.horarioFim}${pessoaNome ? ` · ${pessoaNome}` : ""}`}
+                                  title={`${[t.modalidade, t.nome].filter(Boolean).join(' | ')} · ${t.horarioInicio}–${t.horarioFim}${pessoaNome ? ` · ${pessoaNome}` : ""}`}
                                 >
-                                  <span className="truncate block font-semibold">{t.modalidade} | {t.nome}</span>
+                                  <span className="truncate block font-semibold">{t.modalidade ? `${t.modalidade} | ${t.nome.replace(/\|/g, ' | ')}` : t.nome.replace(/\|/g, ' | ')}</span>
                                   <span className="opacity-80 block truncate">{t.horarioInicio === t.horarioFim ? t.horarioInicio : `${t.horarioInicio}–${t.horarioFim}`}{nomeExibicao ? ` · ${nomeExibicao}` : ""}</span>
                                 </div>
                                 );
@@ -1085,8 +1085,8 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                 className={formData.tipo === "dayuse" || formData.tipo === "aluguel" ? "bg-muted text-muted-foreground cursor-default" : ""}
                 placeholder="Ex: Iniciante"
                 value={
-                  formData.tipo === "dayuse" ? "Avulso|Dayuse"
-                  : formData.tipo === "aluguel" ? "Reserva|Aluguel"
+                  formData.tipo === "dayuse" ? "Avulso | Dayuse"
+                  : formData.tipo === "aluguel" ? "Reserva | Aluguel"
                   : formData.nome
                 }
                 onChange={(e) => {
