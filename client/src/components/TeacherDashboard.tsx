@@ -518,11 +518,9 @@ export default function TeacherDashboard({
                     Registrar Aula
                   </Button>
                 )}
-                {(getValorPorCheckin(aluno.modalidade ?? modalidade) > 0 || !temCheckins) && (
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => { setAlunoReceita(aluno); setDialogReceita(true); }} data-testid={`button-receita-${aluno.id}`}>
-                    Receita Gerada
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" className="w-full" onClick={() => { setAlunoReceita(aluno); setDialogReceita(true); }} data-testid={`button-receita-${aluno.id}`}>
+                  Receita Gerada
+                </Button>
                 <Button variant="outline" size="sm" className="w-full" onClick={() => openFinanceiro(aluno)} data-testid={`button-financeiro-${aluno.id}`}>
                   Cobrança e Pagamento
                 </Button>
