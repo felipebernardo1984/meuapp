@@ -72,6 +72,22 @@ interface Recurso {
   valorHoraAdicional?: string | null;
 }
 
+function toMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + (m || 0);
+}
+
+function turmaEfetivaDias(t: { diasSemana: string; dataAula?: string | null }): Set<string> {
+  const set = new Set<string>();
+  if (t.dataAula) {
+    const d = new Date(t.dataAula + "T12:00:00");
+    const id = JS_DAY_TO_ID[d.getDay()];
+    if (id) set.add(id);
+  }
+  t.diasSemana.split("|").filter(Boolean).forEach((d) => set.add(d));
+  return set;
+}
+
 function parseCurrency(val: string | null | undefined): number {
   if (!val) return 0;
   return parseFloat(val.replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
@@ -370,6 +386,10 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
       toast({ title: "Preencha nome e horário", variant: "destructive" });
       return;
     }
+    if (!formData.recursoId) {
+      toast({ title: "Selecione um ambiente para o agendamento", variant: "destructive" });
+      return;
+    }
     const dataAula = slotPopup ? slotPopup.date.toISOString().slice(0, 10) : undefined;
     const dataAulaFinal = sessionData.dataAula || dataAula || undefined;
 
@@ -420,6 +440,38 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
       await criarTurma.mutateAsync(payload);
     }
   };
+
+  // Recursos disponíveis no horário do formulário atual (exclui ocupados)
+  const recursosDisponiveis = useMemo(() => {
+    const ativos = recursos.filter((r) => r.ativo);
+    if (!formData.horarioInicio || !formData.horarioFim) return ativos;
+    const fStart = toMinutes(formData.horarioInicio);
+    const fEnd = toMinutes(formData.horarioFim);
+
+    // Dias efetivos do formulário
+    const formDias = new Set<string>(formData.diasSemana);
+    if (sessionData.dataAula) {
+      const d = new Date(sessionData.dataAula + "T12:00:00");
+      const id = JS_DAY_TO_ID[d.getDay()];
+      if (id) formDias.add(id);
+    }
+
+    const ocupados = new Set<string>();
+    for (const t of turmas) {
+      if (t.id === editandoId) continue;
+      if (!t.recursoId) continue;
+      const tStart = toMinutes(t.horarioInicio);
+      const tEnd = toMinutes(t.horarioFim);
+      // Time overlap check
+      if (fStart >= tEnd || fEnd <= tStart) continue;
+      // Day overlap check
+      const tDias = turmaEfetivaDias(t);
+      const overlap = [...formDias].some((d) => tDias.has(d));
+      if (overlap) ocupados.add(t.recursoId);
+    }
+
+    return ativos.filter((r) => !ocupados.has(r.id));
+  }, [recursos, turmas, formData.horarioInicio, formData.horarioFim, formData.diasSemana, sessionData.dataAula, editandoId]);
 
   const alunosDaTurma = new Set(alunosTurma.map((e) => e.alunoId));
   const alunosDisponiveis = todosAlunos.filter(
@@ -1096,15 +1148,15 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                 <div className="space-y-3">
                   {/* Ambiente PRIMEIRO — auto-preenche o valor */}
                   <div className="space-y-2">
-                    <Label>Ambiente</Label>
+                    <Label>Ambiente *</Label>
                     <Select
-                      value={formData.recursoId || "none"}
+                      value={formData.recursoId || ""}
                       onValueChange={(v) => {
                         const recurso = recursos.find((r) => r.id === v);
                         setFormData((p) => {
                           const novaDuracao = recurso?.duracaoMinima ?? p.duracao;
-                          const novoValor = v !== "none" && recurso ? calcValorTotal(recurso, p.tipo, novaDuracao) : p.valorCobrado;
-                          return { ...p, recursoId: v === "none" ? "" : v, duracao: novaDuracao, valorCobrado: novoValor };
+                          const novoValor = recurso ? calcValorTotal(recurso, p.tipo, novaDuracao) : p.valorCobrado;
+                          return { ...p, recursoId: v, duracao: novaDuracao, valorCobrado: novoValor };
                         });
                       }}
                     >
@@ -1112,14 +1164,19 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                         <SelectValue placeholder="Selecionar quadra / espaço..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Nenhum</SelectItem>
-                        {recursos.filter((r) => r.ativo).map((r) => (
+                        {recursosDisponiveis.map((r) => (
                           <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
                         ))}
+                        {recursosDisponiveis.length === 0 && (
+                          <SelectItem value="__none__" disabled>Nenhum ambiente disponível neste horário</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     {recursos.filter((r) => r.ativo).length === 0 && (
                       <p className="text-xs text-muted-foreground">Nenhum espaço cadastrado. Crie em Quadras → Ambientes.</p>
+                    )}
+                    {recursos.filter((r) => r.ativo).length > 0 && recursosDisponiveis.length === 0 && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">Todos os ambientes estão ocupados neste horário.</p>
                     )}
                   </div>
 
@@ -1196,23 +1253,31 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
             {formData.tipo === "aula" && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 space-y-2">
-                  <Label>Ambiente (opcional)</Label>
+                  <Label>Ambiente *</Label>
                   <Select
-                    value={formData.recursoId || "none"}
+                    value={formData.recursoId || ""}
                     onValueChange={(v) =>
-                      setFormData((p) => ({ ...p, recursoId: v === "none" ? "" : v }))
+                      setFormData((p) => ({ ...p, recursoId: v }))
                     }
                   >
                     <SelectTrigger data-testid="select-turma-quadra">
                       <SelectValue placeholder="Selecionar quadra / espaço..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {recursos.filter((r) => r.ativo).map((r) => (
+                      {recursosDisponiveis.map((r) => (
                         <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
                       ))}
+                      {recursosDisponiveis.length === 0 && (
+                        <SelectItem value="__none__" disabled>Nenhum ambiente disponível neste horário</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
+                  {recursos.filter((r) => r.ativo).length === 0 && (
+                    <p className="text-xs text-muted-foreground">Nenhum espaço cadastrado. Crie em Quadras → Ambientes.</p>
+                  )}
+                  {recursos.filter((r) => r.ativo).length > 0 && recursosDisponiveis.length === 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">Todos os ambientes estão ocupados neste horário.</p>
+                  )}
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="capacidade-maxima">Capacidade máxima de alunos</Label>
