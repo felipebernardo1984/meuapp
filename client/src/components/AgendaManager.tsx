@@ -693,7 +693,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                             </div>
                             <p className="text-[10px] opacity-90 mt-0.5">{t.horarioInicio}–{t.horarioFim}</p>
                             {t.recursoNome && (
-                              <p className="text-[9px] opacity-80 truncate mt-0.5">Sala: {t.recursoNome}</p>
+                              <p className="text-[9px] opacity-80 truncate mt-0.5">{t.recursoNome}</p>
                             )}
                             {t.professorNome && (
                               <p className="text-[9px] opacity-80 truncate mt-0.5">Prof.: {t.professorNome}</p>
@@ -842,7 +842,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                           <p className="text-xs opacity-80 mt-0.5">Prof.: {t.professorNome}</p>
                         )}
                         {t.recursoNome && (
-                          <p className="text-xs opacity-80">Ambiente: {t.recursoNome}</p>
+                          <p className="text-xs opacity-80">{t.recursoNome}</p>
                         )}
                         {t.clienteNome && (
                           <p className="text-xs opacity-80">Cliente: {t.clienteNome}</p>
@@ -1192,26 +1192,41 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
               );
             })()}
 
-            {/* AULA: Ambiente (opcional) */}
+            {/* AULA: Ambiente (opcional) + Capacidade */}
             {formData.tipo === "aula" && (
-              <div className="space-y-2">
-                <Label>Ambiente (opcional)</Label>
-                <Select
-                  value={formData.recursoId || "none"}
-                  onValueChange={(v) =>
-                    setFormData((p) => ({ ...p, recursoId: v === "none" ? "" : v }))
-                  }
-                >
-                  <SelectTrigger data-testid="select-turma-quadra">
-                    <SelectValue placeholder="Selecionar quadra / espaço..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {recursos.filter((r) => r.ativo).map((r) => (
-                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-2">
+                  <Label>Ambiente (opcional)</Label>
+                  <Select
+                    value={formData.recursoId || "none"}
+                    onValueChange={(v) =>
+                      setFormData((p) => ({ ...p, recursoId: v === "none" ? "" : v }))
+                    }
+                  >
+                    <SelectTrigger data-testid="select-turma-quadra">
+                      <SelectValue placeholder="Selecionar quadra / espaço..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {recursos.filter((r) => r.ativo).map((r) => (
+                        <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="capacidade-maxima">Capacidade máxima de alunos</Label>
+                  <Input
+                    id="capacidade-maxima"
+                    type="number"
+                    min={1}
+                    max={100}
+                    data-testid="input-capacidade-maxima"
+                    value={formData.capacidadeMaxima}
+                    onChange={(e) => setFormData((p) => ({ ...p, capacidadeMaxima: parseInt(e.target.value) || 1 }))}
+                  />
+                  <p className="text-xs text-muted-foreground">Quantidade máxima de alunos que podem se matricular nesta aula.</p>
+                </div>
               </div>
             )}
 
