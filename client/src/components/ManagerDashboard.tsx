@@ -501,6 +501,7 @@ export default function ManagerDashboard({
   // Confirmação excluir plano e professor
   const [confirmExcluirPlano, setConfirmExcluirPlano] = useState<{ id: string; titulo: string } | null>(null);
   const [confirmExcluirProfessor, setConfirmExcluirProfessor] = useState<ProfessorGestor | null>(null);
+  const [confirmExcluirComissao, setConfirmExcluirComissao] = useState<string | null>(null);
 
   // Confirmação remover checkin no histórico
   const [confirmRemoverCheckin, setConfirmRemoverCheckin] = useState<{ alunoId: string; index: number } | null>(null);
@@ -4847,7 +4848,7 @@ export default function ManagerDashboard({
                               variant="ghost"
                               className="h-7 text-xs text-destructive hover:bg-destructive/10"
                               disabled={excluirComissao.isPending}
-                              onClick={() => { if (confirm("Remover este registro cancelado?")) excluirComissao.mutate(c.id); }}
+                              onClick={() => setConfirmExcluirComissao(c.id)}
                               data-testid={`button-excluir-comissao-${c.id}`}
                             >
                               Excluir
@@ -4905,6 +4906,34 @@ export default function ManagerDashboard({
         </DialogContent>
       </Dialog>
 
+
+      {/* ── Dialog Confirmar Exclusão de Comissão ── */}
+      <Dialog open={!!confirmExcluirComissao} onOpenChange={(open) => { if (!open) setConfirmExcluirComissao(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Comissão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir este registro de comissão cancelada? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmExcluirComissao(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={excluirComissao.isPending}
+              onClick={() => {
+                if (confirmExcluirComissao) {
+                  excluirComissao.mutate(confirmExcluirComissao);
+                  setConfirmExcluirComissao(null);
+                }
+              }}
+              data-testid="button-confirm-excluir-comissao"
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Seção Despesas ── */}
       {activeSection === "despesas" && (
