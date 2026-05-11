@@ -1719,22 +1719,23 @@ export default function ManagerDashboard({
       </Dialog>
 
       {activeSection === "planos" && (
+      <div>
+      <Button
+        size="lg"
+        className="w-full h-14 text-lg mb-5"
+        onClick={() => {
+          setPlanoEditando(null);
+          setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
+          setDialogNovoPlano(true);
+        }}
+        data-testid="button-add-plan"
+      >
+        <Plus className="mr-2 h-5 w-5" />
+        Criar novo plano
+      </Button>
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="space-y-2">
-            <Button
-              size="lg"
-              className="w-full h-14 text-lg"
-              onClick={() => {
-                  setPlanoEditando(null);
-                  setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
-                  setDialogNovoPlano(true);
-                }}
-              data-testid="button-add-plan"
-            >
-              <Plus className="mr-2 h-5 w-5" />
-              Criar novo plano
-            </Button>
 
             {planos.map((plano) => (
               <div
@@ -1770,6 +1771,7 @@ export default function ManagerDashboard({
           </div>
         </CardContent>
       </Card>
+      </div>
       )}
 
       {/* Dialog criar plano */}
@@ -1916,61 +1918,59 @@ export default function ManagerDashboard({
           </div>
 
           {/* Filters + Table */}
-          <Card>
-            <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3 mb-5">
+            <div className="flex items-center gap-2 flex-wrap">
+              {(["todos", "paid", "pending"] as const).map((f) => (
+                <Button
+                  key={f}
+                  variant={filtroStatusMens === f ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 px-3 gap-1.5"
+                  data-testid={`filter-mens-${f}`}
+                  onClick={() => setFiltroStatusMens(f)}
+                >
+                  {f === "todos" ? "Todos" : f === "paid" ? "Pagos" : "Pendentes"}
+                </Button>
+              ))}
               <Button
-                size="lg"
-                className="w-full h-14 text-lg"
-                data-testid="button-novo-mensalista"
+                size="sm"
+                variant="outline"
+                className="h-9 px-3 gap-1.5"
+                data-testid="button-registrar-pagamento-mens"
                 onClick={() => {
-                  setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
-                  setDialogNovoMensalista(true);
+                  setMensAlunoId("");
+                  setMensAlunoNome("");
+                  const today = new Date();
+                  const yyyy = today.getFullYear();
+                  const mm = String(today.getMonth() + 1).padStart(2, "0");
+                  const dd = String(today.getDate()).padStart(2, "0");
+                  setFormMens({
+                    referenceMonth: `${yyyy}-${mm}`,
+                    amount: "",
+                    dueDate: `${yyyy}-${mm}-${dd}`,
+                    paymentMethod: "dinheiro",
+                    status: "paid",
+                  });
+                  setDialogRegistrarMens(true);
                 }}
               >
-                <UserPlus className="mr-2 h-5 w-5" />
-                Cadastrar Mensalista
+                <Receipt className="w-4 h-4" /> Registrar Pagamento
               </Button>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <CardTitle className="text-lg">Alunos Mensalistas</CardTitle>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex rounded-md border overflow-hidden text-sm">
-                    {(["todos", "paid", "pending"] as const).map((f) => (
-                      <button
-                        key={f}
-                        data-testid={`filter-mens-${f}`}
-                        className={`px-3 py-1.5 transition-colors ${filtroStatusMens === f ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                        onClick={() => setFiltroStatusMens(f)}
-                      >
-                        {f === "todos" ? "Todos" : f === "paid" ? "Pagos" : "Pendentes"}
-                      </button>
-                    ))}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    data-testid="button-registrar-pagamento-mens"
-                    onClick={() => {
-                      setMensAlunoId("");
-                      setMensAlunoNome("");
-                      const today = new Date();
-                      const yyyy = today.getFullYear();
-                      const mm = String(today.getMonth() + 1).padStart(2, "0");
-                      const dd = String(today.getDate()).padStart(2, "0");
-                      setFormMens({
-                        referenceMonth: `${yyyy}-${mm}`,
-                        amount: "",
-                        dueDate: `${yyyy}-${mm}-${dd}`,
-                        paymentMethod: "dinheiro",
-                        status: "paid",
-                      });
-                      setDialogRegistrarMens(true);
-                    }}
-                  >
-                    <Receipt className="w-4 h-4 mr-1" /> Registrar Pagamento
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
+            </div>
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg"
+              data-testid="button-novo-mensalista"
+              onClick={() => {
+                setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+                setDialogNovoMensalista(true);
+              }}
+            >
+              <UserPlus className="mr-2 h-5 w-5" />
+              Cadastrar Mensalista
+            </Button>
+          </div>
+          <Card>
             <CardContent className="p-0">
               {mensalidadesFiltradas.length === 0 ? (
                 <div className="py-12 text-center">
@@ -5141,28 +5141,26 @@ export default function ManagerDashboard({
             );
           })()}
 
+          <div className="flex flex-wrap items-center gap-3">
+            <DateRangePicker value={filtroRangeDespesa} onChange={setFiltroRangeDespesa} align="start" />
+          </div>
+          <Button
+            data-testid="button-nova-despesa"
+            size="lg"
+            className="w-full h-14 text-lg"
+            onClick={() => {
+              const today = new Date();
+              const dd = String(today.getDate()).padStart(2, "0");
+              const mm = String(today.getMonth() + 1).padStart(2, "0");
+              const yyyy = today.getFullYear();
+              setDespesaEditando(null);
+              setFormDespesa({ categoria: "Outros", descricao: "", valor: "", data: `${yyyy}-${mm}-${dd}` });
+              setDialogDespesa(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" /> Nova Despesa
+          </Button>
           <Card>
-            <CardHeader className="pb-3">
-              <Button
-                data-testid="button-nova-despesa"
-                size="lg"
-                className="w-full h-14 text-lg"
-                onClick={() => {
-                  const today = new Date();
-                  const dd = String(today.getDate()).padStart(2, "0");
-                  const mm = String(today.getMonth() + 1).padStart(2, "0");
-                  const yyyy = today.getFullYear();
-                  setDespesaEditando(null);
-                  setFormDespesa({ categoria: "Outros", descricao: "", valor: "", data: `${yyyy}-${mm}-${dd}` });
-                  setDialogDespesa(true);
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" /> Nova Despesa
-              </Button>
-              <div className="flex flex-wrap items-center gap-3 mt-1">
-                <DateRangePicker value={filtroRangeDespesa} onChange={setFiltroRangeDespesa} align="start" />
-              </div>
-            </CardHeader>
             <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
