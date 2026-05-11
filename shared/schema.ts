@@ -32,6 +32,7 @@ export const arenas = pgTable("arenas", {
   // SaaS lifecycle: 'trial' | 'ativo' | 'vencido'
   statusConta: text("status_conta").notNull().default("ativo"),
   trialExpiraEm: text("trial_expira_em"),
+  endereco: text("endereco"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -879,6 +879,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ok: true, nextBillingDate: nextBilling });
   });
 
+  // ── Agenda Config (endereço público) ─────────────────────────────────────
+  app.get("/api/agenda-config", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const arena = await storage.getArena(arenaId);
+    if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
+    res.json({ arenaId: arena.id, endereco: arena.endereco ?? "" });
+  });
+
+  app.put("/api/agenda-config", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    const { endereco } = req.body;
+    await storage.updateArena(arenaId, { endereco: endereco ?? "" });
+    res.json({ ok: true });
+  });
+
   // ── Admin Panel ───────────────────────────────────────────────────────────
   app.get("/api/admin/arenas", async (req, res) => {
     if (!requireAdmin(req, res)) return;

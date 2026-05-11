@@ -80,6 +80,9 @@ export default function QuadrasPublicas() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">{arena?.name ?? "Arena"}</h1>
             <p className="text-sm text-gray-500">Disponibilidade de Ambientes</p>
+            {arena?.endereco && (
+              <p className="text-xs text-gray-400 mt-0.5">{arena.endereco}</p>
+            )}
           </div>
         </div>
       </div>

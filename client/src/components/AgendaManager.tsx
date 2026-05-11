@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   CalendarDays, Plus, Pencil, Trash2, Users, Clock, ChevronLeft,
   ChevronRight, LayoutGrid, List, Calendar, UserPlus, UserMinus, RefreshCw, ChevronDown, ChevronUp,
+  Settings, Copy, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -214,6 +215,10 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth()); // 0-indexed
 
+  // Config dialog
+  const [dialogConfig, setDialogConfig] = useState(false);
+  const [enderecoInput, setEnderecoInput] = useState("");
+
   // Dialogs
   const [dialogTurma, setDialogTurma] = useState(false);
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -235,6 +240,10 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
   const { data: recursos = [] } = useQuery<Recurso[]>({ queryKey: ["/api/recursos"] });
+  const { data: agendaConfig } = useQuery<{ arenaId: string; endereco: string }>({
+    queryKey: ["/api/agenda-config"],
+    enabled: !readOnly,
+  });
   const { data: alunosTurma = [], isLoading: loadingAlunos } = useQuery<AlunoTurma[]>({
     queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"],
     queryFn: () => fetch(`/api/turmas/${turmaAlunos!.id}/alunos`).then((r) => r.json()),
@@ -273,6 +282,12 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
       apiRequest("DELETE", `/api/turmas/${turmaId}/alunos/${alunoId}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/turmas", turmaAlunos?.id, "alunos"] }); qc.invalidateQueries({ queryKey: ["/api/turmas"] }); toast({ title: "Aluno removido" }); },
     onError: () => toast({ title: "Erro ao remover aluno", variant: "destructive" }),
+  });
+
+  const salvarConfig = useMutation({
+    mutationFn: () => apiRequest("PUT", "/api/agenda-config", { endereco: enderecoInput }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/agenda-config"] }); setDialogConfig(false); toast({ title: "Configurações salvas!" }); },
+    onError: () => toast({ title: "Erro ao salvar configurações", variant: "destructive" }),
   });
 
   // Helpers
@@ -590,6 +605,18 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                   <List className="h-4 w-4" />
                   Lista
                 </Button>
+                {!readOnly && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setEnderecoInput(agendaConfig?.endereco ?? ""); setDialogConfig(true); }}
+                    data-testid="button-agenda-config"
+                    className="h-9 px-3 gap-1.5"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Configurações
+                  </Button>
+                )}
               </div>
               {!readOnly && (
                 <Button
@@ -1576,6 +1603,90 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog: Configurações da Agenda */}
+      <Dialog open={dialogConfig} onOpenChange={(open) => { if (!open) setDialogConfig(false); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Configurações da Agenda
+            </DialogTitle>
+            <DialogDescription>
+              Configure as informações públicas da sua agenda.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="config-endereco">Endereço da arena</Label>
+              <Input
+                id="config-endereco"
+                data-testid="input-agenda-endereco"
+                placeholder="Ex: Rua das Palmeiras, 100 — Bairro, Cidade"
+                value={enderecoInput}
+                onChange={(e) => setEnderecoInput(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Exibido na página pública de disponibilidade de quadras.
+              </p>
+            </div>
+
+            {agendaConfig?.arenaId && (
+              <div className="space-y-2">
+                <Label>Link público da agenda</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={`${window.location.origin}/arena/${agendaConfig.arenaId}/quadras`}
+                    className="text-xs bg-muted/50 text-muted-foreground"
+                    data-testid="input-agenda-public-link"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    data-testid="button-copy-agenda-link"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/arena/${agendaConfig.arenaId}/quadras`);
+                      toast({ title: "Link copiado!" });
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    data-testid="button-open-agenda-link"
+                    onClick={() => window.open(`/arena/${agendaConfig.arenaId}/quadras`, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Compartilhe este link com seus clientes para que eles vejam a disponibilidade das quadras.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogConfig(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => salvarConfig.mutate()}
+              disabled={salvarConfig.isPending}
+              data-testid="button-save-agenda-config"
+            >
+              {salvarConfig.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
