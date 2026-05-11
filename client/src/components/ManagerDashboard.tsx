@@ -2563,23 +2563,24 @@ export default function ManagerDashboard({
       </Dialog>
 
       {activeSection === "professores" && (
+      <div>
+      <Button
+        size="lg"
+        className="w-full h-14 text-lg mb-5"
+        onClick={() => {
+          const coresUsadas = professores.map((p) => p.cor).filter(Boolean);
+          const primeiraLivre = PROF_COR_OPTIONS.find((c) => !coresUsadas.includes(c)) || "#37474F";
+          setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "", cor: primeiraLivre });
+          setDialogProfessor(true);
+        }}
+        data-testid="button-add-teacher"
+      >
+        <UserPlus className="mr-2 h-5 w-5" />
+        Cadastrar Professor
+      </Button>
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="space-y-2">
-            <Button
-              size="lg"
-              className="w-full h-14 text-lg"
-              onClick={() => {
-                const coresUsadas = professores.map((p) => p.cor).filter(Boolean);
-                const primeiraLivre = PROF_COR_OPTIONS.find((c) => !coresUsadas.includes(c)) || "#37474F";
-                setFormProfessor({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", percentualComissao: "", photoUrl: "", cor: primeiraLivre });
-                setDialogProfessor(true);
-              }}
-              data-testid="button-add-teacher"
-            >
-              <UserPlus className="mr-2 h-5 w-5" />
-              Cadastrar Professor
-            </Button>
                 {professores.map((professor, idx) => {
               const profGradients = ["from-blue-400 to-blue-600","from-violet-400 to-purple-600","from-emerald-400 to-emerald-600","from-orange-400 to-orange-600","from-pink-400 to-rose-600","from-cyan-400 to-cyan-600"];
               return (
@@ -2646,6 +2647,7 @@ export default function ManagerDashboard({
           </div>
         </CardContent>
       </Card>
+      </div>
       )}
 
       {/* Dialog cadastrar professor */}

@@ -1,14 +1,208 @@
 {
-  "createdAt": "2026-05-11T03:38:24.354Z",
-  "arenas": [],
-  "plans": [],
-  "teachers": [],
-  "students": [],
-  "checkins": [],
+  "createdAt": "2026-05-11T04:10:26.528Z",
+  "arenas": [
+    {
+      "id": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "name": "Arena Padrão",
+      "subscriptionPlan": "premium",
+      "gestorLogin": "333",
+      "gestorSenha": "333",
+      "gestorNome": null,
+      "gestorCpf": null,
+      "gestorEmail": null,
+      "gestorTelefone": null,
+      "subscriptionStartDate": "11/05/2026",
+      "subscriptionValue": "R$ 199,00",
+      "subscriptionStatus": "Ativo",
+      "nextBillingDate": "18/05/2026",
+      "statusConta": "ativo",
+      "trialExpiraEm": null,
+      "endereco": null,
+      "urlAgenda": null,
+      "createdAt": "2026-05-11T03:38:25.160Z",
+      "updatedAt": "2026-05-11T03:38:25.160Z"
+    }
+  ],
+  "plans": [
+    {
+      "id": "975472d7-1b00-4b25-a642-556820e406c6",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "titulo": "1x por semana",
+      "checkins": 8,
+      "valorTexto": null
+    },
+    {
+      "id": "04f86081-8ba0-4b8b-b220-0a36a70cf75e",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "titulo": "2x por semana",
+      "checkins": 12,
+      "valorTexto": null
+    },
+    {
+      "id": "afefd09d-b760-4abc-a702-d518aded199d",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "titulo": "Mensalista",
+      "checkins": 0,
+      "valorTexto": "R$ 140,00"
+    }
+  ],
+  "teachers": [
+    {
+      "id": "b0331bb7-736b-462b-8f4d-97bd3ba27192",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "nome": "Felipe Bernardo",
+      "login": "222",
+      "senha": "222",
+      "cpf": null,
+      "email": null,
+      "telefone": null,
+      "modalidade": "Vôlei de Praia",
+      "percentualComissao": "0.00",
+      "photoUrl": null,
+      "cor": "#1565C0"
+    }
+  ],
+  "students": [
+    {
+      "id": "f73072c4-78c1-4b72-81a9-5204550c2ec9",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "nome": "Maria Santos",
+      "login": "111",
+      "senha": "111",
+      "cpf": "987.654.321-00",
+      "email": null,
+      "telefone": null,
+      "modalidade": "Vôlei de Praia",
+      "planoId": "04f86081-8ba0-4b8b-b220-0a36a70cf75e",
+      "planoTitulo": "2x por semana",
+      "planoCheckins": 12,
+      "planoValorTexto": null,
+      "checkinsRealizados": 3,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "11/05/2026",
+      "photoUrl": null,
+      "integrationType": "none",
+      "integrationPlan": null,
+      "professorId": null,
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-05-11T03:38:25.232Z"
+    }
+  ],
+  "checkins": [
+    {
+      "id": "53e32a33-25dd-4fa3-a39b-a037ba266f14",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "studentId": "f73072c4-78c1-4b72-81a9-5204550c2ec9",
+      "data": "01/01/2025",
+      "hora": "19:30",
+      "tipo": "pendente",
+      "professorId": null
+    },
+    {
+      "id": "97a04dd2-1afa-4c2c-b1b3-7f9d25423653",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "studentId": "f73072c4-78c1-4b72-81a9-5204550c2ec9",
+      "data": "02/01/2025",
+      "hora": "18:30",
+      "tipo": "pendente",
+      "professorId": null
+    },
+    {
+      "id": "555e8803-57d1-4f9d-aab1-fa1b27cd352c",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "studentId": "f73072c4-78c1-4b72-81a9-5204550c2ec9",
+      "data": "11/05/2026",
+      "hora": "03:43",
+      "tipo": "pendente",
+      "professorId": null
+    }
+  ],
   "payments": [],
   "charges": [],
   "despesas": [],
-  "turmas": [],
+  "turmas": [
+    {
+      "id": "921334e8-4141-4828-8971-40922242d134",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "professorId": "b0331bb7-736b-462b-8f4d-97bd3ba27192",
+      "recursoId": "8337b6ee-9979-436b-9147-17f83a6b0040",
+      "nome": "Iniciantes",
+      "tipo": "aula",
+      "modalidade": "Vôlei de Praia",
+      "clienteNome": null,
+      "valorCobrado": null,
+      "diasSemana": "sex",
+      "horarioInicio": "08:00",
+      "horarioFim": "09:00",
+      "capacidadeMaxima": 20,
+      "cor": "#1565C0",
+      "ativo": true,
+      "criadaEm": "2026-05-11T03:41:25.828Z",
+      "dataAula": "2026-05-01",
+      "excecoes": "",
+      "statusAluguel": "ativo",
+      "expiresAt": null
+    },
+    {
+      "id": "2bb400d7-5649-456b-bbc0-4e4d0b3e31d3",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "professorId": "b0331bb7-736b-462b-8f4d-97bd3ba27192",
+      "recursoId": "8337b6ee-9979-436b-9147-17f83a6b0040",
+      "nome": "Avançado",
+      "tipo": "aula",
+      "modalidade": "Vôlei de Praia",
+      "clienteNome": null,
+      "valorCobrado": null,
+      "diasSemana": "seg",
+      "horarioInicio": "19:00",
+      "horarioFim": "20:00",
+      "capacidadeMaxima": 20,
+      "cor": "#1565C0",
+      "ativo": true,
+      "criadaEm": "2026-05-11T03:42:35.406Z",
+      "dataAula": null,
+      "excecoes": "2026-05-04",
+      "statusAluguel": "ativo",
+      "expiresAt": null
+    },
+    {
+      "id": "aa878522-7927-414b-bbc1-0a58006d544f",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "professorId": null,
+      "recursoId": "8337b6ee-9979-436b-9147-17f83a6b0040",
+      "nome": "Reserva | Aluguel",
+      "tipo": "aluguel",
+      "modalidade": "",
+      "clienteNome": "Amanda",
+      "valorCobrado": "180,00",
+      "diasSemana": "qui",
+      "horarioInicio": "08:00",
+      "horarioFim": "09:00",
+      "capacidadeMaxima": 20,
+      "cor": "#AD1457",
+      "ativo": true,
+      "criadaEm": "2026-05-11T03:45:43.120Z",
+      "dataAula": "2026-05-14",
+      "excecoes": "",
+      "statusAluguel": "pendente",
+      "expiresAt": "2026-05-11T04:45:43.116Z"
+    }
+  ],
   "turmaAlunos": [],
-  "recursos": []
+  "recursos": [
+    {
+      "id": "8337b6ee-9979-436b-9147-17f83a6b0040",
+      "arenaId": "c3c4fd45-239d-4cc2-8baa-d3af3f4c9a35",
+      "nome": "Quadra 1",
+      "tipo": "sala",
+      "ativo": true,
+      "valorAluguel": "90,00",
+      "valorDayuse": "10,00",
+      "duracaoMinima": 2,
+      "valorHoraAdicional": "90,00",
+      "criadoEm": "2026-05-11T03:38:25.275Z"
+    }
+  ]
 }
