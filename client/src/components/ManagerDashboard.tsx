@@ -3010,38 +3010,40 @@ export default function ManagerDashboard({
       )}
 
       {/* ── Tabela de alunos ── */}
-      <div className="flex items-center gap-2 flex-wrap mb-3">
-        <Select value={filtroAlunos} onValueChange={setFiltroAlunos} data-testid="select-filtro-alunos">
-          <SelectTrigger className="h-9 w-44 px-3 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">Todas</SelectItem>
-            <SelectItem value="ativos">Ativos ({alunos.length})</SelectItem>
-            <SelectItem value="inativos">Inativos ({alunosInativos.length})</SelectItem>
-            {todasModalidades.map((mod) => (
-              <SelectItem key={mod} value={mod}>{mod}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="sm" onClick={onExportarPDF} data-testid="button-export-pdf" className="h-9 px-3 gap-1.5">
-          <Download className="h-4 w-4" />PDF
-        </Button>
-        <Button variant="outline" size="sm" onClick={onExportarExcel} data-testid="button-export-excel" className="h-9 px-3 gap-1.5">
-          <Download className="h-4 w-4" />Excel
+      <div className="flex flex-col gap-3 mb-5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={filtroAlunos} onValueChange={setFiltroAlunos} data-testid="select-filtro-alunos">
+            <SelectTrigger className="h-9 w-44 px-3 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas</SelectItem>
+              <SelectItem value="ativos">Ativos ({alunos.length})</SelectItem>
+              <SelectItem value="inativos">Inativos ({alunosInativos.length})</SelectItem>
+              {todasModalidades.map((mod) => (
+                <SelectItem key={mod} value={mod}>{mod}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={onExportarPDF} data-testid="button-export-pdf" className="h-9 px-3 gap-1.5">
+            <Download className="h-4 w-4" />PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={onExportarExcel} data-testid="button-export-excel" className="h-9 px-3 gap-1.5">
+            <Download className="h-4 w-4" />Excel
+          </Button>
+        </div>
+        <Button
+          size="lg"
+          className="w-full h-14 text-lg"
+          onClick={() => setDialogNovoAluno(true)}
+          data-testid="button-add-student-manager"
+        >
+          <UserPlus className="mr-2 h-5 w-5" />
+          Cadastrar Aluno
         </Button>
       </div>
       <Card>
         <CardContent className="pt-4">
-          <Button
-            size="lg"
-            className="w-full h-14 text-lg mb-4"
-            onClick={() => setDialogNovoAluno(true)}
-            data-testid="button-add-student-manager"
-          >
-            <UserPlus className="mr-2 h-5 w-5" />
-            Cadastrar Aluno
-          </Button>
           {filtroAlunos === "inativos" ? (
             <div className="space-y-2">
               {alunosInativos.length === 0 ? (
