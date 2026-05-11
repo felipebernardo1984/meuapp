@@ -96,7 +96,6 @@ function VisaoGeral() {
       {/* Seletor de período */}
       <div className="flex items-center gap-3 flex-wrap">
         <DateRangePicker value={range} onChange={setRange} align="start" />
-        <span className="text-sm text-muted-foreground">{MESES[parseInt(mes) - 1]} de {ano}</span>
         {isLoading && <span className="text-xs text-muted-foreground animate-pulse">Carregando...</span>}
       </div>
 

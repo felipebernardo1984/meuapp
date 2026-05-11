@@ -4518,51 +4518,48 @@ export default function ManagerDashboard({
 
       {/* ── Dialog Log de Check-ins ── */}
       {activeSection === "checkins" && (
+        <>
+          <div className="flex items-center gap-2 flex-wrap mb-5">
+            {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
+              <Button
+                key={t}
+                size="sm"
+                variant={filtroTipoLog === t ? "default" : "outline"}
+                onClick={() => setFiltroTipoLog(t)}
+                className="h-9 px-3"
+              >
+                {t === "todos" ? "Todos" : t === "pendente" ? "Pendentes" : t === "aula" ? "Aula" : t === "dayuse" ? "Day-use" : "Avulso"}
+              </Button>
+            ))}
+            <DateRangePicker value={filtroRangeLog} onChange={setFiltroRangeLog} />
+            <Button size="sm" variant="outline" onClick={() => refetchLog()} data-testid="button-refresh-checkins" className="h-9 px-3">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            {(() => {
+              const autoAtribuiveis = (logCheckins as any[]).filter(c => {
+                if (c.tipo !== "pendente" || c.sugestaoConfianca !== "alta") return false;
+                if (!filtroRangeLog) return true;
+                const iso = isoFromDMY(c.data);
+                return iso >= filtroRangeLog.inicio && iso <= filtroRangeLog.fim;
+              }).length;
+              return autoAtribuiveis > 0 ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 px-3 text-green-700 border-green-300 hover:bg-green-50"
+                  disabled={autoAtribuirMutation.isPending}
+                  onClick={() => autoAtribuirMutation.mutate("")}
+                  data-testid="button-auto-atribuir"
+                >
+                  <Zap className="w-3.5 h-3.5 mr-1" />
+                  Auto-atribuir {autoAtribuiveis} pendente{autoAtribuiveis !== 1 ? "s" : ""}
+                </Button>
+              ) : null;
+            })()}
+          </div>
         <Card className="mb-6">
           <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <CardTitle className="text-lg">Log de Check-ins</CardTitle>
-              <div className="flex items-center gap-2">
-                <DateRangePicker value={filtroRangeLog} onChange={setFiltroRangeLog} />
-                <Button size="sm" variant="outline" onClick={() => refetchLog()} data-testid="button-refresh-checkins">
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
-                <Button
-                  key={t}
-                  size="sm"
-                  variant={filtroTipoLog === t ? "default" : "outline"}
-                  onClick={() => setFiltroTipoLog(t)}
-                  className="capitalize"
-                >
-                  {t === "todos" ? "Todos" : t === "pendente" ? "Pendentes" : t === "aula" ? "Aula" : t === "dayuse" ? "Day-use" : "Avulso"}
-                </Button>
-              ))}
-              {(() => {
-                const autoAtribuiveis = (logCheckins as any[]).filter(c => {
-                  if (c.tipo !== "pendente" || c.sugestaoConfianca !== "alta") return false;
-                  if (!filtroRangeLog) return true;
-                  const iso = isoFromDMY(c.data);
-                  return iso >= filtroRangeLog.inicio && iso <= filtroRangeLog.fim;
-                }).length;
-                return autoAtribuiveis > 0 ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="ml-auto text-green-700 border-green-300 hover:bg-green-50"
-                    disabled={autoAtribuirMutation.isPending}
-                    onClick={() => autoAtribuirMutation.mutate("")}
-                    data-testid="button-auto-atribuir"
-                  >
-                    <Zap className="w-3.5 h-3.5 mr-1" />
-                    Auto-atribuir {autoAtribuiveis} pendente{autoAtribuiveis !== 1 ? "s" : ""}
-                  </Button>
-                ) : null;
-              })()}
-            </div>
+            <CardTitle className="text-lg">Log de Check-ins</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
           {(() => {
@@ -4740,16 +4737,14 @@ export default function ManagerDashboard({
           })()}
           </CardContent>
         </Card>
+        </>
       )}
 
       {/* ── Seção Comissões ── */}
       {activeSection === "comissoes" && (
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <CardTitle className="text-lg">Comissões</CardTitle>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Select value={filtroProfComissao} onValueChange={(v) => setFiltroProfComissao(v)}>
+        <>
+          <div className="flex items-center gap-2 flex-wrap mb-5">
+            <Select value={filtroProfComissao} onValueChange={(v) => setFiltroProfComissao(v)}>
                   <SelectTrigger className="h-8 w-48 text-sm" data-testid="select-prof-comissao">
                     <SelectValue placeholder="Todos os professores" />
                   </SelectTrigger>
@@ -4761,8 +4756,10 @@ export default function ManagerDashboard({
                   </SelectContent>
                 </Select>
                 <DateRangePicker value={filtroRangeComissao} onChange={setFiltroRangeComissao} />
-              </div>
-            </div>
+          </div>
+          <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Comissões</CardTitle>
           </CardHeader>
           <CardContent>
           {(() => {
@@ -5039,6 +5036,7 @@ export default function ManagerDashboard({
           })()}
           </CardContent>
         </Card>
+        </>
       )}
 
       {/* ── Dialog Editar Comissão (observação) ── */}
