@@ -220,7 +220,7 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
         </DialogContent>
       </Dialog>
 
-      {showConfiguracoes && !modalidadesMinimizado && (
+      {showConfiguracoes && (
         <Button
           size="lg"
           className="w-full h-14 text-lg mb-5"
