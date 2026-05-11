@@ -3956,25 +3956,29 @@ export default function ManagerDashboard({
 
       {/* Dialog Configuração WhatsApp */}
       {activeSection === "whatsapp" && (
+        <div className="flex items-center gap-2 flex-wrap mb-5">
+          {([
+            { key: "basico", label: "Básico", icon: <MessageCircle className="h-4 w-4" /> },
+            { key: "cobranca", label: "Cobrança", icon: null },
+            { key: "assiduidade", label: "Assiduidade", icon: null },
+            { key: "fila", label: `Fila${pendingDispatches.length > 0 ? ` (${pendingDispatches.length})` : ""}`, icon: null },
+          ] as const).map((t) => (
+            <Button
+              key={t.key}
+              size="sm"
+              variant={waTab === t.key ? "default" : "outline"}
+              onClick={() => setWaTab(t.key)}
+              className="h-9 px-3 gap-1.5"
+            >
+              {t.icon}
+              {t.label}
+            </Button>
+          ))}
+        </div>
+      )}
+      {activeSection === "whatsapp" && (
         <Card className="mb-6">
           <CardContent className="pt-6">
-          {/* Tabs */}
-          <div className="flex border-b mb-4 gap-0 overflow-x-auto">
-            {([
-              { key: "basico", label: "Básico" },
-              { key: "cobranca", label: "Cobrança" },
-              { key: "assiduidade", label: "Assiduidade" },
-              { key: "fila", label: `Fila${pendingDispatches.length > 0 ? ` (${pendingDispatches.length})` : ""}` },
-            ] as const).map((t) => (
-              <button
-                key={t.key}
-                className={`px-4 py-2 text-sm whitespace-nowrap border-b-2 transition-colors ${waTab === t.key ? "border-primary text-primary font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-                onClick={() => setWaTab(t.key)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
 
           {/* Tab: Básico */}
           {waTab === "basico" && (
@@ -4518,8 +4522,7 @@ export default function ManagerDashboard({
 
       {/* ── Dialog Log de Check-ins ── */}
       {activeSection === "checkins" && (
-        <>
-          <div className="flex items-center gap-2 flex-wrap mb-5">
+        <div className="flex items-center gap-2 flex-wrap mb-5">
             <DateRangePicker value={filtroRangeLog} onChange={setFiltroRangeLog} />
             {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
               <Button
@@ -4554,6 +4557,8 @@ export default function ManagerDashboard({
               ) : null;
             })()}
           </div>
+      )}
+      {activeSection === "checkins" && (
         <Card className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Log de Check-ins</CardTitle>
@@ -4734,13 +4739,11 @@ export default function ManagerDashboard({
           })()}
           </CardContent>
         </Card>
-        </>
       )}
 
       {/* ── Seção Comissões ── */}
       {activeSection === "comissoes" && (
-        <>
-          <div className="flex items-center gap-2 flex-wrap mb-5">
+        <div className="flex items-center gap-2 flex-wrap mb-5">
             <DateRangePicker value={filtroRangeComissao} onChange={setFiltroRangeComissao} />
             <Select value={filtroProfComissao} onValueChange={(v) => setFiltroProfComissao(v)}>
               <SelectTrigger className="h-9 w-48 text-sm" data-testid="select-prof-comissao">
@@ -4754,7 +4757,9 @@ export default function ManagerDashboard({
               </SelectContent>
             </Select>
           </div>
-          <Card className="mb-6">
+      )}
+      {activeSection === "comissoes" && (
+        <Card className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Comissões</CardTitle>
           </CardHeader>
@@ -5033,7 +5038,6 @@ export default function ManagerDashboard({
           })()}
           </CardContent>
         </Card>
-        </>
       )}
 
       {/* ── Dialog Editar Comissão (observação) ── */}

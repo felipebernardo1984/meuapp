@@ -220,6 +220,17 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
         </DialogContent>
       </Dialog>
 
+      {showConfiguracoes && !modalidadesMinimizado && (
+        <Button
+          size="lg"
+          className="w-full h-14 text-lg mb-5"
+          onClick={() => setDialogCriar(true)}
+          data-testid="button-criar-modalidade"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Criar Modalidade
+        </Button>
+      )}
       {showConfiguracoes && (
         <Card className="mb-6">
           <CardHeader>
@@ -249,15 +260,6 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
           </CardHeader>
           {!modalidadesMinimizado && (
             <CardContent>
-              <Button
-                size="lg"
-                className="w-full h-14 text-lg mb-6"
-                onClick={() => setDialogCriar(true)}
-                data-testid="button-criar-modalidade"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Criar Modalidade
-              </Button>
               {isLoading ? (
                 <p className="text-sm text-muted-foreground text-center py-6">Carregando...</p>
               ) : allModalidades.length === 0 ? (
@@ -273,59 +275,56 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                     return (
                       <div
                         key={modalidade}
-                        className="border rounded-lg p-4 space-y-4"
+                        className="border rounded-lg p-3 space-y-2"
                         data-testid={`card-modalidade-settings-${modalidade}`}
                       >
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                          <h3 className="font-semibold text-base">{modalidade}</h3>
-                          <div className="flex items-center gap-2 self-end sm:self-auto">
-                            {isDirty && <Badge variant="outline" className="text-orange-600 border-orange-300">Alterado</Badge>}
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-semibold text-sm">{modalidade}</h3>
+                          <div className="flex items-center gap-1.5">
+                            {isDirty && <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 py-0">Alterado</Badge>}
                             <Button
                               size="sm"
                               onClick={() => handleSalvar(modalidade)}
                               disabled={salvarMutation.isPending}
                               data-testid={`button-salvar-settings-${modalidade}`}
+                              className="h-7 px-2 text-xs"
                             >
-                              <Save className="h-4 w-4 mr-1" />
+                              <Save className="h-3 w-3 mr-1" />
                               Salvar
                             </Button>
                             {existsInDb && (
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => setConfirmDelete(modalidade)}
                                 data-testid={`button-delete-modalidade-${modalidade}`}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="border rounded-md p-3 space-y-3 bg-muted/30">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-foreground">Wellhub</span>
-                              <Badge variant="secondary" className="text-xs">Gympass</Badge>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="border rounded-md p-2 space-y-2 bg-muted/30">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-semibold text-foreground">Wellhub</span>
+                              <Badge variant="secondary" className="text-xs py-0">Gympass</Badge>
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor={`wh-plano-${modalidade}`} className="text-xs text-muted-foreground">
-                                Plano Mínimo
-                              </Label>
+                              <Label htmlFor={`wh-plano-${modalidade}`} className="text-xs text-muted-foreground">Plano Mínimo</Label>
                               <Input
                                 id={`wh-plano-${modalidade}`}
                                 placeholder="Ex: GP1, GP2..."
                                 value={local.wellhubPlanoMinimo}
                                 onChange={(e) => setLocal(modalidade, "wellhubPlanoMinimo", e.target.value)}
                                 data-testid={`input-wellhub-plano-${modalidade}`}
-                                className="h-8 text-sm"
+                                className="h-7 text-xs"
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor={`wh-valor-${modalidade}`} className="text-xs text-muted-foreground">
-                                Valor por Check-in (R$)
-                              </Label>
+                              <Label htmlFor={`wh-valor-${modalidade}`} className="text-xs text-muted-foreground">Valor por Check-in (R$)</Label>
                               <Input
                                 id={`wh-valor-${modalidade}`}
                                 type="number"
@@ -335,32 +334,28 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                                 value={local.wellhubValorCheckin}
                                 onChange={(e) => setLocal(modalidade, "wellhubValorCheckin", e.target.value)}
                                 data-testid={`input-wellhub-valor-${modalidade}`}
-                                className="h-8 text-sm"
+                                className="h-7 text-xs"
                               />
                             </div>
                           </div>
 
-                          <div className="border rounded-md p-3 space-y-3 bg-muted/30">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-foreground">TotalPass</span>
+                          <div className="border rounded-md p-2 space-y-2 bg-muted/30">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-semibold text-foreground">TotalPass</span>
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor={`tp-plano-${modalidade}`} className="text-xs text-muted-foreground">
-                                Plano Mínimo
-                              </Label>
+                              <Label htmlFor={`tp-plano-${modalidade}`} className="text-xs text-muted-foreground">Plano Mínimo</Label>
                               <Input
                                 id={`tp-plano-${modalidade}`}
                                 placeholder="Ex: TP1, TP2..."
                                 value={local.totalpassPlanoMinimo}
                                 onChange={(e) => setLocal(modalidade, "totalpassPlanoMinimo", e.target.value)}
                                 data-testid={`input-totalpass-plano-${modalidade}`}
-                                className="h-8 text-sm"
+                                className="h-7 text-xs"
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor={`tp-valor-${modalidade}`} className="text-xs text-muted-foreground">
-                                Valor por Check-in (R$)
-                              </Label>
+                              <Label htmlFor={`tp-valor-${modalidade}`} className="text-xs text-muted-foreground">Valor por Check-in (R$)</Label>
                               <Input
                                 id={`tp-valor-${modalidade}`}
                                 type="number"
@@ -370,7 +365,7 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                                 value={local.totalpassValorCheckin}
                                 onChange={(e) => setLocal(modalidade, "totalpassValorCheckin", e.target.value)}
                                 data-testid={`input-totalpass-valor-${modalidade}`}
-                                className="h-8 text-sm"
+                                className="h-7 text-xs"
                               />
                             </div>
                           </div>
