@@ -33,6 +33,7 @@ export const arenas = pgTable("arenas", {
   statusConta: text("status_conta").notNull().default("ativo"),
   trialExpiraEm: text("trial_expira_em"),
   endereco: text("endereco"),
+  urlAgenda: text("url_agenda"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

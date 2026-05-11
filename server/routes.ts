@@ -885,14 +885,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     const arena = await storage.getArena(arenaId);
     if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
-    res.json({ arenaId: arena.id, endereco: arena.endereco ?? "" });
+    res.json({ arenaId: arena.id, endereco: arena.endereco ?? "", urlAgenda: arena.urlAgenda ?? "" });
   });
 
   app.put("/api/agenda-config", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const { endereco } = req.body;
-    await storage.updateArena(arenaId, { endereco: endereco ?? "" });
+    const { endereco, urlAgenda } = req.body;
+    await storage.updateArena(arenaId, { endereco: endereco ?? "", urlAgenda: urlAgenda ?? "" });
     res.json({ ok: true });
   });
 

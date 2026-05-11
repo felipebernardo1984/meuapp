@@ -218,6 +218,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
   // Config dialog
   const [dialogConfig, setDialogConfig] = useState(false);
   const [enderecoInput, setEnderecoInput] = useState("");
+  const [urlAgendaInput, setUrlAgendaInput] = useState("");
 
   // Dialogs
   const [dialogTurma, setDialogTurma] = useState(false);
@@ -285,7 +286,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
   });
 
   const salvarConfig = useMutation({
-    mutationFn: () => apiRequest("PUT", "/api/agenda-config", { endereco: enderecoInput }),
+    mutationFn: () => apiRequest("PUT", "/api/agenda-config", { endereco: enderecoInput, urlAgenda: urlAgendaInput }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/agenda-config"] }); setDialogConfig(false); toast({ title: "Configurações salvas!" }); },
     onError: () => toast({ title: "Erro ao salvar configurações", variant: "destructive" }),
   });
@@ -609,7 +610,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setEnderecoInput(agendaConfig?.endereco ?? ""); setDialogConfig(true); }}
+                    onClick={() => { setEnderecoInput(agendaConfig?.endereco ?? ""); setUrlAgendaInput(agendaConfig?.urlAgenda ?? ""); setDialogConfig(true); }}
                     data-testid="button-agenda-config"
                     className="h-9 px-3 gap-1.5"
                   >
@@ -1633,43 +1634,91 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
             </div>
 
             {agendaConfig?.arenaId && (
-              <div className="space-y-2">
-                <Label>Link público da agenda</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    readOnly
-                    value={`${window.location.origin}/arena/${agendaConfig.arenaId}/quadras`}
-                    className="text-xs bg-muted/50 text-muted-foreground"
-                    data-testid="input-agenda-public-link"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    data-testid="button-copy-agenda-link"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/arena/${agendaConfig.arenaId}/quadras`);
-                      toast({ title: "Link copiado!" });
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    data-testid="button-open-agenda-link"
-                    onClick={() => window.open(`/arena/${agendaConfig.arenaId}/quadras`, "_blank")}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
+              <>
+                <div className="space-y-2">
+                  <Label>Link direto da agenda</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={`${window.location.origin}/arena/${agendaConfig.arenaId}/quadras`}
+                      className="text-xs bg-muted/50 text-muted-foreground"
+                      data-testid="input-agenda-public-link"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      data-testid="button-copy-agenda-link"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/arena/${agendaConfig.arenaId}/quadras`);
+                        toast({ title: "Link copiado!" });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      data-testid="button-open-agenda-link"
+                      onClick={() => window.open(`/arena/${agendaConfig.arenaId}/quadras`, "_blank")}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Compartilhe este link ou use o código abaixo para incorporar a agenda no seu site.
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Compartilhe este link com seus clientes para que eles vejam a disponibilidade das quadras.
-                </p>
-              </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="config-url-agenda">URL do seu site onde a agenda ficará</Label>
+                  <Input
+                    id="config-url-agenda"
+                    data-testid="input-agenda-url"
+                    placeholder="Ex: sevenclubsports.com.br/agenda"
+                    value={urlAgendaInput}
+                    onChange={(e) => setUrlAgendaInput(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Registre onde no seu site você vai incorporar esta agenda (opcional, apenas para controle).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Código de incorporação (iframe)</Label>
+                  <div className="relative">
+                    <textarea
+                      readOnly
+                      data-testid="textarea-embed-code"
+                      className="w-full rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground font-mono resize-none leading-relaxed"
+                      rows={4}
+                      value={`<iframe\n  src="${window.location.origin}/arena/${agendaConfig.arenaId}/quadras"\n  width="100%"\n  height="600"\n  frameborder="0"\n  style="border:none; border-radius:8px;"\n  title="Agenda de Quadras"\n></iframe>`}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="absolute top-2 right-2 gap-1.5 text-xs h-7"
+                      data-testid="button-copy-embed-code"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `<iframe\n  src="${window.location.origin}/arena/${agendaConfig.arenaId}/quadras"\n  width="100%"\n  height="600"\n  frameborder="0"\n  style="border:none; border-radius:8px;"\n  title="Agenda de Quadras"\n></iframe>`
+                        );
+                        toast({ title: "Código copiado!" });
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                      Copiar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Cole este código no HTML do seu site (Wix, WordPress, página própria) para exibir a agenda diretamente lá.
+                  </p>
+                </div>
+              </>
             )}
           </div>
 
