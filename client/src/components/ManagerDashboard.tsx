@@ -4520,6 +4520,7 @@ export default function ManagerDashboard({
       {activeSection === "checkins" && (
         <>
           <div className="flex items-center gap-2 flex-wrap mb-5">
+            <DateRangePicker value={filtroRangeLog} onChange={setFiltroRangeLog} />
             {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
               <Button
                 key={t}
@@ -4531,10 +4532,6 @@ export default function ManagerDashboard({
                 {t === "todos" ? "Todos" : t === "pendente" ? "Pendentes" : t === "aula" ? "Aula" : t === "dayuse" ? "Day-use" : "Avulso"}
               </Button>
             ))}
-            <DateRangePicker value={filtroRangeLog} onChange={setFiltroRangeLog} />
-            <Button size="sm" variant="outline" onClick={() => refetchLog()} data-testid="button-refresh-checkins" className="h-9 px-3">
-              <RefreshCw className="w-4 h-4" />
-            </Button>
             {(() => {
               const autoAtribuiveis = (logCheckins as any[]).filter(c => {
                 if (c.tipo !== "pendente" || c.sugestaoConfianca !== "alta") return false;
@@ -4744,18 +4741,18 @@ export default function ManagerDashboard({
       {activeSection === "comissoes" && (
         <>
           <div className="flex items-center gap-2 flex-wrap mb-5">
+            <DateRangePicker value={filtroRangeComissao} onChange={setFiltroRangeComissao} />
             <Select value={filtroProfComissao} onValueChange={(v) => setFiltroProfComissao(v)}>
-                  <SelectTrigger className="h-8 w-48 text-sm" data-testid="select-prof-comissao">
-                    <SelectValue placeholder="Todos os professores" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os professores</SelectItem>
-                    {(resumoComissoes as any[]).map((r) => (
-                      <SelectItem key={r.teacherId} value={r.teacherId}>{r.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <DateRangePicker value={filtroRangeComissao} onChange={setFiltroRangeComissao} />
+              <SelectTrigger className="h-9 w-48 text-sm" data-testid="select-prof-comissao">
+                <SelectValue placeholder="Todos os professores" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os professores</SelectItem>
+                {(resumoComissoes as any[]).map((r) => (
+                  <SelectItem key={r.teacherId} value={r.teacherId}>{r.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Card className="mb-6">
           <CardHeader className="pb-3">
