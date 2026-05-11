@@ -3010,31 +3010,29 @@ export default function ManagerDashboard({
       )}
 
       {/* ── Tabela de alunos ── */}
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        <Select value={filtroAlunos} onValueChange={setFiltroAlunos} data-testid="select-filtro-alunos">
+          <SelectTrigger className="h-9 w-44 px-3 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas</SelectItem>
+            <SelectItem value="ativos">Ativos ({alunos.length})</SelectItem>
+            <SelectItem value="inativos">Inativos ({alunosInativos.length})</SelectItem>
+            {todasModalidades.map((mod) => (
+              <SelectItem key={mod} value={mod}>{mod}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" onClick={onExportarPDF} data-testid="button-export-pdf" className="h-9 px-3 gap-1.5">
+          <Download className="h-4 w-4" />PDF
+        </Button>
+        <Button variant="outline" size="sm" onClick={onExportarExcel} data-testid="button-export-excel" className="h-9 px-3 gap-1.5">
+          <Download className="h-4 w-4" />Excel
+        </Button>
+      </div>
       <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center gap-2 justify-end">
-            <Select value={filtroAlunos} onValueChange={setFiltroAlunos} data-testid="select-filtro-alunos">
-              <SelectTrigger className="w-52">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="ativos">Ativos ({alunos.length})</SelectItem>
-                <SelectItem value="inativos">Inativos ({alunosInativos.length})</SelectItem>
-                {todasModalidades.map((mod) => (
-                  <SelectItem key={mod} value={mod}>{mod}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={onExportarPDF} data-testid="button-export-pdf">
-              <Download className="h-4 w-4 mr-2" />PDF
-            </Button>
-            <Button variant="outline" onClick={onExportarExcel} data-testid="button-export-excel">
-              <Download className="h-4 w-4 mr-2" />Excel
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <Button
             size="lg"
             className="w-full h-14 text-lg mb-4"
