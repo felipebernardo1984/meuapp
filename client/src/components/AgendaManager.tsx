@@ -606,7 +606,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
                   <List className="h-4 w-4" />
                   Lista
                 </Button>
-                {!readOnly && (
+                {!readOnly && !alunoMode && !professorContext && (
                   <Button
                     variant="outline"
                     size="sm"
