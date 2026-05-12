@@ -258,6 +258,54 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
               </CardDescription>
             )}
           </CardHeader>
+          {modalidadesMinimizado && allModalidades.length > 0 && (
+            <CardContent className="pt-0 pb-3">
+              <div className="space-y-2">
+                {allModalidades.map((modalidade) => {
+                  const cfg = getConfig(modalidade);
+                  const wPlano = cfg.wellhubPlanoMinimo;
+                  const wValor = parseFloat(cfg.wellhubValorCheckin || "0") > 0 ? `R$ ${parseFloat(cfg.wellhubValorCheckin).toFixed(2).replace(".", ",")}` : null;
+                  const tPlano = cfg.totalpassPlanoMinimo;
+                  const tValor = parseFloat(cfg.totalpassValorCheckin || "0") > 0 ? `R$ ${parseFloat(cfg.totalpassValorCheckin).toFixed(2).replace(".", ",")}` : null;
+                  const temWellhub = wPlano || wValor;
+                  const temTotalpass = tPlano || tValor;
+                  return (
+                    <div
+                      key={modalidade}
+                      className="flex items-center justify-between p-3 bg-muted rounded-xl gap-3"
+                      data-testid={`card-modalidade-resumo-${modalidade}`}
+                    >
+                      <span className="font-medium text-sm shrink-0 min-w-[80px]">{modalidade}</span>
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        {temWellhub && (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="secondary" className="text-xs py-0 px-1.5 font-semibold">WH</Badge>
+                            {wPlano && <span className="text-xs text-muted-foreground">{wPlano}</span>}
+                            {wPlano && wValor && <span className="text-xs text-muted-foreground">•</span>}
+                            {wValor && <span className="text-xs font-medium">{wValor}</span>}
+                          </div>
+                        )}
+                        {temWellhub && temTotalpass && (
+                          <span className="text-xs text-muted-foreground/40">|</span>
+                        )}
+                        {temTotalpass && (
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-xs py-0 px-1.5 font-semibold">TP</Badge>
+                            {tPlano && <span className="text-xs text-muted-foreground">{tPlano}</span>}
+                            {tPlano && tValor && <span className="text-xs text-muted-foreground">•</span>}
+                            {tValor && <span className="text-xs font-medium">{tValor}</span>}
+                          </div>
+                        )}
+                        {!temWellhub && !temTotalpass && (
+                          <span className="text-xs text-muted-foreground italic">Sem integração configurada</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          )}
           {!modalidadesMinimizado && (
             <CardContent>
               {isLoading ? (
