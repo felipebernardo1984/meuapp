@@ -90,6 +90,7 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  ChevronDown,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -479,6 +480,10 @@ export default function ManagerDashboard({
   const [dialogHistMens, setDialogHistMens] = useState(false);
   const [histMensAlunoId, setHistMensAlunoId] = useState<string>("");
   const [histMensAlunoNome, setHistMensAlunoNome] = useState<string>("");
+  const [expandedAlunoId, setExpandedAlunoId] = useState<string | null>(null);
+  const [dialogEditPagMens, setDialogEditPagMens] = useState(false);
+  const [editPagMensId, setEditPagMensId] = useState<string>("");
+  const [formEditPagMens, setFormEditPagMens] = useState({ amount: "", referenceMonth: "", dueDate: "", paymentMethod: "dinheiro", status: "paid" });
 
   // Novo Mensalista state
   const [dialogNovoMensalista, setDialogNovoMensalista] = useState(false);
@@ -695,6 +700,18 @@ export default function ManagerDashboard({
       toast({ title: "Pagamento removido." });
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível remover.", variant: "destructive" }),
+  });
+
+  const atualizarPagamentoMens = useMutation({
+    mutationFn: ({ id, dados }: { id: string; dados: any }) =>
+      apiRequest("PUT", `/api/finance/payments/${id}`, dados).then((r) => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      setDialogEditPagMens(false);
+      toast({ title: "Pagamento atualizado!" });
+    },
+    onError: () => toast({ title: "Erro ao atualizar pagamento", variant: "destructive" }),
   });
 
   const criarMensalista = useMutation({
@@ -1983,170 +2000,175 @@ export default function ManagerDashboard({
                   )}
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Aluno</TableHead>
-                      <TableHead className="hidden lg:table-cell">Professor</TableHead>
-                      <TableHead className="hidden md:table-cell">Plano / Valor</TableHead>
-                      <TableHead>Status do Mês</TableHead>
-                      <TableHead className="hidden md:table-cell">Método</TableHead>
-                      <TableHead className="hidden md:table-cell">Data Pgto.</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <div className="space-y-2 p-2">
                     {mensalidadesFiltradas.map((row) => {
                       const isPaid = row.pagMes?.status === "paid";
                       const metodo = row.pagMes?.paymentMethod ?? null;
                       const metodoLabel: Record<string, string> = { cartao: "Cartão", pix: "PIX", dinheiro: "Dinheiro" };
                       return (
-                        <TableRow key={row.id} data-testid={`row-mensalidade-${row.id}`}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{row.nome}</p>
-                              {row.telefone && <p className="text-xs text-muted-foreground">{row.telefone}</p>}
+                        <div key={row.id} data-testid={`row-mensalidade-${row.id}`} className="flex items-center justify-between p-3 bg-muted rounded-xl gap-3 flex-wrap">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+                              <span className="text-white font-bold text-sm">{row.nome.charAt(0).toUpperCase()}</span>
                             </div>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                            {row.professor?.nome ?? <span className="italic text-xs">Sem professor</span>}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-sm">
-                            <div>
-                              <p>{row.plano?.titulo ?? "-"}</p>
-                              {row.plano?.valorTexto && <p className="text-xs text-muted-foreground">R$ {row.plano.valorTexto}</p>}
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate">{row.nome}</p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {row.plano && <span className="text-xs text-muted-foreground">{row.plano.titulo}{row.plano.valorTexto ? ` · R$ ${row.plano.valorTexto}` : ""}</span>}
+                                {row.professor && <span className="text-xs text-muted-foreground">· {row.professor.nome}</span>}
+                                {row.pagMes?.paymentDate && <span className="text-xs text-muted-foreground">· {row.pagMes.paymentDate}</span>}
+                                {metodo && <span className="text-xs text-muted-foreground">· {metodoLabel[metodo] ?? metodo}</span>}
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <Badge
                               variant={isPaid ? "default" : "outline"}
-                              className={isPaid ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400"}
+                              className={isPaid ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 text-xs" : "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 text-xs"}
                               data-testid={`status-mens-${row.id}`}
                             >
                               {isPaid ? "Pago" : "Pendente"}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                            {metodo ? metodoLabel[metodo] ?? metodo : "-"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                            {row.pagMes?.paymentDate ?? "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              {!isPaid && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  data-testid={`button-pagar-mens-${row.id}`}
-                                  onClick={() => {
-                                    if (row.pagMes) {
-                                      setPagarMensPaymentId(row.pagMes.id);
-                                      setPagarMensMethod("dinheiro");
-                                      setDialogPagarMens(true);
-                                    } else {
-                                      const today = new Date();
-                                      const yyyy = today.getFullYear();
-                                      const mm = String(today.getMonth() + 1).padStart(2, "0");
-                                      const dd = String(today.getDate()).padStart(2, "0");
-                                      setMensAlunoId(row.id);
-                                      setMensAlunoNome(row.nome);
-                                      setFormMens({
-                                        referenceMonth: `${yyyy}-${mm}`,
-                                        amount: row.plano?.valorTexto ?? "",
-                                        dueDate: `${yyyy}-${mm}-${dd}`,
-                                        paymentMethod: "dinheiro",
-                                        status: "paid",
-                                      });
-                                      setDialogRegistrarMens(true);
-                                    }
-                                  }}
-                                >
-                                  <CheckCircle2 className="w-4 h-4 mr-1" /> Pagar
-                                </Button>
-                              )}
-                              {!isPaid && row.pagMes && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  title="Gerar link de pagamento"
-                                  data-testid={`button-link-mens-${row.id}`}
-                                  onClick={async () => {
-                                    try {
-                                      const resp = await fetch(`/api/payments/${row.pagMes!.id}/link`);
-                                      if (!resp.ok) throw new Error("Erro");
-                                      const { url } = await resp.json();
-                                      await navigator.clipboard.writeText(url);
-                                      toast({ title: "Link copiado!", description: url.length > 60 ? url.slice(0, 60) + "…" : url });
-                                    } catch {
-                                      toast({ title: "Erro ao gerar link", variant: "destructive" });
-                                    }
-                                  }}
-                                >
-                                  <Link2 className="w-4 h-4 text-muted-foreground" />
-                                </Button>
-                              )}
-                              {isPaid && row.pagMes && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  title="Gerar comprovante"
-                                  data-testid={`button-comprovante-${row.id}`}
-                                  onClick={() => gerarComprovante({
-                                    alunoNome: row.nome,
-                                    amount: row.pagMes!.amount,
-                                    referenceMonth: row.pagMes!.referenceMonth,
-                                    paymentDate: row.pagMes!.paymentDate,
-                                    paymentMethod: row.pagMes!.paymentMethod,
-                                    planoTitulo: row.plano?.titulo,
-                                    paymentId: row.pagMes!.id,
-                                  })}
-                                >
-                                  <FileText className="w-4 h-4 text-muted-foreground" />
-                                </Button>
-                              )}
+                            {!isPaid && (
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                data-testid={`button-hist-mens-${row.id}`}
+                                variant="outline"
+                                className="h-7 px-2 text-xs"
+                                data-testid={`button-pagar-mens-${row.id}`}
                                 onClick={() => {
-                                  setHistMensAlunoId(row.id);
-                                  setHistMensAlunoNome(row.nome);
-                                  setDialogHistMens(true);
+                                  if (row.pagMes) {
+                                    setPagarMensPaymentId(row.pagMes.id);
+                                    setPagarMensMethod("dinheiro");
+                                    setDialogPagarMens(true);
+                                  } else {
+                                    const today = new Date();
+                                    const yyyy = today.getFullYear();
+                                    const mm = String(today.getMonth() + 1).padStart(2, "0");
+                                    const dd = String(today.getDate()).padStart(2, "0");
+                                    setMensAlunoId(row.id);
+                                    setMensAlunoNome(row.nome);
+                                    setFormMens({
+                                      referenceMonth: `${yyyy}-${mm}`,
+                                      amount: row.plano?.valorTexto ?? "",
+                                      dueDate: `${yyyy}-${mm}-${dd}`,
+                                      paymentMethod: "dinheiro",
+                                      status: "paid",
+                                    });
+                                    setDialogRegistrarMens(true);
+                                  }
                                 }}
                               >
-                                <History className="w-4 h-4" />
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Pagar
                               </Button>
+                            )}
+                            {!isPaid && row.pagMes && (
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="ghost"
-                                data-testid={`button-novo-mens-${row.id}`}
+                                className="h-7 w-7"
+                                title="Gerar link de pagamento"
+                                data-testid={`button-link-mens-${row.id}`}
+                                onClick={async () => {
+                                  try {
+                                    const resp = await fetch(`/api/payments/${row.pagMes!.id}/link`);
+                                    if (!resp.ok) throw new Error("Erro");
+                                    const { url } = await resp.json();
+                                    await navigator.clipboard.writeText(url);
+                                    toast({ title: "Link copiado!", description: url.length > 60 ? url.slice(0, 60) + "…" : url });
+                                  } catch {
+                                    toast({ title: "Erro ao gerar link", variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
+                              </Button>
+                            )}
+                            {row.pagMes && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                title="Editar pagamento"
+                                data-testid={`button-edit-mens-${row.id}`}
                                 onClick={() => {
-                                  const today = new Date();
-                                  const yyyy = today.getFullYear();
-                                  const mm = String(today.getMonth() + 1).padStart(2, "0");
-                                  const dd = String(today.getDate()).padStart(2, "0");
-                                  setMensAlunoId(row.id);
-                                  setMensAlunoNome(row.nome);
-                                  setFormMens({
-                                    referenceMonth: `${yyyy}-${mm}`,
-                                    amount: row.plano?.valorTexto ?? "",
-                                    dueDate: `${yyyy}-${mm}-${dd}`,
-                                    paymentMethod: "dinheiro",
-                                    status: "paid",
+                                  setEditPagMensId(row.pagMes!.id);
+                                  setFormEditPagMens({
+                                    amount: row.pagMes!.amount ?? "",
+                                    referenceMonth: row.pagMes!.referenceMonth ?? "",
+                                    dueDate: row.pagMes!.dueDate ?? "",
+                                    paymentMethod: row.pagMes!.paymentMethod ?? "dinheiro",
+                                    status: row.pagMes!.status ?? "paid",
                                   });
-                                  setDialogRegistrarMens(true);
+                                  setDialogEditPagMens(true);
                                 }}
                               >
-                                <Plus className="w-4 h-4" />
+                                <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                               </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                            )}
+                            {isPaid && row.pagMes && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                title="Gerar comprovante"
+                                data-testid={`button-comprovante-${row.id}`}
+                                onClick={() => gerarComprovante({
+                                  alunoNome: row.nome,
+                                  amount: row.pagMes!.amount,
+                                  referenceMonth: row.pagMes!.referenceMonth,
+                                  paymentDate: row.pagMes!.paymentDate,
+                                  paymentMethod: row.pagMes!.paymentMethod,
+                                  planoTitulo: row.plano?.titulo,
+                                  paymentId: row.pagMes!.id,
+                                })}
+                              >
+                                <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                              </Button>
+                            )}
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              data-testid={`button-hist-mens-${row.id}`}
+                              title="Histórico de pagamentos"
+                              onClick={() => {
+                                setHistMensAlunoId(row.id);
+                                setHistMensAlunoNome(row.nome);
+                                setDialogHistMens(true);
+                              }}
+                            >
+                              <History className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              data-testid={`button-novo-mens-${row.id}`}
+                              title="Registrar novo pagamento"
+                              onClick={() => {
+                                const today = new Date();
+                                const yyyy = today.getFullYear();
+                                const mm = String(today.getMonth() + 1).padStart(2, "0");
+                                const dd = String(today.getDate()).padStart(2, "0");
+                                setMensAlunoId(row.id);
+                                setMensAlunoNome(row.nome);
+                                setFormMens({
+                                  referenceMonth: `${yyyy}-${mm}`,
+                                  amount: row.plano?.valorTexto ?? "",
+                                  dueDate: `${yyyy}-${mm}-${dd}`,
+                                  paymentMethod: "dinheiro",
+                                  status: "paid",
+                                });
+                                setDialogRegistrarMens(true);
+                              }}
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
                       );
                     })}
-                  </TableBody>
-                </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -2288,12 +2310,12 @@ export default function ManagerDashboard({
 
       {/* Dialog: Histórico de Pagamentos do Mensalista */}
       <Dialog open={dialogHistMens} onOpenChange={setDialogHistMens}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Histórico de Pagamentos</DialogTitle>
             <DialogDescription>{histMensAlunoNome}</DialogDescription>
           </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto">
+          <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
             {(() => {
               const hist = allPayments
                 .filter((p) => p.studentId === histMensAlunoId)
@@ -2302,75 +2324,134 @@ export default function ManagerDashboard({
               if (hist.length === 0) {
                 return <p className="py-6 text-center text-muted-foreground text-sm">Nenhum pagamento registrado.</p>;
               }
-              return (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Mês</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Método</TableHead>
-                      <TableHead>Data Pgto.</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {hist.map((p: any) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="text-sm font-medium">{p.referenceMonth}</TableCell>
-                        <TableCell className="text-sm">R$ {p.amount}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={p.status === "paid" ? "bg-green-100 text-green-700 border-green-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}
-                          >
-                            {p.status === "paid" ? "Pago" : "Pendente"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {metodoLabel[p.paymentMethod] ?? p.paymentMethod ?? "-"}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{p.paymentDate ?? "-"}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {p.status === "paid" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                title="Gerar comprovante"
-                                data-testid={`button-comprovante-hist-${p.id}`}
-                                onClick={() => gerarComprovante({
-                                  alunoNome: histMensAlunoNome,
-                                  amount: p.amount,
-                                  referenceMonth: p.referenceMonth,
-                                  paymentDate: p.paymentDate,
-                                  paymentMethod: p.paymentMethod,
-                                  paymentId: p.id,
-                                })}
-                              >
-                                <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              data-testid={`button-del-hist-mens-${p.id}`}
-                              onClick={() => excluirPagamentoMens.mutate(p.id)}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              );
+              return hist.map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between p-3 bg-muted rounded-xl gap-3 flex-wrap">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">{p.referenceMonth}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                        <span className="text-xs text-muted-foreground">R$ {p.amount}</span>
+                        {p.paymentDate && <span className="text-xs text-muted-foreground">· {p.paymentDate}</span>}
+                        {p.paymentMethod && <span className="text-xs text-muted-foreground">· {metodoLabel[p.paymentMethod] ?? p.paymentMethod}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${p.status === "paid" ? "bg-green-100 text-green-700 border-green-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}
+                    >
+                      {p.status === "paid" ? "Pago" : "Pendente"}
+                    </Badge>
+                    {p.status === "paid" && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        title="Gerar comprovante"
+                        data-testid={`button-comprovante-hist-${p.id}`}
+                        onClick={() => gerarComprovante({
+                          alunoNome: histMensAlunoNome,
+                          amount: p.amount,
+                          referenceMonth: p.referenceMonth,
+                          paymentDate: p.paymentDate,
+                          paymentMethod: p.paymentMethod,
+                          paymentId: p.id,
+                        })}
+                      >
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                      </Button>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      data-testid={`button-del-hist-mens-${p.id}`}
+                      onClick={() => excluirPagamentoMens.mutate(p.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ));
             })()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogHistMens(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Editar Pagamento Mensalidade */}
+      <Dialog open={dialogEditPagMens} onOpenChange={setDialogEditPagMens}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Pagamento</DialogTitle>
+            <DialogDescription>Corrija as informações do pagamento.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Mês de referência</Label>
+              <Input
+                type="month"
+                value={formEditPagMens.referenceMonth}
+                onChange={(e) => setFormEditPagMens({ ...formEditPagMens, referenceMonth: e.target.value })}
+                data-testid="input-edit-mens-month"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Valor (R$)</Label>
+              <Input
+                placeholder="Ex: 200,00"
+                value={formEditPagMens.amount}
+                onChange={(e) => setFormEditPagMens({ ...formEditPagMens, amount: e.target.value })}
+                data-testid="input-edit-mens-amount"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Data de vencimento</Label>
+              <Input
+                type="date"
+                value={formEditPagMens.dueDate}
+                onChange={(e) => setFormEditPagMens({ ...formEditPagMens, dueDate: e.target.value })}
+                data-testid="input-edit-mens-due"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Método de pagamento</Label>
+              <Select value={formEditPagMens.paymentMethod} onValueChange={(v) => setFormEditPagMens({ ...formEditPagMens, paymentMethod: v })}>
+                <SelectTrigger data-testid="select-edit-mens-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select value={formEditPagMens.status} onValueChange={(v) => setFormEditPagMens({ ...formEditPagMens, status: v })}>
+                <SelectTrigger data-testid="select-edit-mens-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="paid">Pago</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogEditPagMens(false)}>Cancelar</Button>
+            <Button
+              disabled={atualizarPagamentoMens.isPending}
+              data-testid="button-confirm-edit-mens"
+              onClick={() => atualizarPagamentoMens.mutate({ id: editPagMensId, dados: formEditPagMens })}
+            >
+              {atualizarPagamentoMens.isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3082,213 +3163,152 @@ export default function ManagerDashboard({
             </div>
           ) : (
           <>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Modalidade</TableHead>
-                  <TableHead>Plano</TableHead>
-                  <TableHead>Check-in</TableHead>
-                  <TableHead>Mensalidade</TableHead>
-                  <TableHead>Último Check-in</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {alunosFiltrados.map((aluno) => (
-                  <TableRow key={aluno.id} data-testid={`row-student-${aluno.id}`}>
-                    <TableCell className="font-medium">{aluno.nome}</TableCell>
-                    <TableCell>{aluno.modalidade}</TableCell>
-                    <TableCell>{aluno.planoTitulo}</TableCell>
-                    <TableCell>
-                      {aluno.plano > 0
-                        ? `${aluno.checkinsRealizados}/${aluno.plano}`
-                        : aluno.planoValorTexto ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={aluno.statusMensalidade === "Em dia" ? "default" : "destructive"}>
+          <div className="space-y-2 p-2">
+            {alunosFiltrados.map((aluno) => {
+              const isExpanded = expandedAlunoId === aluno.id;
+              return (
+                <div key={aluno.id} data-testid={`row-student-${aluno.id}`} className="rounded-xl border bg-muted overflow-hidden">
+                  <button
+                    className="w-full flex items-center justify-between p-3 gap-3 text-left hover:bg-muted/80 transition-colors"
+                    onClick={() => setExpandedAlunoId(isExpanded ? null : aluno.id)}
+                    data-testid={`button-expand-${aluno.id}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+                        <span className="text-white font-bold text-sm">{aluno.nome.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm truncate">{aluno.nome}</p>
+                          {aluno.aprovado ? (
+                            <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                          ) : (
+                            <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                          <span className="text-xs text-muted-foreground">{aluno.modalidade}</span>
+                          {aluno.planoTitulo && <span className="text-xs text-muted-foreground">· {aluno.planoTitulo}</span>}
+                          {aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge
+                        variant={aluno.statusMensalidade === "Em dia" ? "default" : "destructive"}
+                        className="text-xs hidden sm:inline-flex"
+                      >
                         {aluno.statusMensalidade}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {aluno.ultimoCheckin || "—"}
-                    </TableCell>
-                    <TableCell>
-                      {aluno.aprovado ? (
-                        <CheckCircle className="h-4 w-4 text-secondary" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-orange-600" />
+                      {aluno.plano > 0 && (
+                        <span className="text-xs text-muted-foreground hidden md:inline">{aluno.checkinsRealizados}/{aluno.plano}</span>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" data-testid={`button-actions-${aluno.id}`}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoEditando(aluno);
-                              setFormEditarAluno({
-                                nome: aluno.nome,
-                                cpf: aluno.cpf,
-                                email: aluno.email ?? "",
-                                telefone: aluno.telefone ?? "",
-                                login: aluno.login ?? "",
-                                senha: "",
-                                modalidade: aluno.modalidade,
-                                statusMensalidade: aluno.statusMensalidade,
-                                checkinsRealizados: aluno.checkinsRealizados,
-                                planoId: aluno.planoId,
-                                integrationType: aluno.integrationType ?? "",
-                                integrationPlan: aluno.integrationPlan ?? "",
-                                photoUrl: aluno.photoUrl ?? "",
-                              });
-                              setDialogEditarAluno(true);
-                            }}
-                            data-testid={`menu-edit-student-${aluno.id}`}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar dados
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoPlanoId(aluno.id);
-                              setNovoPlanoId(aluno.planoId);
-                              setDialogAlterarPlano(true);
-                            }}
-                            data-testid={`menu-change-plan-${aluno.id}`}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Alterar plano
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoCheckinId(aluno.id);
-                              const now = new Date();
-                              setFormCheckin({
-                                data: now.toISOString().split("T")[0],
-                                hora: now.toTimeString().slice(0, 5),
-                              });
-                              onCheckinManual(aluno.id);
-                            }}
-                            data-testid={`menu-checkin-${aluno.id}`}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Check-in agora
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoCheckinId(aluno.id);
-                              const now = new Date();
-                              setFormCheckin({
-                                data: now.toISOString().split("T")[0],
-                                hora: now.toTimeString().slice(0, 5),
-                              });
-                              setDialogCheckinRetro(true);
-                            }}
-                            data-testid={`menu-retroactive-checkin-${aluno.id}`}
-                          >
-                            <CalendarClock className="h-4 w-4 mr-2" />
-                            Registrar aula
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoHistorico(aluno);
-                              setDialogHistorico(true);
-                            }}
-                            data-testid={`menu-history-${aluno.id}`}
-                          >
-                            <History className="h-4 w-4 mr-2" />
-                            Histórico de check-ins
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoHistFinanceiroId(aluno.id);
-                              setAlunoHistFinanceiroNome(aluno.nome);
-                              setDialogHistFinanceiro(true);
-                            }}
-                            data-testid={`menu-hist-financeiro-${aluno.id}`}
-                          >
-                            <Receipt className="h-4 w-4 mr-2" />
-                            Histórico pagamento
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoValidarId(aluno.id);
-                              setAlunoValidarNome(aluno.nome);
-                              setDialogValidarPagamento(true);
-                            }}
-                            data-testid={`menu-payment-${aluno.id}`}
-                          >
-                            <DollarSign className="h-4 w-4 mr-2" />
-                            Validar pagamento
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoFinanceiroId(aluno.id);
-                              const now = new Date();
-                              const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
-                              const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
-                              setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
-                              setDialogPagamento(true);
-                            }}
-                            data-testid={`menu-manual-payment-${aluno.id}`}
-                          >
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Registrar pagamento manual
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setAlunoFinanceiroId(aluno.id);
-                              const now = new Date();
-                              setFormCobranca({
-                                description: "",
-                                amount: "",
-                                dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR"),
-                              });
-                              setDialogCobranca(true);
-                            }}
-                            data-testid={`menu-charge-${aluno.id}`}
-                          >
-                            <Receipt className="h-4 w-4 mr-2" />
-                            Criar cobrança
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              if (!whatsappSettings?.whatsapp_number) {
-                                toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
-                                return;
-                              }
-                              enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
-                            }}
-                            data-testid={`menu-whatsapp-${aluno.id}`}
-                          >
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            Enviar WhatsApp
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-foreground"
-                            onClick={() => setConfirmExcluirAluno(aluno)}
-                            data-testid={`menu-delete-student-${aluno.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir aluno
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="border-t px-3 py-3 bg-background/60">
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-edit-student-${aluno.id}`}
+                          onClick={() => {
+                            setAlunoEditando(aluno);
+                            setFormEditarAluno({
+                              nome: aluno.nome, cpf: aluno.cpf, email: aluno.email ?? "",
+                              telefone: aluno.telefone ?? "", login: aluno.login ?? "", senha: "",
+                              modalidade: aluno.modalidade, statusMensalidade: aluno.statusMensalidade,
+                              checkinsRealizados: aluno.checkinsRealizados, planoId: aluno.planoId,
+                              integrationType: aluno.integrationType ?? "", integrationPlan: aluno.integrationPlan ?? "",
+                              photoUrl: aluno.photoUrl ?? "",
+                            });
+                            setDialogEditarAluno(true);
+                          }}>
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-change-plan-${aluno.id}`}
+                          onClick={() => { setAlunoPlanoId(aluno.id); setNovoPlanoId(aluno.planoId); setDialogAlterarPlano(true); }}>
+                          <Pencil className="h-3.5 w-3.5" /> Alterar plano
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-checkin-${aluno.id}`}
+                          onClick={() => {
+                            setAlunoCheckinId(aluno.id);
+                            const now = new Date();
+                            setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
+                            onCheckinManual(aluno.id);
+                          }}>
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Check-in agora
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-retroactive-${aluno.id}`}
+                          onClick={() => {
+                            setAlunoCheckinId(aluno.id);
+                            const now = new Date();
+                            setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
+                            setDialogCheckinRetro(true);
+                          }}>
+                          <CalendarClock className="h-3.5 w-3.5" /> Registrar aula
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-hist-checkins-${aluno.id}`}
+                          onClick={() => { setAlunoHistorico(aluno); setDialogHistorico(true); }}>
+                          <History className="h-3.5 w-3.5" /> Hist. check-ins
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-hist-fin-${aluno.id}`}
+                          onClick={() => { setAlunoHistFinanceiroId(aluno.id); setAlunoHistFinanceiroNome(aluno.nome); setDialogHistFinanceiro(true); }}>
+                          <Receipt className="h-3.5 w-3.5" /> Hist. pagamento
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-validar-${aluno.id}`}
+                          onClick={() => { setAlunoValidarId(aluno.id); setAlunoValidarNome(aluno.nome); setDialogValidarPagamento(true); }}>
+                          <DollarSign className="h-3.5 w-3.5" /> Validar pgto
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-manual-payment-${aluno.id}`}
+                          onClick={() => {
+                            setAlunoFinanceiroId(aluno.id);
+                            const now = new Date();
+                            const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+                            const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
+                            setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
+                            setDialogPagamento(true);
+                          }}>
+                          <CreditCard className="h-3.5 w-3.5" /> Pgto manual
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-charge-${aluno.id}`}
+                          onClick={() => {
+                            setAlunoFinanceiroId(aluno.id);
+                            const now = new Date();
+                            setFormCobranca({ description: "", amount: "", dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR") });
+                            setDialogCobranca(true);
+                          }}>
+                          <Receipt className="h-3.5 w-3.5" /> Criar cobrança
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                          data-testid={`button-whatsapp-${aluno.id}`}
+                          onClick={() => {
+                            if (!whatsappSettings?.whatsapp_number) {
+                              toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
+                              return;
+                            }
+                            enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
+                          }}>
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          data-testid={`button-delete-student-${aluno.id}`}
+                          onClick={() => setConfirmExcluirAluno(aluno)}>
+                          <Trash2 className="h-3.5 w-3.5" /> Excluir
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {filtroAlunos === "todas" && alunosInativos.length > 0 && (
             <div className="mt-4 pt-4 border-t space-y-2">
