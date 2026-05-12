@@ -1,0 +1,229 @@
+ETAPA 1 — PADRONIZAÇÃO GLOBAL DOS FORMULÁRIOS
+
+Revisar TODOS os formulários do sistema.
+
+Incluindo:
+
+criação;
+edição;
+cadastro;
+financeiro;
+professores;
+alunos;
+produtos;
+check-in;
+configurações;
+modais;
+sidebars;
+qualquer tela com inputs.
+Criar um padrão único para:
+Estrutura
+padding;
+margens;
+largura dos campos;
+altura dos inputs;
+espaçamento entre elementos;
+alinhamento de labels;
+alinhamento dos campos;
+alinhamento dos botões;
+distância entre seções;
+bordas;
+arredondamentos;
+tipografia.
+Componentes
+
+Padronizar visualmente:
+
+inputs;
+selects;
+textareas;
+datepickers;
+checkbox;
+radio;
+upload de imagem;
+seletor de cores;
+botões;
+switches;
+campos monetários.
+Corrigir problemas visuais
+
+Existem formulários com:
+
+elementos cortados;
+componentes desalinhados;
+padding inconsistente;
+margens diferentes;
+campos fora do padrão;
+botões desalinhados.
+
+Corrigir TODOS os casos encontrados.
+
+Exemplo identificado: No formulário de criação do professor, alguns elementos da lateral esquerda parecem cortados. Exemplo:
+
+barra/seletor de cores.
+
+Verificar e corrigir isso em TODOS os formulários semelhantes.
+
+ETAPA 2 — CONFIRMAÇÕES E ALERTAS
+
+Ao criar um aluno atualmente aparece algo como:
+
+“Aluno incorporado página XXXXX”
+
+Esse comportamento não segue o padrão do sistema.
+
+Ajustar:
+remover popup diferente;
+remover mensagens fora do padrão;
+utilizar o mesmo componente de sucesso já utilizado no restante do sistema;
+manter consistência visual.
+
+Aplicar isso globalmente para:
+
+criação;
+edição;
+exclusão;
+confirmação;
+alertas;
+erros.
+ETAPA 3 — PADRONIZAÇÃO DOS CARDS DE ALUNOS
+
+No Painel do Professor, revisar TODOS os cards de alunos.
+
+Barra do aluno mensalista
+
+A barra do aluno mensalista deve seguir EXATAMENTE o mesmo padrão da barra do aluno de check-in.
+
+Padronizar:
+
+espessura;
+largura;
+posicionamento;
+alinhamento;
+espaçamento;
+comportamento visual.
+
+Mesmo quando o card estiver minimizado/recolhido, a barra deve continuar visível.
+
+Exatamente igual ao comportamento do aluno de check-in.
+
+Botões dos cards
+
+Padronizar:
+
+alinhamento;
+altura;
+espaçamento;
+proporção;
+padding;
+posição.
+
+Todos os cards devem seguir o mesmo padrão visual.
+
+Informações dos alunos
+
+Na sidebar de alunos e nos cards:
+
+Padronizar:
+
+alinhamento dos textos;
+espaçamento interno;
+distância entre informações;
+altura visual;
+organização dos elementos.
+
+Criar um padrão visual único entre:
+
+aluno mensalista;
+aluno check-in;
+cards minimizados;
+cards expandidos.
+ETAPA 4 — ESPAÇAMENTOS E ORGANIZAÇÃO VISUAL
+
+Revisar o sistema inteiro buscando:
+
+desalinhamentos;
+diferenças de padding;
+diferenças de margem;
+elementos desalinhados;
+componentes fora de proporção.
+
+Padronizar:
+
+espaçamento entre cards;
+espaçamento entre botões;
+alinhamento de textos;
+alinhamento de ícones;
+alinhamento de títulos;
+altura de componentes;
+distância entre seções.
+
+Objetivo: Criar consistência visual em todas as telas.
+
+ETAPA 5 — PADRONIZAÇÃO MONETÁRIA
+
+Todos os valores financeiros do sistema devem seguir o padrão monetário brasileiro.
+
+Formato obrigatório
+R$ 1.000,00
+R$ 100,00
+R$ 3,00
+
+Aplicar globalmente:
+
+financeiro;
+receitas;
+despesas;
+mensalidades;
+dashboard;
+relatórios;
+produtos;
+lançamentos.
+ETAPA 6 — PADRONIZAÇÃO DE DATAS
+
+Todas as datas do sistema devem seguir o padrão brasileiro.
+
+Formato obrigatório
+
+DD/MM/AAAA
+
+Exemplos:
+
+05/01/2026
+12/11/2025
+
+Aplicar em:
+
+tabelas;
+cards;
+formulários;
+histórico;
+dashboard;
+financeiro;
+relatórios.
+ETAPA 7 — HOME E FINANCEIRO
+
+Se a informação “Receita do mês” já existir no módulo Financeiro:
+
+remover da Home;
+evitar duplicação de informação;
+manter centralizado apenas no Financeiro.
+ETAPA 8 — OBJETIVO FINAL
+
+Criar um padrão visual global para TODO o sistema.
+
+Prioridades máximas:
+
+alinhamento;
+consistência;
+organização visual;
+padronização;
+proporcionalidade;
+espaçamento;
+experiência visual profissional.
+
+Antes de finalizar:
+
+revisar todas as telas;
+validar consistência entre componentes;
+garantir que formulários e cards sigam exatamente o mesmo padrão visual.
