@@ -1,8 +1,8 @@
 {
-  "createdAt": "2026-05-12T19:59:37.544Z",
+  "createdAt": "2026-05-12T20:09:08.499Z",
   "arenas": [
     {
-      "id": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
+      "id": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
       "name": "Arena Padrão",
       "subscriptionPlan": "premium",
       "gestorLogin": "333",
@@ -11,36 +11,36 @@
       "gestorCpf": null,
       "gestorEmail": null,
       "gestorTelefone": null,
-      "subscriptionStartDate": "11/05/2026",
+      "subscriptionStartDate": "12/05/2026",
       "subscriptionValue": "R$ 199,00",
       "subscriptionStatus": "Ativo",
-      "nextBillingDate": "18/05/2026",
+      "nextBillingDate": "19/05/2026",
       "statusConta": "ativo",
       "trialExpiraEm": null,
       "endereco": null,
       "urlAgenda": null,
-      "createdAt": "2026-05-11T04:30:06.861Z",
-      "updatedAt": "2026-05-11T04:30:06.861Z"
+      "createdAt": "2026-05-12T20:07:25.569Z",
+      "updatedAt": "2026-05-12T20:07:25.569Z"
     }
   ],
   "plans": [
     {
-      "id": "aac99cc4-8458-446b-8986-4c24cab4788e",
-      "arenaId": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
+      "id": "d7d0cc0c-3c80-47f5-b4e9-6ea83878bc0e",
+      "arenaId": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
       "titulo": "1x por semana",
       "checkins": 8,
       "valorTexto": null
     },
     {
-      "id": "e6acde56-ea67-4d4a-828b-3301ad453aaa",
-      "arenaId": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
+      "id": "8d6aead5-5cdb-44a8-a144-690cd86daeae",
+      "arenaId": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
       "titulo": "2x por semana",
       "checkins": 12,
       "valorTexto": null
     },
     {
-      "id": "9ffbd4b1-e926-4602-9bc5-95523370811d",
-      "arenaId": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
+      "id": "71030a78-3633-4d67-86d8-d2001527f4b2",
+      "arenaId": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
       "titulo": "Mensalista",
       "checkins": 0,
       "valorTexto": "R$ 140,00"
@@ -48,8 +48,8 @@
   ],
   "teachers": [
     {
-      "id": "e153fa3c-193c-420e-9ee6-0961ee416e1b",
-      "arenaId": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
+      "id": "0f7fc6e2-40ca-40ad-8e8a-9ef609a0fbe6",
+      "arenaId": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
       "nome": "Felipe Bernardo",
       "login": "222",
       "senha": "222",
@@ -64,8 +64,8 @@
   ],
   "students": [
     {
-      "id": "804de20d-a956-4ffb-8532-72ca559e1e47",
-      "arenaId": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
+      "id": "e1a9069a-4839-4578-832f-8645553f23aa",
+      "arenaId": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
       "nome": "Maria Santos",
       "login": "111",
       "senha": "111",
@@ -73,7 +73,7 @@
       "email": null,
       "telefone": null,
       "modalidade": "Vôlei de Praia",
-      "planoId": "e6acde56-ea67-4d4a-828b-3301ad453aaa",
+      "planoId": "8d6aead5-5cdb-44a8-a144-690cd86daeae",
       "planoTitulo": "2x por semana",
       "planoCheckins": 12,
       "planoValorTexto": null,
@@ -87,23 +87,23 @@
       "professorId": null,
       "ativo": true,
       "desativadoEm": null,
-      "criadoEm": "2026-05-11T04:30:06.940Z"
+      "criadoEm": "2026-05-12T20:07:25.607Z"
     }
   ],
   "checkins": [
     {
-      "id": "01d09013-31f4-4767-8cc3-d4d840fab6d2",
-      "arenaId": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
-      "studentId": "804de20d-a956-4ffb-8532-72ca559e1e47",
+      "id": "8a2bc6fe-e6a8-4814-848e-92f54cad1920",
+      "arenaId": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
+      "studentId": "e1a9069a-4839-4578-832f-8645553f23aa",
       "data": "01/01/2025",
       "hora": "19:30",
       "tipo": "pendente",
       "professorId": null
     },
     {
-      "id": "7afa069b-f53b-47d6-bb1c-460ef40e40e3",
-      "arenaId": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
-      "studentId": "804de20d-a956-4ffb-8532-72ca559e1e47",
+      "id": "fb690cb0-01fd-445d-91cc-177d44bbea01",
+      "arenaId": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
+      "studentId": "e1a9069a-4839-4578-832f-8645553f23aa",
       "data": "02/01/2025",
       "hora": "18:30",
       "tipo": "pendente",
@@ -117,8 +117,8 @@
   "turmaAlunos": [],
   "recursos": [
     {
-      "id": "a0b44284-860d-4c5d-8ec6-777059f1a4b7",
-      "arenaId": "57975fe1-9c26-4fb3-919a-ea0b73b27a46",
+      "id": "bc4946d5-f1a1-4e00-bdc6-0d675b99322e",
+      "arenaId": "6da01b9e-6d30-4d67-86f6-d76c92c8a453",
       "nome": "Quadra 1",
       "tipo": "sala",
       "ativo": true,
@@ -126,7 +126,7 @@
       "valorDayuse": null,
       "duracaoMinima": 1,
       "valorHoraAdicional": null,
-      "criadoEm": "2026-05-11T04:30:06.997Z"
+      "criadoEm": "2026-05-12T20:07:25.644Z"
     }
   ]
 }
