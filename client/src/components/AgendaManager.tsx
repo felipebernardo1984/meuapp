@@ -241,7 +241,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
   const { data: turmas = [], isLoading } = useQuery<Turma[]>({ queryKey: ["/api/turmas"] });
   const { data: professores = [] } = useQuery<Professor[]>({ queryKey: ["/api/professores"] });
   const { data: recursos = [] } = useQuery<Recurso[]>({ queryKey: ["/api/recursos"] });
-  const { data: agendaConfig } = useQuery<{ arenaId: string; endereco: string }>({
+  const { data: agendaConfig } = useQuery<{ arenaId: string; endereco: string; urlAgenda?: string }>({
     queryKey: ["/api/agenda-config"],
     enabled: !readOnly,
   });
@@ -482,7 +482,7 @@ export default function AgendaManager({ onVoltar, professorContext, readOnly = f
       if (fStart >= tEnd || fEnd <= tStart) continue;
       // Day overlap check
       const tDias = turmaEfetivaDias(t);
-      const overlap = [...formDias].some((d) => tDias.has(d));
+      const overlap = Array.from(formDias).some((d) => tDias.has(d));
       if (overlap) ocupados.add(t.recursoId);
     }
 

@@ -113,6 +113,7 @@ export const automationService = {
 
     for (const payment of payments) {
       if (payment.status === "paid") continue;
+      if (!payment.studentId) continue;
 
       const student = studentMap.get(payment.studentId);
       if (!student) continue;
@@ -124,10 +125,11 @@ export const automationService = {
 
       const days = diffDays(today, due);
       const studentName = student.nome;
+      const studentId = payment.studentId;
 
       if (days < 0) {
         overduePayments.push({
-          studentId: payment.studentId,
+          studentId,
           studentName,
           arenaId,
           paymentId: payment.id,
@@ -138,7 +140,7 @@ export const automationService = {
         });
       } else if (days <= nearDueDaysThreshold) {
         paymentsNearDue.push({
-          studentId: payment.studentId,
+          studentId,
           studentName,
           arenaId,
           paymentId: payment.id,

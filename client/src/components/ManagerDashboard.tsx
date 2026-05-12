@@ -3363,7 +3363,6 @@ export default function ManagerDashboard({
 
       {activeSection === "financeiro" && (
         <FinancialDashboard
-          arenaId={arenaId ?? ""}
           alunos={alunos.map((a) => ({ id: a.id, nome: a.nome, modalidade: a.modalidade, checkinsRealizados: a.checkinsRealizados }))}
           onVoltar={() => setActiveSection("dashboard")}
         />
@@ -4927,7 +4926,7 @@ export default function ManagerDashboard({
                     entry.comissao += parseFloat(c.valorComissao ?? "0");
                     if (c.status === "pendente") entry.pendentes++;
                   }
-                  const alunoList = [...byAluno.values()].sort((a, b) => a.nome.localeCompare(b.nome));
+                  const alunoList = Array.from(byAluno.values()).sort((a, b) => a.nome.localeCompare(b.nome));
                   const totCheckins = alunoList.reduce((s, a) => s + a.checkins, 0);
                   const totReceita = alunoList.reduce((s, a) => s + a.receita, 0);
                   const totComissao = alunoList.reduce((s, a) => s + a.comissao, 0);
@@ -4937,7 +4936,7 @@ export default function ManagerDashboard({
                       <div className="flex items-center gap-3 mb-3">
                         <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                           {profSelecionado.nome} — Resumo por Aluno
-                          {mesComissaoFmt && <span className="ml-2 font-normal normal-case">({mesComissaoFmt})</span>}
+                          {filtroRangeComissao && <span className="ml-2 font-normal normal-case">({filtroRangeComissao.inicio} → {filtroRangeComissao.fim})</span>}
                         </p>
                         <Button size="sm" variant="ghost" className="h-6 text-xs ml-auto" onClick={() => setFiltroProfComissao("todos")}>← Todos</Button>
                       </div>

@@ -67,13 +67,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("⚠️ MemoryStore ativo (modo desenvolvimento)");
   }
 
+  // ── Security: warn about weak defaults in production ──────────────────────
+  if (process.env.NODE_ENV === "production") {
+    if (!process.env.SESSION_SECRET) {
+      console.error("⛔ SECURITY: SESSION_SECRET não configurado. Defina um valor forte no ambiente de produção.");
+    }
+    if (!process.env.ADMIN_LOGIN || !process.env.ADMIN_SENHA) {
+      console.warn("⚠️  SECURITY: ADMIN_LOGIN/ADMIN_SENHA usando valores padrão inseguros. Configure-os como variáveis de ambiente.");
+    }
+  }
+
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || "arena-secret-key",
+      secret: process.env.SESSION_SECRET || "arena-secret-key-dev",
       resave: false,
       saveUninitialized: false,
       store: sessionStore,
-      cookie: { secure: process.env.NODE_ENV === "production", httpOnly: true, maxAge: 24 * 60 * 60 * 1000 },
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000,
+      },
     })
   );
 
@@ -390,8 +405,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/alunos/:id/reativar", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
-    const student = await storage.reactivateStudent(req.params.id);
-    res.json(student);
+    const student = await storage.getStudent(req.params.id);
+    if (!student || student.arenaId !== arenaId) return res.status(403).json({ message: "Acesso negado" });
+    const updated = await storage.reactivateStudent(req.params.id);
+    res.json(updated);
   });
 
   app.post("/api/alunos", async (req, res) => {
@@ -437,6 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     const { nome, cpf, email, telefone, login, senha, modalidade, statusMensalidade, checkinsRealizados, integrationType, integrationPlan, professorId } = req.body;
     const studentBefore = await storage.getStudent(req.params.id);
+    if (!studentBefore || studentBefore.arenaId !== arenaId) return res.status(403).json({ message: "Acesso negado" });
     const updates: Record<string, any> = {};
     if (nome !== undefined) updates.nome = nome;
     if (cpf !== undefined) updates.cpf = cpf;
@@ -465,6 +483,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/alunos/:id/plano", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
+    const existing = await storage.getStudent(req.params.id);
+    if (!existing || existing.arenaId !== arenaId) return res.status(403).json({ message: "Acesso negado" });
     const { planoId } = req.body;
     const plan = await storage.getPlan(planoId);
     if (!plan) return res.status(400).json({ message: "Plano não encontrado" });
@@ -477,6 +497,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/alunos/:id/aprovar", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
+    const existing = await storage.getStudent(req.params.id);
+    if (!existing || existing.arenaId !== arenaId) return res.status(403).json({ message: "Acesso negado" });
     const student = await storage.updateStudent(req.params.id, { aprovado: true });
     res.json(student);
   });
@@ -484,6 +506,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/alunos/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
+    const existing = await storage.getStudent(req.params.id);
+    if (!existing || existing.arenaId !== arenaId) return res.status(403).json({ message: "Acesso negado" });
     await storage.deactivateStudent(req.params.id);
     res.json({ ok: true });
   });
@@ -491,6 +515,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/alunos/:id/permanente", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
+    const existing = await storage.getStudent(req.params.id);
+    if (!existing || existing.arenaId !== arenaId) return res.status(403).json({ message: "Acesso negado" });
     await storage.permanentDeleteStudent(req.params.id);
     res.json({ ok: true });
   });
@@ -554,6 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!arenaId) return;
     const student = await storage.getStudent(req.params.id);
     if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
+    if (student.arenaId !== arenaId) return res.status(403).json({ message: "Acesso negado" });
     const index = parseInt(req.params.index, 10);
 
     const allCheckins = await storage.listCheckins(student.id);

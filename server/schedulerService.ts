@@ -69,7 +69,7 @@ function logReport(
     );
     for (const n of report.notificationsSent) {
       const status = n.success ? "✓" : "✗";
-      const tag = n.mock ? " [MOCK]" : "";
+      const tag = n.provider === "mock" ? " [MOCK]" : "";
       console.log(
         `${p}     ${status}${tag} ID ${n.recipientId} — "${n.message.slice(
           0,

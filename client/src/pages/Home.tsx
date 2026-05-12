@@ -184,6 +184,14 @@ export default function Home() {
     },
   });
 
+  const excluirAlunoPermanente = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/alunos/${id}/permanente`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      qc.invalidateQueries({ queryKey: ["/api/alunos/inativos"] });
+    },
+  });
+
   const alterarPlanoAluno = useMutation({
     mutationFn: ({ alunoId, planoId }: { alunoId: string; planoId: string }) =>
       apiRequest("PUT", `/api/alunos/${alunoId}/plano`, { planoId }),
@@ -377,9 +385,9 @@ export default function Home() {
               onRemoverCheckin={(alunoId, index) => removerCheckin.mutate({ id: alunoId, index })}
               onExcluirAluno={(alunoId) => excluirAluno.mutate(alunoId)}
               onReativarAluno={(alunoId) => reativarAluno.mutate(alunoId)}
+              onExcluirAlunoPermanente={(alunoId) => excluirAlunoPermanente.mutate(alunoId)}
               onRegistrarPagamento={(dados) => apiRequest("POST", "/api/finance/payments", dados)}
               onCriarCobranca={(dados) => apiRequest("POST", "/api/finance/charges", dados)}
-              onIrFinanceiro={() => {}}
               statusConta={sessao.statusConta}
               trialExpiraEm={sessao.trialExpiraEm}
             />

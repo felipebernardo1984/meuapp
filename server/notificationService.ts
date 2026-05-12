@@ -69,6 +69,8 @@ async function sendViaTwilio(
   }
 
   try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore – twilio types are optional; installed at runtime only
     const { default: twilio } = await import("twilio");
     const client = twilio(accountSid, authToken);
 
