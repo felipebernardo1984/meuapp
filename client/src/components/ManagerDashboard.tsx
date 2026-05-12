@@ -3098,16 +3098,6 @@ export default function ManagerDashboard({
 
       {/* ── Tabela de alunos ── */}
       <div className="flex flex-col gap-3 mb-5">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Buscar aluno por nome..."
-            value={buscaAluno}
-            onChange={(e) => setBuscaAluno(e.target.value)}
-            className="pl-9 h-9"
-            data-testid="input-busca-aluno"
-          />
-        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={filtroAlunos} onValueChange={setFiltroAlunos} data-testid="select-filtro-alunos">
             <SelectTrigger className="h-9 w-44 px-3 text-sm">
@@ -3138,6 +3128,16 @@ export default function ManagerDashboard({
           <UserPlus className="mr-2 h-5 w-5" />
           Cadastrar Aluno
         </Button>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Buscar aluno por nome..."
+            value={buscaAluno}
+            onChange={(e) => setBuscaAluno(e.target.value)}
+            className="pl-9 h-9"
+            data-testid="input-busca-aluno"
+          />
+        </div>
       </div>
       <Card>
         <CardContent className="pt-4">
@@ -3179,65 +3179,75 @@ export default function ManagerDashboard({
           <>
           <div className="space-y-2 p-2">
             {alunosFiltrados.map((aluno) => {
+              const isExpanded = expandedAlunoId === aluno.id;
               return (
-                <div key={aluno.id} data-testid={`row-student-${aluno.id}`} className="rounded-xl border bg-muted overflow-hidden">
-                  {/* Card header — always visible */}
-                  <div className="flex items-center justify-between p-3 gap-3">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
-                        <span className="text-white font-bold text-sm">{aluno.nome.charAt(0).toUpperCase()}</span>
+                <div key={aluno.id} data-testid={`row-student-${aluno.id}`} className="flex items-center justify-between p-3 bg-muted rounded-xl gap-3 flex-wrap">
+                  {/* Left: clickable area to expand */}
+                  <button
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left"
+                    onClick={() => setExpandedAlunoId(isExpanded ? null : aluno.id)}
+                    data-testid={`button-expand-${aluno.id}`}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+                      <span className="text-white font-bold text-sm">{aluno.nome.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-sm truncate">{aluno.nome}</p>
+                        {aluno.aprovado ? (
+                          <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                        )}
+                        <Badge
+                          variant={aluno.statusMensalidade === "Em dia" ? "default" : "destructive"}
+                          className="text-xs hidden sm:inline-flex"
+                        >
+                          {aluno.statusMensalidade}
+                        </Badge>
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium text-sm truncate">{aluno.nome}</p>
-                          {aluno.aprovado ? (
-                            <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                          ) : (
-                            <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                          <span className="text-xs text-muted-foreground">{aluno.modalidade}</span>
-                          {aluno.planoTitulo && <span className="text-xs text-muted-foreground">· {aluno.planoTitulo}</span>}
-                          {aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
-                        </div>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                        <span className="text-xs text-muted-foreground">{aluno.modalidade}</span>
+                        {aluno.planoTitulo && <span className="text-xs text-muted-foreground">· {aluno.planoTitulo}</span>}
+                        {aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
+                        {aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge
-                        variant={aluno.statusMensalidade === "Em dia" ? "default" : "destructive"}
-                        className="text-xs hidden sm:inline-flex"
-                      >
-                        {aluno.statusMensalidade}
-                      </Badge>
-                      {aluno.plano > 0 && (
-                        <span className="text-xs text-muted-foreground hidden md:inline">{aluno.checkinsRealizados}/{aluno.plano}</span>
-                      )}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 shrink-0"
-                        data-testid={`button-edit-student-${aluno.id}`}
-                        onClick={() => {
-                          setAlunoEditando(aluno);
-                          setFormEditarAluno({
-                            nome: aluno.nome, cpf: aluno.cpf, email: aluno.email ?? "",
-                            telefone: aluno.telefone ?? "", login: aluno.login ?? "", senha: "",
-                            modalidade: aluno.modalidade, statusMensalidade: aluno.statusMensalidade,
-                            checkinsRealizados: aluno.checkinsRealizados, planoId: aluno.planoId,
-                            integrationType: aluno.integrationType ?? "", integrationPlan: aluno.integrationPlan ?? "",
-                            photoUrl: aluno.photoUrl ?? "",
-                          });
-                          setDialogEditarAluno(true);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  </button>
+                  {/* Right: pencil + trash */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      data-testid={`button-edit-student-${aluno.id}`}
+                      onClick={() => {
+                        setAlunoEditando(aluno);
+                        setFormEditarAluno({
+                          nome: aluno.nome, cpf: aluno.cpf, email: aluno.email ?? "",
+                          telefone: aluno.telefone ?? "", login: aluno.login ?? "", senha: "",
+                          modalidade: aluno.modalidade, statusMensalidade: aluno.statusMensalidade,
+                          checkinsRealizados: aluno.checkinsRealizados, planoId: aluno.planoId,
+                          integrationType: aluno.integrationType ?? "", integrationPlan: aluno.integrationPlan ?? "",
+                          photoUrl: aluno.photoUrl ?? "",
+                        });
+                        setDialogEditarAluno(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      data-testid={`button-delete-student-${aluno.id}`}
+                      onClick={() => setConfirmExcluirAluno(aluno)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  {/* Action buttons — always expanded */}
-                  <div className="border-t px-3 py-3 bg-background/60">
-                    <div className="flex flex-wrap gap-2">
+                  {/* Expanded action buttons */}
+                  {isExpanded && (
+                    <div className="w-full border-t pt-3 mt-0 flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
                         data-testid={`button-change-plan-${aluno.id}`}
                         onClick={() => { setAlunoPlanoId(aluno.id); setNovoPlanoId(aluno.planoId); setDialogAlterarPlano(true); }}>
@@ -3311,13 +3321,8 @@ export default function ManagerDashboard({
                         }}>
                         <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        data-testid={`button-delete-student-${aluno.id}`}
-                        onClick={() => setConfirmExcluirAluno(aluno)}>
-                        <Trash2 className="h-3.5 w-3.5" /> Excluir
-                      </Button>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
