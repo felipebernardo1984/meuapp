@@ -91,6 +91,7 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
+  Search,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import type { Plano } from "@/pages/Home";
@@ -213,6 +214,7 @@ export default function ManagerDashboard({
   onExcluirAlunoPermanente,
 }: ManagerDashboardProps) {
   const [filtroAlunos, setFiltroAlunos] = useState<string>("todas");
+  const [buscaAluno, setBuscaAluno] = useState<string>("");
 
   const { data: alunosInativos = [] } = useQuery<any[]>({
     queryKey: ["/api/alunos/inativos"],
@@ -919,9 +921,11 @@ export default function ManagerDashboard({
     new Set([...alunos.map((a) => a.modalidade), ...professores.map((p) => p.modalidade)].filter(Boolean))
   );
 
-  const alunosFiltrados = alunos.filter((a) =>
-    filtroAlunos === "todas" || filtroAlunos === "ativos" || a.modalidade === filtroAlunos
-  );
+  const alunosFiltrados = alunos.filter((a) => {
+    const passaFiltro = filtroAlunos === "todas" || filtroAlunos === "ativos" || a.modalidade === filtroAlunos;
+    const passaBusca = buscaAluno.trim() === "" || a.nome.toLowerCase().includes(buscaAluno.toLowerCase().trim());
+    return passaFiltro && passaBusca;
+  });
   const alunosPendentes = alunos.filter((a) => !a.aprovado);
   const alunoPlanoSelecionado = alunos.find((a) => a.id === alunoPlanoId);
 
@@ -3094,6 +3098,16 @@ export default function ManagerDashboard({
 
       {/* ── Tabela de alunos ── */}
       <div className="flex flex-col gap-3 mb-5">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Buscar aluno por nome..."
+            value={buscaAluno}
+            onChange={(e) => setBuscaAluno(e.target.value)}
+            className="pl-9 h-9"
+            data-testid="input-busca-aluno"
+          />
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={filtroAlunos} onValueChange={setFiltroAlunos} data-testid="select-filtro-alunos">
             <SelectTrigger className="h-9 w-44 px-3 text-sm">
