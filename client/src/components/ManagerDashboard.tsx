@@ -3165,14 +3165,10 @@ export default function ManagerDashboard({
           <>
           <div className="space-y-2 p-2">
             {alunosFiltrados.map((aluno) => {
-              const isExpanded = expandedAlunoId === aluno.id;
               return (
                 <div key={aluno.id} data-testid={`row-student-${aluno.id}`} className="rounded-xl border bg-muted overflow-hidden">
-                  <button
-                    className="w-full flex items-center justify-between p-3 gap-3 text-left hover:bg-muted/80 transition-colors"
-                    onClick={() => setExpandedAlunoId(isExpanded ? null : aluno.id)}
-                    data-testid={`button-expand-${aluno.id}`}
-                  >
+                  {/* Card header — always visible */}
+                  <div className="flex items-center justify-between p-3 gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
                         <span className="text-white font-bold text-sm">{aluno.nome.charAt(0).toUpperCase()}</span>
@@ -3203,109 +3199,111 @@ export default function ManagerDashboard({
                       {aluno.plano > 0 && (
                         <span className="text-xs text-muted-foreground hidden md:inline">{aluno.checkinsRealizados}/{aluno.plano}</span>
                       )}
-                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 shrink-0"
+                        data-testid={`button-edit-student-${aluno.id}`}
+                        onClick={() => {
+                          setAlunoEditando(aluno);
+                          setFormEditarAluno({
+                            nome: aluno.nome, cpf: aluno.cpf, email: aluno.email ?? "",
+                            telefone: aluno.telefone ?? "", login: aluno.login ?? "", senha: "",
+                            modalidade: aluno.modalidade, statusMensalidade: aluno.statusMensalidade,
+                            checkinsRealizados: aluno.checkinsRealizados, planoId: aluno.planoId,
+                            integrationType: aluno.integrationType ?? "", integrationPlan: aluno.integrationPlan ?? "",
+                            photoUrl: aluno.photoUrl ?? "",
+                          });
+                          setDialogEditarAluno(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </button>
-                  {isExpanded && (
-                    <div className="border-t px-3 py-3 bg-background/60">
-                      <div className="flex flex-wrap gap-2">
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-edit-student-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoEditando(aluno);
-                            setFormEditarAluno({
-                              nome: aluno.nome, cpf: aluno.cpf, email: aluno.email ?? "",
-                              telefone: aluno.telefone ?? "", login: aluno.login ?? "", senha: "",
-                              modalidade: aluno.modalidade, statusMensalidade: aluno.statusMensalidade,
-                              checkinsRealizados: aluno.checkinsRealizados, planoId: aluno.planoId,
-                              integrationType: aluno.integrationType ?? "", integrationPlan: aluno.integrationPlan ?? "",
-                              photoUrl: aluno.photoUrl ?? "",
-                            });
-                            setDialogEditarAluno(true);
-                          }}>
-                          <Pencil className="h-3.5 w-3.5" /> Editar
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-change-plan-${aluno.id}`}
-                          onClick={() => { setAlunoPlanoId(aluno.id); setNovoPlanoId(aluno.planoId); setDialogAlterarPlano(true); }}>
-                          <Pencil className="h-3.5 w-3.5" /> Alterar plano
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-checkin-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoCheckinId(aluno.id);
-                            const now = new Date();
-                            setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
-                            onCheckinManual(aluno.id);
-                          }}>
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Check-in agora
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-retroactive-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoCheckinId(aluno.id);
-                            const now = new Date();
-                            setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
-                            setDialogCheckinRetro(true);
-                          }}>
-                          <CalendarClock className="h-3.5 w-3.5" /> Registrar aula
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-hist-checkins-${aluno.id}`}
-                          onClick={() => { setAlunoHistorico(aluno); setDialogHistorico(true); }}>
-                          <History className="h-3.5 w-3.5" /> Hist. check-ins
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-hist-fin-${aluno.id}`}
-                          onClick={() => { setAlunoHistFinanceiroId(aluno.id); setAlunoHistFinanceiroNome(aluno.nome); setDialogHistFinanceiro(true); }}>
-                          <Receipt className="h-3.5 w-3.5" /> Hist. pagamento
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-validar-${aluno.id}`}
-                          onClick={() => { setAlunoValidarId(aluno.id); setAlunoValidarNome(aluno.nome); setDialogValidarPagamento(true); }}>
-                          <DollarSign className="h-3.5 w-3.5" /> Validar pgto
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-manual-payment-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoFinanceiroId(aluno.id);
-                            const now = new Date();
-                            const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
-                            const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
-                            setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
-                            setDialogPagamento(true);
-                          }}>
-                          <CreditCard className="h-3.5 w-3.5" /> Pgto manual
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-charge-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoFinanceiroId(aluno.id);
-                            const now = new Date();
-                            setFormCobranca({ description: "", amount: "", dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR") });
-                            setDialogCobranca(true);
-                          }}>
-                          <Receipt className="h-3.5 w-3.5" /> Criar cobrança
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-whatsapp-${aluno.id}`}
-                          onClick={() => {
-                            if (!whatsappSettings?.whatsapp_number) {
-                              toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
-                              return;
-                            }
-                            enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
-                          }}>
-                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          data-testid={`button-delete-student-${aluno.id}`}
-                          onClick={() => setConfirmExcluirAluno(aluno)}>
-                          <Trash2 className="h-3.5 w-3.5" /> Excluir
-                        </Button>
-                      </div>
+                  </div>
+                  {/* Action buttons — always expanded */}
+                  <div className="border-t px-3 py-3 bg-background/60">
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-change-plan-${aluno.id}`}
+                        onClick={() => { setAlunoPlanoId(aluno.id); setNovoPlanoId(aluno.planoId); setDialogAlterarPlano(true); }}>
+                        <Pencil className="h-3.5 w-3.5" /> Alterar plano
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-checkin-${aluno.id}`}
+                        onClick={() => {
+                          setAlunoCheckinId(aluno.id);
+                          const now = new Date();
+                          setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
+                          onCheckinManual(aluno.id);
+                        }}>
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Check-in agora
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-retroactive-${aluno.id}`}
+                        onClick={() => {
+                          setAlunoCheckinId(aluno.id);
+                          const now = new Date();
+                          setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
+                          setDialogCheckinRetro(true);
+                        }}>
+                        <CalendarClock className="h-3.5 w-3.5" /> Registrar aula
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-hist-checkins-${aluno.id}`}
+                        onClick={() => { setAlunoHistorico(aluno); setDialogHistorico(true); }}>
+                        <History className="h-3.5 w-3.5" /> Hist. check-ins
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-hist-fin-${aluno.id}`}
+                        onClick={() => { setAlunoHistFinanceiroId(aluno.id); setAlunoHistFinanceiroNome(aluno.nome); setDialogHistFinanceiro(true); }}>
+                        <Receipt className="h-3.5 w-3.5" /> Hist. pagamento
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-validar-${aluno.id}`}
+                        onClick={() => { setAlunoValidarId(aluno.id); setAlunoValidarNome(aluno.nome); setDialogValidarPagamento(true); }}>
+                        <DollarSign className="h-3.5 w-3.5" /> Validar pgto
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-manual-payment-${aluno.id}`}
+                        onClick={() => {
+                          setAlunoFinanceiroId(aluno.id);
+                          const now = new Date();
+                          const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+                          const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
+                          setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
+                          setDialogPagamento(true);
+                        }}>
+                        <CreditCard className="h-3.5 w-3.5" /> Pgto manual
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-charge-${aluno.id}`}
+                        onClick={() => {
+                          setAlunoFinanceiroId(aluno.id);
+                          const now = new Date();
+                          setFormCobranca({ description: "", amount: "", dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR") });
+                          setDialogCobranca(true);
+                        }}>
+                        <Receipt className="h-3.5 w-3.5" /> Criar cobrança
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                        data-testid={`button-whatsapp-${aluno.id}`}
+                        onClick={() => {
+                          if (!whatsappSettings?.whatsapp_number) {
+                            toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
+                            return;
+                          }
+                          enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
+                        }}>
+                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        data-testid={`button-delete-student-${aluno.id}`}
+                        onClick={() => setConfirmExcluirAluno(aluno)}>
+                        <Trash2 className="h-3.5 w-3.5" /> Excluir
+                      </Button>
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
