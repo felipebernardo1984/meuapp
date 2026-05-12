@@ -448,27 +448,7 @@ export default function TeacherDashboard({
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
           const alunoPayments = payments.filter((p) => p.studentId === aluno.id);
 
-          let mensalistaProgresso = 0;
-          if (!temCheckins) {
-            const refPayment = alunoPayments.find((p) => p.status === "pending") ?? alunoPayments[alunoPayments.length - 1];
-            if (refPayment) {
-              const [refMonth, refYear] = refPayment.referenceMonth.split("/");
-              const startDate = new Date(parseInt(refYear), parseInt(refMonth) - 1, 1);
-              const [dueDay, dueMonth, dueYear] = refPayment.dueDate.split("/");
-              const endDate = new Date(parseInt(dueYear), parseInt(dueMonth) - 1, parseInt(dueDay));
-              const today = new Date();
-              const totalDays = (endDate.getTime() - startDate.getTime()) / 86400000;
-              const elapsedDays = (today.getTime() - startDate.getTime()) / 86400000;
-              mensalistaProgresso = totalDays > 0 ? Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100) : 0;
-            } else {
-              const today = new Date();
-              const start = new Date(today.getFullYear(), today.getMonth(), 1);
-              const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-              const totalDays = (end.getTime() - start.getTime()) / 86400000;
-              const elapsedDays = (today.getTime() - start.getTime()) / 86400000;
-              mensalistaProgresso = totalDays > 0 ? Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100) : 0;
-            }
-          }
+          const mensalistaPago = !temCheckins && alunoPayments.some((p) => p.status === "paid");
 
           return (
             <Card key={aluno.id} className="hover-elevate overflow-hidden" data-testid={`card-student-${aluno.id}`}>
@@ -498,12 +478,20 @@ export default function TeacherDashboard({
               </CardHeader>
               <CardContent className="space-y-3">
                 {temCheckins && <Progress value={Math.min(progresso, 100)} />}
-                {!temCheckins && <Progress value={mensalistaProgresso} data-testid={`progress-mensalista-${aluno.id}`} />}
+                {!temCheckins && (
+                  <div
+                    className={`h-2 w-full rounded-full ${mensalistaPago ? "bg-green-500" : "bg-red-500"}`}
+                    data-testid={`progress-mensalista-${aluno.id}`}
+                  />
+                )}
                 {!temCheckins ? (
-                  <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white" data-testid={`button-mensalista-${aluno.id}`}>
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Plano Mensalista
-                  </Button>
+                  <div
+                    className={`w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white ${mensalistaPago ? "bg-green-600" : "bg-red-500"}`}
+                    data-testid={`button-mensalista-${aluno.id}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {mensalistaPago ? "Mensalidade Paga" : "Mensalidade Pendente"}
+                  </div>
                 ) : (
                   <Button size="sm" className="w-full" onClick={() => onCheckinManual(aluno.id)} data-testid={`button-manual-checkin-${aluno.id}`}>
                     <CheckCircle2 className="h-4 w-4 mr-1" />
