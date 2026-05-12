@@ -98,12 +98,12 @@ function calcValorTotal(recurso: Recurso, tipo: TipoAgendamento, duracao: number
   if (tipo === "aluguel") {
     const valorPorHora = parseCurrency(recurso.valorAluguel);
     if (!valorPorHora) return "";
-    return (valorPorHora * duracao).toFixed(2).replace(".", ",");
+    return (valorPorHora * duracao).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   if (tipo === "dayuse") {
     const valor = parseCurrency(recurso.valorDayuse);
     if (!valor) return "";
-    return valor.toFixed(2).replace(".", ",");
+    return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   return "";
 }

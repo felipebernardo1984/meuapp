@@ -264,9 +264,9 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
                 {allModalidades.map((modalidade) => {
                   const cfg = getConfig(modalidade);
                   const wPlano = cfg.wellhubPlanoMinimo;
-                  const wValor = parseFloat(cfg.wellhubValorCheckin || "0") > 0 ? `R$ ${parseFloat(cfg.wellhubValorCheckin).toFixed(2).replace(".", ",")}` : null;
+                  const wValor = parseFloat(cfg.wellhubValorCheckin || "0") > 0 ? parseFloat(cfg.wellhubValorCheckin).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : null;
                   const tPlano = cfg.totalpassPlanoMinimo;
-                  const tValor = parseFloat(cfg.totalpassValorCheckin || "0") > 0 ? `R$ ${parseFloat(cfg.totalpassValorCheckin).toFixed(2).replace(".", ",")}` : null;
+                  const tValor = parseFloat(cfg.totalpassValorCheckin || "0") > 0 ? parseFloat(cfg.totalpassValorCheckin).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : null;
                   const temWellhub = wPlano || wValor;
                   const temTotalpass = tPlano || tValor;
                   return (

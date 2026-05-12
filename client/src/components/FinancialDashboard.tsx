@@ -143,7 +143,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600" data-testid="text-monthly-revenue">
-              R$ {(summary?.faturamentoMes ?? 0).toFixed(2).replace(".", ",")}
+              {(summary?.faturamentoMes ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             </p>
           </CardContent>
         </Card>
@@ -204,11 +204,11 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-muted-foreground">
               <span>Total de check-ins: <strong className="text-foreground" data-testid="text-total-checkins">{totalCheckins}</strong></span>
-              <span>Receita check-ins: <strong className="text-green-600 dark:text-green-400" data-testid="text-receita-checkins">R$ {receitaCheckinsValor.toFixed(2).replace(".", ",")}</strong></span>
+              <span>Receita check-ins: <strong className="text-green-600 dark:text-green-400" data-testid="text-receita-checkins">{receitaCheckinsValor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></span>
               {receitaMensalidadesValor > 0 && (
-                <span>Receita mensalidades: <strong className="text-blue-600 dark:text-blue-400" data-testid="text-receita-mensalidades">R$ {receitaMensalidadesValor.toFixed(2).replace(".", ",")}</strong></span>
+                <span>Receita mensalidades: <strong className="text-blue-600 dark:text-blue-400" data-testid="text-receita-mensalidades">{receitaMensalidadesValor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></span>
               )}
-              <span>Total: <strong className="text-foreground font-bold" data-testid="text-receita-total">R$ {receitaTotalValor.toFixed(2).replace(".", ",")}</strong></span>
+              <span>Total: <strong className="text-foreground font-bold" data-testid="text-receita-total">{receitaTotalValor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -236,9 +236,9 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                             </span>
                           </TableCell>
                           <TableCell>{r.checkins}</TableCell>
-                          <TableCell>R$ {r.valorUnitario.toFixed(2).replace(".", ",")}</TableCell>
+                          <TableCell>{r.valorUnitario.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
                           <TableCell className="font-semibold text-green-600 dark:text-green-400">
-                            R$ {r.receita.toFixed(2).replace(".", ",")}
+                            {r.receita.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -267,7 +267,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                           <TableCell>{a.modalidade}</TableCell>
                           <TableCell>{a.checkins}</TableCell>
                           <TableCell className="font-semibold text-green-600 dark:text-green-400">
-                            R$ {a.receita.toFixed(2).replace(".", ",")}
+                            {a.receita.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                           </TableCell>
                         </TableRow>
                       ))}

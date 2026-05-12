@@ -35,7 +35,7 @@ function tipoBadge(tipo: string) {
 }
 
 function fmt(v: number) {
-  return `R$ ${v.toFixed(2).replace(".", ",")}`;
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function BarProgress({ value, max, color, label, count }: { value: number; max: number; color: string; label: string; count: number }) {

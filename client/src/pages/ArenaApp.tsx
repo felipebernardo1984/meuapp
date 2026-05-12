@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import StudentDashboard from "@/components/StudentDashboard";
 import TeacherDashboard from "@/components/TeacherDashboard";
 import ManagerDashboard from "@/components/ManagerDashboard";
@@ -11,7 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, LogOut, KeyRound, ArrowLeft } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { LogIn, LogOut, KeyRound, ArrowLeft, Copy, CheckCheck } from "lucide-react";
 import type { Plano } from "./Home";
 
 interface PublicSettings {
@@ -25,6 +29,7 @@ interface PublicSettings {
 export default function ArenaApp() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [lembrarDados, setLembrarDados] = useState(false);
@@ -33,6 +38,15 @@ export default function ArenaApp() {
   const [alunoView, setAlunoView] = useState<"dashboard" | "agenda">("dashboard");
   const [resetEmail, setResetEmail] = useState("");
   const [resetEnviado, setResetEnviado] = useState(false);
+  const [credenciaisDialog, setCredenciaisDialog] = useState<{ tipo: string; login: string; senha: string } | null>(null);
+  const [copiado, setCopiado] = useState<"login" | "senha" | null>(null);
+
+  const copiar = (texto: string, campo: "login" | "senha") => {
+    navigator.clipboard.writeText(texto).then(() => {
+      setCopiado(campo);
+      setTimeout(() => setCopiado(null), 2000);
+    });
+  };
 
   // ── Platform settings (public) ────────────────────────────────────────────
   const { data: publicSettings } = useQuery<PublicSettings>({
@@ -49,7 +63,7 @@ export default function ArenaApp() {
       }).then((r) => r.json()),
     onSuccess: (data) => {
       if (data.ok) setResetEnviado(true);
-      else alert(data.message ?? "Erro ao solicitar redefinição.");
+      else toast({ title: "Erro", description: data.message ?? "Erro ao solicitar redefinição.", variant: "destructive" });
     },
   });
 
@@ -125,7 +139,10 @@ export default function ArenaApp() {
   // ── Teacher mutations ─────────────────────────────────────────────────────
   const cadastrarProfessor = useMutation({
     mutationFn: (d: any) => apiRequest("POST", "/api/professores", d).then((r) => r.json()),
-    onSuccess: (data) => { qc.invalidateQueries({ queryKey: ["/api/professores"] }); alert(`Professor cadastrado!\nLogin: ${data.loginGerado}\nSenha: ${data.senhaGerada}`); },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["/api/professores"] });
+      setCredenciaisDialog({ tipo: "Professor", login: data.loginGerado, senha: data.senhaGerada });
+    },
   });
   const editarProfessor = useMutation({
     mutationFn: ({ id: profId, ...d }: any) => apiRequest("PUT", `/api/professores/${profId}`, d),
@@ -142,7 +159,10 @@ export default function ArenaApp() {
   // ── Student mutations ─────────────────────────────────────────────────────
   const cadastrarAluno = useMutation({
     mutationFn: (d: any) => apiRequest("POST", "/api/alunos", d).then((r) => r.json()),
-    onSuccess: (data) => { qc.invalidateQueries({ queryKey: ["/api/alunos"] }); alert(`Aluno cadastrado!\n\nLogin: ${data.loginGerado}\nSenha: ${data.senhaGerada}`); },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      setCredenciaisDialog({ tipo: "Aluno", login: data.loginGerado, senha: data.senhaGerada });
+    },
   });
   const alterarPlanoAluno = useMutation({
     mutationFn: ({ alunoId, planoId }: any) => apiRequest("PUT", `/api/alunos/${alunoId}/plano`, { planoId }),
@@ -497,6 +517,41 @@ export default function ArenaApp() {
         />
       )}
 
+      {/* Dialog: Credenciais do Novo Professor/Aluno */}
+      <Dialog open={!!credenciaisDialog} onOpenChange={() => setCredenciaisDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{credenciaisDialog?.tipo} Cadastrado!</DialogTitle>
+            <DialogDescription>Guarde as credenciais de acesso e entregue ao {credenciaisDialog?.tipo?.toLowerCase()}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="bg-muted rounded-md p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">Login:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-sm">{credenciaisDialog?.login}</span>
+                  <button onClick={() => copiar(credenciaisDialog?.login ?? "", "login")} className="text-muted-foreground hover:text-foreground transition-colors">
+                    {copiado === "login" ? <CheckCheck className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">Senha:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-sm">{credenciaisDialog?.senha}</span>
+                  <button onClick={() => copiar(credenciaisDialog?.senha ?? "", "senha")} className="text-muted-foreground hover:text-foreground transition-colors">
+                    {copiado === "senha" ? <CheckCheck className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setCredenciaisDialog(null)}>Entendido</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {sessao.tipo === "gestor" && (
         <ManagerDashboard
           arenaId={id!}
@@ -533,8 +588,8 @@ export default function ArenaApp() {
           onCriarPlano={(titulo: string, checkins: number, valorTexto?: string) => criarPlano.mutate({ titulo, checkins, valorTexto })}
           onEditarPlano={(planId: string, titulo: string, checkins: number, valorTexto?: string) => editarPlano.mutate({ id: planId, titulo, checkins, valorTexto })}
           onExcluirPlano={(planId: string) => excluirPlano.mutate(planId)}
-          onExportarPDF={() => alert("Exportar PDF em breve")}
-          onExportarExcel={() => alert("Exportar Excel em breve")}
+          onExportarPDF={() => toast({ title: "Em breve", description: "Exportação em PDF será disponibilizada em breve." })}
+          onExportarExcel={() => toast({ title: "Em breve", description: "Exportação em Excel será disponibilizada em breve." })}
           onRegistrarPagamento={(dados: any) => registrarPagamento.mutate(dados)}
           onCriarCobranca={(dados: any) => criarCobranca.mutate(dados)}
           onLogout={() => logoutMutation.mutate()}

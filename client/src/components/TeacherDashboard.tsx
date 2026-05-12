@@ -1141,7 +1141,7 @@ export default function TeacherDashboard({
                   <p className="text-xs text-muted-foreground">Valor/Check-in</p>
                   <p className="text-2xl font-bold">
                     {(receitaAlunoData.valorUnitario ?? 0) > 0
-                      ? `R$ ${(receitaAlunoData.valorUnitario ?? 0).toFixed(2).replace(".", ",")}`
+                      ? (receitaAlunoData.valorUnitario ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
                       : <span className="text-muted-foreground text-base">Não configurado</span>}
                   </p>
                 </div>
@@ -1152,19 +1152,19 @@ export default function TeacherDashboard({
                 {receitaAlunoData.checkins > 0 && (
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="text-muted-foreground">Check-ins ({receitaAlunoData.checkins})</span>
-                    <span className="font-medium">R$ {(receitaAlunoData.receitaCheckins ?? 0).toFixed(2).replace(".", ",")}</span>
+                    <span className="font-medium">{(receitaAlunoData.receitaCheckins ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
                   </div>
                 )}
                 {receitaAlunoData.receitaMensalidades > 0 && (
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="text-muted-foreground">Mensalidades pagas</span>
-                    <span className="font-medium">R$ {(receitaAlunoData.receitaMensalidades ?? 0).toFixed(2).replace(".", ",")}</span>
+                    <span className="font-medium">{(receitaAlunoData.receitaMensalidades ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
                   </div>
                 )}
                 {receitaAlunoData.receitaCobranças > 0 && (
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="text-muted-foreground">Cobranças pagas</span>
-                    <span className="font-medium">R$ {(receitaAlunoData.receitaCobranças ?? 0).toFixed(2).replace(".", ",")}</span>
+                    <span className="font-medium">{(receitaAlunoData.receitaCobranças ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
                   </div>
                 )}
                 {receitaAlunoData.receitaTotal === 0 && (
@@ -1178,7 +1178,7 @@ export default function TeacherDashboard({
               <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4 text-center">
                 <p className="text-xs text-muted-foreground mb-1">Receita Total Gerada</p>
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="dialog-receita-total">
-                  R$ {(receitaAlunoData.receitaTotal ?? 0).toFixed(2).replace(".", ",")}
+                  {(receitaAlunoData.receitaTotal ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                 </p>
               </div>
 
@@ -1192,7 +1192,7 @@ export default function TeacherDashboard({
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="text-muted-foreground">Comissão sobre check-ins</span>
                     <span className="font-semibold text-blue-600 dark:text-blue-400">
-                      R$ {((receitaAlunoData.receitaCheckins ?? 0) * parseFloat(percentualComissao) / 100).toFixed(2).replace(".", ",")}
+                      {((receitaAlunoData.receitaCheckins ?? 0) * parseFloat(percentualComissao) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                     </span>
                   </div>
                 </div>

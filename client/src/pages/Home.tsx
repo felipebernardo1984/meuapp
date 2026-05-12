@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import LoginPage from "@/components/LoginPage";
 import StudentDashboard from "@/components/StudentDashboard";
 import TeacherDashboard from "@/components/TeacherDashboard";
@@ -7,8 +8,12 @@ import ManagerDashboard from "@/components/ManagerDashboard";
 import OverviewDashboard from "@/components/OverviewDashboard";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { LogOut, LayoutDashboard, Users, Copy, CheckCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+
+// NOTE: Home is the "no-auth-required" arena entry point for arenas that haven't
+// set up their own subdomain. It behaves like ArenaApp but uses /api directly.
 
 export interface Plano {
   id: string;
@@ -44,8 +49,18 @@ interface AlunoCompleto {
 
 export default function Home() {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [loginError, setLoginError] = useState<string | null>(null);
   const [gestorView, setGestorView] = useState<"dashboard" | "overview">("dashboard");
+  const [credenciaisDialog, setCredenciaisDialog] = useState<{ tipo: string; login: string; senha: string } | null>(null);
+  const [copiado, setCopiado] = useState<"login" | "senha" | null>(null);
+
+  const copiar = (texto: string, campo: "login" | "senha") => {
+    navigator.clipboard.writeText(texto).then(() => {
+      setCopiado(campo);
+      setTimeout(() => setCopiado(null), 2000);
+    });
+  };
 
   // ── Session ───────────────────────────────────────────────────────────────
   const { data: sessao, isLoading: sessaoLoading } = useQuery<SessaoAtiva>({
@@ -138,7 +153,7 @@ export default function Home() {
       apiRequest("POST", "/api/professores", d).then((r) => r.json()),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/professores"] });
-      alert(`Professor cadastrado!\nLogin: ${data.loginGerado}\nSenha: ${data.senhaGerada}\n\nEntregue estas credenciais ao professor.`);
+      setCredenciaisDialog({ tipo: "Professor", login: data.loginGerado, senha: data.senhaGerada });
     },
   });
 
@@ -377,8 +392,8 @@ export default function Home() {
               onCriarPlano={(titulo, checkins, valorTexto) => criarPlano.mutate({ titulo, checkins, valorTexto })}
               onEditarPlano={(id, titulo, checkins, valorTexto) => editarPlano.mutate({ id, titulo, checkins, valorTexto })}
               onExcluirPlano={(id) => excluirPlano.mutate(id)}
-              onExportarPDF={() => alert("Exportar PDF em breve")}
-              onExportarExcel={() => alert("Exportar Excel em breve")}
+              onExportarPDF={() => toast({ title: "Em breve", description: "Exportação em PDF será disponibilizada em breve." })}
+              onExportarExcel={() => toast({ title: "Em breve", description: "Exportação em Excel será disponibilizada em breve." })}
               onEditarAluno={({ id, senha, ...dados }) => editarAluno.mutate({ id, ...dados, ...(senha ? { senha } : {}) })}
               onAlterarPlanoAluno={(alunoId, planoId) => alterarPlanoAluno.mutate({ alunoId, planoId })}
               onCheckinManual={(alunoId, data, hora) => checkinManual.mutate({ id: alunoId, data, hora })}
@@ -394,6 +409,41 @@ export default function Home() {
           )}
         </>
       )}
+
+      {/* Dialog: Credenciais do Novo Professor/Aluno */}
+      <Dialog open={!!credenciaisDialog} onOpenChange={() => setCredenciaisDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{credenciaisDialog?.tipo} Cadastrado!</DialogTitle>
+            <DialogDescription>Guarde as credenciais de acesso e entregue ao {credenciaisDialog?.tipo?.toLowerCase()}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="bg-muted rounded-md p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">Login:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-sm">{credenciaisDialog?.login}</span>
+                  <button onClick={() => copiar(credenciaisDialog?.login ?? "", "login")} className="text-muted-foreground hover:text-foreground transition-colors">
+                    {copiado === "login" ? <CheckCheck className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">Senha:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-sm">{credenciaisDialog?.senha}</span>
+                  <button onClick={() => copiar(credenciaisDialog?.senha ?? "", "senha")} className="text-muted-foreground hover:text-foreground transition-colors">
+                    {copiado === "senha" ? <CheckCheck className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setCredenciaisDialog(null)}>Entendido</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

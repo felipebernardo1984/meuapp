@@ -115,7 +115,7 @@ export default function PagamentoOnline() {
             <div className="border rounded-lg p-4 bg-gray-50 text-center">
               <p className="text-xs text-gray-500 mb-1">Valor</p>
               <p className="text-3xl font-bold text-gray-900">
-                R$ {parseFloat(data.amount || "0").toFixed(2).replace(".", ",")}
+                {parseFloat(data.amount || "0").toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
               </p>
             </div>
 

@@ -1019,7 +1019,7 @@ export default function ManagerDashboard({
   const alunosAprovados = alunos.filter(a => a.aprovado);
   const checkinsHoje = alunosAprovados.filter(a => a.ultimoCheckin === today).length;
   const adimplPct = mensalistas.length > 0 ? totalPagosMes / mensalistas.length : 0;
-  const fmtBRL = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
+  const fmtBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const porPlanoMap: Record<string, number> = {};
   alunosAprovados.forEach(a => { const k = a.planoTitulo || "Sem plano"; porPlanoMap[k] = (porPlanoMap[k] || 0) + 1; });
   const porPlano = Object.entries(porPlanoMap).sort((a, b) => b[1] - a[1]);
@@ -1171,8 +1171,8 @@ export default function ManagerDashboard({
           )}
         </div>
 
-        {/* ── 4 Metric Cards ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        {/* ── 3 Metric Cards ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 text-white shadow-md" data-testid="card-total-alunos">
             <div className="flex items-center justify-between mb-3">
               <span className="text-blue-100 text-xs font-semibold uppercase tracking-wider">Alunos Ativos</span>
@@ -1205,15 +1205,6 @@ export default function ManagerDashboard({
             <p className="text-xs text-emerald-200 mt-2">
               {totalPendentesMes > 0 ? `${totalPendentesMes} pendente(s)` : "todas em dia"}
             </p>
-          </div>
-
-          <div className="rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 p-4 text-white shadow-md" data-testid="card-receita">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-purple-100 text-xs font-semibold uppercase tracking-wider">Receita do Mês</span>
-              <DollarSign className="h-5 w-5 text-purple-200" />
-            </div>
-            <p className="text-2xl font-bold leading-none" data-testid="text-receita-mes">{fmtBRL(receitaMes)}</p>
-            <p className="text-xs text-purple-200 mt-2">mensalidades pagas</p>
           </div>
         </div>
 
@@ -4644,7 +4635,7 @@ export default function ManagerDashboard({
                             <TableCell className="font-medium text-sm">{c.alunoNome}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">{c.alunoModalidade}</TableCell>
                             <TableCell className="text-sm font-medium">
-                              {c.valorCheckin > 0 ? `R$ ${c.valorCheckin.toFixed(2).replace(".", ",")}` : <span className="text-muted-foreground">—</span>}
+                              {c.valorCheckin > 0 ? c.valorCheckin.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : <span className="text-muted-foreground">—</span>}
                             </TableCell>
                             <TableCell>
                               {c.tipo === "pendente" ? (
@@ -4677,7 +4668,7 @@ export default function ManagerDashboard({
                             <TableCell className="text-sm">
                               {comissao && comissao.status !== "cancelado" ? (
                                 <span className="font-medium text-green-700 dark:text-green-400">
-                                  R$ {parseFloat(comissao.valorComissao ?? "0").toFixed(2).replace(".", ",")}
+                                  {parseFloat(comissao.valorComissao ?? "0").toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                                   {comissao.status === "aprovado" || comissao.status === "editado" ? (
                                     <span className="ml-1 text-xs text-green-600">✓</span>
                                   ) : (
@@ -4760,11 +4751,11 @@ export default function ManagerDashboard({
                             {totalAtribuidos} atribuído{totalAtribuidos !== 1 ? "s" : ""}{totalPendentes > 0 ? ` · ${totalPendentes} pendente${totalPendentes !== 1 ? "s" : ""}` : ""}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {totalReceita > 0 ? `R$ ${totalReceita.toFixed(2).replace(".", ",")}` : <span className="text-muted-foreground">—</span>}
+                            {totalReceita > 0 ? totalReceita.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : <span className="text-muted-foreground">—</span>}
                           </TableCell>
                           <TableCell colSpan={2} />
                           <TableCell className="text-sm text-green-700 dark:text-green-400">
-                            {totalComissao > 0 ? `R$ ${totalComissao.toFixed(2).replace(".", ",")}` : <span className="text-muted-foreground font-normal">—</span>}
+                            {totalComissao > 0 ? totalComissao.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : <span className="text-muted-foreground font-normal">—</span>}
                           </TableCell>
                           <TableCell />
                         </TableRow>

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,7 @@ function EmptyRow({ message }: { message: string }) {
 }
 
 export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
+  const { toast } = useToast();
   const {
     data: report,
     isLoading,
@@ -177,7 +179,7 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
                         <TableCell>
                           <button
                             className="text-sm text-red-600 underline hover:opacity-70"
-                            onClick={() => alert(`Cobrança enviada para ${item.studentName}`)}
+                            onClick={() => toast({ title: "Cobrança", description: `Cobrança enviada para ${item.studentName}.` })}
                           >
                             Cobrar
                           </button>
@@ -224,7 +226,7 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
                         <TableCell>
                           <button
                             className="text-sm text-orange-600 underline hover:opacity-70"
-                            onClick={() => alert(`Lembrete enviado para ${item.studentName}`)}
+                            onClick={() => toast({ title: "Lembrete", description: `Lembrete enviado para ${item.studentName}.` })}
                           >
                             Lembrar
                           </button>
@@ -271,7 +273,7 @@ export default function AlertPanel({ arenaId, onVoltar }: AlertPanelProps) {
                         <TableCell>
                           <button
                             className="text-sm text-blue-600 underline hover:opacity-70"
-                            onClick={() => alert(`Mensagem enviada para ${item.studentName}`)}
+                            onClick={() => toast({ title: "Mensagem", description: `Mensagem de reengajamento enviada para ${item.studentName}.` })}
                           >
                             Reengajar
                           </button>
