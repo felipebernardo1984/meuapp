@@ -1623,7 +1623,6 @@ export default function ManagerDashboard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
-                    <SelectItem value="none">Check-in</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
@@ -3648,7 +3647,7 @@ export default function ManagerDashboard({
               <div className="space-y-1">
                 <Label>Tipo de aluno <span className="text-destructive">*</span></Label>
                 <Select
-                  value={formEditarAluno.integrationType}
+                  value={formEditarAluno.integrationType === "none" ? "" : formEditarAluno.integrationType}
                   onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationType: v, integrationPlan: "", planoId: "" })}
                 >
                   <SelectTrigger data-testid="select-edit-integration-type">
@@ -3656,7 +3655,6 @@ export default function ManagerDashboard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
-                    <SelectItem value="none">Check-in</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
