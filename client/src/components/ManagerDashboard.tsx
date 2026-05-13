@@ -1362,10 +1362,7 @@ export default function ManagerDashboard({
                         )}
                       </div>
                       <div className="min-w-0 flex-1 flex items-center gap-2 overflow-hidden">
-                        <p className="font-medium truncate shrink">{prof.nome}</p>
-                        {prof.modalidade && (
-                          <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{prof.modalidade}</span>
-                        )}
+                        <p className="text-base font-medium truncate">{prof.nome}{prof.modalidade ? ` — ${prof.modalidade}` : ""}</p>
                         <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 ml-auto">Alunos: {alunosCount}</span>
                         {prof.percentualComissao && parseFloat(prof.percentualComissao) > 0 && (
                           <>
@@ -2679,8 +2676,7 @@ export default function ManagerDashboard({
                       style={{ backgroundColor: professor.cor || "#1565C0" }}
                       title="Cor na agenda"
                     />
-                    <p className="font-medium truncate shrink">{professor.nome}</p>
-                    <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{professor.modalidade}</span>
+                    <p className="text-base font-medium truncate">{professor.nome}{professor.modalidade ? ` — ${professor.modalidade}` : ""}</p>
                     {parseFloat(professor.percentualComissao ?? "0") > 0 && (
                       <>
                         <Badge variant="secondary" className="text-xs shrink-0">
