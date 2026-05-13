@@ -205,7 +205,8 @@ export default function TeacherDashboard({
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
-    if (novoAluno.nome && novoAluno.cpf && novoAluno.login && novoAluno.senha && novoAluno.planoId) {
+    const planoOk = novoAluno.integrationType === "mensalista" || !!novoAluno.planoId;
+    if (novoAluno.nome && novoAluno.cpf && novoAluno.login && novoAluno.senha && planoOk) {
       onCadastrarAluno(novoAluno);
       setNovoAluno(emptyAluno);
       setDialogNovoAluno(false);
@@ -490,37 +491,7 @@ export default function TeacherDashboard({
                     data-testid={`progress-mensalista-${aluno.id}`}
                   />
                 )}
-                {isMensalista ? (
-                  <>
-                    <div
-                      className={`w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white ${mensalistaPago ? "bg-green-600" : "bg-red-500"}`}
-                      data-testid={`button-mensalista-${aluno.id}`}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      {mensalistaPago ? "Mensalidade Paga" : "Mensalidade Pendente"}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full opacity-40 cursor-not-allowed pointer-events-none"
-                      disabled
-                      data-testid={`button-manual-checkin-disabled-${aluno.id}`}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                      Check-in (inativo)
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => { setAlunoHistoricoPagamentos(aluno); setDialogHistoricoPagamentos(true); }}
-                      data-testid={`button-historico-pagamentos-${aluno.id}`}
-                    >
-                      <FileText className="h-4 w-4 mr-1" />
-                      Histórico de Pagamentos
-                    </Button>
-                  </>
-                ) : !temCheckins ? (
+                {(!temCheckins) ? (
                   <>
                     <div
                       className={`w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white ${mensalistaPago ? "bg-green-600" : "bg-red-500"}`}
@@ -651,29 +622,24 @@ export default function TeacherDashboard({
                   data-testid="input-new-student-modality"
                 />
               </div>
-              <div className="space-y-1">
-                <Label>Plano <span className="text-destructive">*</span></Label>
-                <Select
-                  value={novoAluno.planoId}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
-                >
-                  <SelectTrigger data-testid="select-new-student-plan">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(novoAluno.integrationType === "mensalista"
-                      ? planos.filter(p => p.valorTexto)
-                      : planos
-                    ).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {novoAluno.integrationType === "mensalista"
-                          ? `${p.titulo} — ${p.valorTexto}`
-                          : p.titulo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {novoAluno.integrationType !== "mensalista" && (
+                <div className="space-y-1">
+                  <Label>Plano <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={novoAluno.planoId}
+                    onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
+                  >
+                    <SelectTrigger data-testid="select-new-student-plan">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {planos.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-1">
                 <Label>Integração</Label>
                 <Select
@@ -731,7 +697,7 @@ export default function TeacherDashboard({
             <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>Cancelar</Button>
             <Button
               onClick={handleCadastrarAluno}
-              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.login || !novoAluno.senha || !novoAluno.planoId}
+              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.login || !novoAluno.senha || (novoAluno.integrationType !== "mensalista" && !novoAluno.planoId)}
               data-testid="button-confirm-new-student"
             >
               Cadastrar
@@ -815,29 +781,24 @@ export default function TeacherDashboard({
                   data-testid="input-edit-student-modality"
                 />
               </div>
-              <div className="space-y-1">
-                <Label>Plano</Label>
-                <Select
-                  value={dadosEdicao.planoId ?? ""}
-                  onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, planoId: v })}
-                >
-                  <SelectTrigger data-testid="select-edit-student-plan">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(dadosEdicao.integrationType === "mensalista"
-                      ? planos.filter(p => p.valorTexto)
-                      : planos
-                    ).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {dadosEdicao.integrationType === "mensalista"
-                          ? `${p.titulo} — ${p.valorTexto}`
-                          : p.titulo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {dadosEdicao.integrationType !== "mensalista" && (
+                <div className="space-y-1">
+                  <Label>Plano</Label>
+                  <Select
+                    value={dadosEdicao.planoId ?? ""}
+                    onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, planoId: v })}
+                  >
+                    <SelectTrigger data-testid="select-edit-student-plan">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {planos.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="col-span-2 space-y-1">
                 <Label>Integração</Label>
                 <Select
@@ -1117,15 +1078,12 @@ export default function TeacherDashboard({
 
       {/* ── Dialog: Histórico de Pagamentos (Mensalista) ── */}
       <Dialog open={dialogHistoricoPagamentos} onOpenChange={setDialogHistoricoPagamentos}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Histórico de Pagamentos
-            </DialogTitle>
-            <DialogDescription>{alunoHistoricoPagamentos?.nome}</DialogDescription>
+            <DialogTitle>{alunoHistoricoPagamentos?.nome}</DialogTitle>
+            <DialogDescription>Histórico de pagamento</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 py-1">
+          <div className="space-y-1 max-h-96 overflow-y-auto">
             {(() => {
               const pays = payments
                 .filter((p) => p.studentId === alunoHistoricoPagamentos?.id)
@@ -1136,64 +1094,45 @@ export default function TeacherDashboard({
                 });
               if (pays.length === 0) {
                 return (
-                  <p className="text-sm text-muted-foreground text-center py-6">
+                  <p className="text-sm text-muted-foreground text-center py-4">
                     Nenhum pagamento registrado ainda.
                   </p>
                 );
               }
+              const metodoPagamento: Record<string, string> = { pix: "PIX", cartao: "Cartão", dinheiro: "Dinheiro" };
               return pays.map((p) => {
                 const boletoDate = p.createdAt
                   ? new Date(p.createdAt).toLocaleDateString("pt-BR")
                   : p.dueDate;
-                const metodoPagamento: Record<string, string> = {
-                  pix: "PIX",
-                  cartao: "Cartão",
-                  dinheiro: "Dinheiro",
-                };
                 return (
-                  <div
-                    key={p.id}
-                    className="rounded-lg border bg-card p-3 space-y-2"
-                    data-testid={`historico-pagamento-${p.id}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">
-                        {p.referenceMonth}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">R$ {p.amount}</span>
-                        {paymentStatusBadge(p.status)}
-                      </div>
+                  <div key={p.id} className="py-2 border-b last:border-0" data-testid={`historico-pagamento-${p.id}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle2 className={`h-4 w-4 ${p.status === "paid" ? "text-green-500" : "text-muted-foreground"}`} />
+                      <span className="text-sm font-medium">{p.referenceMonth}</span>
+                      <span className="text-sm text-muted-foreground">— R$ {p.amount}</span>
+                      <span className="ml-auto">{paymentStatusBadge(p.status)}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground font-medium uppercase tracking-wide text-[10px]">Boleto gerado</span>
-                        <span className="font-medium text-foreground">{boletoDate}</span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-muted-foreground font-medium uppercase tracking-wide text-[10px]">Data do pagamento</span>
+                    <div className="pl-6 space-y-0.5">
+                      <p className="text-xs text-muted-foreground">
+                        Vencimento: <span className="text-foreground">{p.dueDate}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Pagamento:{" "}
                         {p.paymentDate ? (
-                          <span className="font-medium text-green-600 dark:text-green-400">
+                          <span className="text-green-600 dark:text-green-400">
                             {p.paymentDate}
-                            {p.paymentMethod && (
-                              <span className="ml-1 text-muted-foreground normal-case">
-                                · {metodoPagamento[p.paymentMethod] ?? p.paymentMethod}
-                              </span>
-                            )}
+                            {p.paymentMethod && ` · ${metodoPagamento[p.paymentMethod] ?? p.paymentMethod}`}
                           </span>
                         ) : (
                           <span className="text-orange-500">Aguardando</span>
                         )}
-                      </div>
+                      </p>
                     </div>
                   </div>
                 );
               });
             })()}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogHistoricoPagamentos(false)}>Fechar</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
