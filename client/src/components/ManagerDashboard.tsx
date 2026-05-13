@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { PhotoCropModal } from "./PhotoCropModal";
 import { HelpPanel } from "@/components/HelpDialog";
 import ManagerSidebar from "@/components/ManagerSidebar";
 import AgendaManager from "@/components/AgendaManager";
@@ -80,8 +79,6 @@ import {
   ArrowUpRight,
   Star,
   Zap,
-  Camera,
-  UserCircle,
   Menu,
   FileText,
   Link2,
@@ -781,7 +778,7 @@ export default function ManagerDashboard({
   // Plano state
   const [dialogNovoPlano, setDialogNovoPlano] = useState(false);
   const [planoEditando, setPlanoEditando] = useState<Plano | null>(null);
-  const [formPlano, setFormPlano] = useState({ titulo: "", checkins: "", valorTexto: "" });
+  const [formPlano, setFormPlano] = useState({ titulo: "", checkins: "", valorTexto: "", tipoPlan: "" });
 
   // ── Planos ──────────────────────────────────────────────────────────────
   const getCheckinsLabel = (checkins: number) =>
@@ -792,7 +789,7 @@ export default function ManagerDashboard({
       return planos.filter((p) => (p.valorTexto ?? "").trim() !== "");
     }
 
-    if (integrationType === "wellhub" || integrationType === "totalpass") {
+    if (integrationType === "wellhub" || integrationType === "totalpass" || integrationType === "none") {
       return planos.filter((p) => (p.checkins ?? 0) > 0);
     }
 
@@ -808,63 +805,66 @@ export default function ManagerDashboard({
 
   const abrirEditarPlano = (plano: Plano) => {
     setPlanoEditando(plano);
+    const tipoPlan = (plano.valorTexto ?? "").trim() !== "" ? "mensalista" : "checkin";
     setFormPlano({
       titulo: plano.titulo,
       checkins: plano.checkins > 0 ? String(plano.checkins) : "",
       valorTexto: plano.valorTexto?.replace("R$ ", "") ?? "",
+      tipoPlan,
     });
   };
 
   const handleSalvarPlano = () => {
     const tituloVal = (formPlano.titulo || "").trim();
-    const checkinsVal = String(formPlano.checkins || "").trim();
-    const valorTextoVal = String(formPlano.valorTexto || "").trim();
+    const tipoPlanVal = formPlano.tipoPlan;
 
     if (!tituloVal) {
       toast({ title: "Campo obrigatório", description: "O plano precisa ter um título.", variant: "destructive" });
       return;
     }
 
-    if (checkinsVal && valorTextoVal) {
-      toast({ title: "Configuração inválida", description: "O plano não pode ter Check-ins e Valor Mensal ao mesmo tempo.", variant: "destructive" });
+    if (!tipoPlanVal) {
+      toast({ title: "Tipo de plano obrigatório", description: "Selecione se o plano é Check-in ou Mensalista.", variant: "destructive" });
       return;
     }
 
-    const checkinsNum = checkinsVal ? parseInt(checkinsVal, 10) : 0;
-
-    if (!valorTextoVal && checkinsNum <= 0) {
-      toast({ title: "Plano incompleto", description: "Informe um valor mensal OU uma quantidade de check-ins maior que zero.", variant: "destructive" });
-      return;
-    }
-
-    const valorTexto = valorTextoVal
-      ? (valorTextoVal.startsWith("R$") ? valorTextoVal : `R$ ${valorTextoVal}`)
-      : undefined;
-
-    if (planoEditando) {
-      onEditarPlano(planoEditando.id, tituloVal, checkinsNum, valorTexto);
-      setPlanoEditando(null);
+    if (tipoPlanVal === "checkin") {
+      const checkinsVal = String(formPlano.checkins || "").trim();
+      const checkinsNum = checkinsVal ? parseInt(checkinsVal, 10) : 0;
+      if (checkinsNum <= 0) {
+        toast({ title: "Plano incompleto", description: "Informe uma quantidade de check-ins maior que zero.", variant: "destructive" });
+        return;
+      }
+      if (planoEditando) {
+        onEditarPlano(planoEditando.id, tituloVal, checkinsNum, undefined);
+        setPlanoEditando(null);
+      } else {
+        onCriarPlano(tituloVal, checkinsNum, undefined);
+        setDialogNovoPlano(false);
+      }
     } else {
-      onCriarPlano(tituloVal, checkinsNum, valorTexto);
-      setDialogNovoPlano(false);
+      const valorTextoVal = String(formPlano.valorTexto || "").trim();
+      if (!valorTextoVal) {
+        toast({ title: "Plano incompleto", description: "Informe o valor mensal.", variant: "destructive" });
+        return;
+      }
+      const valorTexto = valorTextoVal.startsWith("R$") ? valorTextoVal : `R$ ${valorTextoVal}`;
+      if (planoEditando) {
+        onEditarPlano(planoEditando.id, tituloVal, 0, valorTexto);
+        setPlanoEditando(null);
+      } else {
+        onCriarPlano(tituloVal, 0, valorTexto);
+        setDialogNovoPlano(false);
+      }
     }
 
-    setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
+    setFormPlano({ titulo: "", checkins: "", valorTexto: "", tipoPlan: "" });
   };
 
   // ── Professores ──────────────────────────────────────────────────────────
   const abrirEditarProfessor = (p: ProfessorGestor) => {
     setProfessorEditando(p);
     setFormProfessor({ nome: p.nome, cpf: p.cpf || "", email: p.email || "", telefone: p.telefone || "", login: p.login || "", senha: "", modalidade: p.modalidade, percentualComissao: p.percentualComissao || "", photoUrl: p.photoUrl || "", cor: p.cor || "#1565C0" });
-  };
-
-  const [cropSrcProfessor, setCropSrcProfessor] = useState<string | null>(null);
-  const [cropSrcAluno, setCropSrcAluno] = useState<string | null>(null);
-
-  const openCropForFile = (file: File, setter: (src: string) => void) => {
-    const reader = new FileReader();
-    reader.onload = (e) => setter(e.target!.result as string);
-    reader.readAsDataURL(file);
   };
 
   const handleSalvarProfessor = () => {
@@ -1606,50 +1606,30 @@ export default function ManagerDashboard({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Plano <span className="text-destructive">*</span></Label>
+                <Label>Tipo de aluno <span className="text-destructive">*</span></Label>
                 <Select
-                  value={novoAluno.planoId}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
-                  disabled={!novoAluno.integrationType}
+                  value={novoAluno.integrationType}
+                  onValueChange={(v) =>
+                    setNovoAluno({
+                      ...novoAluno,
+                      integrationType: v,
+                      integrationPlan: "",
+                      planoId: ""
+                    })
+                  }
                 >
-                  <SelectTrigger data-testid="select-manager-student-plan">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getPlanosPorIntegracao(novoAluno.integrationType).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {novoAluno.integrationType === "mensalista"
-                          ? `${p.titulo} — ${p.valorTexto}`
-                          : `${p.titulo} — ${getCheckinsLabel(p.checkins)}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2 space-y-1">
-                <Label>Integração <span className="text-destructive">*</span></Label>
-                  <Select
-                    value={novoAluno.integrationType}
-                    onValueChange={(v) =>
-                      setNovoAluno({
-                        ...novoAluno,
-                        integrationType: v,
-                        integrationPlan: "",
-                        planoId: ""
-                      })
-                    }
-                  >
                   <SelectTrigger data-testid="select-manager-student-integration-type">
-                    <SelectValue placeholder="Selecione a integração" />
+                    <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
+                    <SelectItem value="none">Check-in</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {novoAluno.integrationType && novoAluno.integrationType !== "mensalista" && (
+              {(novoAluno.integrationType === "wellhub" || novoAluno.integrationType === "totalpass") && (
                 <div className="col-span-2 space-y-1">
                   <Label>Plano da Integração <span className="text-destructive">*</span></Label>
                   {(() => {
@@ -1683,6 +1663,27 @@ export default function ManagerDashboard({
                   })()}
                 </div>
               )}
+              <div className="col-span-2 space-y-1">
+                <Label>Plano <span className="text-destructive">*</span></Label>
+                <Select
+                  value={novoAluno.planoId}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
+                  disabled={!novoAluno.integrationType}
+                >
+                  <SelectTrigger data-testid="select-manager-student-plan">
+                    <SelectValue placeholder={!novoAluno.integrationType ? "Selecione o tipo primeiro" : "Selecione o plano"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getPlanosPorIntegracao(novoAluno.integrationType).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {novoAluno.integrationType === "mensalista"
+                          ? `${p.titulo} — ${p.valorTexto}`
+                          : `${p.titulo} — ${getCheckinsLabel(p.checkins)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="col-span-2 space-y-1">
                 <Label>Professor responsável</Label>
                 <Select
@@ -1734,7 +1735,7 @@ export default function ManagerDashboard({
         className="w-full h-14 text-lg mb-5"
         onClick={() => {
           setPlanoEditando(null);
-          setFormPlano({ titulo: "", checkins: "", valorTexto: "" });
+          setFormPlano({ titulo: "", checkins: "", valorTexto: "", tipoPlan: "" });
           setDialogNovoPlano(true);
         }}
         data-testid="button-add-plan"
@@ -1789,47 +1790,75 @@ export default function ManagerDashboard({
           <DialogHeader>
             <DialogTitle>Criar Plano</DialogTitle>
             <DialogDescription>
-              Preencha o número de check-in ou o valor mensal.
+              Defina o tipo e as configurações do plano.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
+              <Label>Tipo de plano</Label>
+              <div className="flex rounded-md overflow-hidden border">
+                <button
+                  type="button"
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${formPlano.tipoPlan === "checkin" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                  onClick={() => setFormPlano({ ...formPlano, tipoPlan: "checkin", valorTexto: "" })}
+                  data-testid="toggle-plan-type-checkin"
+                >
+                  Check-in
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 py-2 text-sm font-medium transition-colors border-l ${formPlano.tipoPlan === "mensalista" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                  onClick={() => setFormPlano({ ...formPlano, tipoPlan: "mensalista", checkins: "" })}
+                  data-testid="toggle-plan-type-mensalista"
+                >
+                  Mensalista
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1">
               <Label>Título do plano</Label>
               <Input
-                placeholder="1x semana, 2x semana..."
+                placeholder="Ex: 2x por semana, 8 aulas/mês..."
                 value={formPlano.titulo}
                 onChange={(e) => setFormPlano({ ...formPlano, titulo: e.target.value })}
                 data-testid="input-plan-title"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            {formPlano.tipoPlan === "checkin" && (
               <div className="space-y-1">
-                <Label>Nº de Check-in</Label>
+                <Label>Nº de Check-ins</Label>
                 <Input
                   type="number"
-                  min={0}
-                  placeholder="8 ou 12"
+                  min={1}
+                  placeholder="Ex: 8 ou 12"
                   value={formPlano.checkins ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
                   data-testid="input-plan-checkins"
                 />
               </div>
+            )}
+            {formPlano.tipoPlan === "mensalista" && (
               <div className="space-y-1">
                 <Label>Valor Mensal (R$)</Label>
                 <Input
-                  placeholder="140,00"
+                  placeholder="Ex: 140,00"
                   value={formPlano.valorTexto ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, valorTexto: e.target.value })}
                   data-testid="input-plan-value"
                 />
               </div>
-            </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogNovoPlano(false)}>Cancelar</Button>
             <Button
               onClick={handleSalvarPlano}
-              disabled={!formPlano.titulo || (!(formPlano.checkins ?? "").trim() && !(formPlano.valorTexto ?? "").trim())}
+              disabled={
+                !formPlano.titulo ||
+                !formPlano.tipoPlan ||
+                (formPlano.tipoPlan === "checkin" && !(formPlano.checkins ?? "").trim()) ||
+                (formPlano.tipoPlan === "mensalista" && !(formPlano.valorTexto ?? "").trim())
+              }
               data-testid="button-confirm-plan"
             >
               Criar Plano
@@ -1849,6 +1878,27 @@ export default function ManagerDashboard({
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1">
+              <Label>Tipo de plano</Label>
+              <div className="flex rounded-md overflow-hidden border">
+                <button
+                  type="button"
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${formPlano.tipoPlan === "checkin" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                  onClick={() => setFormPlano({ ...formPlano, tipoPlan: "checkin", valorTexto: "" })}
+                  data-testid="toggle-edit-plan-type-checkin"
+                >
+                  Check-in
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 py-2 text-sm font-medium transition-colors border-l ${formPlano.tipoPlan === "mensalista" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                  onClick={() => setFormPlano({ ...formPlano, tipoPlan: "mensalista", checkins: "" })}
+                  data-testid="toggle-edit-plan-type-mensalista"
+                >
+                  Mensalista
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1">
               <Label>Título do plano</Label>
               <Input
                 placeholder="Ex: 1x por semana"
@@ -1857,18 +1907,20 @@ export default function ManagerDashboard({
                 data-testid="input-edit-plan-title"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            {formPlano.tipoPlan === "checkin" && (
               <div className="space-y-1">
-                <Label>Nº de Check-in</Label>
+                <Label>Nº de Check-ins</Label>
                 <Input
                   type="number"
-                  min={0}
+                  min={1}
                   placeholder="Ex: 8"
                   value={formPlano.checkins ?? ""}
                   onChange={(e) => setFormPlano({ ...formPlano, checkins: e.target.value })}
                   data-testid="input-edit-plan-checkins"
                 />
               </div>
+            )}
+            {formPlano.tipoPlan === "mensalista" && (
               <div className="space-y-1">
                 <Label>Valor mensal (R$)</Label>
                 <Input
@@ -1878,13 +1930,18 @@ export default function ManagerDashboard({
                   data-testid="input-edit-plan-value"
                 />
               </div>
-            </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPlanoEditando(null)}>Cancelar</Button>
             <Button
               onClick={handleSalvarPlano}
-              disabled={!formPlano.titulo || (!(formPlano.checkins ?? "").trim() && !(formPlano.valorTexto ?? "").trim())}
+              disabled={
+                !formPlano.titulo ||
+                !formPlano.tipoPlan ||
+                (formPlano.tipoPlan === "checkin" && !(formPlano.checkins ?? "").trim()) ||
+                (formPlano.tipoPlan === "mensalista" && !(formPlano.valorTexto ?? "").trim())
+              }
               data-testid="button-confirm-edit-plan"
             >
               Salvar
@@ -2729,44 +2786,6 @@ export default function ManagerDashboard({
             <DialogTitle>Cadastrar Professor</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
-            {/* Photo upload */}
-            <div className="flex flex-col items-center gap-1.5 pb-1">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center">
-                  {formProfessor.photoUrl ? (
-                    <img src={formProfessor.photoUrl} alt="Foto" className="w-full h-full object-cover" />
-                  ) : (
-                    <UserCircle className="h-10 w-10 text-muted-foreground/40" />
-                  )}
-                </div>
-                <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
-                  <Camera className="h-3 w-3" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) openCropForFile(file, setCropSrcProfessor);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              </div>
-              {formProfessor.photoUrl ? (
-                <button type="button" className="text-xs text-destructive hover:underline" onClick={() => setFormProfessor(prev => ({ ...prev, photoUrl: "" }))}>Remover foto</button>
-              ) : (
-                <p className="text-xs text-muted-foreground">Foto do professor (opcional)</p>
-              )}
-              {cropSrcProfessor && (
-                <PhotoCropModal
-                  imageSrc={cropSrcProfessor}
-                  onConfirm={(b64) => { setFormProfessor(prev => ({ ...prev, photoUrl: b64 })); setCropSrcProfessor(null); }}
-                  onRemove={() => { setFormProfessor(prev => ({ ...prev, photoUrl: "" })); setCropSrcProfessor(null); }}
-                  onCancel={() => setCropSrcProfessor(null)}
-                />
-              )}
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
                 <Label>Nome do Professor <span className="text-destructive">*</span></Label>
@@ -2893,44 +2912,6 @@ export default function ManagerDashboard({
             <DialogTitle>Editar Professor</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
-            {/* Photo upload */}
-            <div className="flex flex-col items-center gap-1.5 pb-1">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center">
-                  {formProfessor.photoUrl ? (
-                    <img src={formProfessor.photoUrl} alt="Foto" className="w-full h-full object-cover" />
-                  ) : (
-                    <UserCircle className="h-10 w-10 text-muted-foreground/40" />
-                  )}
-                </div>
-                <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
-                  <Camera className="h-3 w-3" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) openCropForFile(file, setCropSrcProfessor);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              </div>
-              {formProfessor.photoUrl ? (
-                <button type="button" className="text-xs text-destructive hover:underline" onClick={() => setFormProfessor(prev => ({ ...prev, photoUrl: "" }))}>Remover foto</button>
-              ) : (
-                <p className="text-xs text-muted-foreground">Foto do professor (opcional)</p>
-              )}
-              {cropSrcProfessor && (
-                <PhotoCropModal
-                  imageSrc={cropSrcProfessor}
-                  onConfirm={(b64) => { setFormProfessor(prev => ({ ...prev, photoUrl: b64 })); setCropSrcProfessor(null); }}
-                  onRemove={() => { setFormProfessor(prev => ({ ...prev, photoUrl: "" })); setCropSrcProfessor(null); }}
-                  onCancel={() => setCropSrcProfessor(null)}
-                />
-              )}
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
                 <Label>Nome do Professor <span className="text-destructive">*</span></Label>
@@ -3608,44 +3589,6 @@ export default function ManagerDashboard({
             <DialogDescription>{alunoEditando?.nome}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            {/* Photo upload */}
-            <div className="flex flex-col items-center gap-1.5 pb-1">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/30 bg-muted flex items-center justify-center">
-                  {formEditarAluno.photoUrl ? (
-                    <img src={formEditarAluno.photoUrl} alt="Foto" className="w-full h-full object-cover" />
-                  ) : (
-                    <UserCircle className="h-10 w-10 text-muted-foreground/40" />
-                  )}
-                </div>
-                <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors">
-                  <Camera className="h-3 w-3" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) openCropForFile(file, setCropSrcAluno);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              </div>
-              {formEditarAluno.photoUrl ? (
-                <button type="button" className="text-xs text-destructive hover:underline" onClick={() => setFormEditarAluno(prev => ({ ...prev, photoUrl: "" }))}>Remover foto</button>
-              ) : (
-                <p className="text-xs text-muted-foreground">Foto do aluno (opcional)</p>
-              )}
-              {cropSrcAluno && (
-                <PhotoCropModal
-                  imageSrc={cropSrcAluno}
-                  onConfirm={(b64) => { setFormEditarAluno(prev => ({ ...prev, photoUrl: b64 })); setCropSrcAluno(null); }}
-                  onRemove={() => { setFormEditarAluno(prev => ({ ...prev, photoUrl: "" })); setCropSrcAluno(null); }}
-                  onCancel={() => setCropSrcAluno(null)}
-                />
-              )}
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
                 <Label>Nome do Aluno <span className="text-destructive">*</span></Label>
@@ -3703,6 +3646,57 @@ export default function ManagerDashboard({
                 />
               </div>
               <div className="space-y-1">
+                <Label>Tipo de aluno <span className="text-destructive">*</span></Label>
+                <Select
+                  value={formEditarAluno.integrationType}
+                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationType: v, integrationPlan: "", planoId: "" })}
+                >
+                  <SelectTrigger data-testid="select-edit-integration-type">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mensalista">Mensalista</SelectItem>
+                    <SelectItem value="none">Check-in</SelectItem>
+                    <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
+                    <SelectItem value="totalpass">TotalPass</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(formEditarAluno.integrationType === "wellhub" || formEditarAluno.integrationType === "totalpass") && (
+                <div className="col-span-2 space-y-1">
+                  <Label>Plano da Integração <span className="text-destructive">*</span></Label>
+                  {(() => {
+                    const opts = Array.from(new Set(
+                      modalidadeSettingsList
+                        .map((s: any) => formEditarAluno.integrationType === "wellhub" ? s.wellhubPlanoMinimo : s.totalpassPlanoMinimo)
+                        .filter(Boolean)
+                    ));
+                    return opts.length > 0 ? (
+                      <Select
+                        value={formEditarAluno.integrationPlan}
+                        onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: v })}
+                      >
+                        <SelectTrigger data-testid="input-edit-integration-plan">
+                          <SelectValue placeholder="Selecione o plano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {opts.map((p: any) => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        placeholder="Ex: TP1, TP2, GP1..."
+                        value={formEditarAluno.integrationPlan}
+                        onChange={(e) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: e.target.value })}
+                        data-testid="input-edit-integration-plan"
+                      />
+                    );
+                  })()}
+                </div>
+              )}
+              <div className="col-span-2 space-y-1">
                 <Label>Plano <span className="text-destructive">*</span></Label>
                 <Select
                   value={formEditarAluno.planoId}
@@ -3710,7 +3704,7 @@ export default function ManagerDashboard({
                   disabled={!formEditarAluno.integrationType}
                 >
                   <SelectTrigger data-testid="select-edit-plano">
-                    <SelectValue placeholder="Escolha a integração primeiro" />
+                    <SelectValue placeholder={!formEditarAluno.integrationType ? "Selecione o tipo primeiro" : "Selecione o plano"} />
                   </SelectTrigger>
                   <SelectContent>
                     {getPlanosPorIntegracao(formEditarAluno.integrationType).map((p) => (
@@ -3765,59 +3759,6 @@ export default function ManagerDashboard({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-2 space-y-1">
-                <Label>Integração <span className="text-destructive">*</span></Label>
-                <Select
-                  value={formEditarAluno.integrationType}
-                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationType: v, integrationPlan: "", planoId: "" })}
-                >
-                  <SelectTrigger data-testid="select-edit-integration-type">
-                    <SelectValue placeholder="Selecione a integração" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mensalista">Mensalista</SelectItem>
-                    <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
-                    <SelectItem value="totalpass">TotalPass</SelectItem>
-                    {formEditarAluno.integrationType === "none" && (
-                      <SelectItem value="none">Sem integração (legado)</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              {formEditarAluno.integrationType && formEditarAluno.integrationType !== "mensalista" && (
-                <div className="col-span-2 space-y-1">
-                  <Label>Plano da Integração <span className="text-destructive">*</span></Label>
-                  {(() => {
-                    const opts = Array.from(new Set(
-                      modalidadeSettingsList
-                        .map((s: any) => formEditarAluno.integrationType === "wellhub" ? s.wellhubPlanoMinimo : s.totalpassPlanoMinimo)
-                        .filter(Boolean)
-                    ));
-                    return opts.length > 0 ? (
-                      <Select
-                        value={formEditarAluno.integrationPlan}
-                        onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: v })}
-                      >
-                        <SelectTrigger data-testid="input-edit-integration-plan">
-                          <SelectValue placeholder="Selecione o plano" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {opts.map((p: any) => (
-                            <SelectItem key={p} value={p}>{p}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        placeholder="Ex: TP1, TP2, GP1..."
-                        value={formEditarAluno.integrationPlan}
-                        onChange={(e) => setFormEditarAluno({ ...formEditarAluno, integrationPlan: e.target.value })}
-                        data-testid="input-edit-integration-plan"
-                      />
-                    );
-                  })()}
-                </div>
-              )}
             </div>
           </div>
           <DialogFooter>
