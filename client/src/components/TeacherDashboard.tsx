@@ -466,23 +466,13 @@ export default function TeacherDashboard({
                       <p className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{aluno.planoTitulo}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 self-start">
-                    {!temCheckins && (
-                      <>
-                        <CheckCircle2 className={`h-4 w-4 ${mensalistaPago ? "text-green-500" : "text-red-500"}`} />
-                        <span className={`text-xs font-medium whitespace-nowrap ${mensalistaPago ? "text-green-600" : "text-red-500"}`}>
-                          {mensalistaPago ? "Em dia" : "Pendente"}
-                        </span>
-                      </>
-                    )}
-                    {temCheckins && (
-                      <span className="text-[10px] leading-none text-muted-foreground tabular-nums">
-                        {aluno.checkinsRealizados}/{aluno.plano}
-                      </span>
-                    )}
+                  <div className="flex flex-col items-end gap-0.5 shrink-0 self-start">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditar(aluno)} data-testid={`button-edit-student-${aluno.id}`}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
+                    <span className="text-[10px] leading-none text-muted-foreground tabular-nums">
+                      {temCheckins ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
+                    </span>
                   </div>
                 </div>
               </CardHeader>
@@ -494,7 +484,15 @@ export default function TeacherDashboard({
                     data-testid={`progress-mensalista-${aluno.id}`}
                   />
                 )}
-                {!temCheckins ? null : (
+                {!temCheckins ? (
+                  <div
+                    className={`w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white ${mensalistaPago ? "bg-green-600" : "bg-red-500"}`}
+                    data-testid={`button-mensalista-${aluno.id}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {mensalistaPago ? "Mensalidade Paga" : "Mensalidade Pendente"}
+                  </div>
+                ) : (
                   <Button size="sm" className="w-full" onClick={() => onCheckinManual(aluno.id)} data-testid={`button-manual-checkin-${aluno.id}`}>
                     <CheckCircle2 className="h-4 w-4 mr-1" />
                     Check-in

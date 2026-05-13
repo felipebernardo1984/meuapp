@@ -3186,17 +3186,6 @@ export default function ManagerDashboard({
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-sm truncate">{aluno.nome}</p>
-                          {aluno.aprovado ? (
-                            <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                          ) : (
-                            <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-                          )}
-                          <Badge
-                            variant={aluno.statusMensalidade === "Em dia" ? "default" : "destructive"}
-                            className="text-xs hidden sm:inline-flex"
-                          >
-                            {aluno.statusMensalidade}
-                          </Badge>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           <span className="text-xs text-muted-foreground">{aluno.modalidade}</span>
@@ -3207,6 +3196,14 @@ export default function ManagerDashboard({
                       </div>
                     </button>
                     <div className="flex items-center gap-1 shrink-0">
+                      {aluno.aprovado ? (
+                        <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                      ) : (
+                        <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                      )}
+                      <span className={`text-xs font-medium whitespace-nowrap ${aluno.statusMensalidade === "Em dia" ? "text-green-600" : "text-destructive"}`}>
+                        {aluno.statusMensalidade}
+                      </span>
                       <Button
                         size="icon"
                         variant="ghost"
