@@ -329,7 +329,7 @@ export default function Home() {
           payments={payments}
           onCheckinManual={(alunoId, data, hora) => checkinManual.mutate({ id: alunoId, data, hora })}
           onAlterarPlano={(alunoId, planoId) => alterarPlanoAluno.mutate({ alunoId, planoId })}
-          onCadastrarAluno={(dados) => cadastrarAluno.mutate(dados)}
+          onCadastrarAluno={(dados) => cadastrarAluno.mutate({ ...dados, professorId: (sessao as any).professor.id })}
           onEditarAluno={(alunoId, dados) => editarAluno.mutate({ id: alunoId, ...dados })}
           onExcluirAluno={(alunoId) => excluirAluno.mutate(alunoId)}
           onRemoverCheckin={(alunoId, index) => removerCheckin.mutate({ id: alunoId, index })}

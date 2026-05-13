@@ -141,8 +141,8 @@ export default function TeacherDashboard({
     .slice(0, 2);
   const emptyAluno: NovoAlunoDados = {
     nome: "", cpf: "", email: "", telefone: "",
-    login: "", senha: "", modalidade, planoId: planos[0]?.id ?? "",
-    integrationType: "none", integrationPlan: "", mensalistaValor: "",
+    login: "", senha: "", modalidade, planoId: "",
+    integrationType: "", integrationPlan: "", mensalistaValor: "",
   };
 
   // Diálogos globais
@@ -205,8 +205,7 @@ export default function TeacherDashboard({
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleCadastrarAluno = () => {
-    const planoOk = novoAluno.integrationType === "mensalista" || !!novoAluno.planoId;
-    if (novoAluno.nome && novoAluno.cpf && novoAluno.login && novoAluno.senha && planoOk) {
+    if (novoAluno.nome && novoAluno.cpf && novoAluno.login && novoAluno.senha && novoAluno.integrationType && novoAluno.planoId) {
       onCadastrarAluno(novoAluno);
       setNovoAluno(emptyAluno);
       setDialogNovoAluno(false);
@@ -245,8 +244,14 @@ export default function TeacherDashboard({
     setDialogFinanceiro(true);
   };
 
+  const getPlanosPorIntegracao = (tipo: string) => {
+    if (tipo === "mensalista") return planos.filter((p) => p.checkins === 0 || !!p.valorTexto);
+    return planos.filter((p) => p.checkins > 0);
+  };
+
   const openEditar = (aluno: AlunoView) => {
     setAlunoEditando(aluno);
+    const tipo = aluno.integrationType === "none" ? "" : (aluno.integrationType ?? "");
     setDadosEdicao({
       nome: aluno.nome,
       cpf: aluno.cpf ?? "",
@@ -256,7 +261,7 @@ export default function TeacherDashboard({
       senha: "",
       modalidade: aluno.modalidade ?? modalidade,
       planoId: aluno.planoId,
-      integrationType: aluno.integrationType ?? "none",
+      integrationType: tipo,
       integrationPlan: aluno.integrationPlan ?? "",
     });
     setDialogEditarAluno(true);
@@ -266,6 +271,7 @@ export default function TeacherDashboard({
     if (alunoEditando && dadosEdicao.nome && dadosEdicao.cpf && dadosEdicao.login) {
       const payload: Partial<NovoAlunoDados & { senha?: string }> = { ...dadosEdicao };
       if (!payload.senha) delete payload.senha;
+      if (!payload.integrationType) delete payload.integrationType;
       onEditarAluno(alunoEditando.id, payload);
       if (dadosEdicao.planoId && dadosEdicao.planoId !== alunoEditando.planoId) {
         onAlterarPlano(alunoEditando.id, dadosEdicao.planoId);
@@ -570,12 +576,12 @@ export default function TeacherDashboard({
                 <Input
                   placeholder="000.000.000-00"
                   value={novoAluno.cpf}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value, senha: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value })}
                   data-testid="input-new-student-cpf"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Telefone <span className="text-destructive">*</span></Label>
+                <Label>Telefone</Label>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={novoAluno.telefone}
@@ -584,20 +590,19 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="col-span-2 space-y-1">
-                <Label>Email <span className="text-destructive">*</span></Label>
+                <Label>Email</Label>
                 <Input
                   placeholder="email@exemplo.com"
                   type="email"
                   value={novoAluno.email}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value, login: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value })}
                   data-testid="input-new-student-email"
                 />
               </div>
               <div className="space-y-1">
                 <Label>Login <span className="text-destructive">*</span></Label>
                 <Input
-                  type="email"
-                  placeholder="email@exemplo.com"
+                  placeholder="Login de acesso"
                   value={novoAluno.login}
                   onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
                   data-testid="input-new-student-login"
@@ -606,10 +611,10 @@ export default function TeacherDashboard({
               <div className="space-y-1">
                 <Label>Senha <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="CPF do aluno"
+                  placeholder="Senha de acesso"
                   type="password"
                   value={novoAluno.senha}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value, cpf: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
                   data-testid="input-new-student-password"
                 />
               </div>
@@ -622,43 +627,44 @@ export default function TeacherDashboard({
                   data-testid="input-new-student-modality"
                 />
               </div>
-              {novoAluno.integrationType !== "mensalista" && (
-                <div className="space-y-1">
-                  <Label>Plano <span className="text-destructive">*</span></Label>
-                  <Select
-                    value={novoAluno.planoId}
-                    onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
-                  >
-                    <SelectTrigger data-testid="select-new-student-plan">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {planos.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div className="space-y-1">
-                <Label>Integração</Label>
+                <Label>Tipo de aluno <span className="text-destructive">*</span></Label>
                 <Select
                   value={novoAluno.integrationType}
-                  onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "" })}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "", planoId: "" })}
                 >
                   <SelectTrigger data-testid="select-new-student-integration-type">
-                    <SelectValue placeholder="Nenhuma" />
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma</SelectItem>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {novoAluno.integrationType !== "none" && novoAluno.integrationType !== "mensalista" && (
-                <div className="space-y-1">
+              {novoAluno.integrationType && (
+                <div className="col-span-2 space-y-1">
+                  <Label>Plano <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={novoAluno.planoId}
+                    onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
+                  >
+                    <SelectTrigger data-testid="select-new-student-plan">
+                      <SelectValue placeholder="Selecione o plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getPlanosPorIntegracao(novoAluno.integrationType).map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.titulo}{p.valorTexto ? ` — ${p.valorTexto}` : p.checkins > 0 ? ` (${p.checkins} check-ins)` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {(novoAluno.integrationType === "wellhub" || novoAluno.integrationType === "totalpass") && (
+                <div className="col-span-2 space-y-1">
                   <Label>Plano da Integração</Label>
                   {(() => {
                     const opts = Array.from(new Set(
@@ -697,7 +703,7 @@ export default function TeacherDashboard({
             <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>Cancelar</Button>
             <Button
               onClick={handleCadastrarAluno}
-              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.login || !novoAluno.senha || (novoAluno.integrationType !== "mensalista" && !novoAluno.planoId)}
+              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.login || !novoAluno.senha || !novoAluno.integrationType || !novoAluno.planoId}
               data-testid="button-confirm-new-student"
             >
               Cadastrar
@@ -729,12 +735,12 @@ export default function TeacherDashboard({
                 <Input
                   placeholder="000.000.000-00"
                   value={dadosEdicao.cpf ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, cpf: e.target.value, senha: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, cpf: e.target.value })}
                   data-testid="input-edit-student-cpf"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Telefone <span className="text-destructive">*</span></Label>
+                <Label>Telefone</Label>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={dadosEdicao.telefone ?? ""}
@@ -743,32 +749,31 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="col-span-2 space-y-1">
-                <Label>Email <span className="text-destructive">*</span></Label>
+                <Label>Email</Label>
                 <Input
                   placeholder="email@exemplo.com"
                   type="email"
                   value={dadosEdicao.email ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, email: e.target.value, login: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, email: e.target.value })}
                   data-testid="input-edit-student-email"
                 />
               </div>
               <div className="space-y-1">
                 <Label>Login <span className="text-destructive">*</span></Label>
                 <Input
-                  type="email"
-                  placeholder="email@exemplo.com"
+                  placeholder="Login de acesso"
                   value={dadosEdicao.login ?? ""}
                   onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value })}
                   data-testid="input-edit-student-login"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Nova Senha <span className="text-destructive">*</span></Label>
+                <Label>Nova Senha</Label>
                 <Input
-                  placeholder="CPF do aluno"
+                  placeholder="Deixe em branco para manter"
                   type="password"
                   value={dadosEdicao.senha ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value, cpf: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value })}
                   data-testid="input-edit-student-password"
                 />
               </div>
@@ -781,42 +786,43 @@ export default function TeacherDashboard({
                   data-testid="input-edit-student-modality"
                 />
               </div>
-              {dadosEdicao.integrationType !== "mensalista" && (
-                <div className="space-y-1">
-                  <Label>Plano</Label>
-                  <Select
-                    value={dadosEdicao.planoId ?? ""}
-                    onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, planoId: v })}
-                  >
-                    <SelectTrigger data-testid="select-edit-student-plan">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {planos.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div className="col-span-2 space-y-1">
-                <Label>Integração</Label>
+              <div className="space-y-1">
+                <Label>Tipo de aluno</Label>
                 <Select
-                  value={dadosEdicao.integrationType ?? "none"}
-                  onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, integrationType: v, integrationPlan: "" })}
+                  value={dadosEdicao.integrationType ?? ""}
+                  onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, integrationType: v, integrationPlan: "", planoId: "" })}
                 >
                   <SelectTrigger data-testid="select-edit-student-integration-type">
-                    <SelectValue placeholder="Nenhuma" />
+                    <SelectValue placeholder="Não definido" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma</SelectItem>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
                     <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
                     <SelectItem value="totalpass">TotalPass</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {dadosEdicao.integrationType !== "none" && dadosEdicao.integrationType !== "mensalista" && (
+              {dadosEdicao.integrationType && (
+                <div className="col-span-2 space-y-1">
+                  <Label>Plano</Label>
+                  <Select
+                    value={dadosEdicao.planoId ?? ""}
+                    onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, planoId: v })}
+                  >
+                    <SelectTrigger data-testid="select-edit-student-plan">
+                      <SelectValue placeholder="Selecione o plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getPlanosPorIntegracao(dadosEdicao.integrationType).map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.titulo}{p.valorTexto ? ` — ${p.valorTexto}` : p.checkins > 0 ? ` (${p.checkins} check-ins)` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {(dadosEdicao.integrationType === "wellhub" || dadosEdicao.integrationType === "totalpass") && (
                 <div className="col-span-2 space-y-1">
                   <Label>Plano da Integração</Label>
                   {(() => {

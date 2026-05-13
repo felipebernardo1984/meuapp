@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const student = await storage.createStudent({
       arenaId, nome, login, senha, cpf, email: email ?? null, telefone: telefone ?? null, modalidade,
       planoId: plan.id, planoTitulo: plan.titulo, planoCheckins: plan.checkins, planoValorTexto: plan.valorTexto ?? null,
-      checkinsRealizados: 0, statusMensalidade: "Em dia", aprovado: true, ultimoCheckin: null, photoUrl: null,
+      checkinsRealizados: 0, statusMensalidade: integrationType === "mensalista" ? "Pendente" : "Em dia", aprovado: true, ultimoCheckin: null, photoUrl: null,
       integrationType: integrationType ?? "none",
       integrationPlan: integrationPlan ?? null,
       professorId: professorId ?? null,
