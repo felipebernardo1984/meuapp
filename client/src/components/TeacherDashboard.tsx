@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, History, CalendarClock, UserPlus, Pencil, Trash2, DollarSign, Receipt, Banknote, Eye, Camera, CalendarDays, Clock, ChevronRight, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import type { Plano } from "@/pages/Home";
 
 interface AlunoView {
@@ -78,6 +78,8 @@ interface Pagamento {
   dueDate: string;
   status: string;
   paymentDate?: string | null;
+  createdAt?: string | null;
+  paymentMethod?: string | null;
 }
 
 function paymentStatusBadge(status: string) {
@@ -173,6 +175,9 @@ export default function TeacherDashboard({
   const [dialogReceita, setDialogReceita] = useState(false);
   const [alunoReceita, setAlunoReceita] = useState<AlunoView | null>(null);
   const [alunosMinimizados, setAlunosMinimizados] = useState(false);
+
+  const [dialogHistoricoPagamentos, setDialogHistoricoPagamentos] = useState(false);
+  const [alunoHistoricoPagamentos, setAlunoHistoricoPagamentos] = useState<AlunoView | null>(null);
 
 
   const { data: modalidadeSettings = [] } = useQuery<any[]>({ queryKey: ["/api/configuracoes/modalidades"] });
@@ -443,12 +448,13 @@ export default function TeacherDashboard({
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {alunos.map((aluno) => {
-          const temCheckins = aluno.plano > 0;
+          const isMensalista = aluno.integrationType === "mensalista";
+          const temCheckins = aluno.plano > 0 && !isMensalista;
           const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
           const alunoPayments = payments.filter((p) => p.studentId === aluno.id);
 
-          const mensalistaPago = !temCheckins && alunoPayments.some((p) => p.status === "paid");
+          const mensalistaPago = (!temCheckins || isMensalista) && alunoPayments.some((p) => p.status === "paid");
 
           return (
             <Card key={aluno.id} className="hover-elevate overflow-hidden" data-testid={`card-student-${aluno.id}`}>
@@ -484,14 +490,56 @@ export default function TeacherDashboard({
                     data-testid={`progress-mensalista-${aluno.id}`}
                   />
                 )}
-                {!temCheckins ? (
-                  <div
-                    className={`w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white ${mensalistaPago ? "bg-green-600" : "bg-red-500"}`}
-                    data-testid={`button-mensalista-${aluno.id}`}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    {mensalistaPago ? "Mensalidade Paga" : "Mensalidade Pendente"}
-                  </div>
+                {isMensalista ? (
+                  <>
+                    <div
+                      className={`w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white ${mensalistaPago ? "bg-green-600" : "bg-red-500"}`}
+                      data-testid={`button-mensalista-${aluno.id}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {mensalistaPago ? "Mensalidade Paga" : "Mensalidade Pendente"}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full opacity-40 cursor-not-allowed pointer-events-none"
+                      disabled
+                      data-testid={`button-manual-checkin-disabled-${aluno.id}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Check-in (inativo)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => { setAlunoHistoricoPagamentos(aluno); setDialogHistoricoPagamentos(true); }}
+                      data-testid={`button-historico-pagamentos-${aluno.id}`}
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      Histórico de Pagamentos
+                    </Button>
+                  </>
+                ) : !temCheckins ? (
+                  <>
+                    <div
+                      className={`w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white ${mensalistaPago ? "bg-green-600" : "bg-red-500"}`}
+                      data-testid={`button-mensalista-${aluno.id}`}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {mensalistaPago ? "Mensalidade Paga" : "Mensalidade Pendente"}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => { setAlunoHistoricoPagamentos(aluno); setDialogHistoricoPagamentos(true); }}
+                      data-testid={`button-historico-pagamentos-${aluno.id}`}
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      Histórico de Pagamentos
+                    </Button>
+                  </>
                 ) : (
                   <Button size="sm" className="w-full" onClick={() => onCheckinManual(aluno.id)} data-testid={`button-manual-checkin-${aluno.id}`}>
                     <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -1064,6 +1112,88 @@ export default function TeacherDashboard({
                 </p>
               )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Histórico de Pagamentos (Mensalista) ── */}
+      <Dialog open={dialogHistoricoPagamentos} onOpenChange={setDialogHistoricoPagamentos}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Histórico de Pagamentos
+            </DialogTitle>
+            <DialogDescription>{alunoHistoricoPagamentos?.nome}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 py-1">
+            {(() => {
+              const pays = payments
+                .filter((p) => p.studentId === alunoHistoricoPagamentos?.id)
+                .sort((a, b) => {
+                  const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                  const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                  return db - da;
+                });
+              if (pays.length === 0) {
+                return (
+                  <p className="text-sm text-muted-foreground text-center py-6">
+                    Nenhum pagamento registrado ainda.
+                  </p>
+                );
+              }
+              return pays.map((p) => {
+                const boletoDate = p.createdAt
+                  ? new Date(p.createdAt).toLocaleDateString("pt-BR")
+                  : p.dueDate;
+                const metodoPagamento: Record<string, string> = {
+                  pix: "PIX",
+                  cartao: "Cartão",
+                  dinheiro: "Dinheiro",
+                };
+                return (
+                  <div
+                    key={p.id}
+                    className="rounded-lg border bg-card p-3 space-y-2"
+                    data-testid={`historico-pagamento-${p.id}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold">
+                        {p.referenceMonth}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">R$ {p.amount}</span>
+                        {paymentStatusBadge(p.status)}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-muted-foreground font-medium uppercase tracking-wide text-[10px]">Boleto gerado</span>
+                        <span className="font-medium text-foreground">{boletoDate}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-muted-foreground font-medium uppercase tracking-wide text-[10px]">Data do pagamento</span>
+                        {p.paymentDate ? (
+                          <span className="font-medium text-green-600 dark:text-green-400">
+                            {p.paymentDate}
+                            {p.paymentMethod && (
+                              <span className="ml-1 text-muted-foreground normal-case">
+                                · {metodoPagamento[p.paymentMethod] ?? p.paymentMethod}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-orange-500">Aguardando</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogHistoricoPagamentos(false)}>Fechar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
