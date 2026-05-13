@@ -477,7 +477,7 @@ export default function TeacherDashboard({
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {temCheckins && <Progress value={Math.min(progresso, 100)} />}
+                {temCheckins && <Progress value={Math.min(progresso, 100)} className="h-2" />}
                 {!temCheckins && (
                   <div
                     className={`h-2 w-full rounded-full ${mensalistaPago ? "bg-green-500" : "bg-red-500"}`}
