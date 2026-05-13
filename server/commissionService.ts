@@ -28,10 +28,49 @@ export async function calcularComissao(
       percentual: percentual.toFixed(2),
       valorComissao,
       status: "pendente",
+      tipo: "checkin",
       data,
     });
   } catch (err) {
     console.error("Erro ao calcular comissão:", err);
+  }
+}
+
+export async function calcularComissaoMensalidade(
+  arenaId: string,
+  paymentId: string,
+  teacherId: string,
+  studentId: string,
+  valorPagamento: string,
+  data: string
+): Promise<void> {
+  try {
+    const teacher = await storage.getTeacher(teacherId);
+    if (!teacher) return;
+
+    const percentual = parseFloat(teacher.percentualComissao ?? "0") || 0;
+    if (percentual === 0) return;
+
+    const valor = parseFloat(valorPagamento.replace(/[^0-9.]/g, "")) || 0;
+    const valorComissao = ((valor * percentual) / 100).toFixed(2);
+
+    const existing = await storage.getCommissionByPaymentId(paymentId);
+    if (existing) return;
+
+    await storage.createCommission({
+      arenaId,
+      teacherId,
+      paymentId,
+      studentId,
+      valorCheckin: valor.toFixed(2),
+      percentual: percentual.toFixed(2),
+      valorComissao,
+      status: "pendente",
+      tipo: "mensalidade",
+      data,
+    });
+  } catch (err) {
+    console.error("Erro ao calcular comissão de mensalidade:", err);
   }
 }
 

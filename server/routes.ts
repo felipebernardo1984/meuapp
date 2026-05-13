@@ -11,7 +11,7 @@ import { automationRouter } from "./automationRoutes";
 import { getWhatsappSettings, saveWhatsappSettings } from "./whatsappSettings";
 import { sendWhatsappMessage } from "./whatsappApi";
 import { getAutomationConfig, saveAutomationConfig, getPendingDispatches, markDispatchSent, markAllDispatchesSent, runWhatsappAutomation } from "./whatsappAutomation";
-import { calcularComissao, getResumoPorProfessor } from "./commissionService";
+import { calcularComissao, calcularComissaoMensalidade, getResumoPorProfessor } from "./commissionService";
 import { listBackups, getArenaBackupPreview, restoreArenaFromBackup, runDatabaseBackup, BACKUP_DIR } from "./backupService";
 import fs from "fs";
 import path from "path";
@@ -1268,6 +1268,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (status === "paid" && payment?.studentId) {
       const today = paymentDate || new Date().toLocaleDateString("pt-BR");
       await storage.updateStudent(payment.studentId, { ultimoCheckin: today });
+      const student = await storage.getStudent(payment.studentId);
+      if (student?.professorId) {
+        await calcularComissaoMensalidade(
+          arenaId,
+          payment.id,
+          student.professorId,
+          payment.studentId,
+          payment.amount,
+          today
+        );
+      }
     }
     res.json(payment);
   });
@@ -1275,6 +1286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/finance/payments/:id", async (req, res) => {
     const arenaId = requireArena(req, res);
     if (!arenaId) return;
+    try { await storage.cancelCommissionByPaymentId(req.params.id); } catch (_e) {}
     await storage.deletePayment(req.params.id);
     res.json({ ok: true });
   });

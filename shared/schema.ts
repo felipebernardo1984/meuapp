@@ -273,6 +273,9 @@ export const teacherCommissions = pgTable("teacher_commissions", {
   arenaId: varchar("arena_id").references(() => arenas.id, { onDelete: "cascade" }),
   teacherId: varchar("teacher_id").references(() => teachers.id, { onDelete: "cascade" }),
   checkinId: varchar("checkin_id").references(() => checkinHistory.id, { onDelete: "set null" }),
+  paymentId: varchar("payment_id").references(() => payments.id, { onDelete: "set null" }),
+  // 'checkin' | 'mensalidade'
+  tipo: text("tipo").notNull().default("checkin"),
   studentId: varchar("student_id").references(() => students.id, { onDelete: "cascade" }),
   valorCheckin: text("valor_checkin").notNull().default("0.00"),
   percentual: text("percentual").notNull().default("0.00"),

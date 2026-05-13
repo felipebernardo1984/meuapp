@@ -174,7 +174,7 @@ interface ManagerDashboardProps {
   onCriarCobranca: (dados: { studentId: string; description: string; amount: string; dueDate: string }) => void;
   arenaId?: string;
   onLogout?: () => void;
-  onEditarAluno: (dados: { id: string; nome: string; cpf: string; email: string; telefone: string; login: string; senha?: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number; planoId: string; integrationType: string; integrationPlan: string }) => void;
+  onEditarAluno: (dados: { id: string; nome: string; cpf: string; email: string; telefone: string; login: string; senha?: string; modalidade: string; statusMensalidade: string; checkinsRealizados: number; planoId: string; integrationType: string; integrationPlan: string; professorId?: string }) => void;
   onAlterarPlanoAluno: (alunoId: string, planoId: string) => void;
   onCheckinManual: (alunoId: string, data?: string, hora?: string) => void;
   onRemoverCheckin: (alunoId: string, index: number) => void;
@@ -505,7 +505,7 @@ export default function ManagerDashboard({
   // Editar aluno state
   const [dialogEditarAluno, setDialogEditarAluno] = useState(false);
   const [alunoEditando, setAlunoEditando] = useState<AlunoGestor | null>(null);
-  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "", integrationType: "", integrationPlan: "", photoUrl: "" });
+  const [formEditarAluno, setFormEditarAluno] = useState({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", statusMensalidade: "Em dia" as string, checkinsRealizados: 0, planoId: "", integrationType: "", integrationPlan: "", photoUrl: "", professorId: "" });
 
   // Alterar plano state
   const [dialogAlterarPlano, setDialogAlterarPlano] = useState(false);
@@ -3213,6 +3213,7 @@ export default function ManagerDashboard({
                             checkinsRealizados: aluno.checkinsRealizados, planoId: aluno.planoId,
                             integrationType: aluno.integrationType ?? "", integrationPlan: aluno.integrationPlan ?? "",
                             photoUrl: aluno.photoUrl ?? "",
+                            professorId: aluno.professorId ?? "",
                           });
                           setDialogEditarAluno(true);
                         }}
@@ -3746,6 +3747,23 @@ export default function ManagerDashboard({
                   onChange={(e) => setFormEditarAluno({ ...formEditarAluno, checkinsRealizados: Number(e.target.value) })}
                   data-testid="input-edit-checkins"
                 />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <Label>Professor Responsável</Label>
+                <Select
+                  value={formEditarAluno.professorId || "__none__"}
+                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, professorId: v === "__none__" ? "" : v })}
+                >
+                  <SelectTrigger data-testid="select-edit-professor">
+                    <SelectValue placeholder="Sem professor vinculado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sem professor vinculado</SelectItem>
+                    {professores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="col-span-2 space-y-1">
                 <Label>Integração <span className="text-destructive">*</span></Label>
@@ -4840,7 +4858,7 @@ export default function ManagerDashboard({
                         <TableRow>
                           <TableHead>Professor</TableHead>
                           <TableHead>Comissão (%)</TableHead>
-                          <TableHead>Check-ins</TableHead>
+                          <TableHead>Registros</TableHead>
                           <TableHead>Receita Gerada</TableHead>
                           <TableHead>Comissão Total</TableHead>
                           <TableHead>Pendentes</TableHead>
@@ -4995,7 +5013,8 @@ export default function ManagerDashboard({
                           <TableHead className="cursor-pointer select-none"><SortBtn field="data" label="Data" /></TableHead>
                           {filtroProfComissao === "todos" && <TableHead>Professor</TableHead>}
                           <TableHead className="cursor-pointer select-none"><SortBtn field="alunoNome" label="Aluno" /></TableHead>
-                          <TableHead>Valor Check-in</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Valor Base</TableHead>
                           <TableHead>%</TableHead>
                           <TableHead>Comissão</TableHead>
                           <TableHead>Status</TableHead>
@@ -5008,6 +5027,11 @@ export default function ManagerDashboard({
                             <TableCell className="text-xs whitespace-nowrap">{c.data}</TableCell>
                             {filtroProfComissao === "todos" && <TableCell className="text-sm">{c.professorNome}</TableCell>}
                             <TableCell className="text-sm">{c.alunoNome}</TableCell>
+                            <TableCell>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.tipo === "mensalidade" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"}`}>
+                                {c.tipo === "mensalidade" ? "Mensalidade" : "Check-in"}
+                              </span>
+                            </TableCell>
                             <TableCell className="text-sm">R$ {c.valorCheckin}</TableCell>
                             <TableCell className="text-sm">{c.percentual}%</TableCell>
                             <TableCell className="font-medium text-sm">
