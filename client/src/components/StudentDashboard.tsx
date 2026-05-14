@@ -249,11 +249,6 @@ export default function StudentDashboard({
             </Button>
           )}
         </div>
-        {statusMensalidade === "Pendente" && (
-          <Badge variant="destructive" data-testid="badge-payment-status">
-            Pendente
-          </Badge>
-        )}
       </div>
 
       {minhaTurma && (
@@ -287,14 +282,19 @@ export default function StudentDashboard({
       <Card className="mb-6">
         <CardContent className="pt-6">
           {!temCheckins ? (
-            <Button
-              size="lg"
-              className="w-full h-14 text-lg bg-green-600 hover:bg-green-700 text-white"
-              data-testid="button-checkin-mensalista"
-            >
-              <CheckCircle2 className="mr-2 h-5 w-5" />
-              Plano Mensalista
-            </Button>
+            (() => {
+              const mensalidadePaga = payments.some((p) => p.status === "paid");
+              return (
+                <Button
+                  size="lg"
+                  className={`w-full h-14 text-lg text-white ${mensalidadePaga ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"}`}
+                  data-testid="button-checkin-mensalista"
+                >
+                  <CheckCircle2 className="mr-2 h-5 w-5" />
+                  {mensalidadePaga ? "Mensalidade Paga" : "Mensalidade Pendente"}
+                </Button>
+              );
+            })()
           ) : (
             <Button
               size="lg"
