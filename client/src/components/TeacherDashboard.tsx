@@ -59,6 +59,8 @@ interface NovoAlunoDados {
   integrationType: string;
   integrationPlan: string;
   mensalistaValor?: string;
+  statusMensalidade?: string;
+  checkinsRealizados?: number;
 }
 
 interface Cobranca {
@@ -249,6 +251,13 @@ export default function TeacherDashboard({
     return planos.filter((p) => p.checkins > 0);
   };
 
+  const getCheckinsLabel = (checkins: number) =>
+    `${checkins} ${checkins === 1 ? "Check-in" : "Check-ins"}`;
+
+  const todasModalidades = Array.from(
+    new Set([...alunos.map((a) => a.modalidade), modalidade].filter(Boolean))
+  ) as string[];
+
   const openEditar = (aluno: AlunoView) => {
     setAlunoEditando(aluno);
     const tipo = aluno.integrationType === "none" ? "" : (aluno.integrationType ?? "");
@@ -263,12 +272,24 @@ export default function TeacherDashboard({
       planoId: aluno.planoId,
       integrationType: tipo,
       integrationPlan: aluno.integrationPlan ?? "",
+      statusMensalidade: (aluno as any).statusMensalidade ?? "Em dia",
+      checkinsRealizados: aluno.checkinsRealizados ?? 0,
     });
     setDialogEditarAluno(true);
   };
 
   const handleEditarAluno = () => {
-    if (alunoEditando && dadosEdicao.nome && dadosEdicao.cpf && dadosEdicao.login) {
+    const exigePlanoIntegracao = dadosEdicao.integrationType === "wellhub" || dadosEdicao.integrationType === "totalpass";
+    if (
+      alunoEditando &&
+      dadosEdicao.nome &&
+      dadosEdicao.cpf &&
+      dadosEdicao.login &&
+      dadosEdicao.modalidade &&
+      dadosEdicao.integrationType &&
+      dadosEdicao.planoId &&
+      (!exigePlanoIntegracao || dadosEdicao.integrationPlan)
+    ) {
       const payload: Partial<NovoAlunoDados & { senha?: string }> = { ...dadosEdicao };
       if (!payload.senha) delete payload.senha;
       if (!payload.integrationType) delete payload.integrationType;
@@ -560,7 +581,7 @@ export default function TeacherDashboard({
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+          <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
                 <Label>Nome do Aluno <span className="text-destructive">*</span></Label>
@@ -576,12 +597,12 @@ export default function TeacherDashboard({
                 <Input
                   placeholder="000.000.000-00"
                   value={novoAluno.cpf}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, cpf: e.target.value, senha: e.target.value })}
                   data-testid="input-new-student-cpf"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Telefone</Label>
+                <Label>Telefone <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={novoAluno.telefone}
@@ -590,19 +611,20 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="col-span-2 space-y-1">
-                <Label>Email</Label>
+                <Label>Email <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="email@exemplo.com"
                   type="email"
                   value={novoAluno.email}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, email: e.target.value, login: e.target.value })}
                   data-testid="input-new-student-email"
                 />
               </div>
               <div className="space-y-1">
                 <Label>Login <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="Login de acesso"
+                  type="email"
+                  placeholder="email@exemplo.com"
                   value={novoAluno.login}
                   onChange={(e) => setNovoAluno({ ...novoAluno, login: e.target.value })}
                   data-testid="input-new-student-login"
@@ -611,21 +633,28 @@ export default function TeacherDashboard({
               <div className="space-y-1">
                 <Label>Senha <span className="text-destructive">*</span></Label>
                 <Input
-                  placeholder="Senha de acesso"
-                  type="password"
+                  placeholder="CPF do aluno"
+                  type="text"
                   value={novoAluno.senha}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value })}
+                  onChange={(e) => setNovoAluno({ ...novoAluno, senha: e.target.value, cpf: e.target.value })}
                   data-testid="input-new-student-password"
                 />
               </div>
               <div className="space-y-1">
                 <Label>Modalidade <span className="text-destructive">*</span></Label>
-                <Input
-                  placeholder="Modalidade"
+                <Select
                   value={novoAluno.modalidade}
-                  onChange={(e) => setNovoAluno({ ...novoAluno, modalidade: e.target.value })}
-                  data-testid="input-new-student-modality"
-                />
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, modalidade: v })}
+                >
+                  <SelectTrigger data-testid="select-new-student-modality">
+                    <SelectValue placeholder="Escolha a modalidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {todasModalidades.map((mod) => (
+                      <SelectItem key={mod} value={mod}>{mod}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label>Tipo de aluno <span className="text-destructive">*</span></Label>
@@ -634,7 +663,7 @@ export default function TeacherDashboard({
                   onValueChange={(v) => setNovoAluno({ ...novoAluno, integrationType: v, integrationPlan: "", planoId: "" })}
                 >
                   <SelectTrigger data-testid="select-new-student-integration-type">
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
@@ -643,29 +672,9 @@ export default function TeacherDashboard({
                   </SelectContent>
                 </Select>
               </div>
-              {novoAluno.integrationType && (
-                <div className="col-span-2 space-y-1">
-                  <Label>Plano <span className="text-destructive">*</span></Label>
-                  <Select
-                    value={novoAluno.planoId}
-                    onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
-                  >
-                    <SelectTrigger data-testid="select-new-student-plan">
-                      <SelectValue placeholder="Selecione o plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getPlanosPorIntegracao(novoAluno.integrationType).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.titulo}{p.valorTexto ? ` — ${p.valorTexto}` : p.checkins > 0 ? ` (${p.checkins} check-ins)` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               {(novoAluno.integrationType === "wellhub" || novoAluno.integrationType === "totalpass") && (
                 <div className="col-span-2 space-y-1">
-                  <Label>Plano da Integração</Label>
+                  <Label>Plano da Integração <span className="text-destructive">*</span></Label>
                   {(() => {
                     const opts = Array.from(new Set(
                       modalidadeSettings
@@ -697,13 +706,46 @@ export default function TeacherDashboard({
                   })()}
                 </div>
               )}
+              <div className="col-span-2 space-y-1">
+                <Label>Plano de Aula <span className="text-destructive">*</span></Label>
+                <Select
+                  value={novoAluno.planoId}
+                  onValueChange={(v) => setNovoAluno({ ...novoAluno, planoId: v })}
+                  disabled={!novoAluno.integrationType}
+                >
+                  <SelectTrigger data-testid="select-new-student-plan">
+                    <SelectValue placeholder={!novoAluno.integrationType ? "Selecione o tipo primeiro" : "Selecione o plano"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getPlanosPorIntegracao(novoAluno.integrationType).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {novoAluno.integrationType === "mensalista"
+                          ? `${p.titulo} — ${p.valorTexto}`
+                          : `${p.titulo} — ${getCheckinsLabel(p.checkins)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogNovoAluno(false)}>Cancelar</Button>
             <Button
               onClick={handleCadastrarAluno}
-              disabled={!novoAluno.nome || !novoAluno.cpf || !novoAluno.login || !novoAluno.senha || !novoAluno.integrationType || !novoAluno.planoId}
+              disabled={
+                !novoAluno.nome ||
+                !novoAluno.cpf ||
+                !novoAluno.login ||
+                !novoAluno.senha ||
+                !novoAluno.modalidade ||
+                !novoAluno.integrationType ||
+                !novoAluno.planoId ||
+                (
+                  (novoAluno.integrationType === "wellhub" || novoAluno.integrationType === "totalpass") &&
+                  !novoAluno.integrationPlan
+                )
+              }
               data-testid="button-confirm-new-student"
             >
               Cadastrar
@@ -719,7 +761,7 @@ export default function TeacherDashboard({
             <DialogTitle>Editar Aluno</DialogTitle>
             <DialogDescription>{alunoEditando?.nome}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+          <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
                 <Label>Nome do Aluno <span className="text-destructive">*</span></Label>
@@ -735,17 +777,37 @@ export default function TeacherDashboard({
                 <Input
                   placeholder="000.000.000-00"
                   value={dadosEdicao.cpf ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, cpf: e.target.value })}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, cpf: e.target.value, senha: e.target.value })}
                   data-testid="input-edit-student-cpf"
                 />
               </div>
               <div className="space-y-1">
-                <Label>Telefone</Label>
+                <Label>Telefone <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="(00) 00000-0000"
                   value={dadosEdicao.telefone ?? ""}
                   onChange={(e) => setDadosEdicao({ ...dadosEdicao, telefone: e.target.value })}
                   data-testid="input-edit-student-phone"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Login <span className="text-destructive">*</span></Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={dadosEdicao.login ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value })}
+                  data-testid="input-edit-student-login"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Nova Senha</Label>
+                <Input
+                  placeholder="CPF do aluno"
+                  type="password"
+                  value={dadosEdicao.senha ?? ""}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value, cpf: e.target.value })}
+                  data-testid="input-edit-student-password"
                 />
               </div>
               <div className="col-span-2 space-y-1">
@@ -759,26 +821,7 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Login <span className="text-destructive">*</span></Label>
-                <Input
-                  placeholder="Login de acesso"
-                  value={dadosEdicao.login ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, login: e.target.value })}
-                  data-testid="input-edit-student-login"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Nova Senha</Label>
-                <Input
-                  placeholder="Deixe em branco para manter"
-                  type="password"
-                  value={dadosEdicao.senha ?? ""}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, senha: e.target.value })}
-                  data-testid="input-edit-student-password"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Modalidade</Label>
+                <Label>Modalidade <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="Modalidade"
                   value={dadosEdicao.modalidade ?? ""}
@@ -787,13 +830,13 @@ export default function TeacherDashboard({
                 />
               </div>
               <div className="space-y-1">
-                <Label>Tipo de aluno</Label>
+                <Label>Tipo de aluno <span className="text-destructive">*</span></Label>
                 <Select
                   value={dadosEdicao.integrationType ?? ""}
                   onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, integrationType: v, integrationPlan: "", planoId: "" })}
                 >
                   <SelectTrigger data-testid="select-edit-student-integration-type">
-                    <SelectValue placeholder="Não definido" />
+                    <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mensalista">Mensalista</SelectItem>
@@ -802,29 +845,9 @@ export default function TeacherDashboard({
                   </SelectContent>
                 </Select>
               </div>
-              {dadosEdicao.integrationType && (
-                <div className="col-span-2 space-y-1">
-                  <Label>Plano</Label>
-                  <Select
-                    value={dadosEdicao.planoId ?? ""}
-                    onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, planoId: v })}
-                  >
-                    <SelectTrigger data-testid="select-edit-student-plan">
-                      <SelectValue placeholder="Selecione o plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getPlanosPorIntegracao(dadosEdicao.integrationType).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.titulo}{p.valorTexto ? ` — ${p.valorTexto}` : p.checkins > 0 ? ` (${p.checkins} check-ins)` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               {(dadosEdicao.integrationType === "wellhub" || dadosEdicao.integrationType === "totalpass") && (
                 <div className="col-span-2 space-y-1">
-                  <Label>Plano da Integração</Label>
+                  <Label>Plano da Integração <span className="text-destructive">*</span></Label>
                   {(() => {
                     const opts = Array.from(new Set(
                       modalidadeSettings
@@ -856,6 +879,52 @@ export default function TeacherDashboard({
                   })()}
                 </div>
               )}
+              <div className="col-span-2 space-y-1">
+                <Label>Plano de Aula <span className="text-destructive">*</span></Label>
+                <Select
+                  value={dadosEdicao.planoId ?? ""}
+                  onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, planoId: v })}
+                  disabled={!dadosEdicao.integrationType}
+                >
+                  <SelectTrigger data-testid="select-edit-student-plan">
+                    <SelectValue placeholder={!dadosEdicao.integrationType ? "Selecione o tipo primeiro" : "Selecione o plano"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getPlanosPorIntegracao(dadosEdicao.integrationType ?? "").map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {dadosEdicao.integrationType === "mensalista"
+                          ? `${p.titulo} — ${p.valorTexto}`
+                          : `${p.titulo} — ${getCheckinsLabel(p.checkins)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Status Mensalidade</Label>
+                <Select
+                  value={dadosEdicao.statusMensalidade ?? "Em dia"}
+                  onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, statusMensalidade: v })}
+                >
+                  <SelectTrigger data-testid="select-edit-student-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Em dia">Em dia</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Check-ins realizados</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={dadosEdicao.checkinsRealizados ?? 0}
+                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, checkinsRealizados: Number(e.target.value) })}
+                  data-testid="input-edit-student-checkins"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter className="flex-row justify-between gap-2 sm:flex-row sm:justify-between">
