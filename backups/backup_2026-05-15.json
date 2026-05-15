@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-05-15T14:43:47.570Z",
+  "createdAt": "2026-05-15T15:28:06.220Z",
   "arenas": [
     {
       "id": "0e0ffa66-bfb3-4fee-a2d0-0482e3134d3b",
@@ -41,9 +41,16 @@
     {
       "id": "2a1a1aa6-ba6c-4a00-afae-e040c192da8d",
       "arenaId": "0e0ffa66-bfb3-4fee-a2d0-0482e3134d3b",
-      "titulo": "Mensalista",
+      "titulo": "1x por semana",
       "checkins": 0,
       "valorTexto": "R$ 140,00"
+    },
+    {
+      "id": "d3f3f98b-098d-4ada-b60b-36d53907706d",
+      "arenaId": "0e0ffa66-bfb3-4fee-a2d0-0482e3134d3b",
+      "titulo": "2x por semana",
+      "checkins": 0,
+      "valorTexto": "R$ 200,00"
     }
   ],
   "teachers": [
@@ -88,6 +95,32 @@
       "ativo": true,
       "desativadoEm": null,
       "criadoEm": "2026-05-15T14:41:32.281Z"
+    },
+    {
+      "id": "a0d69046-c30e-4c2f-ab4b-4c0f9f570b54",
+      "arenaId": "0e0ffa66-bfb3-4fee-a2d0-0482e3134d3b",
+      "nome": "Gabriela Leal",
+      "login": "000",
+      "senha": "000",
+      "cpf": "000",
+      "email": "000",
+      "telefone": "000",
+      "modalidade": "Vôlei de Praia",
+      "planoId": "2a1a1aa6-ba6c-4a00-afae-e040c192da8d",
+      "planoTitulo": "1x por semana",
+      "planoCheckins": 0,
+      "planoValorTexto": "R$ 140,00",
+      "checkinsRealizados": 0,
+      "statusMensalidade": "Pendente",
+      "aprovado": true,
+      "ultimoCheckin": "15/05/2026",
+      "photoUrl": null,
+      "integrationType": "mensalista",
+      "integrationPlan": "",
+      "professorId": "31876c5e-27c2-415c-839e-e9b450dfba75",
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-05-15T14:46:29.274Z"
     }
   ],
   "checkins": [
@@ -110,7 +143,24 @@
       "professorId": null
     }
   ],
-  "payments": [],
+  "payments": [
+    {
+      "id": "7cc4bd5e-f84c-49c6-ae40-9dec521e3b60",
+      "tenantId": "0e0ffa66-bfb3-4fee-a2d0-0482e3134d3b",
+      "studentId": "a0d69046-c30e-4c2f-ab4b-4c0f9f570b54",
+      "planId": "2a1a1aa6-ba6c-4a00-afae-e040c192da8d",
+      "description": "Mensalidade 2026-05",
+      "amount": "140.00",
+      "referenceMonth": "2026-05",
+      "dueDate": "2026-05-10",
+      "paymentDate": "15/05/2026",
+      "status": "paid",
+      "paymentMethod": "dinheiro",
+      "pagamentoToken": null,
+      "createdAt": "2026-05-15T14:46:29.280Z",
+      "createdBy": "sistema"
+    }
+  ],
   "charges": [],
   "despesas": [],
   "turmas": [],

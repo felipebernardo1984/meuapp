@@ -1,4 +1,13 @@
 import { useState } from "react";
+
+function formatarData(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return str;
+}
 import { PhotoCropModal } from "./PhotoCropModal";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -437,7 +446,7 @@ export default function TeacherDashboard({
                 const pendingPayment = alunoPaymentsMin.find((p) => p.status === "pending" || p.status === "overdue");
                 const paidPayment = alunoPaymentsMin.filter((p) => p.status === "paid").slice(-1)[0];
                 const relevantPayment = pendingPayment ?? paidPayment;
-                const vencimentoLabel = relevantPayment?.dueDate ? `Venc. ${relevantPayment.dueDate}` : null;
+                const vencimentoLabel = relevantPayment?.dueDate ? `Venc. ${formatarData(relevantPayment.dueDate)}` : null;
                 const mensalistaPagoMin = alunoPaymentsMin.some((p) => p.status === "paid") && !pendingPayment;
                 return (
                   <div key={aluno.id} className="space-y-2 rounded-lg border bg-background px-3 py-2">

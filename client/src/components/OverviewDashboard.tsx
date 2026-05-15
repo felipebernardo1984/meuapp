@@ -1,4 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+
+function formatarData(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return str;
+}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -225,7 +234,7 @@ export default function OverviewDashboard({ alunos = [], onBack }: OverviewDashb
                       <div>
                         <p className="text-sm font-medium">{aluno?.nome ?? "Aluno desativado"}</p>
                         <p className="text-xs text-muted-foreground">
-                          {p.tipo === "pagamento" ? `Mensalidade ${p.dueDate}` : `Cobrança — venc. ${p.dueDate}`}
+                          {p.tipo === "pagamento" ? `Mensalidade ${formatarData(p.dueDate)}` : `Cobrança — venc. ${formatarData(p.dueDate)}`}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

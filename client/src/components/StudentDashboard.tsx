@@ -1,4 +1,22 @@
 import { useState } from "react";
+
+function formatarData(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return str;
+}
+
+function formatarMes(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}$/.test(str)) {
+    const [y, m] = str.split("-");
+    return `${m}/${y}`;
+  }
+  return str;
+}
 import { useQuery } from "@tanstack/react-query";
 import { PhotoCropModal } from "./PhotoCropModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -447,8 +465,8 @@ export default function StudentDashboard({
                   data-testid={`student-payment-${p.id}`}
                 >
                   <div>
-                    <p className="text-sm font-medium">Mensalidade — {p.referenceMonth}</p>
-                    <p className="text-xs text-muted-foreground">Venc. {p.dueDate}</p>
+                    <p className="text-sm font-medium">Mensalidade — {formatarMes(p.referenceMonth)}</p>
+                    <p className="text-xs text-muted-foreground">Venc. {formatarData(p.dueDate)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">R$ {p.amount}</span>
@@ -458,7 +476,7 @@ export default function StudentDashboard({
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          setPixItem({ amount: p.amount, description: `Mensalidade — ${p.referenceMonth}` });
+                          setPixItem({ amount: p.amount, description: `Mensalidade — ${formatarMes(p.referenceMonth)}` });
                           setDialogPix(true);
                         }}
                         data-testid={`button-pay-payment-${p.id}`}
@@ -496,7 +514,7 @@ export default function StudentDashboard({
                 >
                   <div>
                     <p className="text-sm font-medium">{c.description}</p>
-                    <p className="text-xs text-muted-foreground">Venc. {c.dueDate}</p>
+                    <p className="text-xs text-muted-foreground">Venc. {formatarData(c.dueDate)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">R$ {c.amount}</span>

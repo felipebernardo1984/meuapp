@@ -1,4 +1,22 @@
 import { useState, useRef } from "react";
+
+function formatarData(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return str;
+}
+
+function formatarMes(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}$/.test(str)) {
+    const [y, m] = str.split("-");
+    return `${m}/${y}`;
+  }
+  return str;
+}
 import { HelpPanel } from "@/components/HelpDialog";
 import ManagerSidebar from "@/components/ManagerSidebar";
 import AgendaManager from "@/components/AgendaManager";
@@ -2386,7 +2404,7 @@ export default function ManagerDashboard({
                 <div key={p.id} className="flex items-center justify-between p-3 bg-muted rounded-xl gap-3 flex-wrap">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="min-w-0">
-                      <p className="font-medium text-sm">{p.referenceMonth}</p>
+                      <p className="font-medium text-sm">{formatarMes(p.referenceMonth)}</p>
                       <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                         <span className="text-xs text-muted-foreground">R$ {p.amount}</span>
                         {p.paymentDate && <span className="text-xs text-muted-foreground">· {p.paymentDate}</span>}
