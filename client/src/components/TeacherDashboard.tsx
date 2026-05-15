@@ -431,7 +431,14 @@ export default function TeacherDashboard({
             </div>
             <div className="space-y-2">
               {alunos.slice(0, 4).map((aluno) => {
-                const progresso = aluno.plano > 0 ? Math.min(100, (aluno.checkinsRealizados / aluno.plano) * 100) : 0;
+                const isMensalistaMin = aluno.integrationType === "mensalista";
+                const progresso = aluno.plano > 0 && !isMensalistaMin ? Math.min(100, (aluno.checkinsRealizados / aluno.plano) * 100) : 0;
+                const alunoPaymentsMin = payments.filter((p) => p.studentId === aluno.id);
+                const pendingPayment = alunoPaymentsMin.find((p) => p.status === "pending" || p.status === "overdue");
+                const paidPayment = alunoPaymentsMin.filter((p) => p.status === "paid").slice(-1)[0];
+                const relevantPayment = pendingPayment ?? paidPayment;
+                const vencimentoLabel = relevantPayment?.dueDate ? `Venc. ${relevantPayment.dueDate}` : null;
+                const mensalistaPagoMin = alunoPaymentsMin.some((p) => p.status === "paid") && !pendingPayment;
                 return (
                   <div key={aluno.id} className="space-y-2 rounded-lg border bg-background px-3 py-2">
                     <div className="flex items-center gap-3">
@@ -447,15 +454,24 @@ export default function TeacherDashboard({
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span className="whitespace-nowrap">
-                            {aluno.ultimoCheckin ? `Último: ${aluno.ultimoCheckin.data} ${aluno.ultimoCheckin.hora}` : "Sem check-in recente"}
+                            {isMensalistaMin
+                              ? (vencimentoLabel ?? "Sem vencimento")
+                              : (aluno.ultimoCheckin ? `Último: ${aluno.ultimoCheckin.data} ${aluno.ultimoCheckin.hora}` : "Sem check-in recente")}
                           </span>
                           <Badge variant="secondary" className="h-5 px-2 text-[11px]">
-                            {aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
+                            {isMensalistaMin
+                              ? (aluno.planoValorTexto ?? "Mensalista")
+                              : (aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "—")}
                           </Badge>
                         </div>
                       </div>
                     </div>
-                    {aluno.plano > 0 && (
+                    {isMensalistaMin ? (
+                      <div
+                        className={`h-2 w-full rounded-full ${mensalistaPagoMin ? "bg-green-500" : "bg-red-500"}`}
+                        data-testid={`progress-mensalista-min-${aluno.id}`}
+                      />
+                    ) : aluno.plano > 0 ? (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                           <span>Progresso</span>
@@ -463,7 +479,7 @@ export default function TeacherDashboard({
                         </div>
                         <Progress value={progresso} data-testid={`progress-student-${aluno.id}`} />
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}
