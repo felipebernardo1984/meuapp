@@ -1267,8 +1267,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const payment = await storage.updatePaymentStatus(req.params.id, status, paymentDate, paymentMethod);
     if (status === "paid" && payment?.studentId) {
       const today = paymentDate || new Date().toLocaleDateString("pt-BR");
-      await storage.updateStudent(payment.studentId, { ultimoCheckin: today });
       const student = await storage.getStudent(payment.studentId);
+      const extraUpdates: Record<string, any> = { ultimoCheckin: today };
+      if (student?.integrationType === "mensalista") {
+        extraUpdates.statusMensalidade = "Em dia";
+      }
+      await storage.updateStudent(payment.studentId, extraUpdates);
       if (student?.professorId) {
         await calcularComissaoMensalidade(
           arenaId,

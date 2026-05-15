@@ -467,10 +467,9 @@ export default function TeacherDashboard({
                       </div>
                     </div>
                     {isMensalistaMin ? (
-                      <div
-                        className={`h-2 w-full rounded-full ${mensalistaPagoMin ? "bg-green-500" : "bg-red-500"}`}
-                        data-testid={`progress-mensalista-min-${aluno.id}`}
-                      />
+                      <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary" data-testid={`progress-mensalista-min-${aluno.id}`}>
+                        <div className={`h-full w-full flex-1 transition-all ${mensalistaPagoMin ? "bg-green-500" : "bg-red-500"}`} />
+                      </div>
                     ) : aluno.plano > 0 ? (
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground">

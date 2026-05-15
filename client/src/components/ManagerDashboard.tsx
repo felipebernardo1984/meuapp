@@ -3156,16 +3156,12 @@ export default function ManagerDashboard({
           <>
           <div className="space-y-2 p-2">
             {alunosFiltrados.map((aluno) => {
-              const isExpanded = expandedAlunoId === aluno.id;
+              const isMensalistaRow = aluno.integrationType === "mensalista";
+              const isIntegrationRow = aluno.integrationType === "wellhub" || aluno.integrationType === "totalpass";
               return (
                 <div key={aluno.id} data-testid={`row-student-${aluno.id}`} className="rounded-xl border bg-muted overflow-hidden">
                   <div className="flex items-center justify-between p-3 gap-3">
-                    <button
-                      type="button"
-                      className="flex items-center gap-3 min-w-0 flex-1 text-left"
-                      onClick={() => setExpandedAlunoId(isExpanded ? null : aluno.id)}
-                      data-testid={`button-expand-${aluno.id}`}
-                    >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
                         <span className="text-white font-bold text-sm">{aluno.nome.charAt(0).toUpperCase()}</span>
                       </div>
@@ -3176,18 +3172,18 @@ export default function ManagerDashboard({
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           <span className="text-xs text-muted-foreground">{aluno.modalidade}</span>
                           {aluno.planoTitulo && <span className="text-xs text-muted-foreground">· {aluno.planoTitulo}</span>}
-                          {aluno.integrationType !== "mensalista" && aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
-                          {aluno.integrationType !== "mensalista" && aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
+                          {!isMensalistaRow && aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
+                          {!isMensalistaRow && aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
                         </div>
                       </div>
-                    </button>
+                    </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {aluno.aprovado ? (
                         <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
                       ) : (
                         <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                       )}
-                      {aluno.integrationType === "mensalista" && (
+                      {isMensalistaRow && (
                         <span className={`text-xs font-medium whitespace-nowrap ${aluno.statusMensalidade === "Em dia" ? "text-green-600" : "text-destructive"}`}>
                           {aluno.statusMensalidade}
                         </span>
@@ -3212,6 +3208,99 @@ export default function ManagerDashboard({
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" data-testid={`button-actions-${aluno.id}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem
+                            data-testid={`button-change-plan-${aluno.id}`}
+                            onClick={() => { setAlunoPlanoId(aluno.id); setNovoPlanoId(aluno.planoId); setDialogAlterarPlano(true); }}>
+                            <Pencil className="h-4 w-4 mr-2 text-muted-foreground" /> Alterar plano
+                          </DropdownMenuItem>
+                          {!isMensalistaRow && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                data-testid={`button-checkin-${aluno.id}`}
+                                onClick={() => {
+                                  setAlunoCheckinId(aluno.id);
+                                  const now = new Date();
+                                  setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
+                                  onCheckinManual(aluno.id);
+                                }}>
+                                <CheckCircle2 className="h-4 w-4 mr-2 text-muted-foreground" /> Check-in agora
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                data-testid={`button-retroactive-${aluno.id}`}
+                                onClick={() => {
+                                  setAlunoCheckinId(aluno.id);
+                                  const now = new Date();
+                                  setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
+                                  setDialogCheckinRetro(true);
+                                }}>
+                                <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" /> Registrar aula
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                data-testid={`button-hist-checkins-${aluno.id}`}
+                                onClick={() => { setAlunoHistorico(aluno); setDialogHistorico(true); }}>
+                                <History className="h-4 w-4 mr-2 text-muted-foreground" /> Hist. check-ins
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {!isIntegrationRow && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                data-testid={`button-hist-fin-${aluno.id}`}
+                                onClick={() => { setAlunoHistFinanceiroId(aluno.id); setAlunoHistFinanceiroNome(aluno.nome); setDialogHistFinanceiro(true); }}>
+                                <Receipt className="h-4 w-4 mr-2 text-muted-foreground" /> Hist. pagamento
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                data-testid={`button-validar-${aluno.id}`}
+                                onClick={() => { setAlunoValidarId(aluno.id); setAlunoValidarNome(aluno.nome); setDialogValidarPagamento(true); }}>
+                                <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" /> Validar pgto
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                data-testid={`button-manual-payment-${aluno.id}`}
+                                onClick={() => {
+                                  setAlunoFinanceiroId(aluno.id);
+                                  const now = new Date();
+                                  const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+                                  const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
+                                  setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
+                                  setDialogPagamento(true);
+                                }}>
+                                <CreditCard className="h-4 w-4 mr-2 text-muted-foreground" /> Pgto manual
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                data-testid={`button-charge-${aluno.id}`}
+                                onClick={() => {
+                                  setAlunoFinanceiroId(aluno.id);
+                                  const now = new Date();
+                                  setFormCobranca({ description: "", amount: "", dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR") });
+                                  setDialogCobranca(true);
+                                }}>
+                                <Receipt className="h-4 w-4 mr-2 text-muted-foreground" /> Criar cobrança
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            data-testid={`button-whatsapp-${aluno.id}`}
+                            onClick={() => {
+                              if (!whatsappSettings?.whatsapp_number) {
+                                toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
+                                return;
+                              }
+                              enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
+                            }}>
+                            <MessageCircle className="h-4 w-4 mr-2 text-muted-foreground" /> WhatsApp
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Button
                         size="icon"
                         variant="ghost"
@@ -3223,99 +3312,6 @@ export default function ManagerDashboard({
                       </Button>
                     </div>
                   </div>
-                  {isExpanded && (
-                    <div className="border-t px-3 py-3 bg-background/60">
-                      {(() => {
-                        const isMensalistaExp = aluno.integrationType === "mensalista";
-                        const isIntegrationExp = aluno.integrationType === "wellhub" || aluno.integrationType === "totalpass";
-                        return (
-                        <div className="flex flex-wrap gap-2">
-                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                            data-testid={`button-change-plan-${aluno.id}`}
-                            onClick={() => { setAlunoPlanoId(aluno.id); setNovoPlanoId(aluno.planoId); setDialogAlterarPlano(true); }}>
-                            <Pencil className="h-3.5 w-3.5" /> Alterar plano
-                          </Button>
-                          {!isMensalistaExp && (
-                            <>
-                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                                data-testid={`button-checkin-${aluno.id}`}
-                                onClick={() => {
-                                  setAlunoCheckinId(aluno.id);
-                                  const now = new Date();
-                                  setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
-                                  onCheckinManual(aluno.id);
-                                }}>
-                                <CheckCircle2 className="h-3.5 w-3.5" /> Check-in agora
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                                data-testid={`button-retroactive-${aluno.id}`}
-                                onClick={() => {
-                                  setAlunoCheckinId(aluno.id);
-                                  const now = new Date();
-                                  setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
-                                  setDialogCheckinRetro(true);
-                                }}>
-                                <CalendarClock className="h-3.5 w-3.5" /> Registrar aula
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                                data-testid={`button-hist-checkins-${aluno.id}`}
-                                onClick={() => { setAlunoHistorico(aluno); setDialogHistorico(true); }}>
-                                <History className="h-3.5 w-3.5" /> Hist. check-ins
-                              </Button>
-                            </>
-                          )}
-                          {!isIntegrationExp && (
-                            <>
-                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                                data-testid={`button-hist-fin-${aluno.id}`}
-                                onClick={() => { setAlunoHistFinanceiroId(aluno.id); setAlunoHistFinanceiroNome(aluno.nome); setDialogHistFinanceiro(true); }}>
-                                <Receipt className="h-3.5 w-3.5" /> Hist. pagamento
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                                data-testid={`button-validar-${aluno.id}`}
-                                onClick={() => { setAlunoValidarId(aluno.id); setAlunoValidarNome(aluno.nome); setDialogValidarPagamento(true); }}>
-                                <DollarSign className="h-3.5 w-3.5" /> Validar pgto
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                                data-testid={`button-manual-payment-${aluno.id}`}
-                                onClick={() => {
-                                  setAlunoFinanceiroId(aluno.id);
-                                  const now = new Date();
-                                  const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
-                                  const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
-                                  setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
-                                  setDialogPagamento(true);
-                                }}>
-                                <CreditCard className="h-3.5 w-3.5" /> Pgto manual
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                                data-testid={`button-charge-${aluno.id}`}
-                                onClick={() => {
-                                  setAlunoFinanceiroId(aluno.id);
-                                  const now = new Date();
-                                  setFormCobranca({ description: "", amount: "", dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR") });
-                                  setDialogCobranca(true);
-                                }}>
-                                <Receipt className="h-3.5 w-3.5" /> Criar cobrança
-                              </Button>
-                            </>
-                          )}
-                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                            data-testid={`button-whatsapp-${aluno.id}`}
-                            onClick={() => {
-                              if (!whatsappSettings?.whatsapp_number) {
-                                toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
-                                return;
-                              }
-                              enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
-                            }}>
-                            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                          </Button>
-                        </div>
-                        );
-                      })()}
-                    </div>
-                  )}
                 </div>
               );
             })}
