@@ -541,7 +541,7 @@ export default function StudentDashboard({
                 <p className="text-3xl font-bold text-primary">R$ {pixItem.amount}</p>
               </div>
             )}
-            {pixSettings?.pixKey ? (
+            {pixSettings?.pixKey || pixSettings?.pixQrcodeImage ? (
               <div className="space-y-3">
                 <div className="bg-muted rounded-lg p-3 space-y-1">
                   {pixSettings.receiverName && (
@@ -550,10 +550,12 @@ export default function StudentDashboard({
                       <span className="font-medium">{pixSettings.receiverName}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Chave PIX</span>
-                    <span className="font-medium font-mono">{pixSettings.pixKey}</span>
-                  </div>
+                  {pixSettings.pixKey && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Chave PIX</span>
+                      <span className="font-medium font-mono">{pixSettings.pixKey}</span>
+                    </div>
+                  )}
                 </div>
                 {pixSettings.pixQrcodeImage && (
                   <div className="flex justify-center">

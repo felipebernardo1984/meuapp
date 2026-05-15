@@ -5408,7 +5408,7 @@ export default function ManagerDashboard({
                         name="conta-pixTipo"
                         value="chave"
                         checked={formContaBancaria.pixTipo === "chave"}
-                        onChange={() => setFormContaBancaria({ ...formContaBancaria, pixTipo: "chave", pixQrcodeImage: "" })}
+                        onChange={() => setFormContaBancaria({ ...formContaBancaria, pixTipo: "chave" })}
                         data-testid="radio-conta-pix-chave"
                         className="accent-primary"
                       />
@@ -5420,7 +5420,7 @@ export default function ManagerDashboard({
                         name="conta-pixTipo"
                         value="qrcode"
                         checked={formContaBancaria.pixTipo === "qrcode"}
-                        onChange={() => setFormContaBancaria({ ...formContaBancaria, pixTipo: "qrcode", pixKey: "" })}
+                        onChange={() => setFormContaBancaria({ ...formContaBancaria, pixTipo: "qrcode" })}
                         data-testid="radio-conta-pix-qrcode"
                         className="accent-primary"
                       />
@@ -5529,12 +5529,19 @@ export default function ManagerDashboard({
               Cancelar
             </Button>
             <Button
-              onClick={() => salvarContaBancaria.mutate(formContaBancaria, {
-                onSuccess: () => {
-                  qc.invalidateQueries({ queryKey: ["/api/finance/settings"] });
-                  setActiveSection("dashboard");
-                },
-              })}
+              onClick={() => {
+                const payload = {
+                  ...formContaBancaria,
+                  pixKey: formContaBancaria.pixTipo === "chave" ? formContaBancaria.pixKey : "",
+                  pixQrcodeImage: formContaBancaria.pixTipo === "qrcode" ? formContaBancaria.pixQrcodeImage : "",
+                };
+                salvarContaBancaria.mutate(payload, {
+                  onSuccess: () => {
+                    qc.invalidateQueries({ queryKey: ["/api/finance/settings"] });
+                    setActiveSection("dashboard");
+                  },
+                });
+              }}
               disabled={salvarContaBancaria.isPending}
               data-testid="button-conta-salvar"
             >

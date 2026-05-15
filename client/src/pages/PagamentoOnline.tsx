@@ -120,19 +120,23 @@ export default function PagamentoOnline() {
             </div>
 
             {/* PIX section */}
-            {data.pixKey ? (
+            {data.pixKey || data.pixQrcodeImage ? (
               <div className="border rounded-lg p-4 bg-blue-50 space-y-3">
-                <p className="text-sm font-medium text-blue-800">Chave PIX</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-sm bg-white rounded px-3 py-2 border text-gray-800 break-all">
-                    {data.pixKey}
-                  </code>
-                  <Button size="sm" variant="outline" className="shrink-0" onClick={copiarChave}>
-                    {copied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
                 {data.receiverName && (
                   <p className="text-xs text-blue-700">Favorecido: <strong>{data.receiverName}</strong></p>
+                )}
+                {data.pixKey && (
+                  <>
+                    <p className="text-sm font-medium text-blue-800">Chave PIX</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-sm bg-white rounded px-3 py-2 border text-gray-800 break-all">
+                        {data.pixKey}
+                      </code>
+                      <Button size="sm" variant="outline" className="shrink-0" onClick={copiarChave}>
+                        {copied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </>
                 )}
                 {data.pixQrcodeImage && (
                   <div className="flex justify-center">
