@@ -1464,10 +1464,20 @@ export default function ManagerDashboard({
                         <p className="text-xs text-muted-foreground truncate">{aluno.modalidade || aluno.planoTitulo}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-xs text-muted-foreground">{aluno.ultimoCheckin}</p>
-                        <span className={`text-xs font-semibold ${aluno.statusMensalidade === "Em dia" ? "text-emerald-600" : "text-orange-500"}`}>
-                          {aluno.statusMensalidade}
-                        </span>
+                        {aluno.integrationType !== "mensalista" && (
+                          <p className="text-xs text-muted-foreground">{aluno.ultimoCheckin}</p>
+                        )}
+                        {aluno.integrationType === "mensalista" ? (
+                          <span className={`text-xs font-semibold ${aluno.statusMensalidade === "Em dia" ? "text-emerald-600" : "text-orange-500"}`}>
+                            {aluno.statusMensalidade}
+                          </span>
+                        ) : (
+                          aluno.plano > 0 && (
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              {aluno.checkinsRealizados}/{aluno.plano}
+                            </span>
+                          )
+                        )}
                       </div>
                     </div>
                   );
@@ -3166,8 +3176,8 @@ export default function ManagerDashboard({
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           <span className="text-xs text-muted-foreground">{aluno.modalidade}</span>
                           {aluno.planoTitulo && <span className="text-xs text-muted-foreground">· {aluno.planoTitulo}</span>}
-                          {aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
-                          {aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
+                          {aluno.integrationType !== "mensalista" && aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
+                          {aluno.integrationType !== "mensalista" && aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
                         </div>
                       </div>
                     </button>
@@ -3177,9 +3187,11 @@ export default function ManagerDashboard({
                       ) : (
                         <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                       )}
-                      <span className={`text-xs font-medium whitespace-nowrap ${aluno.statusMensalidade === "Em dia" ? "text-green-600" : "text-destructive"}`}>
-                        {aluno.statusMensalidade}
-                      </span>
+                      {aluno.integrationType === "mensalista" && (
+                        <span className={`text-xs font-medium whitespace-nowrap ${aluno.statusMensalidade === "Em dia" ? "text-green-600" : "text-destructive"}`}>
+                          {aluno.statusMensalidade}
+                        </span>
+                      )}
                       <Button
                         size="icon"
                         variant="ghost"
@@ -3213,81 +3225,95 @@ export default function ManagerDashboard({
                   </div>
                   {isExpanded && (
                     <div className="border-t px-3 py-3 bg-background/60">
-                      <div className="flex flex-wrap gap-2">
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-change-plan-${aluno.id}`}
-                          onClick={() => { setAlunoPlanoId(aluno.id); setNovoPlanoId(aluno.planoId); setDialogAlterarPlano(true); }}>
-                          <Pencil className="h-3.5 w-3.5" /> Alterar plano
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-checkin-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoCheckinId(aluno.id);
-                            const now = new Date();
-                            setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
-                            onCheckinManual(aluno.id);
-                          }}>
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Check-in agora
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-retroactive-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoCheckinId(aluno.id);
-                            const now = new Date();
-                            setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
-                            setDialogCheckinRetro(true);
-                          }}>
-                          <CalendarClock className="h-3.5 w-3.5" /> Registrar aula
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-hist-checkins-${aluno.id}`}
-                          onClick={() => { setAlunoHistorico(aluno); setDialogHistorico(true); }}>
-                          <History className="h-3.5 w-3.5" /> Hist. check-ins
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-hist-fin-${aluno.id}`}
-                          onClick={() => { setAlunoHistFinanceiroId(aluno.id); setAlunoHistFinanceiroNome(aluno.nome); setDialogHistFinanceiro(true); }}>
-                          <Receipt className="h-3.5 w-3.5" /> Hist. pagamento
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-validar-${aluno.id}`}
-                          onClick={() => { setAlunoValidarId(aluno.id); setAlunoValidarNome(aluno.nome); setDialogValidarPagamento(true); }}>
-                          <DollarSign className="h-3.5 w-3.5" /> Validar pgto
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-manual-payment-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoFinanceiroId(aluno.id);
-                            const now = new Date();
-                            const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
-                            const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
-                            setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
-                            setDialogPagamento(true);
-                          }}>
-                          <CreditCard className="h-3.5 w-3.5" /> Pgto manual
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-charge-${aluno.id}`}
-                          onClick={() => {
-                            setAlunoFinanceiroId(aluno.id);
-                            const now = new Date();
-                            setFormCobranca({ description: "", amount: "", dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR") });
-                            setDialogCobranca(true);
-                          }}>
-                          <Receipt className="h-3.5 w-3.5" /> Criar cobrança
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
-                          data-testid={`button-whatsapp-${aluno.id}`}
-                          onClick={() => {
-                            if (!whatsappSettings?.whatsapp_number) {
-                              toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
-                              return;
-                            }
-                            enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
-                          }}>
-                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-                        </Button>
-                      </div>
+                      {(() => {
+                        const isMensalistaExp = aluno.integrationType === "mensalista";
+                        const isIntegrationExp = aluno.integrationType === "wellhub" || aluno.integrationType === "totalpass";
+                        return (
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                            data-testid={`button-change-plan-${aluno.id}`}
+                            onClick={() => { setAlunoPlanoId(aluno.id); setNovoPlanoId(aluno.planoId); setDialogAlterarPlano(true); }}>
+                            <Pencil className="h-3.5 w-3.5" /> Alterar plano
+                          </Button>
+                          {!isMensalistaExp && (
+                            <>
+                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                                data-testid={`button-checkin-${aluno.id}`}
+                                onClick={() => {
+                                  setAlunoCheckinId(aluno.id);
+                                  const now = new Date();
+                                  setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
+                                  onCheckinManual(aluno.id);
+                                }}>
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Check-in agora
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                                data-testid={`button-retroactive-${aluno.id}`}
+                                onClick={() => {
+                                  setAlunoCheckinId(aluno.id);
+                                  const now = new Date();
+                                  setFormCheckin({ data: now.toISOString().split("T")[0], hora: now.toTimeString().slice(0, 5) });
+                                  setDialogCheckinRetro(true);
+                                }}>
+                                <CalendarClock className="h-3.5 w-3.5" /> Registrar aula
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                                data-testid={`button-hist-checkins-${aluno.id}`}
+                                onClick={() => { setAlunoHistorico(aluno); setDialogHistorico(true); }}>
+                                <History className="h-3.5 w-3.5" /> Hist. check-ins
+                              </Button>
+                            </>
+                          )}
+                          {!isIntegrationExp && (
+                            <>
+                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                                data-testid={`button-hist-fin-${aluno.id}`}
+                                onClick={() => { setAlunoHistFinanceiroId(aluno.id); setAlunoHistFinanceiroNome(aluno.nome); setDialogHistFinanceiro(true); }}>
+                                <Receipt className="h-3.5 w-3.5" /> Hist. pagamento
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                                data-testid={`button-validar-${aluno.id}`}
+                                onClick={() => { setAlunoValidarId(aluno.id); setAlunoValidarNome(aluno.nome); setDialogValidarPagamento(true); }}>
+                                <DollarSign className="h-3.5 w-3.5" /> Validar pgto
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                                data-testid={`button-manual-payment-${aluno.id}`}
+                                onClick={() => {
+                                  setAlunoFinanceiroId(aluno.id);
+                                  const now = new Date();
+                                  const mesRef = `${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+                                  const venc = new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR");
+                                  setFormPagamento({ description: "", amount: "", referenceMonth: mesRef, dueDate: venc, status: "paid" });
+                                  setDialogPagamento(true);
+                                }}>
+                                <CreditCard className="h-3.5 w-3.5" /> Pgto manual
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                                data-testid={`button-charge-${aluno.id}`}
+                                onClick={() => {
+                                  setAlunoFinanceiroId(aluno.id);
+                                  const now = new Date();
+                                  setFormCobranca({ description: "", amount: "", dueDate: new Date(now.getFullYear(), now.getMonth(), 10).toLocaleDateString("pt-BR") });
+                                  setDialogCobranca(true);
+                                }}>
+                                <Receipt className="h-3.5 w-3.5" /> Criar cobrança
+                              </Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
+                            data-testid={`button-whatsapp-${aluno.id}`}
+                            onClick={() => {
+                              if (!whatsappSettings?.whatsapp_number) {
+                                toast({ title: "Configure o WhatsApp primeiro", description: "Acesse WhatsApp no menu lateral.", variant: "destructive" });
+                                return;
+                              }
+                              enviarWhatsappAvulso.mutate({ telefone: aluno.telefone ?? "", mensagem: buildWhatsappMessage(aluno) });
+                            }}>
+                            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                          </Button>
+                        </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -3715,31 +3741,35 @@ export default function ManagerDashboard({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <Label>Status Mensalidade</Label>
-                <Select
-                  value={formEditarAluno.statusMensalidade}
-                  onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, statusMensalidade: v })}
-                >
-                  <SelectTrigger data-testid="select-edit-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Em dia">Em dia</SelectItem>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Check-ins realizados</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={formEditarAluno.checkinsRealizados}
-                  onChange={(e) => setFormEditarAluno({ ...formEditarAluno, checkinsRealizados: Number(e.target.value) })}
-                  data-testid="input-edit-checkins"
-                />
-              </div>
+              {formEditarAluno.integrationType === "mensalista" && (
+                <div className="space-y-1">
+                  <Label>Status Mensalidade</Label>
+                  <Select
+                    value={formEditarAluno.statusMensalidade}
+                    onValueChange={(v) => setFormEditarAluno({ ...formEditarAluno, statusMensalidade: v })}
+                  >
+                    <SelectTrigger data-testid="select-edit-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Em dia">Em dia</SelectItem>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {formEditarAluno.integrationType !== "mensalista" && (
+                <div className="space-y-1">
+                  <Label>Check-ins realizados</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={formEditarAluno.checkinsRealizados}
+                    onChange={(e) => setFormEditarAluno({ ...formEditarAluno, checkinsRealizados: Number(e.target.value) })}
+                    data-testid="input-edit-checkins"
+                  />
+                </div>
+              )}
               <div className="col-span-2 space-y-1">
                 <Label>Professor Responsável</Label>
                 <Select

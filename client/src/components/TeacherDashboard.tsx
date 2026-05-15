@@ -477,6 +477,7 @@ export default function TeacherDashboard({
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {alunos.map((aluno) => {
           const isMensalista = aluno.integrationType === "mensalista";
+          const isIntegration = aluno.integrationType === "wellhub" || aluno.integrationType === "totalpass";
           const temCheckins = aluno.plano > 0 && !isMensalista;
           const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -554,12 +555,16 @@ export default function TeacherDashboard({
                     Registrar Aula
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="w-full" onClick={() => { setAlunoReceita(aluno); setDialogReceita(true); }} data-testid={`button-receita-${aluno.id}`}>
-                  Receita Gerada
-                </Button>
-                <Button variant="outline" size="sm" className="w-full" onClick={() => openFinanceiro(aluno)} data-testid={`button-financeiro-${aluno.id}`}>
-                  Cobrança e Pagamento
-                </Button>
+                {!isMensalista && (
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => { setAlunoReceita(aluno); setDialogReceita(true); }} data-testid={`button-receita-${aluno.id}`}>
+                    Receita Gerada
+                  </Button>
+                )}
+                {!isIntegration && (
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => openFinanceiro(aluno)} data-testid={`button-financeiro-${aluno.id}`}>
+                    Cobrança e Pagamento
+                  </Button>
+                )}
               </CardContent>
             </Card>
           );
@@ -900,31 +905,35 @@ export default function TeacherDashboard({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <Label>Status Mensalidade</Label>
-                <Select
-                  value={dadosEdicao.statusMensalidade ?? "Em dia"}
-                  onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, statusMensalidade: v })}
-                >
-                  <SelectTrigger data-testid="select-edit-student-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Em dia">Em dia</SelectItem>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Check-ins realizados</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={dadosEdicao.checkinsRealizados ?? 0}
-                  onChange={(e) => setDadosEdicao({ ...dadosEdicao, checkinsRealizados: Number(e.target.value) })}
-                  data-testid="input-edit-student-checkins"
-                />
-              </div>
+              {dadosEdicao.integrationType === "mensalista" && (
+                <div className="space-y-1">
+                  <Label>Status Mensalidade</Label>
+                  <Select
+                    value={dadosEdicao.statusMensalidade ?? "Em dia"}
+                    onValueChange={(v) => setDadosEdicao({ ...dadosEdicao, statusMensalidade: v })}
+                  >
+                    <SelectTrigger data-testid="select-edit-student-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Em dia">Em dia</SelectItem>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {dadosEdicao.integrationType !== "mensalista" && (
+                <div className="space-y-1">
+                  <Label>Check-ins realizados</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={dadosEdicao.checkinsRealizados ?? 0}
+                    onChange={(e) => setDadosEdicao({ ...dadosEdicao, checkinsRealizados: Number(e.target.value) })}
+                    data-testid="input-edit-student-checkins"
+                  />
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter className="flex-row justify-between gap-2 sm:flex-row sm:justify-between">
