@@ -1,22 +1,4 @@
 import { useState } from "react";
-
-function formatarData(str: string | null | undefined): string {
-  if (!str) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    const [y, m, d] = str.split("-");
-    return `${d}/${m}/${y}`;
-  }
-  return str;
-}
-
-function formatarMes(str: string | null | undefined): string {
-  if (!str) return "";
-  if (/^\d{4}-\d{2}$/.test(str)) {
-    const [y, m] = str.split("-");
-    return `${m}/${y}`;
-  }
-  return str;
-}
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -40,8 +22,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, Clock, AlertCircle, Settings, CheckCircle, Trash2, ChevronLeft } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, AlertCircle, Settings, CheckCircle, Trash2, ChevronLeft, Search } from "lucide-react";
 import { DateRangePicker, DateRange, currentMonthRange } from "@/components/ui/date-range-picker";
+
+function formatarData(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return str;
+}
+
+function formatarMes(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}$/.test(str)) {
+    const [y, m] = str.split("-");
+    return `${m}/${y}`;
+  }
+  return str;
+}
 
 interface ModalidadeSetting {
   id: string;
@@ -77,6 +77,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
   const qc = useQueryClient();
   const [confirmDelete, setConfirmDelete] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
   const [receitaRange, setReceitaRange] = useState<DateRange | null>(currentMonthRange());
+  const [buscaPagamento, setBuscaPagamento] = useState("");
 
   const receitaParams = new URLSearchParams(
     Object.fromEntries(
@@ -303,21 +304,22 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
         </Card>
       )}
 
-      {!temConfiguracao && (
-        <Card className="mb-6 border-dashed">
-          <CardContent className="py-6 flex items-center gap-3 text-muted-foreground">
-            <Settings className="h-5 w-5 shrink-0" />
-            <p className="text-sm">
-              Configure o valor por check-in em <strong>Configurações</strong> para visualizar a receita por modalidade e aluno.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Payments table */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-lg">Mensalidades</CardTitle>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <CardTitle className="text-lg">Mensalidades</CardTitle>
+            <div className="relative w-56">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar aluno..."
+                value={buscaPagamento}
+                onChange={(e) => setBuscaPagamento(e.target.value)}
+                className="pl-8 h-8 text-sm"
+                data-testid="input-busca-pagamento"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {payments.length === 0 ? (
@@ -337,7 +339,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payments.map((p: any) => (
+                  {payments.filter((p: any) => getNomeAluno(p.studentId).toLowerCase().includes(buscaPagamento.toLowerCase())).map((p: any) => (
                     <TableRow key={p.id} data-testid={`payment-row-${p.id}`}>
                       <TableCell className="font-medium">{getNomeAluno(p.studentId)}</TableCell>
                       <TableCell>{formatarMes(p.referenceMonth)}</TableCell>
