@@ -3201,9 +3201,10 @@ export default function ManagerDashboard({
                           {!isMensalistaRow && aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
                           {!isMensalistaRow && aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
                           {isMensalistaRow && ultimoPagamento && (
-                            <span className="text-xs text-muted-foreground">
-                              · pago {ultimoPagamento.paymentDate}{ultimoPagamento.paymentMethod ? ` · ${metodoLabelRow[ultimoPagamento.paymentMethod] ?? ultimoPagamento.paymentMethod}` : ""}
-                            </span>
+                            <>
+                              {ultimoPagamento.amount && <span className="text-xs text-muted-foreground">· R$ {ultimoPagamento.amount}</span>}
+                              {ultimoPagamento.paymentDate && <span className="text-xs text-muted-foreground">· {ultimoPagamento.paymentDate}</span>}
+                            </>
                           )}
                           {isMensalistaRow && !ultimoPagamento && (
                             <span className="text-xs text-muted-foreground">· sem pagamento registrado</span>
