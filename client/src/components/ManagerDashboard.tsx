@@ -3178,6 +3178,12 @@ export default function ManagerDashboard({
             {alunosFiltrados.map((aluno) => {
               const isMensalistaRow = aluno.integrationType === "mensalista";
               const isIntegrationRow = aluno.integrationType === "wellhub" || aluno.integrationType === "totalpass";
+              const metodoLabelRow: Record<string, string> = { cartao: "Cartão", pix: "PIX", dinheiro: "Dinheiro" };
+              const ultimoPagamento = isMensalistaRow
+                ? [...allPayments]
+                    .filter((p: any) => p.studentId === aluno.id && p.status === "paid")
+                    .sort((a: any, b: any) => (a.paymentDate > b.paymentDate ? -1 : 1))[0]
+                : null;
               return (
                 <div key={aluno.id} data-testid={`row-student-${aluno.id}`} className="rounded-xl border bg-muted overflow-hidden">
                   <div className="flex items-center justify-between p-3 gap-3">
@@ -3194,6 +3200,14 @@ export default function ManagerDashboard({
                           {aluno.planoTitulo && <span className="text-xs text-muted-foreground">· {aluno.planoTitulo}</span>}
                           {!isMensalistaRow && aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
                           {!isMensalistaRow && aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
+                          {isMensalistaRow && ultimoPagamento && (
+                            <span className="text-xs text-muted-foreground">
+                              · pago {ultimoPagamento.paymentDate}{ultimoPagamento.paymentMethod ? ` · ${metodoLabelRow[ultimoPagamento.paymentMethod] ?? ultimoPagamento.paymentMethod}` : ""}
+                            </span>
+                          )}
+                          {isMensalistaRow && !ultimoPagamento && (
+                            <span className="text-xs text-muted-foreground">· sem pagamento registrado</span>
+                          )}
                         </div>
                       </div>
                     </div>
