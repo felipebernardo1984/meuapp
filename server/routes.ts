@@ -1257,6 +1257,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       paymentMethod: paymentMethod ?? "dinheiro",
       createdBy: req.session.userType ?? "gestor",
     });
+    if (status === "paid" && studentId) {
+      const student = await storage.getStudent(studentId);
+      if (student?.integrationType === "mensalista") {
+        await storage.updateStudent(studentId, { statusMensalidade: "Em dia" });
+      }
+    }
     res.json(payment);
   });
 

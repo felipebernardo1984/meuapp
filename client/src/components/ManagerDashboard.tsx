@@ -691,6 +691,7 @@ export default function ManagerDashboard({
     mutationFn: (data: any) => apiRequest("POST", "/api/finance/payments", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
       setDialogRegistrarMens(false);
       toast({ title: "Pagamento registrado com sucesso!" });
     },
@@ -704,6 +705,7 @@ export default function ManagerDashboard({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
       setDialogPagarMens(false);
       toast({ title: "Pagamento confirmado!" });
     },
