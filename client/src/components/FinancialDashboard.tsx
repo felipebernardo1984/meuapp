@@ -305,21 +305,19 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
       )}
 
       {/* Payments table */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder="Buscar aluno por nome..."
+          value={buscaPagamento}
+          onChange={(e) => setBuscaPagamento(e.target.value)}
+          className="pl-9 h-9"
+          data-testid="input-busca-pagamento"
+        />
+      </div>
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <CardTitle className="text-lg">Mensalidades</CardTitle>
-            <div className="relative w-56">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar aluno..."
-                value={buscaPagamento}
-                onChange={(e) => setBuscaPagamento(e.target.value)}
-                className="pl-8 h-8 text-sm"
-                data-testid="input-busca-pagamento"
-              />
-            </div>
-          </div>
+          <CardTitle className="text-lg">Mensalidades</CardTitle>
         </CardHeader>
         <CardContent>
           {payments.length === 0 ? (
