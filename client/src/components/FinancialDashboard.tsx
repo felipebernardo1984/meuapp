@@ -1,4 +1,22 @@
 import { useState } from "react";
+
+function formatarData(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return str;
+}
+
+function formatarMes(str: string | null | undefined): string {
+  if (!str) return "";
+  if (/^\d{4}-\d{2}$/.test(str)) {
+    const [y, m] = str.split("-");
+    return `${m}/${y}`;
+  }
+  return str;
+}
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -322,9 +340,9 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                   {payments.map((p: any) => (
                     <TableRow key={p.id} data-testid={`payment-row-${p.id}`}>
                       <TableCell className="font-medium">{getNomeAluno(p.studentId)}</TableCell>
-                      <TableCell>{p.referenceMonth}</TableCell>
+                      <TableCell>{formatarMes(p.referenceMonth)}</TableCell>
                       <TableCell>R$ {p.amount}</TableCell>
-                      <TableCell>{p.dueDate}</TableCell>
+                      <TableCell>{formatarData(p.dueDate)}</TableCell>
                       <TableCell>{statusBadge(p.status)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{p.paymentDate ?? "—"}</TableCell>
                       <TableCell>
@@ -388,7 +406,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                       <TableCell className="font-medium">{getNomeAluno(c.studentId)}</TableCell>
                       <TableCell>{c.description}</TableCell>
                       <TableCell>R$ {c.amount}</TableCell>
-                      <TableCell>{c.dueDate}</TableCell>
+                      <TableCell>{formatarData(c.dueDate)}</TableCell>
                       <TableCell>{statusBadge(c.status)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{c.paymentDate ?? "—"}</TableCell>
                       <TableCell>
