@@ -3213,15 +3213,18 @@ export default function ManagerDashboard({
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {aluno.aprovado ? (
-                        <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                      {isMensalistaRow ? (
+                        aluno.statusMensalidade === "Em dia" ? (
+                          <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                        )
                       ) : (
-                        <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-                      )}
-                      {isMensalistaRow && (
-                        <span className={`text-xs font-medium whitespace-nowrap ${aluno.statusMensalidade === "Em dia" ? "text-green-600" : "text-destructive"}`}>
-                          {aluno.statusMensalidade}
-                        </span>
+                        aluno.aprovado ? (
+                          <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                        )
                       )}
                       <Button
                         size="icon"
