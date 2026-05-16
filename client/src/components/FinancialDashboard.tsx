@@ -78,6 +78,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
   const [confirmDelete, setConfirmDelete] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
   const [receitaRange, setReceitaRange] = useState<DateRange | null>(currentMonthRange());
   const [buscaPagamento, setBuscaPagamento] = useState("");
+  const [buscaCobranca, setBuscaCobranca] = useState("");
 
   const receitaParams = new URLSearchParams(
     Object.fromEntries(
@@ -379,6 +380,16 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
       </Card>
 
       {/* Charges table */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder="Buscar aluno por nome..."
+          value={buscaCobranca}
+          onChange={(e) => setBuscaCobranca(e.target.value)}
+          className="pl-9 h-9"
+          data-testid="input-busca-cobranca"
+        />
+      </div>
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg">Cobranças Extras</CardTitle>
@@ -401,7 +412,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {charges.map((c: any) => (
+                  {charges.filter((c: any) => getNomeAluno(c.studentId).toLowerCase().includes(buscaCobranca.toLowerCase())).map((c: any) => (
                     <TableRow key={c.id} data-testid={`charge-row-${c.id}`}>
                       <TableCell className="font-medium">{getNomeAluno(c.studentId)}</TableCell>
                       <TableCell>{c.description}</TableCell>
