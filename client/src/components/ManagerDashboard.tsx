@@ -507,7 +507,7 @@ export default function ManagerDashboard({
   const [dialogNovoMensalista, setDialogNovoMensalista] = useState(false);
   const [novoMensalista, setNovoMensalista] = useState({
     nome: "", cpf: "", email: "", telefone: "", login: "", senha: "",
-    modalidade: "", planoId: "", professorId: "", diaVencimento: "10",
+    modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3",
   });
   const [credenciaisMensalista, setCredenciaisMensalista] = useState<{ login: string; senha: string } | null>(null);
 
@@ -741,7 +741,7 @@ export default function ManagerDashboard({
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
       setDialogNovoMensalista(false);
-      setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+      setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3" });
       setCredenciaisMensalista({ login: data.loginGerado, senha: data.senhaGerada });
     },
     onError: () => toast({ title: "Erro ao cadastrar", description: "Verifique os dados e tente novamente.", variant: "destructive" }),
@@ -2058,7 +2058,7 @@ export default function ManagerDashboard({
               className="w-full h-14 text-lg"
               data-testid="button-novo-mensalista"
               onClick={() => {
-                setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10" });
+                setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3" });
                 setDialogNovoMensalista(true);
               }}
             >
@@ -2663,6 +2663,19 @@ export default function ManagerDashboard({
                 />
                 <p className="text-xs text-muted-foreground">Dia do mês para vencimento (1–28)</p>
               </div>
+              <div className="space-y-1">
+                <Label>Carência (dias)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={30}
+                  placeholder="3"
+                  value={novoMensalista.carenciaDias}
+                  onChange={(e) => setNovoMensalista({ ...novoMensalista, carenciaDias: e.target.value })}
+                  data-testid="input-nm-carencia"
+                />
+                <p className="text-xs text-muted-foreground">Dias de tolerância antes de bloquear check-in</p>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -2686,6 +2699,7 @@ export default function ManagerDashboard({
                   planoId: novoMensalista.planoId,
                   professorId: novoMensalista.professorId || null,
                   diaVencimento: novoMensalista.diaVencimento || "10",
+                  carenciaDias: parseInt(novoMensalista.carenciaDias || "3", 10),
                   integrationType: "mensalista",
                 })
               }

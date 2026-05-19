@@ -212,6 +212,63 @@ export async function runDailyBillingCheck(): Promise<void> {
   console.log(`${PREFIX} Verificação concluída.`);
 }
 
+export async function runDailyStudentBlocking(): Promise<void> {
+  const PREFIX_S = "[StudentBlocking]";
+  const today = new Date();
+  const refMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
+  let arenas: Awaited<ReturnType<typeof storage.listArenas>>;
+  try {
+    arenas = await storage.listArenas();
+  } catch (err) {
+    console.error(`${PREFIX_S} Erro ao listar arenas:`, err);
+    return;
+  }
+
+  const carenciaAlunoDiasSetting = await storage.getPlatformSetting("carencia_aluno_dias");
+  const defaultCarencia = carenciaAlunoDiasSetting ? parseInt(carenciaAlunoDiasSetting, 10) : 3;
+
+  let totalBloqueados = 0;
+  let totalRegularizados = 0;
+
+  for (const arena of arenas) {
+    try {
+      const students = await storage.listStudents(arena.id);
+      const mensalistas = students.filter(
+        (s) => s.ativo && s.integrationType === "mensalista" && s.diaVencimento
+      );
+
+      for (const student of mensalistas) {
+        const carencia = student.carenciaDias ?? defaultCarencia;
+        const dueDate = new Date(today.getFullYear(), today.getMonth(), student.diaVencimento!);
+        const graceCutoff = new Date(dueDate);
+        graceCutoff.setDate(graceCutoff.getDate() + carencia);
+
+        const studentPayments = await storage.listStudentPayments(student.id);
+        const paidThisMonth = (studentPayments as any[]).some(
+          (p) => p.referenceMonth === refMonth && p.status === "paid"
+        );
+
+        if (today > graceCutoff && !paidThisMonth) {
+          if (student.statusMensalidade !== "Bloqueado") {
+            await storage.updateStudent(student.id, { statusMensalidade: "Bloqueado" });
+            totalBloqueados++;
+            console.log(`${PREFIX_S} Aluno "${student.nome}" (${arena.name}) bloqueado — mensalidade vencida há ${Math.floor((today.getTime() - dueDate.getTime()) / 86400000)}d.`);
+          }
+        } else if (paidThisMonth && student.statusMensalidade === "Bloqueado") {
+          await storage.updateStudent(student.id, { statusMensalidade: "Em dia" });
+          totalRegularizados++;
+          console.log(`${PREFIX_S} Aluno "${student.nome}" (${arena.name}) regularizado.`);
+        }
+      }
+    } catch (err) {
+      console.error(`${PREFIX_S} Erro ao processar arena "${arena.name}":`, err);
+    }
+  }
+
+  console.log(`${PREFIX_S} Concluído — ${totalBloqueados} bloqueado(s), ${totalRegularizados} regularizado(s).`);
+}
+
 export async function confirmSubscriptionPayment(paymentId: string): Promise<void> {
   const todayStr = todayISO();
   const todayBR = toBRDate(todayStr);

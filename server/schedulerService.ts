@@ -1,7 +1,7 @@
 import { storage } from "./storage";
 import { automationService } from "./automationService";
 import { runDatabaseBackup } from "./backupService";
-import { runDailyBillingCheck } from "./billingService";
+import { runDailyBillingCheck, runDailyStudentBlocking } from "./billingService";
 
 const DAILY_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -122,6 +122,12 @@ async function runJob(): Promise<void> {
     await runDailyBillingCheck();
   } catch (err) {
     console.error(`${prefix()} Erro na verificação de cobrança:`, err);
+  }
+
+  try {
+    await runDailyStudentBlocking();
+  } catch (err) {
+    console.error(`${prefix()} Erro no bloqueio de alunos:`, err);
   }
 
   try {

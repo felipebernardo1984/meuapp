@@ -183,25 +183,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     for (const arena of allArenas) {
       if (arena.gestorLogin === login && arena.gestorSenha === senha) {
-        // Verifica status do trial / conta
-        if (arena.statusConta === "vencido") {
-          return res.status(403).json({ message: "Acesso bloqueado. Assine um plano para continuar usando o Seven Sports." });
-        }
+        // Verifica se trial expirou → marca como vencido
         if (arena.statusConta === "trial" && arena.trialExpiraEm) {
           const expira = new Date(arena.trialExpiraEm);
           expira.setHours(23, 59, 59);
           if (expira < new Date()) {
             await storage.updateArena(arena.id, { statusConta: "vencido" });
-            return res.status(403).json({ message: "Seu período de teste expirou. Assine um plano para continuar acessando." });
           }
         }
+        const arenaAtualizada = await storage.getArena(arena.id);
+        const contaBloqueada = arenaAtualizada?.statusConta === "vencido";
         req.session.arenaId = arena.id;
         req.session.userType = "gestor";
         req.session.userId = arena.id;
         if (lembrarDados) {
           req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
         }
-        return res.json({ tipo: "gestor", arenaId: arena.id, arenaName: arena.name });
+        return res.json({ tipo: "gestor", arenaId: arena.id, arenaName: arena.name, contaBloqueada });
       }
       const teacher = await storage.getTeacherByLogin(arena.id, login);
       if (teacher && teacher.senha === senha) {
@@ -232,6 +230,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { arenaId, userType, userId } = req.session;
     if (userType === "gestor") {
       const arena = await storage.getArena(arenaId!);
+      const contaBloqueada = arena?.statusConta === "vencido";
+      let paymentInfo: Record<string, string> | null = null;
+      if (contaBloqueada) {
+        const settings = await storage.getAllPlatformSettings();
+        const allPayments = await storage.listArenaSubscriptionPayments();
+        const pending = allPayments.filter((p) => p.arenaId === arenaId && p.status === "pending");
+        const latest = pending.sort((a, b) => (a.createdAt! > b.createdAt! ? -1 : 1))[0];
+        paymentInfo = {
+          valor: latest?.amount ?? arena?.subscriptionValue ?? "",
+          vencimento: latest?.dueDate ?? "",
+          referenceMonth: latest?.referenceMonth ?? "",
+          pixTipo: settings["pix_tipo"] ?? "",
+          pixChave: settings["pix_chave"] ?? "",
+          bancoNome: settings["banco_nome"] ?? "",
+          bancoAgencia: settings["banco_agencia"] ?? "",
+          bancoConta: settings["banco_conta"] ?? "",
+          bancoTitular: settings["banco_titular"] ?? "",
+          suporteWhatsapp: settings["suporte_whatsapp"] ?? "",
+          suporteEmail: settings["suporte_email"] ?? "",
+        };
+      }
       return res.json({
         authenticated: true,
         tipo: "gestor",
@@ -240,6 +259,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gestorName: arena?.gestorNome ?? undefined,
         statusConta: arena?.statusConta ?? "ativo",
         trialExpiraEm: arena?.trialExpiraEm ?? null,
+        contaBloqueada,
+        paymentInfo,
       });
     }
     if (userType === "professor") {
@@ -426,6 +447,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       integrationType: integrationType ?? "none",
       integrationPlan: integrationPlan ?? null,
       professorId: professorId ?? null,
+      diaVencimento: req.body.diaVencimento ? parseInt(req.body.diaVencimento, 10) : null,
+      carenciaDias: req.body.carenciaDias !== undefined ? parseInt(req.body.carenciaDias, 10) : 3,
     });
 
     if (integrationType === "mensalista") {
@@ -469,6 +492,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (integrationPlan !== undefined) updates.integrationPlan = integrationPlan || null;
     if (professorId !== undefined) updates.professorId = professorId || null;
     if (req.body.photoUrl !== undefined) updates.photoUrl = req.body.photoUrl || null;
+    if (req.body.diaVencimento !== undefined) updates.diaVencimento = req.body.diaVencimento ? parseInt(req.body.diaVencimento, 10) : null;
+    if (req.body.carenciaDias !== undefined) updates.carenciaDias = parseInt(req.body.carenciaDias, 10);
     const student = await storage.updateStudent(req.params.id, updates);
     const integrationChanged =
       (integrationType !== undefined && integrationType !== studentBefore?.integrationType) ||
@@ -532,6 +557,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const financialStatus = await getFinancialStatus(student.id, arenaId);
       if (financialStatus === "inadimplente") {
         return res.status(403).json({ message: "Check-in bloqueado: aluno com mensalidade em atraso." });
+      }
+    }
+
+    if (student.integrationType === "mensalista" && student.diaVencimento) {
+      const today = new Date();
+      const carencia = student.carenciaDias ?? 3;
+      const dueDate = new Date(today.getFullYear(), today.getMonth(), student.diaVencimento);
+      const graceCutoff = new Date(dueDate);
+      graceCutoff.setDate(graceCutoff.getDate() + carencia);
+      if (today > graceCutoff) {
+        const refMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+        const studentPayments = await storage.listStudentPayments(student.id);
+        const paidThisMonth = (studentPayments as any[]).some(
+          (p) => p.referenceMonth === refMonth && p.status === "paid"
+        );
+        if (!paidThisMonth) {
+          return res.status(403).json({ message: `Check-in bloqueado: mensalidade vencida há mais de ${carencia} dias. Entre em contato com a academia.` });
+        }
       }
     }
 
@@ -1902,7 +1945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ── Public platform settings (for login pages) ────────────────────────────
+  // ── Public platform settings (for login + blocked screens) ──────────────────
   app.get("/api/platform-settings/public", async (_req, res) => {
     try {
       const settings = await storage.getAllPlatformSettings();
@@ -1912,9 +1955,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         suporteWhatsapp: settings["suporte_whatsapp"] ?? "",
         sacTexto: settings["sac_texto"] ?? "",
         resendApiKey: settings["resend_api_key"] ?? "",
+        pixTipo: settings["pix_tipo"] ?? "",
+        pixChave: settings["pix_chave"] ?? "",
+        bancoNome: settings["banco_nome"] ?? "",
+        bancoAgencia: settings["banco_agencia"] ?? "",
+        bancoConta: settings["banco_conta"] ?? "",
+        bancoTitular: settings["banco_titular"] ?? "",
+        trialDias: settings["trial_dias"] ?? "7",
+        carenciaArenaDias: settings["carencia_arena_dias"] ?? "0",
+        carenciaAlunoDias: settings["carencia_aluno_dias"] ?? "3",
       });
     } catch {
       res.status(500).json({ message: "Erro ao buscar configurações públicas" });
+    }
+  });
+
+  // ── Já paguei (gestor notifica pagamento pendente) ─────────────────────────
+  app.post("/api/arena/ja-paguei", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
+    try {
+      const arena = await storage.getArena(arenaId);
+      if (!arena) return res.status(404).json({ message: "Arena não encontrada" });
+      const existing = await storage.getPlatformSetting("ja_paguei_queue");
+      const queue: Array<{ arenaId: string; arenaName: string; timestamp: string }> = existing
+        ? JSON.parse(existing)
+        : [];
+      const alreadyQueued = queue.some((e) => e.arenaId === arenaId);
+      if (!alreadyQueued) {
+        queue.push({ arenaId, arenaName: arena.name, timestamp: new Date().toISOString() });
+        await storage.setPlatformSetting("ja_paguei_queue", JSON.stringify(queue));
+      }
+      console.log(`[JaPaguei] Arena "${arena.name}" (${arenaId}) notificou pagamento.`);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro ao registrar notificação: " + (e?.message ?? "") });
     }
   });
 

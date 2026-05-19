@@ -145,6 +145,9 @@ export const students = pgTable("students", {
   integrationType: text("integration_type").notNull().default("none"), // 'wellhub' | 'totalpass' | 'none' | 'mensalista'
   integrationPlan: text("integration_plan"),                           // ex: TP1, TP2, GP1...
   professorId: varchar("professor_id").references(() => teachers.id, { onDelete: "set null" }),
+  // Mensalidade
+  diaVencimento: integer("dia_vencimento"),
+  carenciaDias: integer("carencia_dias").notNull().default(3),
   // Ciclo de vida do aluno
   ativo: boolean("ativo").notNull().default(true),
   desativadoEm: text("desativado_em"),

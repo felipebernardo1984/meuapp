@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { LogIn, LogOut, KeyRound, ArrowLeft, Copy, CheckCheck } from "lucide-react";
+import { LogIn, LogOut, KeyRound, ArrowLeft, Copy, CheckCheck, Lock, AlertTriangle, Building2, Send, CheckCircle2, QrCode, Phone, MessageSquare } from "lucide-react";
 import type { Plano } from "./Home";
 
 interface PublicSettings {
@@ -40,6 +40,8 @@ export default function ArenaApp() {
   const [resetEnviado, setResetEnviado] = useState(false);
   const [credenciaisDialog, setCredenciaisDialog] = useState<{ tipo: string; login: string; senha: string } | null>(null);
   const [copiado, setCopiado] = useState<"login" | "senha" | null>(null);
+  const [pixCopiadoBloqueio, setPixCopiadoBloqueio] = useState(false);
+  const [jaPagouEnviado, setJaPagouEnviado] = useState(false);
 
   const copiar = (texto: string, campo: "login" | "senha") => {
     navigator.clipboard.writeText(texto).then(() => {
@@ -52,6 +54,12 @@ export default function ArenaApp() {
   const { data: publicSettings } = useQuery<PublicSettings>({
     queryKey: ["/api/platform-settings/public"],
     queryFn: () => fetch("/api/platform-settings/public").then((r) => r.json()),
+  });
+
+  const jaPagueiMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/arena/ja-paguei"),
+    onSuccess: () => setJaPagouEnviado(true),
+    onError: () => toast({ title: "Erro", description: "Não foi possível enviar notificação.", variant: "destructive" }),
   });
 
   const solicitarReset = useMutation({
@@ -402,6 +410,127 @@ export default function ArenaApp() {
 
           <div className="text-center space-y-1">
             <p className="text-xs text-muted-foreground font-medium tracking-wide">SISTEMA DE GESTÃO SEVENSPORTS</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Tela de Conta Bloqueada ───────────────────────────────────────────────
+  if ((sessao as any).contaBloqueada) {
+    const pi = (sessao as any).paymentInfo ?? {};
+    const wppNum = (pi.suporteWhatsapp ?? "").replace(/\D/g, "");
+    const pixLabel: Record<string, string> = {
+      cpf: "CPF", cnpj: "CNPJ", email: "E-mail", telefone: "Telefone", aleatoria: "Chave aleatória",
+    };
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-destructive/8 via-background to-muted/30 flex items-center justify-center p-4">
+        <div className="fixed top-4 right-4 z-50"><ThemeToggle /></div>
+        <div className="w-full max-w-lg space-y-4">
+
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="inline-flex h-16 w-16 rounded-2xl bg-destructive/10 border-2 border-destructive/20 items-center justify-center mx-auto">
+              <Lock className="h-8 w-8 text-destructive" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">{arena?.name}</h1>
+            <p className="text-sm text-muted-foreground">Acesso temporariamente suspenso</p>
+          </div>
+
+          {/* Status card */}
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm">Assinatura Vencida</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Seu plano não foi renovado.
+                  {pi.valor && <> O valor em aberto é <span className="font-semibold text-foreground">{pi.valor}</span>.</>}
+                  {pi.vencimento && <> Vencimento: <span className="font-semibold text-foreground">{pi.vencimento}</span>.</>}
+                  {" "}Realize o pagamento e clique em "Já paguei" para notificar nossa equipe.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* PIX section */}
+          {pi.pixChave && (
+            <Card className="border-primary/30">
+              <CardHeader className="pb-3 pt-4 px-4">
+                <CardTitle className="text-sm flex items-center gap-2"><QrCode className="h-4 w-4 text-primary" />Pagar via PIX</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-3">
+                <div className="rounded-lg bg-muted/50 border p-3 space-y-1">
+                  {pi.pixTipo && <p className="text-xs text-muted-foreground">{pixLabel[pi.pixTipo] ?? pi.pixTipo}</p>}
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-mono text-sm font-semibold break-all">{pi.pixChave}</p>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(pi.pixChave); setPixCopiadoBloqueio(true); setTimeout(() => setPixCopiadoBloqueio(false), 2000); }}
+                      className="shrink-0 h-8 w-8 rounded-md border bg-background hover:bg-muted flex items-center justify-center transition-colors"
+                      title="Copiar chave PIX"
+                    >
+                      {pixCopiadoBloqueio ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {pi.valor && (
+                    <p className="text-xs text-muted-foreground pt-1">Valor: <span className="font-semibold text-foreground">{pi.valor}</span></p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bank details */}
+          {pi.bancoNome && (
+            <Card>
+              <CardHeader className="pb-3 pt-4 px-4">
+                <CardTitle className="text-sm flex items-center gap-2"><Building2 className="h-4 w-4 text-primary" />Transferência Bancária</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
+                  <div><p className="text-xs text-muted-foreground">Banco</p><p className="font-medium">{pi.bancoNome}</p></div>
+                  {pi.bancoAgencia && <div><p className="text-xs text-muted-foreground">Agência</p><p className="font-medium">{pi.bancoAgencia}</p></div>}
+                  {pi.bancoConta && <div><p className="text-xs text-muted-foreground">Conta</p><p className="font-medium">{pi.bancoConta}</p></div>}
+                  {pi.bancoTitular && <div className="col-span-2"><p className="text-xs text-muted-foreground">Titular</p><p className="font-medium">{pi.bancoTitular}</p></div>}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Actions */}
+          <div className="space-y-2">
+            {!jaPagouEnviado ? (
+              <Button
+                className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                onClick={() => jaPagueiMutation.mutate()}
+                disabled={jaPagueiMutation.isPending}
+                data-testid="button-ja-paguei"
+              >
+                {jaPagueiMutation.isPending ? (
+                  "Enviando..."
+                ) : (
+                  <><Send className="h-4 w-4 mr-2" />Já paguei — notificar equipe</>
+                )}
+              </Button>
+            ) : (
+              <div className="flex items-center justify-center gap-2 rounded-lg border border-green-500/40 bg-green-500/10 py-3 text-sm font-medium text-green-700 dark:text-green-400">
+                <CheckCircle2 className="h-5 w-5" />
+                Notificação enviada! Nossa equipe verificará em breve.
+              </div>
+            )}
+
+            {wppNum && (
+              <Button variant="outline" className="w-full" asChild>
+                <a href={`https://wa.me/${wppNum}?text=${encodeURIComponent(`Olá! Realizei o pagamento da assinatura da arena ${arena?.name} e gostaria de regularizar o acesso.`)}`} target="_blank" rel="noopener noreferrer">
+                  <MessageSquare className="h-4 w-4 mr-2 text-green-500" />
+                  Falar no WhatsApp
+                </a>
+              </Button>
+            )}
+
+            <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => logoutMutation.mutate()}>
+              <LogOut className="h-4 w-4 mr-1.5" /> Sair da conta
+            </Button>
           </div>
         </div>
       </div>

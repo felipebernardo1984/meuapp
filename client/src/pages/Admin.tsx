@@ -25,7 +25,8 @@ import {
   LogOut, Plus, Pencil, Trash2, Users, BookOpen, Trophy, Shield, Eye, EyeOff,
   CheckCircle, XCircle, ArrowLeft, ClipboardList, ExternalLink, LogIn as LogInIcon, KeyRound,
   ChevronDown, ChevronUp, DollarSign, CreditCard, History, Settings, Mail, Phone, MessageSquare, Key,
-  Clock, AlertCircle, Database, Download, RotateCcw, HardDrive,
+  Clock, AlertCircle, Database, Download, RotateCcw, HardDrive, Building2, Landmark, Banknote, Copy,
+  Timer, QrCode, Wallet,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -144,7 +145,17 @@ export default function Admin() {
     plan_nome: "",
     plan_descricao: "",
     plan_features: "",
+    pix_tipo: "",
+    pix_chave: "",
+    banco_nome: "",
+    banco_agencia: "",
+    banco_conta: "",
+    banco_titular: "",
+    trial_dias: "7",
+    carencia_arena_dias: "0",
+    carencia_aluno_dias: "3",
   });
+  const [pixCopiado, setPixCopiado] = useState(false);
   const [webhookSecret, setWebhookSecret] = useState<string | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<{ arenaId: string; arenaName: string; filename: string } | null>(null);
   const [selectedBackupForPreview, setSelectedBackupForPreview] = useState<string | null>(null);
@@ -229,6 +240,15 @@ export default function Admin() {
       plan_nome: rawPlatformSettings["plan_nome"] ?? "",
       plan_descricao: rawPlatformSettings["plan_descricao"] ?? "",
       plan_features: rawPlatformSettings["plan_features"] ?? "",
+      pix_tipo: rawPlatformSettings["pix_tipo"] ?? "",
+      pix_chave: rawPlatformSettings["pix_chave"] ?? "",
+      banco_nome: rawPlatformSettings["banco_nome"] ?? "",
+      banco_agencia: rawPlatformSettings["banco_agencia"] ?? "",
+      banco_conta: rawPlatformSettings["banco_conta"] ?? "",
+      banco_titular: rawPlatformSettings["banco_titular"] ?? "",
+      trial_dias: rawPlatformSettings["trial_dias"] ?? "7",
+      carencia_arena_dias: rawPlatformSettings["carencia_arena_dias"] ?? "0",
+      carencia_aluno_dias: rawPlatformSettings["carencia_aluno_dias"] ?? "3",
     });
     if (rawPlatformSettings["webhook_secret"] && !webhookSecret) {
       setWebhookSecret("••••••••••••••••");
@@ -901,173 +921,206 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog configurações de suporte / SAC */}
+      {/* Dialog configurações da plataforma */}
       <Dialog open={showSettings} onOpenChange={(o) => { if (!o) setShowSettings(false); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Settings className="h-5 w-5" />Configurações da Plataforma</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2 max-h-[65vh] overflow-y-auto pr-1">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b">Contato & Suporte</div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" />E-mail de suporte</Label>
-              <Input
-                placeholder="suporte@sevensports.com.br"
-                value={platformSettingsForm.suporte_email}
-                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_email: e.target.value })}
-                data-testid="input-suporte-email"
-              />
-              <p className="text-xs text-muted-foreground">Exibido na tela "Esqueci a senha" das arenas</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />Telefone de suporte</Label>
-              <Input
-                placeholder="(11) 99999-9999"
-                value={platformSettingsForm.suporte_telefone}
-                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_telefone: e.target.value })}
-                data-testid="input-suporte-telefone"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" />WhatsApp de suporte</Label>
-              <Input
-                placeholder="(11) 99999-9999"
-                value={platformSettingsForm.suporte_whatsapp}
-                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_whatsapp: e.target.value })}
-                data-testid="input-suporte-whatsapp"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Texto do SAC / mensagem de suporte</Label>
-              <textarea
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[80px] resize-none"
-                placeholder="Ex: Nossa equipe responde em até 1 dia útil via e-mail ou WhatsApp."
-                value={platformSettingsForm.sac_texto}
-                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, sac_texto: e.target.value })}
-                data-testid="input-sac-texto"
-              />
-            </div>
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b pt-2">E-mail automático (Resend)</div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" />API Key do Resend</Label>
-              <Input
-                type="password"
-                placeholder="re_..."
-                value={platformSettingsForm.resend_api_key}
-                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, resend_api_key: e.target.value })}
-                data-testid="input-resend-api-key"
-              />
-              <p className="text-xs text-muted-foreground">
-                Opcional. Quando configurada, gestores recebem e-mail automático ao redefinir a senha.{" "}
-                <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Criar conta gratuita →</a>
-              </p>
-            </div>
+          <Tabs defaultValue="suporte" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="suporte" className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />Suporte</TabsTrigger>
+              <TabsTrigger value="pagamentos" className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" />Pagamentos</TabsTrigger>
+              <TabsTrigger value="landing" className="flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" />Landing Page</TabsTrigger>
+            </TabsList>
 
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b pt-2">Webhook de Pagamento Automático</div>
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Configure seu gateway de pagamento (Asaas, MercadoPago, PagSeguro, etc.) para chamar este endpoint quando um pagamento for confirmado. O sistema liberará o acesso da arena automaticamente.
-              </p>
-              <div className="space-y-1">
-                <Label className="text-xs">URL do Webhook</Label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs bg-muted rounded px-2 py-1.5 break-all select-all">
-                    {typeof window !== "undefined" ? window.location.origin : ""}/api/webhook/payment
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.origin + "/api/webhook/payment");
-                      toast({ title: "URL copiada!" });
-                    }}
-                  >Copiar</Button>
+            {/* ── Tab: Suporte ─────────────────────────────────────────── */}
+            <TabsContent value="suporte" className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-1">
+              <div className="rounded-lg border bg-card p-4 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-semibold"><Phone className="h-4 w-4 text-primary" />Contato & Suporte</div>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-xs"><Mail className="h-3 w-3" />E-mail de suporte</Label>
+                    <Input placeholder="suporte@sevensports.com.br" value={platformSettingsForm.suporte_email} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_email: e.target.value })} data-testid="input-suporte-email" />
+                    <p className="text-xs text-muted-foreground">Exibido na tela "Esqueci a senha" das arenas</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-xs"><Phone className="h-3 w-3" />Telefone de suporte</Label>
+                    <Input placeholder="(11) 99999-9999" value={platformSettingsForm.suporte_telefone} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_telefone: e.target.value })} data-testid="input-suporte-telefone" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-xs"><MessageSquare className="h-3 w-3" />WhatsApp de suporte</Label>
+                    <Input placeholder="(11) 99999-9999" value={platformSettingsForm.suporte_whatsapp} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, suporte_whatsapp: e.target.value })} data-testid="input-suporte-whatsapp" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Texto do SAC / mensagem de suporte</Label>
+                    <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[72px] resize-none" placeholder="Ex: Nossa equipe responde em até 1 dia útil via e-mail ou WhatsApp." value={platformSettingsForm.sac_texto} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, sac_texto: e.target.value })} data-testid="input-sac-texto" />
+                  </div>
                 </div>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Método: POST · Body JSON</Label>
-                <code className="block text-xs bg-muted rounded px-2 py-1.5 whitespace-pre-wrap">
-{`{ "secret": "<sua_chave>",
-  "arenaId": "<id_da_arena>" }`}
-                </code>
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5"><KeyRound className="h-3.5 w-3.5" />Chave secreta</Label>
-                {webhookSecret ? (
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-muted rounded px-2 py-1.5 break-all select-all">{webhookSecret}</code>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs shrink-0"
-                      onClick={() => {
-                        if (webhookSecret !== "••••••••••••••••") navigator.clipboard.writeText(webhookSecret);
-                      }}
-                    >Copiar</Button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Nenhuma chave configurada.</p>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs"
-                  onClick={() => gerarWebhookSecret.mutate()}
-                  disabled={gerarWebhookSecret.isPending}
-                  data-testid="button-generate-webhook-secret"
-                >
-                  <KeyRound className="h-3.5 w-3.5 mr-1.5" />
-                  {webhookSecret ? "Gerar nova chave" : "Gerar chave secreta"}
-                </Button>
-                <p className="text-xs text-muted-foreground">Gerar nova chave invalida a anterior. Copie e guarde antes de fechar.</p>
-              </div>
-            </div>
 
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pb-1 border-b pt-2">Página de Vendas — Card do Plano</div>
-            <div className="space-y-2">
-              <Label>Nome do plano</Label>
-              <Input
-                placeholder="Ex: Seven Sports"
-                value={platformSettingsForm.plan_nome}
-                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, plan_nome: e.target.value })}
-                data-testid="input-plan-nome"
-              />
-              <p className="text-xs text-muted-foreground">Título exibido no card de plano da landing page.</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Descrição do plano</Label>
-              <Input
-                placeholder="Ex: Tudo incluído em um único plano."
-                value={platformSettingsForm.plan_descricao}
-                onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, plan_descricao: e.target.value })}
-                data-testid="input-plan-descricao"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Benefícios (um por linha)</Label>
-              <textarea
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[120px] resize-none"
-                placeholder={"Check-ins digitais ilimitados\nGestão completa de alunos\nFinanceiro e mensalidades"}
-                value={(platformSettingsForm.plan_features || "").replace(/\|/g, "\n")}
-                onChange={(e) =>
-                  setPlatformSettingsForm({
-                    ...platformSettingsForm,
-                    plan_features: e.target.value.split("\n").filter(Boolean).join("|"),
-                  })
-                }
-                data-testid="input-plan-features"
-              />
-              <p className="text-xs text-muted-foreground">Cada linha vira um item com ✓ no card da landing page.</p>
-            </div>
-          </div>
-          <DialogFooter>
+              <div className="rounded-lg border bg-card p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold"><Key className="h-4 w-4 text-primary" />E-mail automático (Resend)</div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">API Key do Resend</Label>
+                  <Input type="password" placeholder="re_..." value={platformSettingsForm.resend_api_key} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, resend_api_key: e.target.value })} data-testid="input-resend-api-key" />
+                  <p className="text-xs text-muted-foreground">Quando configurada, gestores recebem e-mail automático ao redefinir a senha. <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Criar conta gratuita →</a></p>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* ── Tab: Pagamentos ──────────────────────────────────────── */}
+            <TabsContent value="pagamentos" className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-1">
+
+              {/* Conta Bancária / PIX */}
+              <div className="rounded-lg border bg-card p-4 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-semibold"><QrCode className="h-4 w-4 text-primary" />Chave PIX para Recebimento</div>
+                <p className="text-xs text-muted-foreground -mt-2">Exibida às arenas na tela de "Assinatura Suspensa" para que paguem via PIX.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Tipo de chave</Label>
+                    <Select value={platformSettingsForm.pix_tipo} onValueChange={(v) => setPlatformSettingsForm({ ...platformSettingsForm, pix_tipo: v })}>
+                      <SelectTrigger data-testid="select-pix-tipo"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cpf">CPF</SelectItem>
+                        <SelectItem value="cnpj">CNPJ</SelectItem>
+                        <SelectItem value="email">E-mail</SelectItem>
+                        <SelectItem value="telefone">Telefone</SelectItem>
+                        <SelectItem value="aleatoria">Chave aleatória</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Chave PIX</Label>
+                    <div className="flex gap-1.5">
+                      <Input placeholder="Sua chave PIX" value={platformSettingsForm.pix_chave} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, pix_chave: e.target.value })} data-testid="input-pix-chave" />
+                      <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => { navigator.clipboard.writeText(platformSettingsForm.pix_chave); setPixCopiado(true); setTimeout(() => setPixCopiado(false), 2000); }}>
+                        {pixCopiado ? <CheckCircle className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                {platformSettingsForm.pix_chave && (
+                  <div className="flex items-center gap-3 rounded-lg bg-primary/5 border border-primary/20 p-3">
+                    <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                      <QrCode className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Chave configurada</p>
+                      <p className="text-sm font-mono font-medium">{platformSettingsForm.pix_chave}</p>
+                      {platformSettingsForm.pix_tipo && <Badge variant="secondary" className="text-xs mt-0.5">{platformSettingsForm.pix_tipo.toUpperCase()}</Badge>}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Dados bancários */}
+              <div className="rounded-lg border bg-card p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold"><Landmark className="h-4 w-4 text-primary" />Dados Bancários (opcional)</div>
+                <p className="text-xs text-muted-foreground -mt-2">Exibido como alternativa à chave PIX na tela de suspensão.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-xs">Nome do banco</Label>
+                    <Input placeholder="Ex: Itaú, Nubank, Bradesco..." value={platformSettingsForm.banco_nome} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, banco_nome: e.target.value })} data-testid="input-banco-nome" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Agência</Label>
+                    <Input placeholder="0001" value={platformSettingsForm.banco_agencia} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, banco_agencia: e.target.value })} data-testid="input-banco-agencia" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Conta (com dígito)</Label>
+                    <Input placeholder="12345-6" value={platformSettingsForm.banco_conta} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, banco_conta: e.target.value })} data-testid="input-banco-conta" />
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-xs">Titular da conta</Label>
+                    <Input placeholder="Nome completo ou razão social" value={platformSettingsForm.banco_titular} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, banco_titular: e.target.value })} data-testid="input-banco-titular" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Regras de cobrança */}
+              <div className="rounded-lg border bg-card p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold"><Timer className="h-4 w-4 text-primary" />Regras de Cobrança</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Trial gratuito (dias)</Label>
+                    <Input type="number" min="0" max="365" placeholder="7" value={platformSettingsForm.trial_dias} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, trial_dias: e.target.value })} data-testid="input-trial-dias" />
+                    <p className="text-xs text-muted-foreground">Dias antes de bloquear nova arena</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Carência da arena (dias)</Label>
+                    <Input type="number" min="0" max="30" placeholder="0" value={platformSettingsForm.carencia_arena_dias} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, carencia_arena_dias: e.target.value })} data-testid="input-carencia-arena" />
+                    <p className="text-xs text-muted-foreground">Dias extras após vencimento</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Carência do aluno (dias)</Label>
+                    <Input type="number" min="0" max="30" placeholder="3" value={platformSettingsForm.carencia_aluno_dias} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, carencia_aluno_dias: e.target.value })} data-testid="input-carencia-aluno" />
+                    <p className="text-xs text-muted-foreground">Dias de tolerância mensalista</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Webhook */}
+              <div className="rounded-lg border bg-card p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4 text-primary" />Webhook de Pagamento Automático</div>
+                <p className="text-xs text-muted-foreground">Configure seu gateway (Asaas, MercadoPago, PagSeguro…) para chamar este endpoint ao confirmar pagamento — o acesso da arena será liberado automaticamente.</p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">URL do Webhook</Label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-muted rounded px-2 py-1.5 break-all select-all">{typeof window !== "undefined" ? window.location.origin : ""}/api/webhook/payment</code>
+                    <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => { navigator.clipboard.writeText(window.location.origin + "/api/webhook/payment"); toast({ title: "URL copiada!" }); }}>Copiar</Button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Body JSON esperado</Label>
+                  <code className="block text-xs bg-muted rounded px-2 py-1.5 whitespace-pre-wrap">{`{ "secret": "<sua_chave>",\n  "arenaId": "<id_da_arena>" }`}</code>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Chave secreta</Label>
+                  {webhookSecret ? (
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-xs bg-muted rounded px-2 py-1.5 break-all select-all">{webhookSecret}</code>
+                      <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => { if (webhookSecret !== "••••••••••••••••") navigator.clipboard.writeText(webhookSecret); }}>Copiar</Button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Nenhuma chave configurada.</p>
+                  )}
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => gerarWebhookSecret.mutate()} disabled={gerarWebhookSecret.isPending} data-testid="button-generate-webhook-secret">
+                    <KeyRound className="h-3.5 w-3.5 mr-1.5" />
+                    {webhookSecret ? "Gerar nova chave" : "Gerar chave secreta"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">Gerar nova chave invalida a anterior. Copie e guarde antes de fechar.</p>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* ── Tab: Landing Page ────────────────────────────────────── */}
+            <TabsContent value="landing" className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-1">
+              <div className="rounded-lg border bg-card p-4 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-semibold"><BookOpen className="h-4 w-4 text-primary" />Card do Plano na Landing Page</div>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nome do plano</Label>
+                    <Input placeholder="Ex: Seven Sports" value={platformSettingsForm.plan_nome} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, plan_nome: e.target.value })} data-testid="input-plan-nome" />
+                    <p className="text-xs text-muted-foreground">Título exibido no card de plano da landing page.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Descrição do plano</Label>
+                    <Input placeholder="Ex: Tudo incluído em um único plano." value={platformSettingsForm.plan_descricao} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, plan_descricao: e.target.value })} data-testid="input-plan-descricao" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Benefícios (um por linha)</Label>
+                    <textarea className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[120px] resize-none" placeholder={"Check-ins digitais ilimitados\nGestão completa de alunos\nFinanceiro e mensalidades"} value={(platformSettingsForm.plan_features || "").replace(/\|/g, "\n")} onChange={(e) => setPlatformSettingsForm({ ...platformSettingsForm, plan_features: e.target.value.split("\n").filter(Boolean).join("|") })} data-testid="input-plan-features" />
+                    <p className="text-xs text-muted-foreground">Cada linha vira um item com ✓ no card da landing page.</p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter className="mt-2">
             <Button variant="outline" onClick={() => setShowSettings(false)}>Cancelar</Button>
-            <Button
-              onClick={() => salvarPlatformSettings.mutate(platformSettingsForm)}
-              disabled={salvarPlatformSettings.isPending}
-              data-testid="button-save-platform-settings"
-            >
+            <Button onClick={() => salvarPlatformSettings.mutate(platformSettingsForm)} disabled={salvarPlatformSettings.isPending} data-testid="button-save-platform-settings">
               {salvarPlatformSettings.isPending ? "Salvando..." : "Salvar configurações"}
             </Button>
           </DialogFooter>
