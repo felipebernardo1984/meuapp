@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -91,6 +91,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
     })
   );
+
+  // ── Block API access for vencido arenas (except whitelisted routes) ────────
+  const BLOCKED_WHITELIST = [
+    "/api/session", "/api/login", "/api/logout",
+    "/api/arena/ja-paguei", "/api/platform-settings/public",
+    "/api/admin/session", "/api/admin/login",
+  ];
+  app.use("/api", async (req: Request, res: Response, next: NextFunction) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId) return next();
+    const isWhitelisted = BLOCKED_WHITELIST.some(
+      (p) => req.path === p || req.path.startsWith(p + "/")
+    );
+    if (isWhitelisted) return next();
+    const arena = await storage.getArena(arenaId);
+    if (arena?.statusConta === "vencido") {
+      return res.status(403).json({ message: "Conta bloqueada. Regularize sua assinatura." });
+    }
+    next();
+  });
 
   // ── Seed default arena on first boot ──────────────────────────────────────
   app.use(async (_req, _res, next) => {
