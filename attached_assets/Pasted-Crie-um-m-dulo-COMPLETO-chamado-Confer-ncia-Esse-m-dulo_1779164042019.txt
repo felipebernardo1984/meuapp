@@ -1,0 +1,418 @@
+Crie um módulo COMPLETO chamado:
+
+# Conferência
+
+Esse módulo será integrado em um sistema já existente e terá como objetivo realizar a conferência financeira automática de pagamentos vindos das plataformas TotalPass e Wellhub (Gympass), separando valores por professor, aluno, categoria financeira e destino financeiro.
+
+IMPORTANTE:
+
+* NÃO usar IA
+* NÃO usar APIs externas
+* Tudo deve funcionar localmente
+* O sistema deve ser extremamente rápido e confiável
+* O foco é automação financeira e conferência operacional
+
+---
+
+# OBJETIVO PRINCIPAL
+
+Hoje a conferência é feita manualmente:
+
+* professores enviam nomes dos alunos
+* o usuário procura um por um nos excels
+* calcula manualmente comissão e valores
+
+O módulo deve automatizar completamente esse processo.
+
+---
+
+# TECNOLOGIAS
+
+Frontend:
+
+* React
+* TailwindCSS
+
+Backend:
+
+* Python FastAPI
+
+Banco:
+
+* SQLite
+
+Leitura Excel:
+
+* pandas
+* openpyxl
+
+Reconhecimento de nomes:
+
+* rapidfuzz
+
+---
+
+# FUNCIONALIDADE PRINCIPAL
+
+O usuário fará upload de:
+
+* Excel TotalPass
+* Excel Wellhub
+
+O sistema deve:
+
+* ler os arquivos
+* identificar alunos
+* identificar professores
+* aplicar regras financeiras
+* gerar relatórios automáticos
+* permitir conferência manual
+
+---
+
+# IMPORTAÇÃO DE EXCEL
+
+Aceitar:
+
+* .xlsx
+* .xls
+
+Extrair automaticamente:
+
+* nome do aluno
+* valor do repasse
+* data
+* plataforma
+* quantidade de check-ins
+* plano/modalidade quando existir
+
+Criar estrutura unificada interna para os dados.
+
+---
+
+# NORMALIZAÇÃO DE NOMES
+
+Antes de qualquer comparação:
+
+* remover acentos
+* remover espaços duplicados
+* converter para minúsculo
+* limpar caracteres especiais
+* ignorar diferenças simples de digitação
+
+Exemplo:
+
+* João Silva
+* Joao Silva
+* JOÃO SILVA
+
+Devem ser considerados iguais.
+
+---
+
+# RECONHECIMENTO INTELIGENTE (SEM IA)
+
+Usar fuzzy matching com rapidfuzz.
+
+Regras:
+
+## Similaridade >= 90%
+
+Associar automaticamente.
+
+## Similaridade entre 70% e 89%
+
+Marcar como:
+“Possível correspondência”
+
+Permitir confirmação manual.
+
+## Similaridade < 70%
+
+Marcar:
+“Aluno não encontrado”
+
+---
+
+# SISTEMA DE ALIASES
+
+Cada aluno poderá possuir:
+
+* nome oficial
+* aliases/apelidos
+
+Exemplo:
+
+Nome oficial:
+João Pedro Silva
+
+Aliases:
+
+* João Silva
+* JP Silva
+* Joao Silva
+
+O sistema deve considerar aliases na busca.
+
+Quando o usuário confirmar manualmente uma correspondência, salvar automaticamente como alias futuro.
+
+---
+
+# CADASTRO DE PROFESSORES
+
+Campos:
+
+* nome
+* observações
+* ativo/inativo
+
+---
+
+# CADASTRO DE ALUNOS
+
+Campos:
+
+* nome oficial
+* professor responsável
+* categoria financeira
+* porcentagem personalizada
+* aliases
+* observações
+* ativo/inativo
+
+---
+
+# CATEGORIAS FINANCEIRAS
+
+O sistema NÃO deve usar somente “comissão padrão”.
+
+Cada aluno terá uma categoria financeira própria.
+
+Criar categorias:
+
+## Comissão
+
+Calcula:
+valor × porcentagem
+
+---
+
+## Day Use
+
+Permitir:
+
+* valor fixo
+* porcentagem específica
+* cálculo independente
+
+---
+
+## Arena
+
+Permitir:
+
+* 100% arena
+* divisão arena/professor
+* sem comissão
+
+---
+
+## Personalizado
+
+Preparado para futuras regras.
+
+---
+
+# DESTINO FINANCEIRO
+
+Cada lançamento deve possuir:
+
+* professor
+* arena
+* administrativo
+* ignorado
+* personalizado
+
+---
+
+# PROCESSAMENTO
+
+Após upload:
+
+O sistema deve:
+
+1. Ler arquivos
+2. Normalizar nomes
+3. Encontrar alunos
+4. Identificar professor
+5. Aplicar categoria financeira
+6. Aplicar regras financeiras
+7. Gerar conferência
+8. Exibir resultados
+
+---
+
+# TELA DE CONFERÊNCIA
+
+Criar uma tela moderna contendo:
+
+## Encontrados automaticamente
+
+Cor verde.
+
+---
+
+## Possíveis correspondências
+
+Cor amarela.
+
+Botões:
+
+* Confirmar
+* Alterar aluno
+* Ignorar
+
+---
+
+## Não encontrados
+
+Cor vermelha.
+
+Botões:
+
+* Cadastrar aluno
+* Vincular professor
+* Ignorar
+
+---
+
+# FILTROS
+
+Permitir filtros por:
+
+* professor
+* plataforma
+* categoria financeira
+* período
+* status da conferência
+* aluno
+
+---
+
+# RELATÓRIO POR PROFESSOR
+
+Exibir:
+
+* aluno
+* plataforma
+* quantidade de check-ins
+* valor recebido
+* porcentagem
+* valor calculado
+* categoria financeira
+* destino financeiro
+
+Mostrar total final.
+
+---
+
+# DASHBOARD
+
+Criar dashboard com:
+
+* total recebido
+* total por plataforma
+* total por professor
+* total arena
+* total comissão
+* total day use
+* quantidade de check-ins
+* alunos não encontrados
+* divergências
+* quantidade de alunos por professor
+
+---
+
+# EXPORTAÇÃO
+
+Permitir exportar:
+
+* Excel
+* PDF
+
+---
+
+# BANCO DE DADOS
+
+Estruturar tabelas:
+
+## professores
+
+## alunos
+
+## aliases
+
+## categorias_financeiras
+
+## checkins
+
+## conferencias
+
+## plataformas
+
+## regras_financeiras
+
+---
+
+# EXPERIÊNCIA DO USUÁRIO
+
+Fluxo ideal:
+
+1. Upload dos excels
+2. Sistema processa automaticamente
+3. Usuário confere correspondências
+4. Sistema calcula tudo
+5. Usuário exporta relatório final
+
+---
+
+# INTERFACE
+
+Criar visual moderno estilo dashboard financeiro profissional.
+
+Usar:
+
+* cards
+* tabelas modernas
+* badges de status
+* indicadores coloridos
+* layout clean
+* sidebar
+* filtros rápidos
+* loading states
+* feedback visual
+
+---
+
+# REQUISITOS IMPORTANTES
+
+* Código organizado
+* Separação frontend/backend
+* Componentização
+* Fácil manutenção
+* Preparado para expansão futura
+* Preparado para novas plataformas além de TotalPass e Wellhub
+
+---
+
+# IMPORTANTE
+
+Esse módulo será usado operacionalmente todos os meses.
+
+Priorizar:
+
+* estabilidade
+* velocidade
+* conferência financeira confiável
+* facilidade operacional
+* redução de trabalho manual
