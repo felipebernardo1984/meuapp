@@ -23,6 +23,7 @@ import {
   TrendingDown,
   LayoutGrid,
   BarChart3,
+  ClipboardCheck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -79,6 +80,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "relatorios", label: "Relatórios", icon: BarChart3 },
       { id: "despesas", label: "Despesas", icon: TrendingDown },
       { id: "comissoes", label: "Comissões", icon: PercentCircle },
+      { id: "conferencia", label: "Conferência", icon: ClipboardCheck },
     ],
   },
   {

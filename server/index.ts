@@ -8,8 +8,8 @@ const app = express();
 /**
  * Segurança básica de payload
  */
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: false, limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
 /**
  * Logger inteligente para API

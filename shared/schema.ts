@@ -504,3 +504,47 @@ export const reservas = pgTable("reservas", {
 export const insertReservaSchema = createInsertSchema(reservas).omit({ id: true, criadoEm: true });
 export type InsertReserva = z.infer<typeof insertReservaSchema>;
 export type Reserva = typeof reservas.$inferSelect;
+
+// ── Conferência Module (isolated — no connection to other metrics) ───────────
+
+export const conferenciaSessoes = pgTable("conferencia_sessoes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: text("arena_id").notNull(),
+  plataforma: text("plataforma").notNull(),
+  nomeArquivo: text("nome_arquivo").notNull(),
+  totalRegistros: integer("total_registros").default(0),
+  encontrados: integer("encontrados").default(0),
+  possiveis: integer("possiveis").default(0),
+  naoEncontrados: integer("nao_encontrados").default(0),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
+
+export const conferenciaRegistros = pgTable("conferencia_registros", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: text("arena_id").notNull(),
+  sessaoId: text("sessao_id").notNull(),
+  nomePlataforma: text("nome_plataforma").notNull(),
+  studentId: text("student_id"),
+  alunoNomeMatch: text("aluno_nome_match"),
+  similaridade: integer("similaridade"),
+  valor: text("valor").default("0"),
+  data: text("data"),
+  checkins: integer("checkins").default(1),
+  plataforma: text("plataforma").notNull(),
+  status: text("status").notNull().default("pendente"),
+  categoria: text("categoria").default("comissao"),
+  professorId: text("professor_id"),
+  percentual: text("percentual").default("50"),
+  valorProfessor: text("valor_professor").default("0"),
+  valorArena: text("valor_arena").default("0"),
+  observacao: text("observacao"),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
+
+export const conferenciaAliases = pgTable("conferencia_aliases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: text("arena_id").notNull(),
+  studentId: text("student_id").notNull(),
+  alias: text("alias").notNull(),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});

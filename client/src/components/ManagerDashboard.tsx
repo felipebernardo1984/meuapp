@@ -18,6 +18,7 @@ function formatarMes(str: string | null | undefined): string {
   return str;
 }
 import { HelpPanel } from "@/components/HelpDialog";
+import ConferenciaManager from "@/components/ConferenciaManager";
 import ManagerSidebar from "@/components/ManagerSidebar";
 import AgendaManager from "@/components/AgendaManager";
 import QuadrasManager from "@/components/QuadrasManager";
@@ -5227,6 +5228,12 @@ export default function ManagerDashboard({
       </Dialog>
 
       {/* ── Seção Despesas ── */}
+      {activeSection === "conferencia" && (
+        <div className="flex-1 overflow-y-auto">
+          <ConferenciaManager arenaId={arenaId ?? ""} />
+        </div>
+      )}
+
       {activeSection === "despesas" && (
         <div className="flex flex-col gap-4">
           {/* Resumo do mês */}

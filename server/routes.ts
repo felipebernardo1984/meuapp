@@ -12,6 +12,7 @@ import { getWhatsappSettings, saveWhatsappSettings } from "./whatsappSettings";
 import { sendWhatsappMessage } from "./whatsappApi";
 import { getAutomationConfig, saveAutomationConfig, getPendingDispatches, markDispatchSent, markAllDispatchesSent, runWhatsappAutomation } from "./whatsappAutomation";
 import { calcularComissao, calcularComissaoMensalidade, getResumoPorProfessor } from "./commissionService";
+import { registerConferenciaRoutes } from "./conferenciaRoutes";
 import { listBackups, getArenaBackupPreview, restoreArenaFromBackup, runDatabaseBackup, BACKUP_DIR } from "./backupService";
 import fs from "fs";
 import path from "path";
@@ -2718,6 +2719,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     res.json({ expired });
   });
+
+  // ── Conferência module (isolated financial reconciliation) ──────────────────
+  registerConferenciaRoutes(app);
 
   return createServer(app);
 }

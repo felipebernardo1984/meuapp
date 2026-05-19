@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-05-19T04:09:32.063Z",
+  "createdAt": "2026-05-19T04:29:32.890Z",
   "arenas": [
     {
       "id": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
@@ -7,14 +7,14 @@
       "subscriptionPlan": "premium",
       "gestorLogin": "333",
       "gestorSenha": "333",
-      "gestorNome": null,
+      "gestorNome": "Carlos Eduardo Mendes",
       "gestorCpf": null,
-      "gestorEmail": null,
+      "gestorEmail": "carlos@arenapadrao.com.br",
       "gestorTelefone": null,
-      "subscriptionStartDate": "19/05/2026",
+      "subscriptionStartDate": "01/03/2026",
       "subscriptionValue": "R$ 199,00",
       "subscriptionStatus": "Ativo",
-      "nextBillingDate": "26/05/2026",
+      "nextBillingDate": "01/06/2026",
       "statusConta": "ativo",
       "trialExpiraEm": null,
       "endereco": null,
@@ -25,25 +25,25 @@
   ],
   "plans": [
     {
+      "id": "ba856d43-8093-4042-b80b-7da4a91ab949",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "titulo": "Mensalista",
+      "checkins": 0,
+      "valorTexto": "R$ 140,00"
+    },
+    {
       "id": "1c2bcd03-79f0-4d33-bf1b-68ed75082742",
       "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
       "titulo": "1x por semana",
       "checkins": 8,
-      "valorTexto": null
+      "valorTexto": "R$ 90,00"
     },
     {
       "id": "6c63d884-d768-40b0-b396-f335b0f65867",
       "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
       "titulo": "2x por semana",
       "checkins": 12,
-      "valorTexto": null
-    },
-    {
-      "id": "ba856d43-8093-4042-b80b-7da4a91ab949",
-      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
-      "titulo": "Mensalista",
-      "checkins": 0,
-      "valorTexto": "R$ 140,00"
+      "valorTexto": "R$ 150,00"
     }
   ],
   "teachers": [
@@ -54,8 +54,8 @@
       "login": "222",
       "senha": "222",
       "cpf": null,
-      "email": null,
-      "telefone": null,
+      "email": "felipe.bernardo@arenapadrao.com.br",
+      "telefone": "(11) 97654-3210",
       "modalidade": "Vôlei de Praia",
       "percentualComissao": "50.00",
       "photoUrl": null,
@@ -64,20 +64,48 @@
   ],
   "students": [
     {
+      "id": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "nome": "Gabriela da Silva Leal",
+      "login": "gabriela",
+      "senha": "1234",
+      "cpf": "123.456.789-00",
+      "email": "gabriela.leal@gmail.com",
+      "telefone": "(11) 98765-4321",
+      "modalidade": "Vôlei de Praia",
+      "planoId": "ba856d43-8093-4042-b80b-7da4a91ab949",
+      "planoTitulo": "Mensalista",
+      "planoCheckins": 0,
+      "planoValorTexto": "R$ 140,00",
+      "checkinsRealizados": 32,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "18/05/2026",
+      "photoUrl": null,
+      "integrationType": "mensalista",
+      "integrationPlan": null,
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7",
+      "diaVencimento": 10,
+      "carenciaDias": 3,
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-03-01T09:00:00.000Z"
+    },
+    {
       "id": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
       "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
-      "nome": "Maria Santos",
+      "nome": "Maria Santos Oliveira",
       "login": "111",
       "senha": "111",
       "cpf": "987.654.321-00",
-      "email": null,
-      "telefone": null,
+      "email": "maria.santos@email.com",
+      "telefone": "(11) 91234-5678",
       "modalidade": "Vôlei de Praia",
       "planoId": "6c63d884-d768-40b0-b396-f335b0f65867",
       "planoTitulo": "2x por semana",
       "planoCheckins": 12,
-      "planoValorTexto": null,
-      "checkinsRealizados": 2,
+      "planoValorTexto": "R$ 150,00",
+      "checkinsRealizados": 37,
       "statusMensalidade": "Em dia",
       "aprovado": true,
       "ultimoCheckin": "19/05/2026",
@@ -89,55 +117,675 @@
       "carenciaDias": 3,
       "ativo": true,
       "desativadoEm": null,
-      "criadoEm": "2026-05-19T02:57:16.180Z"
-    },
-    {
-      "id": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
-      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
-      "nome": "Gabriela Da Silva Leal",
-      "login": "000",
-      "senha": "000",
-      "cpf": "000",
-      "email": "000",
-      "telefone": "000",
-      "modalidade": "Vôlei de Praia",
-      "planoId": "ba856d43-8093-4042-b80b-7da4a91ab949",
-      "planoTitulo": "Mensalista",
-      "planoCheckins": 0,
-      "planoValorTexto": "R$ 140,00",
-      "checkinsRealizados": 0,
-      "statusMensalidade": "Em dia",
-      "aprovado": true,
-      "ultimoCheckin": "19/05/2026",
-      "photoUrl": null,
-      "integrationType": "mensalista",
-      "integrationPlan": null,
-      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7",
-      "diaVencimento": null,
-      "carenciaDias": 3,
-      "ativo": true,
-      "desativadoEm": null,
-      "criadoEm": "2026-05-19T03:00:03.861Z"
+      "criadoEm": "2026-01-06T09:00:00.000Z"
     }
   ],
   "checkins": [
     {
-      "id": "d53ddd54-b03b-491c-92c2-c5c106a805b2",
+      "id": "6e3d1260-49fc-40a8-a1de-d6c504eb808d",
       "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
       "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
-      "data": "19/05/2026",
-      "hora": "03:00",
-      "tipo": "pendente",
-      "professorId": null
+      "data": "01/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
     },
     {
-      "id": "8aa42c96-0f20-412e-aade-6e1751084a5d",
+      "id": "0453ddfa-5849-486f-ac4f-5765eea6dbc6",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "06/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "1403aeb0-f767-49d9-8cdc-93755b7b9cf4",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "08/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "de73625c-d5f9-4737-89ec-dc9c7197fed1",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "13/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "81fb09a0-5a25-4dd3-bcda-11892b093eb4",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "15/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "a513cde4-553b-4d0d-8162-be2b4d872a85",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "20/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "44c7b3ea-ca66-4ec9-858e-97642e389009",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "22/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "e04cdd7b-4bd5-4842-a9e5-0182c4fc42bb",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "27/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "4c1ca72a-5d0c-4455-ab0a-ad742b0f28a6",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "29/01/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "d4277fb9-9722-4bd8-8be8-46a5b5d60991",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "03/02/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "6d78cd8f-b9ac-483d-af2e-b38e355f306f",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "05/02/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "66bc95b1-df49-46a1-b1ac-9966c3295d83",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "10/02/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "f2715f9d-ec5f-4892-a3a9-4b5bff045d1d",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "12/02/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "826f7361-22ca-40a4-98a4-f0bb1d222a09",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "17/02/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "136c2cc3-dd63-4d32-82bd-6ebaa37a4153",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "19/02/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "f1ccf83e-e517-42b6-bde0-cb92b5e08c40",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "24/02/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "aa27ba8b-59b6-4f04-86ec-6a8a2ea0d4f0",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "26/02/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "48bed5fc-bd4f-4a02-8e10-012c350c5c25",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "03/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "5c593780-a25a-4c17-913b-28d73b85ef6e",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "05/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "4af817c5-c3aa-43a9-adf8-24c1f9997eb1",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "10/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "72df168b-3b20-4036-9213-6814301d0a91",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "12/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "cc6fc001-f5fe-43ea-8dc0-fa4736b89b5b",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "17/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "d23fcbb2-eabe-4cfa-9a97-7386f5d8e56c",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "19/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "9b0e0d9b-a482-4be1-b726-b36042ab14d1",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "24/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "05d4721f-465e-48cf-a07b-602b9f1380ca",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "26/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "b4d43a7a-7f39-4c42-8fcd-73577d9fc3f3",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "31/03/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "5da875ab-c6a5-450b-ae74-36a275e7e57d",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "02/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "de25add0-c6d7-429e-91a8-bbde6f81370f",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "07/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "ae270ac3-2797-4f1c-b8e1-6ba09fba7864",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "09/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "e7a15528-1d3e-492e-9a15-1021dc8d167f",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "14/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "1c0cc04f-7df2-4014-8562-11e93c10d9b7",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "16/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "c84d09a5-35b2-4b5d-b761-489bb99d42b9",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "21/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "e8a2ca7f-590c-4efd-b5c5-d6cbe6363849",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "23/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "6243ce74-46d6-4dd8-b838-6329bce2f28e",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "28/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "66ee4fb0-8064-4ff8-971b-b70262c84460",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "30/04/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "90735668-69e9-4630-8b22-a230ff628d88",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "05/05/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "a5bd67b6-59ce-47da-8051-c3f0e282101e",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "07/05/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "c831dae6-5c6c-4aef-996a-eafe7822ac65",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "12/05/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "cf8782cf-e6b6-4ae2-8794-bfc80f6b9344",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
+      "data": "14/05/2026",
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "6234dc94-095a-4ec6-97ff-9b24c84c539a",
       "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
       "studentId": "f49b8026-116b-4855-ba8a-fc1cab3dc6ce",
       "data": "19/05/2026",
-      "hora": "03:00",
-      "tipo": "pendente",
-      "professorId": null
+      "hora": "19:00",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "24cca13f-7eb0-4d3f-b97c-414f4cae365a",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "02/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "7d3f16e7-0683-4f83-ab94-c7af8d950a0a",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "04/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "da7942a4-6dee-4f3e-af61-bd2d2e5a3b1a",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "06/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "719c82c7-1709-47b1-86a1-334144fc7484",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "09/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "b5a2877e-bee8-4bfb-9f4e-9051224d1037",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "11/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "169dc1f2-c624-4970-87d9-996c2a33171a",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "13/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "1b6f5ba8-aeb0-4762-91c6-ee9ce4e0385c",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "16/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "75cc06c4-7666-4c3f-a439-214bba4da045",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "18/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "930f5355-6a2e-44ef-a642-f67932c81b2f",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "20/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "a0bbc608-6601-4a1c-bb5e-f4bc632a9667",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "23/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "6620a87a-040c-4cec-b2e0-7536699eef7d",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "25/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "b82aad47-da40-43f1-8c87-ff0b7f1b2feb",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "27/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "5b891aec-4cd0-42e8-98ce-a2279ee064e4",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "30/03/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "422b3d41-b5b5-4a78-bc4d-fc3631c85767",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "01/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "81724655-0f7d-4106-9756-775f7f5b0405",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "03/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "6e5fe7c5-7779-4e33-ac34-b74c0d99e798",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "06/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "bf6a717a-553c-4540-9fc0-970692de3539",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "08/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "06ecd8d7-1c2e-4b9d-8f01-0437e925a2bc",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "10/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "1fb897fb-5288-4047-9b38-c552c4d747a0",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "13/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "723c9c41-7071-4303-a4f4-2e10b43f58d5",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "15/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "8e58316a-50c4-462d-a01f-f9f35d5079e2",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "17/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "83236370-19eb-41b2-817f-8b6d6c59245a",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "20/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "5c0123c7-9b8f-437f-813b-6c5bbee010e6",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "22/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "c200585b-9f48-4cfc-926d-660bf6ce2487",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "24/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "0a788e79-4df2-46de-a8f9-a7b1612881e7",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "27/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "b26cb2ca-f4e3-48c5-9906-c4bc7aae7b6d",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "29/04/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "68f808f6-37ba-421e-999d-f4e6782ae60b",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "01/05/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "2fbe2a06-8872-4be6-a712-42125b2233ce",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "04/05/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "b31a934e-d413-4962-9002-ab7d21158763",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "06/05/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "30125333-114a-4986-968f-b00a2122f8c9",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "08/05/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "1338bbe6-81e4-4774-a9f5-e1ae52ec0abf",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "11/05/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "02427fd7-b37c-4d79-9956-926107a9865f",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "13/05/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "bedd771c-18b4-44dc-932c-99c3f0623780",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "15/05/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
+    },
+    {
+      "id": "754e04c8-31cc-4a5a-b4f2-26f73b578669",
+      "arenaId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "data": "18/05/2026",
+      "hora": "07:30",
+      "tipo": "aula",
+      "professorId": "3cdbe469-55e2-41a1-9193-ecb569845bf7"
     }
   ],
   "payments": [
@@ -155,6 +803,38 @@
       "paymentMethod": "dinheiro",
       "pagamentoToken": null,
       "createdAt": "2026-05-19T03:00:03.866Z",
+      "createdBy": "sistema"
+    },
+    {
+      "id": "013f58ae-182d-4726-b14f-8e18401176e0",
+      "tenantId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "planId": "ba856d43-8093-4042-b80b-7da4a91ab949",
+      "description": "Mensalidade 2026-03",
+      "amount": "140.00",
+      "referenceMonth": "2026-03",
+      "dueDate": "2026-03-10",
+      "paymentDate": "08/03/2026",
+      "status": "paid",
+      "paymentMethod": "pix",
+      "pagamentoToken": null,
+      "createdAt": "2026-05-19T04:17:19.732Z",
+      "createdBy": "sistema"
+    },
+    {
+      "id": "5e05dbbd-085d-4bea-a90a-6239e7ff1bb9",
+      "tenantId": "7cf65c36-96c6-46e4-b282-ba2d7dc524be",
+      "studentId": "a3c18be2-8c5c-43f8-b456-0a3fed0e4310",
+      "planId": "ba856d43-8093-4042-b80b-7da4a91ab949",
+      "description": "Mensalidade 2026-04",
+      "amount": "140.00",
+      "referenceMonth": "2026-04",
+      "dueDate": "2026-04-10",
+      "paymentDate": "07/04/2026",
+      "status": "paid",
+      "paymentMethod": "pix",
+      "pagamentoToken": null,
+      "createdAt": "2026-05-19T04:17:19.732Z",
       "createdBy": "sistema"
     }
   ],
