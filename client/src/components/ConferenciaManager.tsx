@@ -540,7 +540,7 @@ function ListaView({
   arenaId: string;
   onSelectSessao: (id: string) => void;
 }) {
-  const [platform, setPlatform] = useState("auto");
+  const [platform, setPlatform] = useState("");
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -574,7 +574,7 @@ function ListaView({
         const res = await apiRequest("POST", "/api/conferencia/upload", {
           filename: file.name,
           content,
-          platform: platform === "auto" ? undefined : platform,
+          platform,
         });
         const sessao: SessaoDetalhe = await res.json();
         qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
@@ -611,40 +611,49 @@ function ListaView({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Platform selector */}
+          {/* Platform selector — required */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-muted-foreground shrink-0">Plataforma:</span>
+            <span className="text-sm font-medium shrink-0">Plataforma:</span>
             <Select value={platform} onValueChange={setPlatform}>
-              <SelectTrigger className="h-8 text-sm w-44" data-testid="select-plataforma">
-                <SelectValue />
+              <SelectTrigger
+                className={cn(
+                  "h-8 text-sm w-44",
+                  !platform && "border-amber-400 text-muted-foreground"
+                )}
+                data-testid="select-plataforma"
+              >
+                <SelectValue placeholder="Selecione…" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">Auto-detectar</SelectItem>
                 <SelectItem value="totalpass">TotalPass</SelectItem>
                 <SelectItem value="wellhub">Wellhub</SelectItem>
                 <SelectItem value="outro">Outro</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-xs text-muted-foreground">
-              (auto-detecta pelo nome do arquivo quando não selecionado)
-            </span>
+            {!platform && (
+              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                ← Selecione a plataforma antes de enviar o arquivo
+              </span>
+            )}
           </div>
 
           {/* Drop zone */}
           <div
             onDragOver={(e) => {
               e.preventDefault();
-              setDragging(true);
+              if (platform) setDragging(true);
             }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
-            onClick={() => !uploading && fileRef.current?.click()}
+            onClick={() => !uploading && platform && fileRef.current?.click()}
             data-testid="upload-zone"
             className={cn(
-              "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center cursor-pointer transition-colors select-none",
-              dragging
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50 hover:bg-muted/30",
+              "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none",
+              !platform
+                ? "cursor-not-allowed opacity-40 border-border"
+                : dragging
+                  ? "border-primary bg-primary/5 cursor-pointer"
+                  : "border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer",
               uploading && "opacity-60 cursor-not-allowed"
             )}
           >

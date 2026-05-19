@@ -84,6 +84,18 @@ function parseExcelRows(buffer: Buffer): Array<Record<string, unknown>> {
   return XLSX.utils.sheet_to_json(ws, { defval: "" });
 }
 
+// Strip CPF (11-digit number, with or without formatting) and trailing noise from names
+// e.g. "Isadora Vichi Silva 48837526822" → "Isadora Vichi Silva"
+// e.g. "Beatriz Franco 430.951.058-27" → "Beatriz Franco"
+function cleanName(raw: string): string {
+  return raw
+    .replace(/\d{3}\.\d{3}\.\d{3}-\d{2}/g, "") // CPF formatted: XXX.XXX.XXX-XX
+    .replace(/\b\d{11}\b/g, "")                  // CPF unformatted: 11 consecutive digits
+    .replace(/\(.*?\)/g, "")                      // parenthetical notes: (...)
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 export function registerConferenciaRoutes(app: Express): void {
@@ -244,14 +256,8 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(400).json({ message: "filename e content são obrigatórios" });
     }
 
-    // Platform: use explicit selection, or auto-detect from filename
-    let platform = platformBody && platformBody !== "auto" ? platformBody : null;
-    if (!platform) {
-      const fn = filename.toLowerCase();
-      platform = fn.includes("totalpass") ? "totalpass"
-        : fn.includes("wellhub") || fn.includes("gympass") ? "wellhub"
-        : "outro";
-    }
+    // Platform must be explicitly selected
+    const platform = platformBody?.trim() || "outro";
 
     try {
       const buffer = Buffer.from(content, "base64");
@@ -324,9 +330,9 @@ export function registerConferenciaRoutes(app: Express): void {
 
       const registrosToInsert = rows
         .map((row) => {
-          const nomePlataforma = String(
-            cols.nameIdx >= 0 ? row[headers[cols.nameIdx]] : ""
-          ).trim();
+          const nomePlataforma = cleanName(
+            String(cols.nameIdx >= 0 ? row[headers[cols.nameIdx]] : "")
+          );
           if (!nomePlataforma) return null;
 
           const valorRaw = String(cols.valueIdx >= 0 ? row[headers[cols.valueIdx]] : "0");
