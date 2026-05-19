@@ -1981,6 +1981,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ id: arena.id, name: arena.name, subscriptionPlan: arena.subscriptionPlan });
   });
 
+  // ── Resend config (gestor) ─────────────────────────────────────────────────
+  app.get("/api/configuracoes/resend", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    try {
+      const key = await storage.getPlatformSetting("resend_api_key");
+      res.json({ configured: !!key, key: key ? key.slice(0, 5) + "…" : "" });
+    } catch {
+      res.json({ configured: false, key: "" });
+    }
+  });
+
+  app.put("/api/configuracoes/resend", async (req, res) => {
+    const arenaId = requireArena(req, res);
+    if (!arenaId) return;
+    if (req.session.userType !== "gestor") {
+      return res.status(403).json({ error: "Acesso negado" });
+    }
+    const { key } = req.body as { key: string };
+    try {
+      await storage.setPlatformSetting("resend_api_key", key ?? "");
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: "Erro ao salvar" });
+    }
+  });
+
   // ── Platform Settings (admin) ──────────────────────────────────────────────
   app.get("/api/admin/platform-settings", async (req, res) => {
     if (!requireAdmin(req, res)) return;

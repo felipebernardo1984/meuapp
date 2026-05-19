@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Zap, Save, ChevronUp, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { Zap, Save, ChevronUp, ChevronDown, Plus, Trash2, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -84,6 +84,29 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
 
   const [editando, setEditando] = useState<Record<string, LocalEdit>>({});
   const [modalidadesMinimizado, setModalidadesMinimizado] = useState(false);
+  const [resendKey, setResendKey] = useState("");
+  const [resendLoaded, setResendLoaded] = useState(false);
+
+  const { data: resendData } = useQuery<{ configured: boolean; key: string }>({
+    queryKey: ["/api/configuracoes/resend"],
+    enabled: !section || section === "configuracoes",
+  });
+
+  if (resendData && !resendLoaded) {
+    setResendKey(resendData.key || "");
+    setResendLoaded(true);
+  }
+
+  const salvarResendMutation = useMutation({
+    mutationFn: (key: string) =>
+      apiRequest("PUT", "/api/configuracoes/resend", { key }).then((r) => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/configuracoes/resend"] });
+      setResendLoaded(false);
+      toast({ title: "Resend salvo", description: "Chave de API atualizada com sucesso." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível salvar a chave.", variant: "destructive" }),
+  });
 
   const [dialogCriar, setDialogCriar] = useState(false);
   const [novaModalidade, setNovaModalidade] = useState("");
@@ -219,6 +242,48 @@ export default function SystemSettings({ onVoltar, section }: SystemSettingsProp
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {showConfiguracoes && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              E-mail Automático (Resend)
+            </CardTitle>
+            <CardDescription>
+              Configure a chave de API do Resend para envio automático de e-mails de recuperação de senha dos gestores.{" "}
+              <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                Criar conta gratuita →
+              </a>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">API Key do Resend</Label>
+              <Input
+                type="password"
+                placeholder="re_..."
+                value={resendKey}
+                onChange={(e) => setResendKey(e.target.value)}
+                data-testid="input-resend-key-arena"
+                className="font-mono text-sm"
+              />
+              {resendData?.configured && (
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">✓ Chave configurada</p>
+              )}
+            </div>
+            <Button
+              size="sm"
+              onClick={() => salvarResendMutation.mutate(resendKey)}
+              disabled={salvarResendMutation.isPending}
+              data-testid="button-save-resend-arena"
+            >
+              <Save className="h-3.5 w-3.5 mr-1.5" />
+              Salvar chave
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {showConfiguracoes && (
         <Button

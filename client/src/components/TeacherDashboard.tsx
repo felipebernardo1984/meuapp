@@ -8,6 +8,26 @@ function formatarData(str: string | null | undefined): string {
   }
   return str;
 }
+
+function shortName(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  if (partes.length <= 2) return nome;
+  return `${partes[0]} ${partes[partes.length - 1]}`;
+}
+
+function mesRefAtual(): string {
+  const agora = new Date();
+  return `${String(agora.getMonth() + 1).padStart(2, "0")}/${agora.getFullYear()}`;
+}
+
+function checkinsNoMes(historico: Array<{ data: string; hora: string }>, mesRef: string): number {
+  return historico.filter((h) => {
+    if (!h.data) return false;
+    const p = h.data.split("/");
+    return p.length === 3 && `${p[1]}/${p[2]}` === mesRef;
+  }).length;
+}
+
 import { PhotoCropModal } from "./PhotoCropModal";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -441,7 +461,9 @@ export default function TeacherDashboard({
             <div className="space-y-2">
               {alunos.slice(0, 4).map((aluno) => {
                 const isMensalistaMin = aluno.integrationType === "mensalista";
-                const progresso = aluno.plano > 0 && !isMensalistaMin ? Math.min(100, (aluno.checkinsRealizados / aluno.plano) * 100) : 0;
+                const _mesRefMin = mesRefAtual();
+                const checkinsDoMesMin = checkinsNoMes(aluno.historico, _mesRefMin);
+                const progresso = aluno.plano > 0 && !isMensalistaMin ? Math.min(100, (checkinsDoMesMin / aluno.plano) * 100) : 0;
                 const alunoPaymentsMin = payments.filter((p) => p.studentId === aluno.id);
                 const pendingPayment = alunoPaymentsMin.find((p) => p.status === "pending" || p.status === "overdue");
                 const paidPayment = alunoPaymentsMin.filter((p) => p.status === "paid").slice(-1)[0];
@@ -456,7 +478,7 @@ export default function TeacherDashboard({
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{aluno.nome}</span>
+                          <span className="font-medium truncate" title={aluno.nome}>{shortName(aluno.nome)}</span>
                           {aluno.modalidade && (
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{aluno.modalidade}</span>
                           )}
@@ -470,7 +492,7 @@ export default function TeacherDashboard({
                           <Badge variant="secondary" className="h-5 px-2 text-[11px]">
                             {isMensalistaMin
                               ? (aluno.planoValorTexto ?? "Mensalista")
-                              : (aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "—")}
+                              : (aluno.plano > 0 ? `${checkinsDoMesMin}/${aluno.plano}` : aluno.planoValorTexto ?? "—")}
                           </Badge>
                         </div>
                       </div>
@@ -485,7 +507,7 @@ export default function TeacherDashboard({
                           <span>Progresso</span>
                           <span>{Math.round(progresso)}%</span>
                         </div>
-                        <Progress value={progresso} data-testid={`progress-student-${aluno.id}`} />
+                        <Progress value={progresso} className="h-2" data-testid={`progress-student-${aluno.id}`} />
                       </div>
                     ) : null}
                   </div>
@@ -503,7 +525,9 @@ export default function TeacherDashboard({
           const isMensalista = aluno.integrationType === "mensalista";
           const isIntegration = aluno.integrationType === "wellhub" || aluno.integrationType === "totalpass";
           const temCheckins = aluno.plano > 0 && !isMensalista;
-          const progresso = temCheckins ? (aluno.checkinsRealizados / aluno.plano) * 100 : 0;
+          const _mesRef = mesRefAtual();
+          const checkinsDoMes = checkinsNoMes(aluno.historico, _mesRef);
+          const progresso = temCheckins ? (checkinsDoMes / aluno.plano) * 100 : 0;
           const initials = aluno.nome.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
           const alunoPayments = payments.filter((p) => p.studentId === aluno.id);
 
@@ -521,7 +545,7 @@ export default function TeacherDashboard({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base whitespace-nowrap">{aluno.nome}</CardTitle>
+                      <CardTitle className="text-base truncate" title={aluno.nome}>{shortName(aluno.nome)}</CardTitle>
                       <p className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">{aluno.planoTitulo}</p>
                     </div>
                   </div>
@@ -530,7 +554,7 @@ export default function TeacherDashboard({
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <span className="text-[10px] leading-none text-muted-foreground tabular-nums">
-                      {temCheckins ? `${aluno.checkinsRealizados}/${aluno.plano}` : aluno.planoValorTexto ?? "Mensalista"}
+                      {temCheckins ? `${checkinsDoMes}/${aluno.plano} este mês` : aluno.planoValorTexto ?? "Mensalista"}
                     </span>
                   </div>
                 </div>

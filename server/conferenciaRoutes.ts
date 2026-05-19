@@ -94,14 +94,19 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(403).json({ message: "Acesso negado" });
     }
 
-    const { filename, platform, content } = req.body as {
+    const { filename, content } = req.body as {
       filename: string;
-      platform: string;
+      platform?: string;
       content: string;
     };
-    if (!filename || !platform || !content) {
-      return res.status(400).json({ message: "filename, platform e content são obrigatórios" });
+    if (!filename || !content) {
+      return res.status(400).json({ message: "filename e content são obrigatórios" });
     }
+    // Auto-detect platform from filename
+    const fn = filename.toLowerCase();
+    const platform = fn.includes("totalpass") ? "totalpass"
+      : fn.includes("wellhub") || fn.includes("gympass") ? "wellhub"
+      : (req.body.platform ?? "outro");
 
     try {
       const buffer = Buffer.from(content, "base64");

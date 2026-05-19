@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -136,6 +135,13 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+function detectarPlataforma(filename: string): string {
+  const fn = filename.toLowerCase();
+  if (fn.includes("totalpass")) return "TotalPass";
+  if (fn.includes("wellhub") || fn.includes("gympass")) return "Wellhub";
+  return "Auto";
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -174,14 +180,24 @@ function ListaView({
   onSelectSessao: (id: string) => void;
 }) {
   const [dragging, setDragging] = useState(false);
-  const [platform, setPlatform] = useState("totalpass");
   const [uploading, setUploading] = useState(false);
+  const [showProfessores, setShowProfessores] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 
   const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
     queryKey: ["/api/conferencia/sessoes"],
+  });
+
+  const { data: professores = [] } = useQuery<any[]>({
+    queryKey: ["/api/professores"],
+    enabled: showProfessores,
+  });
+
+  const { data: alunos = [] } = useQuery<any[]>({
+    queryKey: ["/api/alunos"],
+    enabled: showProfessores,
   });
 
   const deleteMutation = useMutation({
@@ -200,7 +216,6 @@ function ListaView({
         const content = await fileToBase64(file);
         const res = await apiRequest("POST", "/api/conferencia/upload", {
           filename: file.name,
-          platform,
           content,
         });
         const sessao: SessaoDetalhe = await res.json();
@@ -214,7 +229,7 @@ function ListaView({
         setUploading(false);
       }
     },
-    [platform, toast, qc, onSelectSessao]
+    [toast, qc, onSelectSessao]
   );
 
   const onDrop = useCallback(
@@ -233,9 +248,71 @@ function ListaView({
       <div>
         <h1 className="text-xl font-bold text-foreground">Conferência</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Faça upload do Excel da TotalPass ou Wellhub e confira automaticamente os pagamentos.
+          Faça upload do Excel (TotalPass ou Wellhub) — a plataforma é detectada automaticamente pelo nome do arquivo.
         </p>
       </div>
+
+      {/* Professor → Alunos Setup */}
+      <Card>
+        <CardHeader className="pb-3 cursor-pointer" onClick={() => setShowProfessores(!showProfessores)}>
+          <CardTitle className="text-base flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              Professores e Alunos
+            </span>
+            <span className="text-xs font-normal text-muted-foreground">
+              {showProfessores ? "Recolher" : "Ver configuração"}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        {showProfessores && (
+          <CardContent className="pt-0 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              O sistema vincula automaticamente os nomes do Excel com os alunos cadastrados abaixo. Use a aba de conferência para ajustar vínculos manualmente quando necessário.
+            </p>
+            {professores.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">Nenhum professor cadastrado.</p>
+            ) : (
+              <div className="space-y-3">
+                {professores.map((prof: any) => {
+                  const alunosProf = alunos.filter((a: any) => a.professorId === prof.id);
+                  return (
+                    <div key={prof.id} className="border rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                          {prof.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{prof.name}</p>
+                          <p className="text-xs text-muted-foreground">{prof.modalidade} · {prof.percentualComissao ?? 0}% comissão</p>
+                        </div>
+                        <Badge variant="secondary" className="ml-auto text-xs">{alunosProf.length} aluno{alunosProf.length !== 1 ? "s" : ""}</Badge>
+                      </div>
+                      {alunosProf.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {alunosProf.map((a: any) => (
+                            <div key={a.id} className="flex items-center gap-1 bg-muted rounded-md px-2 py-0.5 text-xs">
+                              <span className="font-medium">{a.nome}</span>
+                              <Badge variant="outline" className="text-[10px] py-0 px-1 h-4">
+                                {a.integrationType === "wellhub" ? "WH" : a.integrationType === "totalpass" ? "TP" : "M"}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">Nenhum aluno vinculado a este professor.</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground border-t pt-2 mt-2">
+              Para vincular alunos a um professor, acesse <strong>Alunos</strong> e edite o campo Professor de cada aluno.
+            </p>
+          </CardContent>
+        )}
+      </Card>
 
       {/* Upload Card */}
       <Card>
@@ -245,58 +322,43 @@ function ListaView({
             Nova Conferência
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            <div className="space-y-1">
-              <Label className="text-xs">Plataforma</Label>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger data-testid="select-plataforma">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="totalpass">TotalPass</SelectItem>
-                  <SelectItem value="wellhub">Wellhub (Gympass)</SelectItem>
-                  <SelectItem value="outro">Outra Plataforma</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="sm:col-span-2 space-y-1">
-              <Label className="text-xs">Arquivo Excel</Label>
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={onDrop}
-                onClick={() => !uploading && fileRef.current?.click()}
-                data-testid="upload-zone"
-                className={cn(
-                  "border-2 border-dashed rounded-lg px-4 py-6 flex flex-col items-center justify-center cursor-pointer transition-colors select-none",
-                  dragging
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50 hover:bg-muted/30",
-                  uploading && "opacity-60 cursor-not-allowed"
-                )}
-              >
-                {uploading ? (
-                  <>
-                    <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
-                    <span className="text-sm text-muted-foreground">Processando…</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
-                    <span className="text-sm font-medium">Arraste o arquivo ou clique para selecionar</span>
-                    <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls</span>
-                  </>
-                )}
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
-                />
-              </div>
-            </div>
+        <CardContent>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            onClick={() => !uploading && fileRef.current?.click()}
+            data-testid="upload-zone"
+            className={cn(
+              "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center cursor-pointer transition-colors select-none",
+              dragging
+                ? "border-primary bg-primary/5"
+                : "border-border hover:border-primary/50 hover:bg-muted/30",
+              uploading && "opacity-60 cursor-not-allowed"
+            )}
+          >
+            {uploading ? (
+              <>
+                <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
+                <span className="text-sm text-muted-foreground">Processando…</span>
+              </>
+            ) : (
+              <>
+                <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
+                <span className="text-sm font-medium">Arraste o arquivo ou clique para selecionar</span>
+                <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls — TotalPass, Wellhub ou outra plataforma</span>
+                <span className="text-xs text-muted-foreground mt-1 bg-muted rounded px-2 py-0.5">
+                  Plataforma detectada automaticamente pelo nome do arquivo
+                </span>
+              </>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }}
+            />
           </div>
         </CardContent>
       </Card>
