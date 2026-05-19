@@ -6,8 +6,8 @@ import {
   conferenciaSessoes,
   conferenciaRegistros,
   conferenciaAliases,
-  students,
-  teachers,
+  conferenciaProfessores,
+  conferenciaProfessorAlunos,
 } from "@shared/schema";
 
 // ── Fuzzy matching (pure JS — no external AI/API) ─────────────────────────────
@@ -87,26 +87,171 @@ function parseExcelRows(buffer: Buffer): Array<Record<string, unknown>> {
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 export function registerConferenciaRoutes(app: Express): void {
-  // POST /api/conferencia/upload — parse Excel + fuzzy match + save session
+
+  // ── Professor CRUD ─────────────────────────────────────────────────────────
+
+  // GET /api/conferencia/professores — list with their students
+  app.get("/api/conferencia/professores", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const profs = await db
+      .select()
+      .from(conferenciaProfessores)
+      .where(eq(conferenciaProfessores.arenaId, arenaId))
+      .orderBy(conferenciaProfessores.criadoEm);
+
+    const alunos = await db
+      .select()
+      .from(conferenciaProfessorAlunos)
+      .where(eq(conferenciaProfessorAlunos.arenaId, arenaId));
+
+    res.json(
+      profs.map((p) => ({
+        ...p,
+        alunos: alunos.filter((a) => a.professorId === p.id),
+      }))
+    );
+  });
+
+  // POST /api/conferencia/professores
+  app.post("/api/conferencia/professores", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const { nome, percentualComissao } = req.body as { nome: string; percentualComissao?: string };
+    if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
+
+    const [prof] = await db
+      .insert(conferenciaProfessores)
+      .values({ arenaId, nome: nome.trim(), percentualComissao: String(percentualComissao ?? "0") })
+      .returning();
+    res.json({ ...prof, alunos: [] });
+  });
+
+  // PUT /api/conferencia/professores/:id
+  app.put("/api/conferencia/professores/:id", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const { nome, percentualComissao } = req.body as { nome: string; percentualComissao?: string };
+    const [prof] = await db
+      .update(conferenciaProfessores)
+      .set({ nome: nome.trim(), percentualComissao: String(percentualComissao ?? "0") })
+      .where(and(eq(conferenciaProfessores.id, req.params.id), eq(conferenciaProfessores.arenaId, arenaId)))
+      .returning();
+    if (!prof) return res.status(404).json({ message: "Professor não encontrado" });
+    res.json(prof);
+  });
+
+  // DELETE /api/conferencia/professores/:id
+  app.delete("/api/conferencia/professores/:id", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    await db
+      .delete(conferenciaProfessorAlunos)
+      .where(
+        and(
+          eq(conferenciaProfessorAlunos.professorId, req.params.id),
+          eq(conferenciaProfessorAlunos.arenaId, arenaId)
+        )
+      );
+    await db
+      .delete(conferenciaProfessores)
+      .where(and(eq(conferenciaProfessores.id, req.params.id), eq(conferenciaProfessores.arenaId, arenaId)));
+    res.json({ ok: true });
+  });
+
+  // POST /api/conferencia/professores/:id/alunos
+  app.post("/api/conferencia/professores/:id/alunos", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const { nome } = req.body as { nome: string };
+    if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
+
+    const [aluno] = await db
+      .insert(conferenciaProfessorAlunos)
+      .values({ arenaId, professorId: req.params.id, nome: nome.trim() })
+      .returning();
+    res.json(aluno);
+  });
+
+  // DELETE /api/conferencia/professor-alunos/:id
+  app.delete("/api/conferencia/professor-alunos/:id", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    await db
+      .delete(conferenciaProfessorAlunos)
+      .where(
+        and(
+          eq(conferenciaProfessorAlunos.id, req.params.id),
+          eq(conferenciaProfessorAlunos.arenaId, arenaId)
+        )
+      );
+    res.json({ ok: true });
+  });
+
+  // GET /api/conferencia/alunos — flat list of all conferencia alunos (for LinkDialog)
+  app.get("/api/conferencia/alunos", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const profs = await db
+      .select()
+      .from(conferenciaProfessores)
+      .where(eq(conferenciaProfessores.arenaId, arenaId));
+    const profMap = new Map(profs.map((p) => [p.id, p]));
+
+    const alunos = await db
+      .select()
+      .from(conferenciaProfessorAlunos)
+      .where(eq(conferenciaProfessorAlunos.arenaId, arenaId));
+
+    res.json(
+      alunos.map((a) => ({
+        id: a.id,
+        nome: a.nome,
+        professorId: a.professorId,
+        professorNome: profMap.get(a.professorId)?.nome ?? null,
+      }))
+    );
+  });
+
+  // ── Upload ────────────────────────────────────────────────────────────────
+
   app.post("/api/conferencia/upload", async (req, res) => {
     const arenaId = req.session.arenaId;
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
 
-    const { filename, content } = req.body as {
+    const { filename, content, platform: platformBody } = req.body as {
       filename: string;
-      platform?: string;
       content: string;
+      platform?: string;
     };
     if (!filename || !content) {
       return res.status(400).json({ message: "filename e content são obrigatórios" });
     }
-    // Auto-detect platform from filename
-    const fn = filename.toLowerCase();
-    const platform = fn.includes("totalpass") ? "totalpass"
-      : fn.includes("wellhub") || fn.includes("gympass") ? "wellhub"
-      : (req.body.platform ?? "outro");
+
+    // Platform: use explicit selection, or auto-detect from filename
+    let platform = platformBody && platformBody !== "auto" ? platformBody : null;
+    if (!platform) {
+      const fn = filename.toLowerCase();
+      platform = fn.includes("totalpass") ? "totalpass"
+        : fn.includes("wellhub") || fn.includes("gympass") ? "wellhub"
+        : "outro";
+    }
 
     try {
       const buffer = Buffer.from(content, "base64");
@@ -118,25 +263,25 @@ export function registerConferenciaRoutes(app: Express): void {
       const headers = Object.keys(rows[0]);
       const cols = detectColumns(headers);
 
-      // Load arena data for matching
+      // Load conferencia-specific data (standalone — no connection to arena students/teachers)
+      const profsDb = await db
+        .select()
+        .from(conferenciaProfessores)
+        .where(eq(conferenciaProfessores.arenaId, arenaId));
+      const profMap = new Map(profsDb.map((p) => [p.id, p]));
+
       const alunosDb = await db
         .select()
-        .from(students)
-        .where(eq(students.arenaId, arenaId));
+        .from(conferenciaProfessorAlunos)
+        .where(eq(conferenciaProfessorAlunos.arenaId, arenaId));
 
       const aliasesDb = await db
         .select()
         .from(conferenciaAliases)
         .where(eq(conferenciaAliases.arenaId, arenaId));
 
-      const professoresDb = await db
-        .select()
-        .from(teachers)
-        .where(eq(teachers.arenaId, arenaId));
-      const profMap = new Map(professoresDb.map((p) => [p.id, p]));
-
-      // alias → studentId for exact alias lookup
-      const aliasToStudentId = new Map(
+      // alias → confAlunoId
+      const aliasToAlunoId = new Map(
         aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
       );
 
@@ -144,13 +289,13 @@ export function registerConferenciaRoutes(app: Express): void {
         const normInput = normalizeNome(nomePlataforma);
 
         // Exact alias match first
-        const aliasStudentId = aliasToStudentId.get(normInput);
-        if (aliasStudentId) {
-          const aluno = alunosDb.find((a) => a.id === aliasStudentId);
+        const aliasAlunoId = aliasToAlunoId.get(normInput);
+        if (aliasAlunoId) {
+          const aluno = alunosDb.find((a) => a.id === aliasAlunoId);
           if (aluno) return { aluno, score: 100, status: "confirmado" };
         }
 
-        // Fuzzy match against student names
+        // Fuzzy match against conferencia student names
         let bestScore = 0;
         let bestAluno: (typeof alunosDb)[0] | null = null;
 
@@ -160,7 +305,7 @@ export function registerConferenciaRoutes(app: Express): void {
             bestScore = score;
             bestAluno = aluno;
           }
-          // Also check saved aliases for this student
+          // Also check aliases for this aluno
           for (const alias of aliasesDb.filter((a) => a.studentId === aluno.id)) {
             const aliasScore = bestSim(nomePlataforma, alias.alias);
             if (aliasScore > bestScore) {
@@ -188,8 +333,7 @@ export function registerConferenciaRoutes(app: Express): void {
           const valor = String(
             Math.round((parseFloat(valorRaw.replace(",", ".")) || 0) * 100) / 100
           );
-          const data =
-            cols.dateIdx >= 0 ? String(row[headers[cols.dateIdx]]) : "";
+          const data = cols.dateIdx >= 0 ? String(row[headers[cols.dateIdx]]) : "";
           const checkinsRaw =
             cols.checkinsIdx >= 0
               ? parseInt(String(row[headers[cols.checkinsIdx]]))
@@ -199,7 +343,7 @@ export function registerConferenciaRoutes(app: Express): void {
           const match = matchAluno(nomePlataforma);
 
           let professorId: string | undefined;
-          let percentual = "50";
+          let percentual = "0";
           let valorProfessor = "0";
           let valorArena = valor;
 
@@ -207,15 +351,13 @@ export function registerConferenciaRoutes(app: Express): void {
             if (match.status === "confirmado") encontrados++;
             else possiveis++;
 
-            professorId = match.aluno.professorId || undefined;
-            if (professorId) {
-              const prof = profMap.get(professorId);
-              if (prof?.percentualComissao) {
-                percentual = String(prof.percentualComissao);
-                const pct = parseFloat(percentual) / 100;
-                valorProfessor = String(Math.round(parseFloat(valor) * pct * 100) / 100);
-                valorArena = String(Math.round(parseFloat(valor) * (1 - pct) * 100) / 100);
-              }
+            professorId = match.aluno.professorId;
+            const prof = profMap.get(professorId!);
+            if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
+              percentual = String(prof.percentualComissao);
+              const pct = parseFloat(percentual) / 100;
+              valorProfessor = String(Math.round(parseFloat(valor) * pct * 100) / 100);
+              valorArena = String(Math.round(parseFloat(valor) * (1 - pct) * 100) / 100);
             }
           } else {
             naoEncontrados++;
@@ -231,7 +373,7 @@ export function registerConferenciaRoutes(app: Express): void {
             valor,
             data,
             checkins,
-            plataforma: platform,
+            plataforma: platform!,
             status: match.status as string,
             categoria: "comissao" as string,
             professorId: professorId ?? null,
@@ -242,12 +384,11 @@ export function registerConferenciaRoutes(app: Express): void {
         })
         .filter(Boolean) as Array<Record<string, unknown>>;
 
-      // Insert session
       const [sessao] = await db
         .insert(conferenciaSessoes)
         .values({
           arenaId,
-          plataforma: platform,
+          plataforma: platform!,
           nomeArquivo: filename,
           totalRegistros: registrosToInsert.length,
           encontrados,
@@ -256,7 +397,6 @@ export function registerConferenciaRoutes(app: Express): void {
         })
         .returning();
 
-      // Insert records with real sessaoId
       if (registrosToInsert.length > 0) {
         await db
           .insert(conferenciaRegistros)
@@ -281,7 +421,8 @@ export function registerConferenciaRoutes(app: Express): void {
     }
   });
 
-  // GET /api/conferencia/sessoes
+  // ── Session routes ─────────────────────────────────────────────────────────
+
   app.get("/api/conferencia/sessoes", async (req, res) => {
     const arenaId = req.session.arenaId;
     if (!arenaId || req.session.userType !== "gestor") {
@@ -295,7 +436,6 @@ export function registerConferenciaRoutes(app: Express): void {
     res.json(sessoes);
   });
 
-  // GET /api/conferencia/sessao/:id
   app.get("/api/conferencia/sessao/:id", async (req, res) => {
     const arenaId = req.session.arenaId;
     if (!arenaId || req.session.userType !== "gestor") {
@@ -305,12 +445,7 @@ export function registerConferenciaRoutes(app: Express): void {
     const [sessao] = await db
       .select()
       .from(conferenciaSessoes)
-      .where(
-        and(
-          eq(conferenciaSessoes.id, req.params.id),
-          eq(conferenciaSessoes.arenaId, arenaId)
-        )
-      );
+      .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
     if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
 
     const registros = await db
@@ -318,11 +453,11 @@ export function registerConferenciaRoutes(app: Express): void {
       .from(conferenciaRegistros)
       .where(eq(conferenciaRegistros.sessaoId, sessao.id));
 
-    const professoresDb = await db
+    const profsDb = await db
       .select()
-      .from(teachers)
-      .where(eq(teachers.arenaId, arenaId));
-    const profMap = new Map(professoresDb.map((p) => [p.id, p]));
+      .from(conferenciaProfessores)
+      .where(eq(conferenciaProfessores.arenaId, arenaId));
+    const profMap = new Map(profsDb.map((p) => [p.id, p]));
 
     const enriched = registros.map((r) => ({
       ...r,
@@ -345,15 +480,10 @@ export function registerConferenciaRoutes(app: Express): void {
     const [registro] = await db
       .select()
       .from(conferenciaRegistros)
-      .where(
-        and(
-          eq(conferenciaRegistros.id, req.params.id),
-          eq(conferenciaRegistros.arenaId, arenaId)
-        )
-      );
+      .where(and(eq(conferenciaRegistros.id, req.params.id), eq(conferenciaRegistros.arenaId, arenaId)));
     if (!registro) return res.status(404).json({ message: "Registro não encontrado" });
 
-    const pct = parseFloat(String(percentual ?? registro.percentual ?? "50")) / 100;
+    const pct = parseFloat(String(percentual ?? registro.percentual ?? "0")) / 100;
     const valorNum = parseFloat(registro.valor || "0");
     const newValorProf = String(Math.round(valorNum * pct * 100) / 100);
     const newValorArena = String(Math.round(valorNum * (1 - pct) * 100) / 100);
@@ -367,28 +497,29 @@ export function registerConferenciaRoutes(app: Express): void {
       observacao: observacao !== undefined ? observacao : registro.observacao,
     };
 
-    const professoresDb = await db
+    const profsDb = await db
       .select()
-      .from(teachers)
-      .where(eq(teachers.arenaId, arenaId));
-    const profMap = new Map(professoresDb.map((p) => [p.id, p]));
+      .from(conferenciaProfessores)
+      .where(eq(conferenciaProfessores.arenaId, arenaId));
+    const profMap = new Map(profsDb.map((p) => [p.id, p]));
 
+    // If linking to a conferencia aluno
     if (studentId !== undefined) {
       updates.studentId = studentId || null;
       if (studentId) {
-        const [aluno] = await db
+        const [confAluno] = await db
           .select()
-          .from(students)
-          .where(eq(students.id, String(studentId)));
-        if (aluno) {
-          updates.alunoNomeMatch = aluno.nome;
+          .from(conferenciaProfessorAlunos)
+          .where(eq(conferenciaProfessorAlunos.id, String(studentId)));
+        if (confAluno) {
+          updates.alunoNomeMatch = confAluno.nome;
           const resolvedProfId =
-            professorId !== undefined ? String(professorId) : aluno.professorId;
+            professorId !== undefined ? String(professorId) : confAluno.professorId;
           if (resolvedProfId) {
             updates.professorId = resolvedProfId;
             const prof = profMap.get(resolvedProfId);
-            if (prof?.percentualComissao) {
-              const pct2 = prof.percentualComissao / 100;
+            if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
+              const pct2 = parseFloat(prof.percentualComissao) / 100;
               updates.percentual = String(prof.percentualComissao);
               updates.valorProfessor = String(Math.round(valorNum * pct2 * 100) / 100);
               updates.valorArena = String(Math.round(valorNum * (1 - pct2) * 100) / 100);
@@ -408,7 +539,7 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(eq(conferenciaRegistros.id, req.params.id))
       .returning();
 
-    // Save alias if requested (for faster future matching)
+    // Save alias if requested
     if (salvarAlias && updates.studentId && registro.nomePlataforma) {
       const existing = await db
         .select()
@@ -460,12 +591,7 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(eq(conferenciaRegistros.sessaoId, req.params.id));
     await db
       .delete(conferenciaSessoes)
-      .where(
-        and(
-          eq(conferenciaSessoes.id, req.params.id),
-          eq(conferenciaSessoes.arenaId, arenaId)
-        )
-      );
+      .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
     res.json({ ok: true });
   });
 
@@ -479,12 +605,7 @@ export function registerConferenciaRoutes(app: Express): void {
     const [sessao] = await db
       .select()
       .from(conferenciaSessoes)
-      .where(
-        and(
-          eq(conferenciaSessoes.id, req.params.id),
-          eq(conferenciaSessoes.arenaId, arenaId)
-        )
-      );
+      .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
     if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
 
     const registros = await db
@@ -492,11 +613,11 @@ export function registerConferenciaRoutes(app: Express): void {
       .from(conferenciaRegistros)
       .where(eq(conferenciaRegistros.sessaoId, req.params.id));
 
-    const professoresDb = await db
+    const profsDb = await db
       .select()
-      .from(teachers)
-      .where(eq(teachers.arenaId, arenaId));
-    const profMap = new Map(professoresDb.map((p) => [p.id, p]));
+      .from(conferenciaProfessores)
+      .where(eq(conferenciaProfessores.arenaId, arenaId));
+    const profMap = new Map(profsDb.map((p) => [p.id, p]));
 
     const headers = [
       "Nome Plataforma",
@@ -544,34 +665,5 @@ export function registerConferenciaRoutes(app: Express): void {
       `attachment; filename="conferencia_${sessao.plataforma}_${dateStr}.csv"`
     );
     res.send("\uFEFF" + lines.join("\n"));
-  });
-
-  // GET /api/conferencia/alunos — list arena students for manual linking picker
-  app.get("/api/conferencia/alunos", async (req, res) => {
-    const arenaId = req.session.arenaId;
-    if (!arenaId || req.session.userType !== "gestor") {
-      return res.status(403).json({ message: "Acesso negado" });
-    }
-    const alunosDb = await db
-      .select({
-        id: students.id,
-        nome: students.nome,
-        professorId: students.professorId,
-      })
-      .from(students)
-      .where(eq(students.arenaId, arenaId));
-
-    const professoresDb = await db
-      .select()
-      .from(teachers)
-      .where(eq(teachers.arenaId, arenaId));
-    const profMap = new Map(professoresDb.map((p) => [p.id, p]));
-
-    res.json(
-      alunosDb.map((a) => ({
-        ...a,
-        professorNome: a.professorId ? (profMap.get(a.professorId)?.nome ?? null) : null,
-      }))
-    );
   });
 }

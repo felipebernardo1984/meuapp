@@ -548,3 +548,19 @@ export const conferenciaAliases = pgTable("conferencia_aliases", {
   alias: text("alias").notNull(),
   criadoEm: timestamp("criado_em").defaultNow(),
 });
+
+export const conferenciaProfessores = pgTable("conferencia_professores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: text("arena_id").notNull(),
+  nome: text("nome").notNull(),
+  percentualComissao: text("percentual_comissao").default("0"),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
+
+export const conferenciaProfessorAlunos = pgTable("conferencia_professor_alunos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: text("arena_id").notNull(),
+  professorId: text("professor_id").notNull(),
+  nome: text("nome").notNull(),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});
