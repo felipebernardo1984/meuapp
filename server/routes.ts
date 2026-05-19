@@ -682,6 +682,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Determine if suggestion came from turma enrollment (not integration value matching)
+        const alunoTurmasAll = studentTurmasMap.get(student?.id ?? "") ?? [];
+        const turmasMatchAll = alunoTurmasAll.filter(t => t.modalidade === student?.modalidade && t.professorId);
+        const temTurma = turmasMatchAll.length >= 1 && new Set(turmasMatchAll.map(t => t.professorId)).size === 1;
+        const sugestaoTurmaNome = temTurma ? (turmasMatchAll[0]?.nome ?? null) : null;
+
         return {
           ...c,
           alunoNome: student?.nome ?? "—",
@@ -694,6 +700,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sugestaoProfessorId,
           sugestaoConfianca,
           sugestaoProfessorNome: sugestaoProfessorId ? (teacherMap.get(sugestaoProfessorId)?.nome ?? null) : null,
+          temTurma,
+          sugestaoTurmaNome,
         };
       });
     res.json(result);
@@ -798,6 +806,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const checkin = await storage.getCheckinById(req.params.id);
     if (!checkin) return res.status(404).json({ message: "Check-in não encontrado" });
+    if (checkin.arenaId !== arenaId) return res.status(403).json({ message: "Acesso negado" });
+
+    // Validate professor belongs to this arena
+    if (professorId) {
+      const teachers = await storage.listTeachers(arenaId);
+      const professorValido = teachers.some(t => t.id === professorId);
+      if (!professorValido) return res.status(400).json({ message: "Professor não encontrado nesta arena" });
+    }
 
     const updated = await storage.atribuirCheckin(req.params.id, tipo, professorId ?? null);
 

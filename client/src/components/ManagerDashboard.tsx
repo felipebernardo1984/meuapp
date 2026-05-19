@@ -326,6 +326,7 @@ export default function ManagerDashboard({
 
   const [filtroTipoLog, setFiltroTipoLog] = useState<"todos" | "pendente" | "aula" | "dayuse" | "avulso">("todos");
   const [filtroRangeLog, setFiltroRangeLog] = useState<DateRange | null>(currentMonthRange);
+  const [filtroNomeLog, setFiltroNomeLog] = useState<string>("");
   const [atribuindoCheckin, setAtribuindoCheckin] = useState<string | null>(null);
   const [atribuirForm, setAtribuirForm] = useState<{ tipo: string; professorId: string }>({ tipo: "aula", professorId: "" });
   const [editandoComissao, setEditandoComissao] = useState<any | null>(null);
@@ -4565,7 +4566,8 @@ export default function ManagerDashboard({
 
       {/* ── Dialog Log de Check-ins ── */}
       {activeSection === "checkins" && (
-        <div className="flex items-center gap-2 flex-wrap mb-5">
+        <div className="flex flex-col gap-2 mb-5">
+          <div className="flex items-center gap-2 flex-wrap">
             <DateRangePicker value={filtroRangeLog} onChange={setFiltroRangeLog} />
             {(["todos", "pendente", "aula", "dayuse", "avulso"] as const).map((t) => (
               <Button
@@ -4600,6 +4602,17 @@ export default function ManagerDashboard({
               ) : null;
             })()}
           </div>
+          <div className="relative w-64">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome do aluno..."
+              value={filtroNomeLog}
+              onChange={(e) => setFiltroNomeLog(e.target.value)}
+              className="h-9 pl-8 text-sm"
+              data-testid="input-busca-nome-log"
+            />
+          </div>
+        </div>
       )}
       {activeSection === "checkins" && (
         <Card className="mb-6">
@@ -4614,7 +4627,8 @@ export default function ManagerDashboard({
                 const iso = isoFromDMY(c.data);
                 return iso >= filtroRangeLog.inicio && iso <= filtroRangeLog.fim;
               })();
-              return tipoOk && rangeOk;
+              const nomeOk = !filtroNomeLog.trim() || (c.alunoNome ?? "").toLowerCase().includes(filtroNomeLog.trim().toLowerCase());
+              return tipoOk && rangeOk && nomeOk;
             });
             const comissaoMap = new Map((todasComissoes as any[]).map((c) => [c.checkinId, c]));
             const totalReceita = logFiltrado.filter(c => c.tipo !== "pendente").reduce((s, c) => s + (c.valorCheckin ?? 0), 0);
@@ -4644,25 +4658,35 @@ export default function ManagerDashboard({
                       {logFiltrado.map((c) => {
                         const comissao = comissaoMap.get(c.id);
                         return (
-                          <TableRow key={c.id}>
+                          <TableRow key={c.id} className={c.temTurma && c.tipo === "pendente" ? "bg-blue-50/40 dark:bg-blue-950/20" : ""}>
                             <TableCell className="text-xs whitespace-nowrap">{c.data} {c.hora}</TableCell>
                             <TableCell className="font-medium text-sm">{c.alunoNome}</TableCell>
                             <TableCell className="text-sm text-muted-foreground">{c.alunoModalidade}</TableCell>
                             <TableCell className="text-sm font-medium">
                               {c.valorCheckin > 0 ? c.valorCheckin.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : <span className="text-muted-foreground">—</span>}
                             </TableCell>
+                            {/* Tipo cell — turma students show "Aula" pre-filled */}
                             <TableCell>
                               {c.tipo === "pendente" ? (
-                                <div className="flex flex-col gap-1">
-                                  <Badge variant="outline" className="text-orange-600 border-orange-300 w-fit">Pendente</Badge>
-                                  {c.sugestaoTipo && (
-                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${c.sugestaoConfianca === "alta" ? "bg-green-500" : c.sugestaoConfianca === "media" ? "bg-yellow-500" : "bg-red-400"}`} />
-                                      {c.sugestaoConfianca === "alta" ? "Auto: " : c.sugestaoConfianca === "media" ? "Sugestão: " : "Ambíguo: "}
-                                      {c.sugestaoTipo === "aula" ? "Aula" : c.sugestaoTipo === "dayuse" ? "Day-use" : "Avulso"}
-                                    </span>
-                                  )}
-                                </div>
+                                c.temTurma ? (
+                                  <div className="flex flex-col gap-0.5">
+                                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 w-fit">Aula</Badge>
+                                    {c.sugestaoTurmaNome && (
+                                      <span className="text-xs text-muted-foreground">{c.sugestaoTurmaNome}</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant="outline" className="text-orange-600 border-orange-300 w-fit">Pendente</Badge>
+                                    {c.sugestaoTipo && (
+                                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${c.sugestaoConfianca === "alta" ? "bg-green-500" : c.sugestaoConfianca === "media" ? "bg-yellow-500" : "bg-red-400"}`} />
+                                        {c.sugestaoConfianca === "alta" ? "Auto: " : c.sugestaoConfianca === "media" ? "Sugestão: " : "Ambíguo: "}
+                                        {c.sugestaoTipo === "aula" ? "Aula" : c.sugestaoTipo === "dayuse" ? "Day-use" : "Avulso"}
+                                      </span>
+                                    )}
+                                  </div>
+                                )
                               ) : c.tipo === "aula" ? (
                                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Aula</Badge>
                               ) : c.tipo === "dayuse" ? (
@@ -4671,12 +4695,15 @@ export default function ManagerDashboard({
                                 <Badge variant="secondary">Avulso</Badge>
                               )}
                             </TableCell>
+                            {/* Professor cell — turma students show professor prominently */}
                             <TableCell className="text-sm">
                               {c.tipo !== "pendente"
                                 ? (c.professorNome ?? <span className="text-muted-foreground">—</span>)
-                                : c.sugestaoProfessorNome
-                                  ? <span className="text-muted-foreground text-xs">{c.sugestaoProfessorNome}</span>
-                                  : <span className="text-muted-foreground">—</span>
+                                : c.temTurma && c.sugestaoProfessorNome
+                                  ? <span className="font-medium">{c.sugestaoProfessorNome}</span>
+                                  : c.sugestaoProfessorNome
+                                    ? <span className="text-muted-foreground text-xs">{c.sugestaoProfessorNome}</span>
+                                    : <span className="text-muted-foreground">—</span>
                               }
                             </TableCell>
                             <TableCell className="text-sm">
@@ -4697,15 +4724,23 @@ export default function ManagerDashboard({
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
+                            {/* Action cell */}
                             <TableCell>
                               {atribuindoCheckin === c.id ? (
                                 <div className="flex flex-col gap-1 min-w-[220px]">
-                                  <Select value={atribuirForm.tipo} onValueChange={(v) => setAtribuirForm({ ...atribuirForm, tipo: v, professorId: v !== "aula" ? "" : atribuirForm.professorId })}>
+                                  <Select
+                                    value={atribuirForm.tipo}
+                                    onValueChange={(v) => setAtribuirForm({ ...atribuirForm, tipo: v, professorId: v !== "aula" ? "" : atribuirForm.professorId })}
+                                  >
                                     <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="aula">Aula</SelectItem>
-                                      <SelectItem value="dayuse">Day-use</SelectItem>
-                                      <SelectItem value="avulso">Avulso</SelectItem>
+                                      {/* dayuse and avulso only available if student is NOT from a turma */}
+                                      {!c.temTurma && <SelectItem value="dayuse">Day-use</SelectItem>}
+                                      {!c.temTurma && <SelectItem value="avulso">Avulso</SelectItem>}
+                                      {c.temTurma && (
+                                        <div className="px-2 py-1 text-xs text-muted-foreground italic">Aluno matriculado em turma</div>
+                                      )}
                                     </SelectContent>
                                   </Select>
                                   {atribuirForm.tipo === "aula" && (
@@ -4724,7 +4759,7 @@ export default function ManagerDashboard({
                                       className="h-7 text-xs flex-1"
                                       disabled={atribuirCheckin.isPending || (atribuirForm.tipo === "aula" && !atribuirForm.professorId)}
                                       onClick={() => atribuirCheckin.mutate({ id: c.id, tipo: atribuirForm.tipo, professorId: atribuirForm.tipo === "aula" ? atribuirForm.professorId : undefined })}
-                                      data-testid={`button-confirmar-atribuir-${c.id}`}
+                                      data-testid={`button-salvar-atribuir-${c.id}`}
                                     >
                                       Salvar
                                     </Button>
@@ -4732,21 +4767,41 @@ export default function ManagerDashboard({
                                   </div>
                                 </div>
                               ) : (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                  onClick={() => {
-                                    setAtribuindoCheckin(c.id);
-                                    setAtribuirForm({
-                                      tipo: c.tipo !== "pendente" ? c.tipo : (c.sugestaoTipo ?? "aula"),
-                                      professorId: c.professorId ?? c.sugestaoProfessorId ?? "",
-                                    });
-                                  }}
-                                  data-testid={`button-atribuir-${c.id}`}
-                                >
-                                  {c.tipo === "pendente" && c.sugestaoConfianca === "alta" ? "✓ Confirmar" : "Editar"}
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                  {/* Confirmar button: direct action for high-confidence, no form needed */}
+                                  {c.tipo === "pendente" && c.sugestaoConfianca === "alta" && (
+                                    <Button
+                                      size="sm"
+                                      className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                      disabled={atribuirCheckin.isPending}
+                                      onClick={() => atribuirCheckin.mutate({
+                                        id: c.id,
+                                        tipo: c.sugestaoTipo ?? "aula",
+                                        professorId: c.sugestaoProfessorId ?? undefined,
+                                      })}
+                                      data-testid={`button-confirmar-${c.id}`}
+                                    >
+                                      ✓ Confirmar
+                                    </Button>
+                                  )}
+                                  {/* Pencil/edit button always visible */}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => {
+                                      setAtribuindoCheckin(c.id);
+                                      setAtribuirForm({
+                                        tipo: c.tipo !== "pendente" ? c.tipo : (c.temTurma ? "aula" : (c.sugestaoTipo ?? "aula")),
+                                        professorId: c.professorId ?? c.sugestaoProfessorId ?? "",
+                                      });
+                                    }}
+                                    data-testid={`button-editar-${c.id}`}
+                                    title="Editar"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
                               )}
                             </TableCell>
                           </TableRow>
