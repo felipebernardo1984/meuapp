@@ -93,16 +93,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // ── Block API access for vencido arenas (except whitelisted routes) ────────
+  // NOTE: middleware is mounted at /api, so req.path is relative (e.g. /session, not /api/session)
   const BLOCKED_WHITELIST = [
-    "/api/session", "/api/login", "/api/logout",
-    "/api/arena/ja-paguei", "/api/platform-settings/public",
-    "/api/admin/session", "/api/admin/login",
+    "/session", "/login", "/logout",
+    "/arena/ja-paguei", "/platform-settings/public",
+    "/admin/session", "/admin/login", "/admin/logout",
+    "/arena/", // GET /api/arena/:id (public arena info)
+    "/registro", // self-service registration
   ];
   app.use("/api", async (req: Request, res: Response, next: NextFunction) => {
     const arenaId = req.session.arenaId;
     if (!arenaId) return next();
     const isWhitelisted = BLOCKED_WHITELIST.some(
-      (p) => req.path === p || req.path.startsWith(p + "/")
+      (p) => req.path === p || req.path.startsWith(p)
     );
     if (isWhitelisted) return next();
     const arena = await storage.getArena(arenaId);
@@ -223,18 +226,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const teacher = await storage.getTeacherByLogin(arena.id, login);
       if (teacher && teacher.senha === senha) {
+        const contaBloqueada = arena.statusConta === "vencido";
         req.session.arenaId = arena.id;
         req.session.userType = "professor";
         req.session.userId = teacher.id;
-        return res.json({ tipo: "professor", professor: { id: teacher.id, nome: teacher.nome, modalidade: teacher.modalidade }, arenaId: arena.id });
+        return res.json({ tipo: "professor", professor: { id: teacher.id, nome: teacher.nome, modalidade: teacher.modalidade }, arenaId: arena.id, contaBloqueada });
       }
       const student = await storage.getStudentByLogin(arena.id, login);
       if (student && student.senha === senha && student.aprovado) {
+        const contaBloqueada = arena.statusConta === "vencido";
         req.session.arenaId = arena.id;
         req.session.userType = "aluno";
         req.session.userId = student.id;
         const historico = await storage.listCheckins(student.id);
-        return res.json({ tipo: "aluno", aluno: { ...student, historico }, arenaId: arena.id });
+        return res.json({ tipo: "aluno", aluno: { ...student, historico }, arenaId: arena.id, contaBloqueada });
       }
     }
 
@@ -285,13 +290,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     if (userType === "professor") {
       const teacher = await storage.getTeacher(userId!);
-      return res.json({ authenticated: true, tipo: "professor", professor: teacher, arenaId });
+      const arenaForProf = await storage.getArena(arenaId!);
+      const contaBloqueada = arenaForProf?.statusConta === "vencido";
+      let paymentInfo: Record<string, string> | null = null;
+      if (contaBloqueada) {
+        const settings = await storage.getAllPlatformSettings();
+        paymentInfo = {
+          pixTipo: settings["pix_tipo"] ?? "",
+          pixChave: settings["pix_chave"] ?? "",
+          bancoNome: settings["banco_nome"] ?? "",
+          bancoAgencia: settings["banco_agencia"] ?? "",
+          bancoConta: settings["banco_conta"] ?? "",
+          bancoTitular: settings["banco_titular"] ?? "",
+          suporteWhatsapp: settings["suporte_whatsapp"] ?? "",
+          suporteEmail: settings["suporte_email"] ?? "",
+          valor: arenaForProf?.subscriptionValue ?? "",
+        };
+      }
+      return res.json({ authenticated: true, tipo: "professor", professor: teacher, arenaId, contaBloqueada, paymentInfo });
     }
     if (userType === "aluno") {
       const student = await storage.getStudent(userId!);
       if (!student) return res.json({ authenticated: false });
-      const historico = await storage.listCheckins(student.id);
-      return res.json({ authenticated: true, tipo: "aluno", aluno: { ...student, historico }, arenaId });
+      const arenaForAluno = await storage.getArena(arenaId!);
+      const contaBloqueada = arenaForAluno?.statusConta === "vencido";
+      let paymentInfo: Record<string, string> | null = null;
+      if (contaBloqueada) {
+        const settings = await storage.getAllPlatformSettings();
+        paymentInfo = {
+          pixTipo: settings["pix_tipo"] ?? "",
+          pixChave: settings["pix_chave"] ?? "",
+          bancoNome: settings["banco_nome"] ?? "",
+          bancoAgencia: settings["banco_agencia"] ?? "",
+          bancoConta: settings["banco_conta"] ?? "",
+          bancoTitular: settings["banco_titular"] ?? "",
+          suporteWhatsapp: settings["suporte_whatsapp"] ?? "",
+          suporteEmail: settings["suporte_email"] ?? "",
+          valor: arenaForAluno?.subscriptionValue ?? "",
+        };
+      }
+      const historico = contaBloqueada ? [] : await storage.listCheckins(student.id);
+      return res.json({ authenticated: true, tipo: "aluno", aluno: { ...student, historico }, arenaId, contaBloqueada, paymentInfo });
     }
     return res.json({ authenticated: false });
   });
