@@ -655,6 +655,110 @@ function ConfiguracaoView({
 
   return (
     <div className="space-y-4">
+      {/* ── Upload Zone ─────────────────────────────────────────────────── */}
+      <Card className="border-dashed border-2">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+            Importar Excel e Conferir
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Arraste o Excel do TotalPass ou Wellhub aqui. O sistema detecta automaticamente as
+            colunas de <strong>nome</strong> e <strong>valor</strong> e cruza com os alunos
+            cadastrados abaixo.
+          </p>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const files = Array.from(e.dataTransfer.files);
+              if (files.length) handleUploadFiles(files);
+            }}
+            onClick={() => !isUploading && fileRef.current?.click()}
+            data-testid="upload-zone-config"
+            className={cn(
+              "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none",
+              dragging
+                ? "border-primary bg-primary/5 cursor-pointer"
+                : "border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer",
+              isUploading && "opacity-60 cursor-not-allowed"
+            )}
+          >
+            {isUploading ? (
+              <>
+                <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
+                <span className="text-sm text-muted-foreground">Processando arquivos…</span>
+              </>
+            ) : (
+              <>
+                <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
+                <span className="text-sm font-medium">
+                  Arraste os arquivos ou clique para selecionar
+                </span>
+                <span className="text-xs text-muted-foreground mt-0.5">
+                  .xlsx ou .xls · TotalPass e/ou Wellhub
+                </span>
+              </>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length) handleUploadFiles(files);
+                e.target.value = "";
+              }}
+            />
+          </div>
+
+          {uploadingFiles.length > 0 && (
+            <div className="space-y-1.5 mt-2">
+              {uploadingFiles.map((f) => (
+                <div
+                  key={f.name}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
+                    f.status === "processing" && "bg-muted",
+                    f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
+                    f.status === "error" && "bg-red-50 dark:bg-red-950/40"
+                  )}
+                >
+                  {f.status === "processing" && (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+                  )}
+                  {f.status === "done" && (
+                    <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  )}
+                  {f.status === "error" && (
+                    <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                  )}
+                  <span className="truncate flex-1">{f.name}</span>
+                  <Badge variant="secondary" className="text-xs shrink-0">
+                    {plataformaLabel(f.platform || "outro")}
+                  </Badge>
+                  {f.status === "error" && f.error && (
+                    <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
+                  )}
+                  {f.status === "done" && f.debug && (
+                    <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
+                      col.nome: <strong>{f.debug.nameCol ?? "?"}</strong> · col.valor: <strong>{f.debug.valueCol ?? "?"}</strong>
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Professor configuration ─────────────────────────────────────── */}
       {/* Add Professor Card */}
       <Card>
         <CardHeader className="pb-3">
@@ -943,108 +1047,6 @@ function ConfiguracaoView({
         </div>
       )}
 
-      {/* ── Upload Zone ─────────────────────────────────────────────────── */}
-      <Card className="border-dashed border-2">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-            Importar Excel e Conferir
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Arraste o Excel do TotalPass ou Wellhub aqui. O sistema detecta automaticamente as
-            colunas de <strong>nome</strong> e <strong>valor</strong> e cruza com os alunos
-            cadastrados acima.
-          </p>
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragging(false);
-              const files = Array.from(e.dataTransfer.files);
-              if (files.length) handleUploadFiles(files);
-            }}
-            onClick={() => !isUploading && fileRef.current?.click()}
-            data-testid="upload-zone-config"
-            className={cn(
-              "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none",
-              dragging
-                ? "border-primary bg-primary/5 cursor-pointer"
-                : "border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer",
-              isUploading && "opacity-60 cursor-not-allowed"
-            )}
-          >
-            {isUploading ? (
-              <>
-                <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
-                <span className="text-sm text-muted-foreground">Processando arquivos…</span>
-              </>
-            ) : (
-              <>
-                <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
-                <span className="text-sm font-medium">
-                  Arraste os arquivos ou clique para selecionar
-                </span>
-                <span className="text-xs text-muted-foreground mt-0.5">
-                  .xlsx ou .xls · TotalPass e/ou Wellhub
-                </span>
-              </>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,.xls"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                if (files.length) handleUploadFiles(files);
-                e.target.value = "";
-              }}
-            />
-          </div>
-
-          {uploadingFiles.length > 0 && (
-            <div className="space-y-1.5 mt-2">
-              {uploadingFiles.map((f) => (
-                <div
-                  key={f.name}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
-                    f.status === "processing" && "bg-muted",
-                    f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
-                    f.status === "error" && "bg-red-50 dark:bg-red-950/40"
-                  )}
-                >
-                  {f.status === "processing" && (
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
-                  )}
-                  {f.status === "done" && (
-                    <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                  )}
-                  {f.status === "error" && (
-                    <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />
-                  )}
-                  <span className="truncate flex-1">{f.name}</span>
-                  <Badge variant="secondary" className="text-xs shrink-0">
-                    {plataformaLabel(f.platform || "outro")}
-                  </Badge>
-                  {f.status === "error" && f.error && (
-                    <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
-                  )}
-                  {f.status === "done" && f.debug && (
-                    <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
-                      col.nome: <strong>{f.debug.nameCol ?? "?"}</strong> · col.valor: <strong>{f.debug.valueCol ?? "?"}</strong>
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -1166,6 +1168,7 @@ function SessaoView({
   const [filtroProfessor, setFiltroProfessor] = useState("todos");
   const [buscaNome, setBuscaNome] = useState("");
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
+  const [destinarPara, setDestinarPara] = useState("");
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -1178,24 +1181,27 @@ function SessaoView({
     },
   });
 
+  const { data: confsProfs = [] } = useQuery<ConfProfessor[]>({
+    queryKey: ["/api/conferencia/professores"],
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
       apiRequest("PUT", `/api/conferencia/registro/${id}`, data).then((r) => r.json()),
     onSuccess: (updated: Registro) => {
       qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", sessaoId], (old) => {
         if (!old) return old;
+        const newRegs = old.registros.map((r) =>
+          r.id === updated.id
+            ? { ...updated, professorNome: confsProfs.find((p) => p.id === updated.professorId)?.nome ?? r.professorNome }
+            : r
+        );
         return {
           ...old,
-          encontrados: old.registros.filter(
-            (r) => (r.id === updated.id ? updated.status : r.status) === "confirmado"
-          ).length,
-          possiveis: old.registros.filter(
-            (r) => (r.id === updated.id ? updated.status : r.status) === "pendente"
-          ).length,
-          naoEncontrados: old.registros.filter(
-            (r) => (r.id === updated.id ? updated.status : r.status) === "nao_encontrado"
-          ).length,
-          registros: old.registros.map((r) => (r.id === updated.id ? updated : r)),
+          encontrados: newRegs.filter((r) => r.status === "confirmado").length,
+          possiveis: newRegs.filter((r) => r.status === "pendente").length,
+          naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
+          registros: newRegs,
         };
       });
     },
@@ -1212,21 +1218,22 @@ function SessaoView({
 
   const registros = sessao.registros ?? [];
 
-  const professores = Array.from(
-    new Map(
-      registros
-        .filter((r) => r.professorNome)
-        .map((r) => [r.professorId, r.professorNome])
-    ).entries()
+  const filteredProfs = Array.from(
+    new Map(registros.filter((r) => r.professorNome).map((r) => [r.professorId, r.professorNome])).entries()
   ).map(([id, nome]) => ({ id: id!, nome: nome! }));
 
   const filtered = registros.filter((r) => {
     if (filtroStatus !== "todos" && r.status !== filtroStatus) return false;
     if (filtroProfessor !== "todos" && r.professorId !== filtroProfessor) return false;
-    if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase()))
-      return false;
+    if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
     return true;
   });
+
+  const confirmedValor = registros.filter((r) => r.status === "confirmado").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const pendenteValor = registros.filter((r) => r.status === "pendente").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const naoEncontradoValor = registros.filter((r) => r.status === "nao_encontrado").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalValor = confirmedValor + pendenteValor + naoEncontradoValor;
+  const naoEncontradosCount = registros.filter((r) => r.status === "nao_encontrado").length;
 
   const handleConfirmar = (r: Registro) => {
     updateMutation.mutate({ id: r.id, data: { status: "confirmado", salvarAlias: true } });
@@ -1236,101 +1243,88 @@ function SessaoView({
     updateMutation.mutate({ id: r.id, data: { status: "ignorado" } });
   };
 
-  const handleExportCSV = () => {
-    window.open(`/api/conferencia/export/${sessaoId}`, "_blank");
+  const handleDestinar = (registroId: string, professorId: string | null) => {
+    const prof = confsProfs.find((p) => p.id === professorId);
+    const percentual = prof?.percentualComissao ?? "0";
+    updateMutation.mutate({ id: registroId, data: { professorId, percentual } });
   };
 
-  const handleExportPDF = () => {
-    exportToPDF(sessao);
+  const handleBulkDestinar = () => {
+    if (!destinarPara) return;
+    const naoEnc = registros.filter((r) => r.status === "nao_encontrado");
+    const professorId = destinarPara === "arena" ? null : destinarPara;
+    const prof = confsProfs.find((p) => p.id === professorId);
+    const percentual = prof?.percentualComissao ?? "0";
+    naoEnc.forEach((r) => {
+      updateMutation.mutate({ id: r.id, data: { professorId, percentual } });
+    });
+    toast({ title: `${naoEnc.length} registro${naoEnc.length !== 1 ? "s" : ""} destinado${naoEnc.length !== 1 ? "s" : ""}` });
   };
+
+  const handleExportCSV = () => window.open(`/api/conferencia/export/${sessaoId}`, "_blank");
+  const handleExportPDF = () => exportToPDF(sessao);
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-4">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onVoltar}
-          className="mt-0.5 shrink-0"
-          data-testid="button-voltar-conferencia"
-        >
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Button variant="ghost" size="icon" onClick={onVoltar} className="shrink-0" data-testid="button-voltar-conferencia">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-bold text-foreground truncate">{sessao.nomeArquivo}</h1>
-          <div className="flex items-center gap-2 flex-wrap mt-0.5">
-            <Badge variant="secondary" className="text-xs">
-              {plataformaLabel(sessao.plataforma)}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {new Date(sessao.criadoEm).toLocaleDateString("pt-BR")} · {sessao.totalRegistros}{" "}
-              registros
-            </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="font-bold text-base sm:text-lg truncate">{sessao.nomeArquivo}</h1>
+            <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(sessao.plataforma)}</Badge>
           </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {new Date(sessao.criadoEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+            {" · "}{sessao.totalRegistros} registros
+          </p>
         </div>
         <div className="flex gap-1.5 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            className="gap-1.5"
-            data-testid="button-export-csv"
-          >
-            <Download className="h-3.5 w-3.5" />
-            CSV
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs" data-testid="button-export-csv">
+            <Download className="h-3.5 w-3.5" /> CSV
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPDF}
-            className="gap-1.5"
-            data-testid="button-export-pdf"
-          >
-            <Printer className="h-3.5 w-3.5" />
-            PDF
+          <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs" data-testid="button-export-pdf">
+            <Printer className="h-3.5 w-3.5" /> PDF
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          {
-            label: "Encontrados",
-            val: sessao.encontrados,
-            icon: CheckCircle,
-            color: "text-emerald-600 dark:text-emerald-400",
-            bg: "bg-emerald-50 dark:bg-emerald-950/40",
-          },
-          {
-            label: "Possíveis",
-            val: sessao.possiveis,
-            icon: AlertCircle,
-            color: "text-amber-600 dark:text-amber-400",
-            bg: "bg-amber-50 dark:bg-amber-950/40",
-          },
-          {
-            label: "Não encontrados",
-            val: sessao.naoEncontrados,
-            icon: XCircle,
-            color: "text-red-600 dark:text-red-400",
-            bg: "bg-red-50 dark:bg-red-950/40",
-          },
-        ].map((s) => (
-          <Card key={s.label} className={cn("border", s.bg)}>
-            <CardContent className="p-3 flex items-center gap-2.5">
-              <s.icon className={cn("h-5 w-5 shrink-0", s.color)} />
-              <div>
-                <div className={cn("text-xl font-bold leading-none", s.color)}>{s.val}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* ── KPI Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card className="border shadow-none bg-muted/30">
+          <CardContent className="p-4">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Total planilha</p>
+            <p className="text-lg font-bold text-foreground leading-none">{fmtVal(String(totalValor))}</p>
+            <p className="text-xs text-muted-foreground mt-1">{sessao.totalRegistros} registros</p>
+          </CardContent>
+        </Card>
+        <Card className="border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40">
+          <CardContent className="p-4">
+            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-1.5">Confirmados</p>
+            <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 leading-none">{sessao.encontrados}</p>
+            <p className="text-xs text-emerald-600/80 dark:text-emerald-500/80 mt-1">{fmtVal(String(confirmedValor))}</p>
+          </CardContent>
+        </Card>
+        <Card className="border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40">
+          <CardContent className="p-4">
+            <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1.5">Possíveis</p>
+            <p className="text-lg font-bold text-amber-700 dark:text-amber-400 leading-none">{sessao.possiveis}</p>
+            <p className="text-xs text-amber-600/80 dark:text-amber-500/80 mt-1">{fmtVal(String(pendenteValor))}</p>
+          </CardContent>
+        </Card>
+        <Card className={cn("border shadow-none", naoEncontradosCount > 0 ? "bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40" : "bg-muted/30")}>
+          <CardContent className="p-4">
+            <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-1.5", naoEncontradosCount > 0 ? "text-red-700 dark:text-red-400" : "text-muted-foreground")}>Não encontrados</p>
+            <p className={cn("text-lg font-bold leading-none", naoEncontradosCount > 0 ? "text-red-700 dark:text-red-400" : "text-foreground")}>{sessao.naoEncontrados}</p>
+            <p className={cn("text-xs mt-1", naoEncontradosCount > 0 ? "text-red-600/80 dark:text-red-500/80" : "text-muted-foreground")}>{fmtVal(String(naoEncontradoValor))}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Tabs */}
+      {/* ── Tabs ── */}
       <div className="flex gap-1 border-b">
         {(["conferencia", "relatorio"] as const).map((t) => (
           <button
@@ -1338,192 +1332,241 @@ function SessaoView({
             onClick={() => setTab(t)}
             className={cn(
               "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-              tab === t
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+              tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             )}
             data-testid={`tab-${t}`}
           >
-            {t === "conferencia" ? "Conferência" : "Relatório"}
+            {t === "conferencia" ? "Conferência" : "Relatório por Professor"}
           </button>
         ))}
       </div>
 
-      {/* Conferência Tab */}
+      {/* ── Conferência Tab ── */}
       {tab === "conferencia" && (
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Buscar nome…"
-                value={buscaNome}
-                onChange={(e) => setBuscaNome(e.target.value)}
-                className="pl-8 h-8 text-sm w-48"
-                data-testid="input-busca-nome"
-              />
-            </div>
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="h-8 text-sm w-40" data-testid="select-filtro-status">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="confirmado">Confirmados</SelectItem>
-                <SelectItem value="pendente">Possíveis</SelectItem>
-                <SelectItem value="nao_encontrado">Não encontrados</SelectItem>
-                <SelectItem value="ignorado">Ignorados</SelectItem>
-              </SelectContent>
-            </Select>
-            {professores.length > 0 && (
-              <Select value={filtroProfessor} onValueChange={setFiltroProfessor}>
-                <SelectTrigger
-                  className="h-8 text-sm w-44"
-                  data-testid="select-filtro-professor"
-                >
-                  <SelectValue placeholder="Professor" />
+
+          {/* Bulk destinar bar */}
+          {naoEncontradosCount > 0 && (
+            <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <p className="text-sm text-amber-800 dark:text-amber-300 flex-1 min-w-0">
+                <strong>{naoEncontradosCount}</strong> sem correspondência — destinar receita para:
+              </p>
+              <Select value={destinarPara} onValueChange={setDestinarPara}>
+                <SelectTrigger className="h-8 w-52 text-xs bg-white dark:bg-background" data-testid="select-destinar-bulk">
+                  <SelectValue placeholder="Selecionar destino…" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os professores</SelectItem>
-                  {professores.map((p) => (
+                  <SelectItem value="arena">Arena (sem comissão)</SelectItem>
+                  {confsProfs.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
+                      {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` (${p.percentualComissao}%)` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <Button size="sm" onClick={handleBulkDestinar} disabled={!destinarPara || updateMutation.isPending} data-testid="button-bulk-destinar">
+                Aplicar a todos
+              </Button>
+            </div>
+          )}
+
+          {/* Filter bar */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[160px] max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Buscar nome…"
+                value={buscaNome}
+                onChange={(e) => setBuscaNome(e.target.value)}
+                className="pl-8 h-8 text-sm"
+                data-testid="input-busca-nome"
+              />
+            </div>
+            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <SelectTrigger className="h-8 text-sm w-44" data-testid="select-filtro-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os status</SelectItem>
+                <SelectItem value="confirmado">✓ Confirmados</SelectItem>
+                <SelectItem value="pendente">~ Possíveis</SelectItem>
+                <SelectItem value="nao_encontrado">✗ Não encontrados</SelectItem>
+                <SelectItem value="ignorado">— Ignorados</SelectItem>
+              </SelectContent>
+            </Select>
+            {filteredProfs.length > 0 && (
+              <Select value={filtroProfessor} onValueChange={setFiltroProfessor}>
+                <SelectTrigger className="h-8 text-sm w-44" data-testid="select-filtro-professor">
+                  <SelectValue placeholder="Professor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os professores</SelectItem>
+                  {filteredProfs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-            <span className="text-xs text-muted-foreground self-center ml-auto">
+            <span className="text-xs text-muted-foreground ml-auto">
               {filtered.length} de {registros.length}
             </span>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Nome na Plataforma</TableHead>
-                  <TableHead className="text-xs">Aluno Correspondido</TableHead>
-                  <TableHead className="text-xs">Professor</TableHead>
-                  <TableHead className="text-xs text-right">Valor</TableHead>
-                  <TableHead className="text-xs text-center">Chk</TableHead>
-                  <TableHead className="text-xs text-center">Sim%</TableHead>
-                  <TableHead className="text-xs">Status</TableHead>
-                  <TableHead className="text-xs">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center text-sm text-muted-foreground py-8"
-                    >
-                      Nenhum registro encontrado
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filtered.map((r) => {
-                    const si = statusInfo(r.status);
-                    return (
-                      <TableRow
-                        key={r.id}
-                        className={cn("text-sm", si.bg)}
-                        data-testid={`row-registro-${r.id}`}
-                      >
-                        <TableCell className="font-medium max-w-[160px] truncate py-2">
-                          {r.nomePlataforma}
-                        </TableCell>
-                        <TableCell className="max-w-[150px] truncate py-2 text-muted-foreground">
-                          {r.alunoNomeMatch ?? <span className="italic">—</span>}
-                        </TableCell>
-                        <TableCell className="py-2 text-xs text-muted-foreground">
-                          {r.professorNome ?? "—"}
-                        </TableCell>
-                        <TableCell className="py-2 text-right font-mono text-xs">
-                          {fmtVal(r.valor)}
-                        </TableCell>
-                        <TableCell className="py-2 text-center text-xs">{r.checkins}</TableCell>
-                        <TableCell className="py-2 text-center text-xs">
-                          {r.similaridade != null ? `${r.similaridade}%` : "—"}
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <span
-                            className={cn(
-                              "text-xs font-medium flex items-center gap-1",
-                              si.color
-                            )}
-                          >
-                            <span
-                              className={cn("h-1.5 w-1.5 rounded-full shrink-0", si.dot)}
-                            />
-                            {si.label}
+          {/* Record list */}
+          {filtered.length === 0 ? (
+            <div className="text-center py-12 text-sm text-muted-foreground border border-dashed rounded-lg">
+              Nenhum registro encontrado para os filtros selecionados
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {filtered.map((r) => {
+                const si = statusInfo(r.status);
+                const hasSplit = parseFloat(r.percentual) > 0 && parseFloat(r.valorProfessor) > 0;
+                const profNome = r.professorNome ?? confsProfs.find((p) => p.id === r.professorId)?.nome ?? null;
+                return (
+                  <div
+                    key={r.id}
+                    className={cn(
+                      "group rounded-lg border bg-card flex items-stretch overflow-hidden transition-shadow hover:shadow-sm",
+                      r.status === "confirmado" && "border-emerald-200 dark:border-emerald-800/50",
+                      r.status === "pendente" && "border-amber-200 dark:border-amber-800/50",
+                      r.status === "nao_encontrado" && "border-red-200 dark:border-red-800/50",
+                      r.status === "ignorado" && "opacity-50 border-border"
+                    )}
+                    data-testid={`row-registro-${r.id}`}
+                  >
+                    {/* Color strip */}
+                    <div className={cn("w-1 shrink-0", si.dot)} />
+
+                    {/* Main content */}
+                    <div className="flex-1 min-w-0 p-3 flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm text-foreground truncate max-w-xs">
+                            {r.nomePlataforma}
                           </span>
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <div className="flex items-center gap-1">
-                            {r.status === "pendente" && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                                  onClick={() => handleConfirmar(r)}
-                                  data-testid={`button-confirmar-${r.id}`}
-                                >
-                                  Confirmar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={() => setLinkDialog(r)}
-                                  data-testid={`button-alterar-${r.id}`}
-                                >
-                                  Alterar
-                                </Button>
-                              </>
+                          {r.similaridade != null && r.status !== "nao_encontrado" && r.status !== "ignorado" && (
+                            <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                              {r.similaridade}%
+                            </span>
+                          )}
+                        </div>
+
+                        {r.alunoNomeMatch && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            <span className="text-foreground/70">→ {r.alunoNomeMatch}</span>
+                            {profNome && (
+                              <span className="ml-2 font-medium text-primary">· {profNome}</span>
                             )}
-                            {r.status === "nao_encontrado" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => setLinkDialog(r)}
-                                data-testid={`button-vincular-${r.id}`}
-                              >
-                                Vincular
-                              </Button>
+                            {parseFloat(r.percentual) > 0 && (
+                              <span className="ml-1 text-muted-foreground">({r.percentual}%)</span>
                             )}
-                            {(r.status === "pendente" || r.status === "nao_encontrado") && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-2 text-xs text-muted-foreground"
-                                onClick={() => handleIgnorar(r)}
-                                data-testid={`button-ignorar-${r.id}`}
-                              >
-                                Ignorar
-                              </Button>
-                            )}
+                          </p>
+                        )}
+
+                        {/* Destinar inline for unmatched */}
+                        {r.status === "nao_encontrado" && (
+                          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                            <span className="text-xs text-muted-foreground">Destinar para:</span>
+                            <Select
+                              value={r.professorId ?? "__none__"}
+                              onValueChange={(v) => handleDestinar(r.id, v === "__none__" || v === "arena" ? null : v)}
+                            >
+                              <SelectTrigger className="h-6 text-xs w-44 py-0" data-testid={`select-destinar-${r.id}`}>
+                                <SelectValue placeholder="Professor ou arena…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="arena">Arena (sem comissão)</SelectItem>
+                                {confsProfs.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                        )}
+                      </div>
+
+                      {/* Value block */}
+                      <div className="text-right shrink-0 min-w-[80px]">
+                        <p className="font-bold text-sm tabular-nums">{fmtVal(r.valor)}</p>
+                        {hasSplit ? (
+                          <div className="mt-0.5 text-[11px] space-x-0.5">
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">{fmtVal(r.valorProfessor)}</span>
+                            <span className="text-muted-foreground">/</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-medium tabular-nums">{fmtVal(r.valorArena)}</span>
+                          </div>
+                        ) : r.status === "nao_encontrado" && profNome === null ? (
+                          <p className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums mt-0.5">{fmtVal(r.valor)} arena</p>
+                        ) : null}
+                        {r.checkins > 1 && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{r.checkins}× chk</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right action panel */}
+                    <div className="flex flex-col items-center justify-center gap-1 px-2.5 min-w-[88px] border-l border-border/60 bg-muted/10 shrink-0">
+                      <span className={cn("text-[11px] font-semibold text-center leading-tight", si.color)}>
+                        {si.label}
+                      </span>
+                      {r.status === "pendente" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full"
+                            onClick={() => handleConfirmar(r)}
+                            data-testid={`button-confirmar-${r.id}`}
+                          >
+                            Confirmar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs w-full"
+                            onClick={() => setLinkDialog(r)}
+                            data-testid={`button-alterar-${r.id}`}
+                          >
+                            Alterar
+                          </Button>
+                        </>
+                      )}
+                      {r.status === "nao_encontrado" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs w-full"
+                          onClick={() => setLinkDialog(r)}
+                          data-testid={`button-vincular-${r.id}`}
+                        >
+                          Vincular
+                        </Button>
+                      )}
+                      {(r.status === "pendente" || r.status === "nao_encontrado") && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleIgnorar(r)}
+                          data-testid={`button-ignorar-${r.id}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Relatório Tab */}
-      {tab === "relatorio" && (
-        <RelatorioView registros={registros} plataforma={sessao.plataforma} />
-      )}
+      {/* ── Relatório Tab ── */}
+      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} />}
 
-      {/* Link Dialog */}
+      {/* ── Link Dialog ── */}
       {linkDialog && (
         <LinkAlunoDialog
           registro={linkDialog}

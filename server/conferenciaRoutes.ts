@@ -51,8 +51,27 @@ function tokenSetSim(a: string, b: string): number {
   return stringSim(na, nb);
 }
 
+/** Word-overlap similarity — handles extra middle names common in TotalPass/Wellhub exports.
+ *  "Gustavo Pereira" vs "GUSTAVO HENRIQUE PEREIRA" → 100% containment → 88 → confirmado */
+function wordOverlapSim(a: string, b: string): number {
+  const STOPS = new Set(["de", "da", "do", "dos", "das", "di", "e"]);
+  const wa = new Set(
+    normalizeNome(a).split(" ").filter((w) => w.length > 2 && !STOPS.has(w))
+  );
+  const wb = new Set(
+    normalizeNome(b).split(" ").filter((w) => w.length > 2 && !STOPS.has(w))
+  );
+  if (wa.size === 0 || wb.size === 0) return 0;
+  let overlap = 0;
+  for (const w of wa) if (wb.has(w)) overlap++;
+  const containment = overlap / wa.size; // % of registered words found in platform name
+  const union = wa.size + wb.size - overlap;
+  const jaccard = union > 0 ? overlap / union : 0;
+  return Math.round(Math.max(containment * 88, jaccard * 100));
+}
+
 function bestSim(a: string, b: string): number {
-  return Math.max(stringSim(a, b), tokenSetSim(a, b));
+  return Math.max(stringSim(a, b), tokenSetSim(a, b), wordOverlapSim(a, b));
 }
 
 // ── Column detection for flexible Excel formats ──────────────────────────────
@@ -206,7 +225,69 @@ function parseExcelRows(buffer: Buffer): Array<Record<string, unknown>> {
   const wb = XLSX.read(buffer, { type: "buffer" });
   const wsName = wb.SheetNames[0];
   const ws = wb.Sheets[wsName];
-  return XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+  // Read all rows as arrays first so we can find the real header row.
+  // TotalPass / Wellhub exports often have 1-3 title rows before the actual header.
+  const allRows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+  if (allRows.length < 2) return [];
+
+  const HEADER_KEYWORDS = [
+    "nome", "cpf", "usuario", "cliente", "beneficiario", "titular", "membro",
+    "valor", "repasse", "receita", "tarifa", "preco", "custo",
+    "data", "periodo", "competencia", "mes", "vigencia",
+    "visita", "checkin", "check-in", "acesso", "frequencia", "sessao",
+    "empresa", "plano", "status",
+  ];
+
+  // Pick the row (among the first 15) that contains the most header keywords.
+  let headerRowIdx = 0;
+  let bestScore = 0;
+
+  for (let i = 0; i < Math.min(15, allRows.length); i++) {
+    const row = allRows[i] as unknown[];
+    const cells = row.map((c) =>
+      String(c ?? "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+    );
+    const score = HEADER_KEYWORDS.filter((kw) =>
+      cells.some((cell) => cell.includes(kw))
+    ).length;
+    if (score > bestScore) {
+      bestScore = score;
+      headerRowIdx = i;
+    }
+  }
+
+  // If no keywords matched at all, fall back to the row with the most non-empty cells.
+  if (bestScore === 0) {
+    for (let i = 0; i < Math.min(10, allRows.length); i++) {
+      const nonEmpty = (allRows[i] as unknown[]).filter((c) => c !== "").length;
+      const curBest = (allRows[headerRowIdx] as unknown[]).filter((c) => c !== "").length;
+      if (nonEmpty > curBest) headerRowIdx = i;
+    }
+  }
+
+  console.log(`[Conferência] Header row auto-detected at index ${headerRowIdx} (score ${bestScore})`);
+
+  // Build column names from that row.
+  const headers = (allRows[headerRowIdx] as unknown[]).map((h, i) => {
+    const s = String(h ?? "").trim();
+    return s || `col_${i}`;
+  });
+
+  // Convert subsequent rows to objects, skipping fully-empty rows.
+  return allRows
+    .slice(headerRowIdx + 1)
+    .map((row) => {
+      const obj: Record<string, unknown> = {};
+      (row as unknown[]).forEach((val, i) => {
+        obj[headers[i] ?? `col_${i}`] = val;
+      });
+      return obj;
+    })
+    .filter((row) => Object.values(row).some((v) => v !== "" && v != null));
 }
 
 // Strip CPF (11-digit number, with or without formatting) and trailing noise from names
@@ -427,7 +508,7 @@ export function registerConferenciaRoutes(app: Express): void {
 
       const headers = Object.keys(rows[0]);
       const cols = detectColumns(headers, rows);
-      console.log(`[Conferência] Colunas detectadas — nome: "${cols.debug.nameCol ?? "NÃO DETECTADA"}" | valor: "${cols.debug.valueCol ?? "NÃO DETECTADA"}" | headers: [${cols.debug.allHeaders.join(", ")}]`);
+      console.log(`[Conferência] Arquivo: ${filename} | Colunas — nome: "${cols.debug.nameCol ?? "NÃO DETECTADA"}" | valor: "${cols.debug.valueCol ?? "NÃO DETECTADA"}" | headers: [${cols.debug.allHeaders.join(", ")}]`);
 
       // Load conferencia-specific data (standalone — no connection to arena students/teachers)
       const profsDb = await db
@@ -481,8 +562,8 @@ export function registerConferenciaRoutes(app: Express): void {
           }
         }
 
-        if (bestScore >= 90) return { aluno: bestAluno!, score: bestScore, status: "confirmado" };
-        if (bestScore >= 70) return { aluno: bestAluno!, score: bestScore, status: "pendente" };
+        if (bestScore >= 82) return { aluno: bestAluno!, score: bestScore, status: "confirmado" };
+        if (bestScore >= 55) return { aluno: bestAluno!, score: bestScore, status: "pendente" };
         return { aluno: null as null, score: bestScore, status: "nao_encontrado" };
       }
 

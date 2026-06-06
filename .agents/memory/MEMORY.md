@@ -1,0 +1,1 @@
+- [Conferência Excel header detection](conferencia-excel-parsing.md) — TotalPass/Wellhub exports have title rows; must auto-detect real header row, not use row 0.
