@@ -46,6 +46,7 @@ import {
   Plus,
   Pencil,
   X,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -170,6 +171,187 @@ function initials(nome: string): string {
     .toUpperCase();
 }
 
+/** Detecta a plataforma automaticamente pelo nome do arquivo */
+function detectPlatformFromFilename(filename: string): string {
+  const lower = filename.toLowerCase();
+  if (lower.includes("totalpass")) return "totalpass";
+  if (lower.includes("wellhub") || lower.includes("gympass")) return "wellhub";
+  return "";
+}
+
+// ── PDF Export ────────────────────────────────────────────────────────────────
+
+function exportToPDF(sessao: SessaoDetalhe) {
+  const confirmados = sessao.registros.filter((r) => r.status === "confirmado");
+  const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalProfessores = confirmados.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+  const totalArena = confirmados.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const totalCheckins = confirmados.reduce((s, r) => s + (r.checkins ?? 1), 0);
+  const naoEncontrados = sessao.registros.filter((r) => r.status === "nao_encontrado");
+
+  const byProf = new Map<string, { nome: string; registros: Registro[] }>();
+  for (const r of confirmados) {
+    const key = r.professorId ?? "__arena__";
+    if (!byProf.has(key)) {
+      byProf.set(key, { nome: r.professorNome ?? "Arena (sem professor)", registros: [] });
+    }
+    byProf.get(key)!.registros.push(r);
+  }
+  const profGroups = Array.from(byProf.entries()).sort((a, b) =>
+    a[1].nome.localeCompare(b[1].nome)
+  );
+
+  const fmt = (v: number) =>
+    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const dataStr = new Date(sessao.criadoEm).toLocaleDateString("pt-BR");
+
+  const profBlocks = profGroups
+    .map(([key, g]) => {
+      const subtotal = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+      const comissao = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+      const arena = g.registros.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+      const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
+      const pct = g.registros[0]?.percentual ?? "0";
+
+      const rows = g.registros
+        .map(
+          (r) => `
+        <tr>
+          <td>${r.nomePlataforma}</td>
+          <td>${r.alunoNomeMatch ?? r.nomePlataforma}</td>
+          <td style="text-align:center">${r.checkins ?? 1}</td>
+          <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
+          <td style="text-align:right">${fmt(parseFloat(r.valorProfessor || "0"))}</td>
+          <td style="text-align:right">${fmt(parseFloat(r.valorArena || "0"))}</td>
+        </tr>`
+        )
+        .join("");
+
+      const isArena = key === "__arena__";
+      return `
+      <div class="prof-block">
+        <div class="prof-header">
+          <span class="prof-name">${g.nome}</span>
+          ${!isArena ? `<span class="prof-pct">${pct}% comissão</span>` : ""}
+          <span class="prof-summary">${g.registros.length} aluno${g.registros.length !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""}</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome na Plataforma</th>
+              <th>Aluno Correspondido</th>
+              <th style="text-align:center">Check-ins</th>
+              <th style="text-align:right">Valor Total</th>
+              <th style="text-align:right">Prof.</th>
+              <th style="text-align:right">Arena</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3"><strong>Subtotal ${g.nome}</strong></td>
+              <td style="text-align:right"><strong>${fmt(subtotal)}</strong></td>
+              <td style="text-align:right"><strong>${fmt(comissao)}</strong></td>
+              <td style="text-align:right"><strong>${fmt(arena)}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>`;
+    })
+    .join("");
+
+  const naoEncontradasBlock =
+    naoEncontrados.length > 0
+      ? `<div class="nao-encontrados">
+        <div class="section-title">Não Encontrados (${naoEncontrados.length})</div>
+        <table>
+          <thead><tr><th>Nome na Plataforma</th><th style="text-align:right">Valor</th><th style="text-align:center">Check-ins</th></tr></thead>
+          <tbody>${naoEncontrados
+            .map(
+              (r) =>
+                `<tr><td>${r.nomePlataforma}</td><td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td><td style="text-align:center">${r.checkins ?? 1}</td></tr>`
+            )
+            .join("")}</tbody>
+        </table>
+      </div>`
+      : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Conferência — ${plataformaLabel(sessao.plataforma)} — ${dataStr}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 24px; }
+  h1 { font-size: 18px; margin-bottom: 2px; }
+  .subtitle { color: #555; font-size: 11px; margin-bottom: 16px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .summary-card { border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; }
+  .summary-card .val { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
+  .summary-card .lbl { font-size: 10px; color: #666; }
+  .prof-block { margin-bottom: 20px; page-break-inside: avoid; }
+  .prof-header { display: flex; align-items: center; gap: 10px; background: #f4f4f4; padding: 7px 10px; border-radius: 5px 5px 0 0; border: 1px solid #ddd; border-bottom: none; }
+  .prof-name { font-weight: bold; font-size: 12px; }
+  .prof-pct { background: #e0e7ff; color: #3730a3; font-size: 10px; padding: 2px 7px; border-radius: 20px; }
+  .prof-summary { color: #555; font-size: 10px; margin-left: auto; }
+  table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; }
+  th { background: #f9f9f9; text-align: left; padding: 5px 8px; font-size: 10px; border-bottom: 1px solid #ddd; }
+  td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+  tfoot td { background: #f4f4f4; border-top: 1px solid #ccc; }
+  .section-title { font-weight: bold; font-size: 12px; margin: 16px 0 6px; color: #c0392b; }
+  .nao-encontrados table { border-color: #fca5a5; }
+  .nao-encontrados th { background: #fff5f5; }
+  .total-row { display: flex; gap: 20px; background: #1e293b; color: white; border-radius: 6px; padding: 10px 16px; margin: 16px 0; flex-wrap: wrap; }
+  .total-item .lbl { font-size: 9px; opacity: 0.7; }
+  .total-item .val { font-size: 13px; font-weight: bold; }
+  @media print { body { padding: 10px; } }
+</style>
+</head>
+<body>
+  <h1>Relatório de Conferência — ${plataformaLabel(sessao.plataforma)}</h1>
+  <div class="subtitle">${sessao.nomeArquivo} · Gerado em ${dataStr} · ${sessao.totalRegistros} registros · ${confirmados.length} confirmados</div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="val">${fmt(totalRecebido)}</div>
+      <div class="lbl">Total Recebido</div>
+    </div>
+    <div class="summary-card">
+      <div class="val">${fmt(totalProfessores)}</div>
+      <div class="lbl">Comissões Professores</div>
+    </div>
+    <div class="summary-card">
+      <div class="val">${fmt(totalArena)}</div>
+      <div class="lbl">Valor Arena</div>
+    </div>
+    <div class="summary-card">
+      <div class="val">${totalCheckins}</div>
+      <div class="lbl">Total Check-ins</div>
+    </div>
+  </div>
+
+  <div class="total-row">
+    <div class="total-item"><div class="lbl">TOTAL RECEBIDO</div><div class="val">${fmt(totalRecebido)}</div></div>
+    <div class="total-item"><div class="lbl">PROFESSORES</div><div class="val">${fmt(totalProfessores)}</div></div>
+    <div class="total-item"><div class="lbl">ARENA</div><div class="val">${fmt(totalArena)}</div></div>
+    <div class="total-item"><div class="lbl">CHECK-INS</div><div class="val">${totalCheckins}</div></div>
+    <div class="total-item"><div class="lbl">NÃO ENCONTRADOS</div><div class="val">${naoEncontrados.length}</div></div>
+  </div>
+
+  ${profBlocks}
+  ${naoEncontradasBlock}
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -179,7 +361,8 @@ interface Props {
 export default function ConferenciaManager({ arenaId }: Props) {
   const [view, setView] = useState<"main" | "sessao">("main");
   const [sessaoId, setSessaoId] = useState<string | null>(null);
-  const [mainTab, setMainTab] = useState<"lista" | "configuracao">("lista");
+  // "configuracao" (Professores e Alunos) is the first/default tab
+  const [mainTab, setMainTab] = useState<"configuracao" | "lista">("configuracao");
 
   if (view === "sessao" && sessaoId) {
     return (
@@ -207,8 +390,8 @@ export default function ConferenciaManager({ arenaId }: Props) {
       <div className="flex gap-1 border-b">
         {(
           [
-            { key: "lista", label: "Conferências" },
             { key: "configuracao", label: "Professores e Alunos" },
+            { key: "lista", label: "Conferências" },
           ] as const
         ).map((t) => (
           <button
@@ -227,6 +410,7 @@ export default function ConferenciaManager({ arenaId }: Props) {
         ))}
       </div>
 
+      {mainTab === "configuracao" && <ConfiguracaoView arenaId={arenaId} />}
       {mainTab === "lista" && (
         <ListaView
           arenaId={arenaId}
@@ -236,7 +420,6 @@ export default function ConferenciaManager({ arenaId }: Props) {
           }}
         />
       )}
-      {mainTab === "configuracao" && <ConfiguracaoView arenaId={arenaId} />}
     </div>
   );
 }
@@ -264,8 +447,14 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
       qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
       setNovoProfNome("");
       setNovoProfPct("0");
+      toast({ title: "Professor adicionado!" });
     },
-    onError: () => toast({ title: "Erro ao adicionar professor", variant: "destructive" }),
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao adicionar professor",
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const editProfMutation = useMutation({
@@ -285,14 +474,28 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
       setEditingProf(null);
+      toast({ title: "Professor atualizado!" });
     },
-    onError: () => toast({ title: "Erro ao editar professor", variant: "destructive" }),
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao editar professor",
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const delProfMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/professores/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] }),
-    onError: () => toast({ title: "Erro ao remover professor", variant: "destructive" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+      toast({ title: "Professor removido" });
+    },
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao remover professor",
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const addAlunoMutation = useMutation({
@@ -304,18 +507,29 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
       qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
       setNovoAluno((prev) => ({ ...prev, [vars.profId]: "" }));
     },
-    onError: () => toast({ title: "Erro ao adicionar aluno", variant: "destructive" }),
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao adicionar aluno",
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const delAlunoMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/professor-alunos/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] }),
-    onError: () => toast({ title: "Erro ao remover aluno", variant: "destructive" }),
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao remover aluno",
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const handleAddProf = () => {
-    if (!novoProfNome.trim()) return;
-    addProfMutation.mutate({ nome: novoProfNome.trim(), percentualComissao: novoProfPct });
+    const nome = novoProfNome.trim();
+    if (!nome) return;
+    addProfMutation.mutate({ nome, percentualComissao: novoProfPct });
   };
 
   const handleAddAluno = (profId: string) => {
@@ -363,7 +577,11 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
               disabled={!novoProfNome.trim() || addProfMutation.isPending}
               data-testid="button-add-professor"
             >
-              <Plus className="h-3.5 w-3.5 mr-1" />
+              {addProfMutation.isPending ? (
+                <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <Plus className="h-3.5 w-3.5 mr-1" />
+              )}
               Adicionar
             </Button>
           </div>
@@ -533,6 +751,13 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
 
 // ── Lista View (Upload + histórico) ───────────────────────────────────────────
 
+interface UploadingFile {
+  name: string;
+  platform: string;
+  status: "processing" | "done" | "error";
+  error?: string;
+}
+
 function ListaView({
   arenaId,
   onSelectSessao,
@@ -540,9 +765,8 @@ function ListaView({
   arenaId: string;
   onSelectSessao: (id: string) => void;
 }) {
-  const [platform, setPlatform] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -558,17 +782,25 @@ function ListaView({
     },
   });
 
-  const handleFile = useCallback(
+  const processFile = useCallback(
     async (file: File) => {
       if (!file.name.match(/\.(xlsx|xls)$/i)) {
         toast({
           title: "Formato inválido",
-          description: "Envie um arquivo .xlsx ou .xls",
+          description: `${file.name}: envie arquivos .xlsx ou .xls`,
           variant: "destructive",
         });
-        return;
+        return null;
       }
-      setUploading(true);
+
+      const detectedPlatform = detectPlatformFromFilename(file.name);
+      const platform = detectedPlatform || "outro";
+
+      setUploadingFiles((prev) => [
+        ...prev,
+        { name: file.name, platform, status: "processing" },
+      ]);
+
       try {
         const content = await fileToBase64(file);
         const res = await apiRequest("POST", "/api/conferencia/upload", {
@@ -579,26 +811,55 @@ function ListaView({
         const sessao: SessaoDetalhe = await res.json();
         qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
         qc.setQueryData(["/api/conferencia/sessao", sessao.id], sessao);
-        onSelectSessao(sessao.id);
+        setUploadingFiles((prev) =>
+          prev.map((f) => (f.name === file.name ? { ...f, status: "done" } : f))
+        );
+        return sessao;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
-        toast({ title: "Erro no upload", description: msg, variant: "destructive" });
-      } finally {
-        setUploading(false);
+        setUploadingFiles((prev) =>
+          prev.map((f) => (f.name === file.name ? { ...f, status: "error", error: msg } : f))
+        );
+        toast({ title: `Erro: ${file.name}`, description: msg, variant: "destructive" });
+        return null;
       }
     },
-    [toast, qc, onSelectSessao, platform]
+    [toast, qc]
+  );
+
+  const handleFiles = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) return;
+      setUploadingFiles([]);
+
+      const results = await Promise.all(files.map((f) => processFile(f)));
+      const succeeded = results.filter(Boolean) as SessaoDetalhe[];
+
+      // Se só 1 arquivo processado com sucesso, abre direto
+      if (succeeded.length === 1) {
+        onSelectSessao(succeeded[0].id);
+      } else if (succeeded.length > 1) {
+        toast({
+          title: `${succeeded.length} arquivos processados`,
+          description: "Clique em qualquer conferência para ver o resultado.",
+        });
+        setUploadingFiles([]);
+      }
+    },
+    [processFile, onSelectSessao, toast]
   );
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length) handleFiles(files);
     },
-    [handleFile]
+    [handleFiles]
   );
+
+  const isUploading = uploadingFiles.some((f) => f.status === "processing");
 
   return (
     <div className="space-y-5">
@@ -611,65 +872,43 @@ function ListaView({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Platform selector — required */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium shrink-0">Plataforma:</span>
-            <Select value={platform} onValueChange={setPlatform}>
-              <SelectTrigger
-                className={cn(
-                  "h-8 text-sm w-44",
-                  !platform && "border-amber-400 text-muted-foreground"
-                )}
-                data-testid="select-plataforma"
-              >
-                <SelectValue placeholder="Selecione…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="totalpass">TotalPass</SelectItem>
-                <SelectItem value="wellhub">Wellhub</SelectItem>
-                <SelectItem value="outro">Outro</SelectItem>
-              </SelectContent>
-            </Select>
-            {!platform && (
-              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                ← Selecione a plataforma antes de enviar o arquivo
-              </span>
-            )}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Arraste um ou dois arquivos Excel (.xlsx/.xls) — a plataforma é detectada
+            automaticamente pelo nome do arquivo (TotalPass / Wellhub). Você pode enviar os dois
+            juntos.
+          </p>
 
           {/* Drop zone */}
           <div
             onDragOver={(e) => {
               e.preventDefault();
-              if (platform) setDragging(true);
+              setDragging(true);
             }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
-            onClick={() => !uploading && platform && fileRef.current?.click()}
+            onClick={() => !isUploading && fileRef.current?.click()}
             data-testid="upload-zone"
             className={cn(
               "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none",
-              !platform
-                ? "cursor-not-allowed opacity-40 border-border"
-                : dragging
-                  ? "border-primary bg-primary/5 cursor-pointer"
-                  : "border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer",
-              uploading && "opacity-60 cursor-not-allowed"
+              dragging
+                ? "border-primary bg-primary/5 cursor-pointer"
+                : "border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer",
+              isUploading && "opacity-60 cursor-not-allowed"
             )}
           >
-            {uploading ? (
+            {isUploading ? (
               <>
                 <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
-                <span className="text-sm text-muted-foreground">Processando…</span>
+                <span className="text-sm text-muted-foreground">Processando arquivos…</span>
               </>
             ) : (
               <>
                 <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
                 <span className="text-sm font-medium">
-                  Arraste o arquivo ou clique para selecionar
+                  Arraste os arquivos ou clique para selecionar
                 </span>
                 <span className="text-xs text-muted-foreground mt-0.5">
-                  .xlsx ou .xls — TotalPass, Wellhub ou outra plataforma
+                  .xlsx ou .xls · TotalPass e/ou Wellhub · até 2 arquivos de uma vez
                 </span>
               </>
             )}
@@ -677,14 +916,49 @@ function ListaView({
               ref={fileRef}
               type="file"
               accept=".xlsx,.xls"
+              multiple
               className="hidden"
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
+                const files = Array.from(e.target.files ?? []);
+                if (files.length) handleFiles(files);
                 e.target.value = "";
               }}
             />
           </div>
+
+          {/* Upload progress indicators */}
+          {uploadingFiles.length > 0 && (
+            <div className="space-y-1.5 mt-2">
+              {uploadingFiles.map((f) => (
+                <div
+                  key={f.name}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
+                    f.status === "processing" && "bg-muted",
+                    f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
+                    f.status === "error" && "bg-red-50 dark:bg-red-950/40"
+                  )}
+                >
+                  {f.status === "processing" && (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+                  )}
+                  {f.status === "done" && (
+                    <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  )}
+                  {f.status === "error" && (
+                    <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />
+                  )}
+                  <span className="truncate flex-1">{f.name}</span>
+                  <Badge variant="secondary" className="text-xs shrink-0">
+                    {plataformaLabel(f.platform)}
+                  </Badge>
+                  {f.status === "error" && f.error && (
+                    <span className="text-red-600 shrink-0">{f.error}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -848,8 +1122,12 @@ function SessaoView({
     updateMutation.mutate({ id: r.id, data: { status: "ignorado" } });
   };
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     window.open(`/api/conferencia/export/${sessaoId}`, "_blank");
+  };
+
+  const handleExportPDF = () => {
+    exportToPDF(sessao);
   };
 
   return (
@@ -877,16 +1155,28 @@ function SessaoView({
             </span>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          className="gap-1.5 shrink-0"
-          data-testid="button-export-csv"
-        >
-          <Download className="h-3.5 w-3.5" />
-          CSV
-        </Button>
+        <div className="flex gap-1.5 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            className="gap-1.5"
+            data-testid="button-export-csv"
+          >
+            <Download className="h-3.5 w-3.5" />
+            CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            className="gap-1.5"
+            data-testid="button-export-pdf"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            PDF
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -1214,116 +1504,133 @@ function RelatorioView({
         ))}
       </div>
 
-      {/* Not found warning */}
-      {naoEncontrados.length > 0 && (
-        <div className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-medium">{naoEncontrados.length} aluno{naoEncontrados.length !== 1 ? "s" : ""} não encontrado{naoEncontrados.length !== 1 ? "s"  : ""}</span>
-            {" "}— volte à aba Conferência para vinculá-los ou cadastre-os na aba{" "}
-            <strong>Professores e Alunos</strong>.
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {naoEncontrados.map((r) => (
-                <span key={r.id} className="bg-amber-100 dark:bg-amber-900/40 rounded px-1.5 py-0.5 text-xs">
-                  {r.nomePlataforma}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Per-professor breakdown */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Breakdown por Professor</h3>
-        {profGroups.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum registro confirmado ainda.</p>
-        ) : (
-          profGroups.map(([key, group]) => {
-            const gTotal = group.registros.reduce(
-              (s, r) => s + parseFloat(r.valor || "0"),
-              0
-            );
-            const gProf = group.registros.reduce(
+      {/* Breakdown by professor */}
+      {profGroups.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Breakdown por Professor
+          </h2>
+          {profGroups.map(([key, g]) => {
+            const subtotal = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+            const comissao = g.registros.reduce(
               (s, r) => s + parseFloat(r.valorProfessor || "0"),
               0
             );
-            const gArena = group.registros.reduce(
-              (s, r) => s + parseFloat(r.valorArena || "0"),
-              0
-            );
-            const gCheckins = group.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
+            const arena = g.registros.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+            const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
+            const pct = g.registros[0]?.percentual ?? "0";
+
             return (
               <Card key={key}>
                 <CardHeader className="pb-2 pt-3 px-4">
-                  <CardTitle className="text-sm flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                      {group.nome}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-normal">
-                      {group.registros.length} aluno{group.registros.length !== 1 ? "s" : ""} ·{" "}
-                      {gCheckins} check-in{gCheckins !== 1 ? "s" : ""}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-4 pb-3 space-y-2">
-                  <div className="flex gap-4 text-xs flex-wrap">
-                    <span>
-                      Total: <strong>{fmtVal(String(gTotal))}</strong>
-                    </span>
-                    {gProf > 0 && (
-                      <span className="text-emerald-600 dark:text-emerald-400">
-                        Prof: <strong>{fmtVal(String(gProf))}</strong>
-                      </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{g.nome}</span>
+                    {key !== "__arena__" && (
+                      <Badge variant="secondary" className="text-xs">
+                        {pct}% comissão
+                      </Badge>
                     )}
-                    <span className="text-blue-600 dark:text-blue-400">
-                      Arena: <strong>{fmtVal(String(gArena))}</strong>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {g.registros.length} aluno{g.registros.length !== 1 ? "s" : ""} · {chks}{" "}
+                      check-in{chks !== 1 ? "s" : ""}
                     </span>
                   </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs h-7">Aluno</TableHead>
-                        <TableHead className="text-xs h-7 text-right">Valor</TableHead>
-                        <TableHead className="text-xs h-7 text-center">Chk</TableHead>
-                        <TableHead className="text-xs h-7 text-center">%</TableHead>
-                        <TableHead className="text-xs h-7 text-right">Prof.</TableHead>
-                        <TableHead className="text-xs h-7 text-right">Arena</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {group.registros.map((r) => (
-                        <TableRow key={r.id} className="text-xs">
-                          <TableCell className="py-1 font-medium">
-                            {r.alunoNomeMatch ?? r.nomePlataforma}
-                          </TableCell>
-                          <TableCell className="py-1 text-right font-mono">
-                            {fmtVal(r.valor)}
-                          </TableCell>
-                          <TableCell className="py-1 text-center">{r.checkins}</TableCell>
-                          <TableCell className="py-1 text-center">{r.percentual}%</TableCell>
-                          <TableCell className="py-1 text-right font-mono text-emerald-600 dark:text-emerald-400">
-                            {fmtVal(r.valorProfessor)}
-                          </TableCell>
-                          <TableCell className="py-1 text-right font-mono text-blue-600 dark:text-blue-400">
-                            {fmtVal(r.valorArena)}
-                          </TableCell>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {[
+                      {
+                        label: "Receita",
+                        val: fmtVal(String(subtotal)),
+                        color: "text-foreground",
+                      },
+                      {
+                        label: "Prof.",
+                        val: fmtVal(String(comissao)),
+                        color: "text-emerald-600 dark:text-emerald-400",
+                      },
+                      {
+                        label: "Arena",
+                        val: fmtVal(String(arena)),
+                        color: "text-blue-600 dark:text-blue-400",
+                      },
+                    ].map((i) => (
+                      <div
+                        key={i.label}
+                        className="bg-muted/40 rounded-md px-2.5 py-1.5 text-center"
+                      >
+                        <div className={cn("font-bold text-sm", i.color)}>{i.val}</div>
+                        <div className="text-xs text-muted-foreground">{i.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0 pb-3 px-4">
+                  <div className="border rounded overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs py-1.5">Aluno</TableHead>
+                          <TableHead className="text-xs py-1.5 text-center">Chk</TableHead>
+                          <TableHead className="text-xs py-1.5 text-right">Total</TableHead>
+                          <TableHead className="text-xs py-1.5 text-right">Prof.</TableHead>
+                          <TableHead className="text-xs py-1.5 text-right">Arena</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {g.registros.map((r) => (
+                          <TableRow key={r.id} className="text-xs">
+                            <TableCell className="py-1.5">
+                              {r.alunoNomeMatch ?? r.nomePlataforma}
+                            </TableCell>
+                            <TableCell className="py-1.5 text-center">{r.checkins ?? 1}</TableCell>
+                            <TableCell className="py-1.5 text-right font-mono">
+                              {fmtVal(r.valor)}
+                            </TableCell>
+                            <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">
+                              {fmtVal(r.valorProfessor)}
+                            </TableCell>
+                            <TableCell className="py-1.5 text-right font-mono text-blue-600 dark:text-blue-400">
+                              {fmtVal(r.valorArena)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
+
+      {/* Não encontrados */}
+      {naoEncontrados.length > 0 && (
+        <div>
+          <h2 className="text-sm font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide mb-2">
+            Não Encontrados ({naoEncontrados.length})
+          </h2>
+          <Card className="border-red-200 dark:border-red-800">
+            <CardContent className="pt-3 pb-3">
+              <div className="flex flex-wrap gap-1.5">
+                {naoEncontrados.map((r) => (
+                  <Badge
+                    key={r.id}
+                    variant="outline"
+                    className="text-xs text-red-700 border-red-300 dark:text-red-400 dark:border-red-700"
+                  >
+                    {r.nomePlataforma} · {fmtVal(r.valor)}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Link Aluno Dialog (uses Conferência professors/students) ──────────────────
+// ── Link Aluno Dialog ─────────────────────────────────────────────────────────
 
 function LinkAlunoDialog({
   registro,
@@ -1334,99 +1641,84 @@ function LinkAlunoDialog({
   onConfirm: (confAlunoId: string, salvarAlias: boolean) => void;
   onClose: () => void;
 }) {
-  const [busca, setBusca] = useState("");
-  const [selected, setSelected] = useState<string | null>(registro.studentId);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
   const [salvarAlias, setSalvarAlias] = useState(true);
 
   const { data: alunos = [] } = useQuery<ConfAluno[]>({
     queryKey: ["/api/conferencia/alunos"],
   });
 
-  const filtrados = alunos.filter((a) =>
-    a.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    (a.professorNome ?? "").toLowerCase().includes(busca.toLowerCase())
+  const filtered = alunos.filter((a) =>
+    a.nome.toLowerCase().includes(search.toLowerCase())
   );
-
-  const byProf = new Map<string, { profNome: string; alunos: ConfAluno[] }>();
-  for (const a of filtrados) {
-    const key = a.professorId;
-    if (!byProf.has(key)) {
-      byProf.set(key, { profNome: a.professorNome ?? "Sem professor", alunos: [] });
-    }
-    byProf.get(key)!.alunos.push(a);
-  }
-  const groups = Array.from(byProf.entries());
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Vincular Aluno</DialogTitle>
+          <DialogTitle className="text-base">Vincular Aluno</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="text-sm text-muted-foreground">
-            Nome na plataforma:{" "}
-            <strong className="text-foreground">{registro.nomePlataforma}</strong>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Nome na plataforma</p>
+            <p className="text-sm font-medium bg-muted/40 rounded px-3 py-1.5">
+              {registro.nomePlataforma}
+            </p>
           </div>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Buscar aluno ou professor…"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="pl-8"
-              data-testid="input-busca-aluno-link"
-              autoFocus
+              placeholder="Buscar aluno…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 h-8 text-sm"
             />
           </div>
-          <div className="border rounded-lg max-h-64 overflow-y-auto">
-            {groups.length === 0 ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">
-                Nenhum aluno encontrado. Cadastre na aba{" "}
-                <strong>Professores e Alunos</strong>.
-              </div>
+          <div className="max-h-52 overflow-y-auto space-y-1 border rounded-md p-1">
+            {filtered.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">
+                Nenhum aluno encontrado
+              </p>
             ) : (
-              groups.map(([profId, group]) => (
-                <div key={profId}>
-                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 border-b sticky top-0">
-                    {group.profNome}
-                  </div>
-                  {group.alunos.map((a) => (
-                    <button
-                      key={a.id}
-                      onClick={() => setSelected(a.id)}
-                      className={cn(
-                        "w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors border-b last:border-0",
-                        selected === a.id && "bg-primary/10 font-medium"
-                      )}
-                      data-testid={`option-aluno-${a.id}`}
-                    >
-                      {a.nome}
-                    </button>
-                  ))}
-                </div>
+              filtered.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => setSelected(a.id)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded text-sm transition-colors",
+                    selected === a.id
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted"
+                  )}
+                  data-testid={`option-aluno-${a.id}`}
+                >
+                  <span className="font-medium">{a.nome}</span>
+                  {a.professorNome && (
+                    <span className="text-xs ml-2 opacity-70">{a.professorNome}</span>
+                  )}
+                </button>
               ))
             )}
           </div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-xs cursor-pointer">
             <input
               type="checkbox"
               checked={salvarAlias}
               onChange={(e) => setSalvarAlias(e.target.checked)}
-              className="rounded"
-              data-testid="checkbox-salvar-alias"
             />
-            Salvar como alias para próximas conferências
+            Salvar como apelido (reconhecer automaticamente no próximo upload)
           </label>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={onClose}>
             Cancelar
           </Button>
           <Button
+            size="sm"
             disabled={!selected}
             onClick={() => selected && onConfirm(selected, salvarAlias)}
-            data-testid="button-confirmar-link"
+            data-testid="button-confirmar-vinculo"
           >
             Vincular
           </Button>
