@@ -85,6 +85,7 @@ interface Registro {
 
 interface SessaoDetalhe extends Sessao {
   registros: Registro[];
+  debug?: { nameCol: string | null; valueCol: string | null; allHeaders: string[] };
 }
 
 interface ConfAluno {
@@ -410,7 +411,15 @@ export default function ConferenciaManager({ arenaId }: Props) {
         ))}
       </div>
 
-      {mainTab === "configuracao" && <ConfiguracaoView arenaId={arenaId} />}
+      {mainTab === "configuracao" && (
+        <ConfiguracaoView
+          arenaId={arenaId}
+          onSelectSessao={(id) => {
+            setSessaoId(id);
+            setView("sessao");
+          }}
+        />
+      )}
       {mainTab === "lista" && (
         <ListaView
           arenaId={arenaId}
@@ -424,9 +433,25 @@ export default function ConferenciaManager({ arenaId }: Props) {
   );
 }
 
+// ── Shared types for upload ───────────────────────────────────────────────────
+
+interface UploadingFile {
+  name: string;
+  platform: string;
+  status: "processing" | "done" | "error";
+  error?: string;
+  debug?: { nameCol: string | null; valueCol: string | null };
+}
+
 // ── Configuração View ─────────────────────────────────────────────────────────
 
-function ConfiguracaoView({ arenaId }: { arenaId: string }) {
+function ConfiguracaoView({
+  arenaId,
+  onSelectSessao,
+}: {
+  arenaId: string;
+  onSelectSessao: (id: string) => void;
+}) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
   const [editingProf, setEditingProf] = useState<string | null>(null);
@@ -435,6 +460,10 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
   const [novoAluno, setNovoAluno] = useState<Record<string, string>>({});
   const [listMode, setListMode] = useState<Record<string, boolean>>({});
   const [listaTexto, setListaTexto] = useState<Record<string, string>>({});
+  // Upload zone state
+  const [dragging, setDragging] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -557,6 +586,71 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
     const nome = novoAluno[profId]?.trim();
     if (!nome) return;
     addAlunoMutation.mutate({ profId, nome });
+  };
+
+  // ── Upload helpers ────────────────────────────────────────────────────────
+  const isUploading = uploadingFiles.some((f) => f.status === "processing");
+
+  const processUploadFile = async (file: File): Promise<SessaoDetalhe | null> => {
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      toast({
+        title: "Formato inválido",
+        description: `${file.name}: envie arquivos .xlsx ou .xls`,
+        variant: "destructive",
+      });
+      return null;
+    }
+    const detectedPlatform = detectPlatformFromFilename(file.name);
+    const platform = detectedPlatform || "outro";
+    setUploadingFiles((prev) => [...prev, { name: file.name, platform, status: "processing" }]);
+    try {
+      const content = await fileToBase64(file);
+      const res = await apiRequest("POST", "/api/conferencia/upload", {
+        filename: file.name,
+        content,
+        platform,
+      });
+      const sessao: SessaoDetalhe = await res.json();
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      qc.setQueryData(["/api/conferencia/sessao", sessao.id], sessao);
+      setUploadingFiles((prev) =>
+        prev.map((f) =>
+          f.name === file.name ? { ...f, status: "done", debug: sessao.debug } : f
+        )
+      );
+      return sessao;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
+      setUploadingFiles((prev) =>
+        prev.map((f) => (f.name === file.name ? { ...f, status: "error", error: msg } : f))
+      );
+      toast({ title: `Erro: ${file.name}`, description: msg, variant: "destructive" });
+      return null;
+    }
+  };
+
+  const handleUploadFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploadingFiles([]);
+    const results = await Promise.all(files.map((f) => processUploadFile(f)));
+    const succeeded = results.filter(Boolean) as SessaoDetalhe[];
+    if (succeeded.length === 1) {
+      const s = succeeded[0];
+      toast({
+        title: `${s.encontrados} aluno${s.encontrados !== 1 ? "s" : ""} encontrado${s.encontrados !== 1 ? "s" : ""}`,
+        description: s.debug?.nameCol
+          ? `Coluna nome: "${s.debug.nameCol}" · Coluna valor: "${s.debug.valueCol ?? "não detectada"}"`
+          : s.naoEncontrados > 0
+          ? `${s.naoEncontrados} sem correspondência — verifique os nomes cadastrados`
+          : undefined,
+      });
+      onSelectSessao(s.id);
+    } else if (succeeded.length > 1) {
+      toast({
+        title: `${succeeded.length} arquivos processados`,
+        description: "Clique em qualquer conferência para ver o resultado.",
+      });
+    }
   };
 
   return (
@@ -848,149 +942,32 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
           ))}
         </div>
       )}
-    </div>
-  );
-}
 
-// ── Lista View (Upload + histórico) ───────────────────────────────────────────
-
-interface UploadingFile {
-  name: string;
-  platform: string;
-  status: "processing" | "done" | "error";
-  error?: string;
-}
-
-function ListaView({
-  arenaId,
-  onSelectSessao,
-}: {
-  arenaId: string;
-  onSelectSessao: (id: string) => void;
-}) {
-  const [dragging, setDragging] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
-  const qc = useQueryClient();
-
-  const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
-    queryKey: ["/api/conferencia/sessoes"],
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/sessao/${id}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-    },
-  });
-
-  const processFile = useCallback(
-    async (file: File) => {
-      if (!file.name.match(/\.(xlsx|xls)$/i)) {
-        toast({
-          title: "Formato inválido",
-          description: `${file.name}: envie arquivos .xlsx ou .xls`,
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      const detectedPlatform = detectPlatformFromFilename(file.name);
-      const platform = detectedPlatform || "outro";
-
-      setUploadingFiles((prev) => [
-        ...prev,
-        { name: file.name, platform, status: "processing" },
-      ]);
-
-      try {
-        const content = await fileToBase64(file);
-        const res = await apiRequest("POST", "/api/conferencia/upload", {
-          filename: file.name,
-          content,
-          platform,
-        });
-        const sessao: SessaoDetalhe = await res.json();
-        qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-        qc.setQueryData(["/api/conferencia/sessao", sessao.id], sessao);
-        setUploadingFiles((prev) =>
-          prev.map((f) => (f.name === file.name ? { ...f, status: "done" } : f))
-        );
-        return sessao;
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
-        setUploadingFiles((prev) =>
-          prev.map((f) => (f.name === file.name ? { ...f, status: "error", error: msg } : f))
-        );
-        toast({ title: `Erro: ${file.name}`, description: msg, variant: "destructive" });
-        return null;
-      }
-    },
-    [toast, qc]
-  );
-
-  const handleFiles = useCallback(
-    async (files: File[]) => {
-      if (files.length === 0) return;
-      setUploadingFiles([]);
-
-      const results = await Promise.all(files.map((f) => processFile(f)));
-      const succeeded = results.filter(Boolean) as SessaoDetalhe[];
-
-      // Se só 1 arquivo processado com sucesso, abre direto
-      if (succeeded.length === 1) {
-        onSelectSessao(succeeded[0].id);
-      } else if (succeeded.length > 1) {
-        toast({
-          title: `${succeeded.length} arquivos processados`,
-          description: "Clique em qualquer conferência para ver o resultado.",
-        });
-        setUploadingFiles([]);
-      }
-    },
-    [processFile, onSelectSessao, toast]
-  );
-
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragging(false);
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length) handleFiles(files);
-    },
-    [handleFiles]
-  );
-
-  const isUploading = uploadingFiles.some((f) => f.status === "processing");
-
-  return (
-    <div className="space-y-5">
-      {/* Upload Card */}
-      <Card>
+      {/* ── Upload Zone ─────────────────────────────────────────────────── */}
+      <Card className="border-dashed border-2">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-            Nova Conferência
+            Importar Excel e Conferir
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Arraste um ou dois arquivos Excel (.xlsx/.xls) — a plataforma é detectada
-            automaticamente pelo nome do arquivo (TotalPass / Wellhub). Você pode enviar os dois
-            juntos.
+            Arraste o Excel do TotalPass ou Wellhub aqui. O sistema detecta automaticamente as
+            colunas de <strong>nome</strong> e <strong>valor</strong> e cruza com os alunos
+            cadastrados acima.
           </p>
-
-          {/* Drop zone */}
           <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const files = Array.from(e.dataTransfer.files);
+              if (files.length) handleUploadFiles(files);
+            }}
             onClick={() => !isUploading && fileRef.current?.click()}
-            data-testid="upload-zone"
+            data-testid="upload-zone-config"
             className={cn(
               "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none",
               dragging
@@ -1011,7 +988,7 @@ function ListaView({
                   Arraste os arquivos ou clique para selecionar
                 </span>
                 <span className="text-xs text-muted-foreground mt-0.5">
-                  .xlsx ou .xls · TotalPass e/ou Wellhub · até 2 arquivos de uma vez
+                  .xlsx ou .xls · TotalPass e/ou Wellhub
                 </span>
               </>
             )}
@@ -1023,13 +1000,12 @@ function ListaView({
               className="hidden"
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? []);
-                if (files.length) handleFiles(files);
+                if (files.length) handleUploadFiles(files);
                 e.target.value = "";
               }}
             />
           </div>
 
-          {/* Upload progress indicators */}
           {uploadingFiles.length > 0 && (
             <div className="space-y-1.5 mt-2">
               {uploadingFiles.map((f) => (
@@ -1053,10 +1029,15 @@ function ListaView({
                   )}
                   <span className="truncate flex-1">{f.name}</span>
                   <Badge variant="secondary" className="text-xs shrink-0">
-                    {plataformaLabel(f.platform)}
+                    {plataformaLabel(f.platform || "outro")}
                   </Badge>
                   {f.status === "error" && f.error && (
-                    <span className="text-red-600 shrink-0">{f.error}</span>
+                    <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
+                  )}
+                  {f.status === "done" && f.debug && (
+                    <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
+                      col.nome: <strong>{f.debug.nameCol ?? "?"}</strong> · col.valor: <strong>{f.debug.valueCol ?? "?"}</strong>
+                    </span>
                   )}
                 </div>
               ))}
@@ -1064,12 +1045,42 @@ function ListaView({
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
 
-      {/* Session History */}
+// ── Lista View (histórico de conferências) ────────────────────────────────────
+
+function ListaView({
+  arenaId,
+  onSelectSessao,
+}: {
+  arenaId: string;
+  onSelectSessao: (id: string) => void;
+}) {
+  const qc = useQueryClient();
+
+  const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
+    queryKey: ["/api/conferencia/sessoes"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/sessao/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Histórico de Conferências
         </h2>
+        <p className="text-xs text-muted-foreground mb-3">
+          Para iniciar uma nova conferência, vá até a aba <strong>Professores e Alunos</strong> e
+          arraste o arquivo Excel lá.
+        </p>
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground text-sm">Carregando…</div>
         ) : sessoes.length === 0 ? (

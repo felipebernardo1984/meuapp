@@ -57,23 +57,148 @@ function bestSim(a: string, b: string): number {
 
 // ── Column detection for flexible Excel formats ──────────────────────────────
 
-type ColMap = { nameIdx: number; valueIdx: number; dateIdx: number; checkinsIdx: number };
+type ColMap = {
+  nameIdx: number;
+  valueIdx: number;
+  dateIdx: number;
+  checkinsIdx: number;
+  debug: { nameCol: string | null; valueCol: string | null; allHeaders: string[] };
+};
 
-function detectColumns(headers: string[]): ColMap {
-  const norm = (s: string) =>
-    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  const find = (patterns: string[]) => {
-    for (const p of patterns) {
-      const idx = headers.findIndex((h) => norm(h).includes(p));
-      if (idx >= 0) return idx;
+function normHeader(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").trim();
+}
+
+function findByHeader(headers: string[], patterns: string[]): number {
+  for (const p of patterns) {
+    const idx = headers.findIndex((h) => normHeader(h).includes(p));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+/** Returns true if the string looks like a Brazilian person name */
+function looksLikeName(val: string): boolean {
+  if (!val || val.length < 4 || val.length > 120) return false;
+  // Strip CPF before analysis
+  const cleaned = val
+    .replace(/\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g, "")
+    .replace(/\b\d{11}\b/g, "")
+    .trim();
+  if (!cleaned || cleaned.length < 4) return false;
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  if (words.length < 2) return false;
+  // First word must start with a capital letter
+  if (!/^[A-ZÀ-Ü]/.test(words[0])) return false;
+  // At least 70% of characters are letters or spaces
+  const letters = cleaned.replace(/[^a-zA-ZÀ-ÿ\s]/g, "");
+  return letters.length >= cleaned.length * 0.65;
+}
+
+/** Returns true if the string looks like a monetary value */
+function looksLikeMonetary(val: string): boolean {
+  if (!val) return false;
+  // Handle strings like "R$ 12,50" or "12.50" or "12,50"
+  const clean = val.replace(/R\$\s*/gi, "").replace(/\./g, "").replace(",", ".").trim();
+  if (!clean) return false;
+  const num = parseFloat(clean);
+  if (isNaN(num) || num <= 0) return false;
+  // Reasonable monetary range (R$ 0.01 – R$ 99999)
+  return num < 100000 && (val.includes(",") || /R\$/.test(val) || val.includes("."));
+}
+
+/** Detect which column index is most likely to be person names by analyzing rows */
+function detectNameColumnByContent(headers: string[], rows: Array<Record<string, unknown>>): number {
+  const sample = rows.slice(0, Math.min(40, rows.length));
+  if (sample.length === 0) return -1;
+  let bestScore = -1;
+  let bestIdx = -1;
+
+  for (let i = 0; i < headers.length; i++) {
+    let score = 0;
+    for (const row of sample) {
+      const val = String(row[headers[i]] ?? "").trim();
+      if (looksLikeName(val)) score++;
     }
-    return -1;
-  };
+    // Need at least 25% of rows to look like names
+    if (score > bestScore && score >= Math.max(2, sample.length * 0.25)) {
+      bestScore = score;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
+/** Detect which column index is most likely to be monetary values by analyzing rows */
+function detectValueColumnByContent(
+  headers: string[],
+  rows: Array<Record<string, unknown>>,
+  excludeIdx: number
+): number {
+  const sample = rows.slice(0, Math.min(40, rows.length));
+  if (sample.length === 0) return -1;
+  let bestScore = -1;
+  let bestIdx = -1;
+
+  for (let i = 0; i < headers.length; i++) {
+    if (i === excludeIdx) continue;
+    let score = 0;
+    let totalVal = 0;
+
+    for (const row of sample) {
+      const val = String(row[headers[i]] ?? "").trim();
+      if (looksLikeMonetary(val)) {
+        score++;
+        const clean = val.replace(/R\$\s*/gi, "").replace(/\./g, "").replace(",", ".").trim();
+        totalVal += parseFloat(clean) || 0;
+      }
+    }
+
+    // Prefer columns where avg value > R$ 1 (not just check-in counts)
+    const avgVal = score > 0 ? totalVal / score : 0;
+    if (score > bestScore && score >= Math.max(2, sample.length * 0.25) && avgVal > 1) {
+      bestScore = score;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
+function detectColumns(headers: string[], rows: Array<Record<string, unknown>>): ColMap {
+  // Step 1: Try expanded header keyword matching
+  const nameByHeader = findByHeader(headers, [
+    "nome", "aluno", "cliente", "name", "usuario", "user", "membro",
+    "participante", "employee", "associado", "beneficiario", "titular", "socio",
+  ]);
+  const valueByHeader = findByHeader(headers, [
+    "valor", "repasse", "value", "amount", "total", "receita",
+    "pagamento", "tarifa", "preco", "custo", "mensalidade", "net", "bruto",
+  ]);
+  const dateIdx = findByHeader(headers, [
+    "data", "date", "periodo", "mes", "competencia", "month", "vigencia",
+  ]);
+  const checkinsIdx = findByHeader(headers, [
+    "visita", "checkin", "check-in", "acesso", "session", "frequencia",
+    "quantidade", "qtd", "sessions", "visits", "utilizacao", "uso",
+  ]);
+
+  // Step 2: Fall back to content-based detection if header matching fails
+  const nameIdx =
+    nameByHeader >= 0 ? nameByHeader : detectNameColumnByContent(headers, rows);
+
+  const valueIdx =
+    valueByHeader >= 0 ? valueByHeader : detectValueColumnByContent(headers, rows, nameIdx);
+
   return {
-    nameIdx: find(["nome", "aluno", "cliente", "name", "usuario", "user", "membro"]),
-    valueIdx: find(["valor", "repasse", "value", "amount", "total", "receita"]),
-    dateIdx: find(["data", "date", "periodo", "mes", "competencia"]),
-    checkinsIdx: find(["visita", "checkin", "check-in", "acesso", "session", "frequencia", "quantidade", "qtd"]),
+    nameIdx,
+    valueIdx,
+    dateIdx,
+    checkinsIdx,
+    debug: {
+      nameCol: nameIdx >= 0 ? headers[nameIdx] : null,
+      valueCol: valueIdx >= 0 ? headers[valueIdx] : null,
+      allHeaders: headers,
+    },
   };
 }
 
@@ -301,7 +426,8 @@ export function registerConferenciaRoutes(app: Express): void {
       }
 
       const headers = Object.keys(rows[0]);
-      const cols = detectColumns(headers);
+      const cols = detectColumns(headers, rows);
+      console.log(`[Conferência] Colunas detectadas — nome: "${cols.debug.nameCol ?? "NÃO DETECTADA"}" | valor: "${cols.debug.valueCol ?? "NÃO DETECTADA"}" | headers: [${cols.debug.allHeaders.join(", ")}]`);
 
       // Load conferencia-specific data (standalone — no connection to arena students/teachers)
       const profsDb = await db
@@ -453,7 +579,7 @@ export function registerConferenciaRoutes(app: Express): void {
         professorNome: r.professorId ? (profMap.get(r.professorId)?.nome ?? null) : null,
       }));
 
-      res.json({ ...sessao, registros: enriched });
+      res.json({ ...sessao, registros: enriched, debug: cols.debug });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
       console.error("[Conferência] Upload error:", err);
