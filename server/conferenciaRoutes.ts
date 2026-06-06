@@ -201,19 +201,32 @@ export function registerConferenciaRoutes(app: Express): void {
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
-    const { nomes } = req.body as { nomes: string[] };
-    if (!Array.isArray(nomes) || nomes.length === 0) {
-      return res.status(400).json({ message: "Lista de nomes obrigatória" });
+    try {
+      const { nomes } = req.body as { nomes: string[] };
+      if (!Array.isArray(nomes) || nomes.length === 0) {
+        return res.status(400).json({ message: "Lista de nomes obrigatória" });
+      }
+      const validos = nomes.map((n) => String(n).trim()).filter(Boolean);
+      if (validos.length === 0) {
+        return res.status(400).json({ message: "Nenhum nome válido encontrado" });
+      }
+      const professorId = req.params.id;
+      // Insert in batches of 50 to avoid DB limits
+      let total = 0;
+      const batchSize = 50;
+      for (let i = 0; i < validos.length; i += batchSize) {
+        const batch = validos.slice(i, i + batchSize);
+        await db
+          .insert(conferenciaProfessorAlunos)
+          .values(batch.map((nome) => ({ arenaId, professorId, nome })));
+        total += batch.length;
+      }
+      return res.json({ adicionados: total });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao inserir alunos";
+      console.error("[Conferência] Lote error:", err);
+      return res.status(500).json({ message: msg });
     }
-    const validos = nomes.map((n) => n.trim()).filter(Boolean);
-    if (validos.length === 0) {
-      return res.status(400).json({ message: "Nenhum nome válido encontrado" });
-    }
-    const inserted = await db
-      .insert(conferenciaProfessorAlunos)
-      .values(validos.map((nome) => ({ arenaId, professorId: req.params.id, nome })))
-      .returning();
-    res.json({ adicionados: inserted.length, alunos: inserted });
   });
 
   // DELETE /api/conferencia/professor-alunos/:id
