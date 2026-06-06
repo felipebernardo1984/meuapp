@@ -433,6 +433,8 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
   const [editNome, setEditNome] = useState("");
   const [editPct, setEditPct] = useState("0");
   const [novoAluno, setNovoAluno] = useState<Record<string, string>>({});
+  const [listMode, setListMode] = useState<Record<string, boolean>>({});
+  const [listaTexto, setListaTexto] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -510,6 +512,25 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
     onError: (err: Error) =>
       toast({
         title: "Erro ao adicionar aluno",
+        description: err.message,
+        variant: "destructive",
+      }),
+  });
+
+  const addAlunosLoteMutation = useMutation({
+    mutationFn: ({ profId, nomes }: { profId: string; nomes: string[] }) =>
+      apiRequest("POST", `/api/conferencia/professores/${profId}/alunos/lote`, { nomes }).then(
+        (r) => r.json()
+      ),
+    onSuccess: (data: { adicionados: number }, vars) => {
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+      setListaTexto((prev) => ({ ...prev, [vars.profId]: "" }));
+      setListMode((prev) => ({ ...prev, [vars.profId]: false }));
+      toast({ title: `${data.adicionados} aluno${data.adicionados !== 1 ? "s" : ""} adicionado${data.adicionados !== 1 ? "s" : ""}!` });
+    },
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao adicionar alunos",
         description: err.message,
         variant: "destructive",
       }),
@@ -717,29 +738,111 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
                     ))}
                   </div>
                 )}
-                {/* Add student input */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Nome do aluno (como aparece no Excel)…"
-                    value={novoAluno[prof.id] ?? ""}
-                    onChange={(e) =>
-                      setNovoAluno((prev) => ({ ...prev, [prof.id]: e.target.value }))
+
+                {/* Mode toggle */}
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    onClick={() =>
+                      setListMode((prev) => ({ ...prev, [prof.id]: false }))
                     }
-                    onKeyDown={(e) => e.key === "Enter" && handleAddAluno(prof.id)}
-                    className="h-8 text-sm"
-                    data-testid={`input-novo-aluno-${prof.id}`}
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 px-3 shrink-0"
-                    onClick={() => handleAddAluno(prof.id)}
-                    disabled={!novoAluno[prof.id]?.trim() || addAlunoMutation.isPending}
-                    data-testid={`button-add-aluno-${prof.id}`}
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full transition-colors border",
+                      !listMode[prof.id]
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "text-muted-foreground border-border hover:border-primary/50"
+                    )}
+                    data-testid={`toggle-modo-individual-${prof.id}`}
                   >
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
+                    Um por um
+                  </button>
+                  <button
+                    onClick={() =>
+                      setListMode((prev) => ({ ...prev, [prof.id]: true }))
+                    }
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full transition-colors border",
+                      listMode[prof.id]
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "text-muted-foreground border-border hover:border-primary/50"
+                    )}
+                    data-testid={`toggle-modo-lista-${prof.id}`}
+                  >
+                    Colar lista
+                  </button>
                 </div>
+
+                {/* Single input mode */}
+                {!listMode[prof.id] && (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nome do aluno (como aparece no Excel)…"
+                      value={novoAluno[prof.id] ?? ""}
+                      onChange={(e) =>
+                        setNovoAluno((prev) => ({ ...prev, [prof.id]: e.target.value }))
+                      }
+                      onKeyDown={(e) => e.key === "Enter" && handleAddAluno(prof.id)}
+                      className="h-8 text-sm"
+                      data-testid={`input-novo-aluno-${prof.id}`}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-3 shrink-0"
+                      onClick={() => handleAddAluno(prof.id)}
+                      disabled={!novoAluno[prof.id]?.trim() || addAlunoMutation.isPending}
+                      data-testid={`button-add-aluno-${prof.id}`}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* List paste mode */}
+                {listMode[prof.id] && (
+                  <div className="space-y-2">
+                    <textarea
+                      placeholder={"Cole a lista de nomes aqui (um por linha):\n\nJoão da Silva\nMaria Souza\nPedro Alves\n…"}
+                      value={listaTexto[prof.id] ?? ""}
+                      onChange={(e) =>
+                        setListaTexto((prev) => ({ ...prev, [prof.id]: e.target.value }))
+                      }
+                      rows={6}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                      data-testid={`textarea-lista-alunos-${prof.id}`}
+                    />
+                    {(() => {
+                      const nomes = (listaTexto[prof.id] ?? "")
+                        .split("\n")
+                        .map((n) => n.trim())
+                        .filter(Boolean);
+                      return (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {nomes.length > 0
+                              ? `${nomes.length} nome${nomes.length !== 1 ? "s" : ""} detectado${nomes.length !== 1 ? "s" : ""}`
+                              : "Cole os nomes acima, um por linha"}
+                          </span>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              if (nomes.length > 0)
+                                addAlunosLoteMutation.mutate({ profId: prof.id, nomes });
+                            }}
+                            disabled={nomes.length === 0 || addAlunosLoteMutation.isPending}
+                            data-testid={`button-add-lote-${prof.id}`}
+                          >
+                            {addAlunosLoteMutation.isPending ? (
+                              <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                            ) : (
+                              <Plus className="h-3.5 w-3.5 mr-1.5" />
+                            )}
+                            Adicionar {nomes.length > 0 ? `${nomes.length} ` : ""}aluno{nomes.length !== 1 ? "s" : ""}
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

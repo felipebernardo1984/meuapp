@@ -195,6 +195,27 @@ export function registerConferenciaRoutes(app: Express): void {
     res.json(aluno);
   });
 
+  // POST /api/conferencia/professores/:id/alunos/lote — bulk add
+  app.post("/api/conferencia/professores/:id/alunos/lote", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const { nomes } = req.body as { nomes: string[] };
+    if (!Array.isArray(nomes) || nomes.length === 0) {
+      return res.status(400).json({ message: "Lista de nomes obrigatória" });
+    }
+    const validos = nomes.map((n) => n.trim()).filter(Boolean);
+    if (validos.length === 0) {
+      return res.status(400).json({ message: "Nenhum nome válido encontrado" });
+    }
+    const inserted = await db
+      .insert(conferenciaProfessorAlunos)
+      .values(validos.map((nome) => ({ arenaId, professorId: req.params.id, nome })))
+      .returning();
+    res.json({ adicionados: inserted.length, alunos: inserted });
+  });
+
   // DELETE /api/conferencia/professor-alunos/:id
   app.delete("/api/conferencia/professor-alunos/:id", async (req, res) => {
     const arenaId = req.session.arenaId;
