@@ -64,7 +64,7 @@ function wordOverlapSim(a: string, b: string): number {
   );
   if (wa.size === 0 || wb.size === 0) return 0;
   let overlap = 0;
-  for (const w of wa) if (wb.has(w)) overlap++;
+  for (const w of Array.from(wa)) if (wb.has(w)) overlap++;
   const containment = overlap / wa.size; // % of registered words found in platform name
   const union = wa.size + wb.size - overlap;
   const jaccard = union > 0 ? overlap / union : 0;
@@ -592,12 +592,12 @@ export function registerConferenciaRoutes(app: Express): void {
         aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
       );
 
-      function matchAluno(nomePlataforma: string): {
+      const matchAluno = (nomePlataforma: string): {
         aluno: (typeof alunosDb)[0] | null;
         arenaStudent: { id: string; nome: string } | null;
         score: number;
         status: "confirmado" | "pendente" | "nao_encontrado";
-      } {
+      } => {
         // 1. Exact alias
         const aliasAlunoId = aliasToAlunoId.get(normalizeNome(nomePlataforma));
         if (aliasAlunoId) {
@@ -633,7 +633,7 @@ export function registerConferenciaRoutes(app: Express): void {
         }
 
         return { aluno: null, arenaStudent: null, score: Math.max(bestScore, bestArenaScore), status: "nao_encontrado" };
-      }
+      };
 
       let encontrados = 0, possiveis = 0, naoEncontrados = 0;
 
@@ -729,7 +729,8 @@ export function registerConferenciaRoutes(app: Express): void {
       if (registrosToInsert.length > 0) {
         await db
           .insert(conferenciaRegistros)
-          .values(registrosToInsert.map((r) => ({ ...r, sessaoId: sessao.id })));
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .values(registrosToInsert.map((r) => ({ ...r, sessaoId: sessao.id })) as any[]);
       }
 
       const registros = await db

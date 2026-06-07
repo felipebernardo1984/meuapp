@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -1178,107 +1178,6 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
         </div>
       )}
 
-    </div>
-  );
-}
-
-// ── Lista View (histórico de conferências) ────────────────────────────────────
-
-function ListaView({
-  arenaId,
-  onSelectSessao,
-}: {
-  arenaId: string;
-  onSelectSessao: (id: string) => void;
-}) {
-  const qc = useQueryClient();
-
-  const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
-    queryKey: ["/api/conferencia/sessoes"],
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/sessao/${id}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-    },
-  });
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Histórico de Conferências
-        </h2>
-        <p className="text-xs text-muted-foreground mb-3">
-          Para iniciar uma nova conferência, vá até a aba <strong>Professores e Alunos</strong> e
-          arraste o arquivo Excel lá.
-        </p>
-        {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">Carregando…</div>
-        ) : sessoes.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm border border-dashed rounded-lg">
-            Nenhuma conferência realizada ainda. Faça o upload do primeiro arquivo.
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {sessoes.map((s) => (
-              <Card
-                key={s.id}
-                className="cursor-pointer hover:shadow-md transition-shadow border"
-                onClick={() => onSelectSessao(s.id)}
-                data-testid={`sessao-card-${s.id}`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileSpreadsheet className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
-                        <Badge variant="secondary" className="text-xs shrink-0">
-                          {plataformaLabel(s.plataforma)}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle className="h-3 w-3" /> {s.encontrados} encontrados
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                          <AlertCircle className="h-3 w-3" /> {s.possiveis} possíveis
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                          <XCircle className="h-3 w-3" /> {s.naoEncontrados} não encontrados
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {s.totalRegistros} registros ·{" "}
-                          {new Date(s.criadoEm).toLocaleDateString("pt-BR")}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteMutation.mutate(s.id);
-                        }}
-                        data-testid={`button-delete-sessao-${s.id}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
