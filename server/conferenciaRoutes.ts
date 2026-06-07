@@ -8,6 +8,7 @@ import {
   conferenciaAliases,
   conferenciaProfessores,
   conferenciaProfessorAlunos,
+  students,
 } from "@shared/schema";
 
 // ── Fuzzy matching (pure JS — no external AI/API) ─────────────────────────────
@@ -81,7 +82,8 @@ type ColMap = {
   valueIdx: number;
   dateIdx: number;
   checkinsIdx: number;
-  debug: { nameCol: string | null; valueCol: string | null; allHeaders: string[] };
+  modalidadeIdx: number;
+  debug: { nameCol: string | null; valueCol: string | null; modalidadeCol: string | null; allHeaders: string[] };
 };
 
 function normHeader(s: string): string {
@@ -184,7 +186,6 @@ function detectValueColumnByContent(
 }
 
 function detectColumns(headers: string[], rows: Array<Record<string, unknown>>): ColMap {
-  // Step 1: Try expanded header keyword matching
   const nameByHeader = findByHeader(headers, [
     "nome", "aluno", "cliente", "name", "usuario", "user", "membro",
     "participante", "employee", "associado", "beneficiario", "titular", "socio",
@@ -200,22 +201,24 @@ function detectColumns(headers: string[], rows: Array<Record<string, unknown>>):
     "visita", "checkin", "check-in", "acesso", "session", "frequencia",
     "quantidade", "qtd", "sessions", "visits", "utilizacao", "uso",
   ]);
+  const modalidadeIdx = findByHeader(headers, [
+    "plano", "modalidade", "atividade", "tipo", "categoria", "activity",
+    "produto", "servico", "beneficio", "nivel", "pacote", "plan", "classe",
+  ]);
 
-  // Step 2: Fall back to content-based detection if header matching fails
-  const nameIdx =
-    nameByHeader >= 0 ? nameByHeader : detectNameColumnByContent(headers, rows);
-
-  const valueIdx =
-    valueByHeader >= 0 ? valueByHeader : detectValueColumnByContent(headers, rows, nameIdx);
+  const nameIdx = nameByHeader >= 0 ? nameByHeader : detectNameColumnByContent(headers, rows);
+  const valueIdx = valueByHeader >= 0 ? valueByHeader : detectValueColumnByContent(headers, rows, nameIdx);
 
   return {
     nameIdx,
     valueIdx,
     dateIdx,
     checkinsIdx,
+    modalidadeIdx,
     debug: {
       nameCol: nameIdx >= 0 ? headers[nameIdx] : null,
       valueCol: valueIdx >= 0 ? headers[valueIdx] : null,
+      modalidadeCol: modalidadeIdx >= 0 ? headers[modalidadeIdx] : null,
       allHeaders: headers,
     },
   };
@@ -295,11 +298,47 @@ function parseExcelRows(buffer: Buffer): Array<Record<string, unknown>> {
 // e.g. "Beatriz Franco 430.951.058-27" → "Beatriz Franco"
 function cleanName(raw: string): string {
   return raw
-    .replace(/\d{3}\.\d{3}\.\d{3}-\d{2}/g, "") // CPF formatted: XXX.XXX.XXX-XX
-    .replace(/\b\d{11}\b/g, "")                  // CPF unformatted: 11 consecutive digits
-    .replace(/\(.*?\)/g, "")                      // parenthetical notes: (...)
+    .replace(/\d{3}\.\d{3}\.\d{3}-\d{2}/g, "")
+    .replace(/\b\d{11}\b/g, "")
+    .replace(/\(.*?\)/g, "")
     .trim()
     .replace(/\s+/g, " ");
+}
+
+/** Parse a date value from an Excel cell — handles serial numbers and common string formats */
+function parseExcelDate(val: unknown): Date | null {
+  if (val === null || val === undefined || val === "") return null;
+  if (typeof val === "number" && val > 0 && val < 100000) {
+    // Excel serial date: days since 1899-12-30 (with the famous 1900 leap-year bug)
+    const ms = (val - 25569) * 86400 * 1000;
+    const d = new Date(ms);
+    if (!isNaN(d.getTime())) return d;
+  }
+  const s = String(val).trim();
+  if (!s || s === "0") return null;
+  // DD/MM/YYYY
+  const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m1) return new Date(parseInt(m1[3]), parseInt(m1[2]) - 1, parseInt(m1[1]));
+  // YYYY-MM-DD
+  const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m2) return new Date(parseInt(m2[1]), parseInt(m2[2]) - 1, parseInt(m2[3]));
+  // DD-MM-YYYY
+  const m3 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
+  if (m3) return new Date(parseInt(m3[3]), parseInt(m3[2]) - 1, parseInt(m3[1]));
+  return null;
+}
+
+/** Modalidades that go 100% to the arena (no professor commission) */
+const ARENA_ONLY_KEYWORDS = [
+  "day use", "dayuse", "day-use", "day_use",
+  "esportes coletivos", "utilizacao livre", "coletivo livre",
+  "atividade livre", "livre",
+];
+
+function isArenaOnly(modalidade: string): boolean {
+  if (!modalidade) return false;
+  const norm = normalizeNome(modalidade);
+  return ARENA_ONLY_KEYWORDS.some((k) => norm.includes(normalizeNome(k)));
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -487,16 +526,17 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(403).json({ message: "Acesso negado" });
     }
 
-    const { filename, content, platform: platformBody } = req.body as {
+    const { filename, content, platform: platformBody, dataInicio, dataFim } = req.body as {
       filename: string;
       content: string;
       platform?: string;
+      dataInicio?: string;
+      dataFim?: string;
     };
     if (!filename || !content) {
       return res.status(400).json({ message: "filename e content são obrigatórios" });
     }
 
-    // Platform must be explicitly selected
     const platform = platformBody?.trim() || "outro";
 
     try {
@@ -508,9 +548,24 @@ export function registerConferenciaRoutes(app: Express): void {
 
       const headers = Object.keys(rows[0]);
       const cols = detectColumns(headers, rows);
-      console.log(`[Conferência] Arquivo: ${filename} | Colunas — nome: "${cols.debug.nameCol ?? "NÃO DETECTADA"}" | valor: "${cols.debug.valueCol ?? "NÃO DETECTADA"}" | headers: [${cols.debug.allHeaders.join(", ")}]`);
+      console.log(
+        `[Conferência] ${filename} | nome:"${cols.debug.nameCol ?? "N/A"}" | valor:"${cols.debug.valueCol ?? "N/A"}" | modalidade:"${cols.debug.modalidadeCol ?? "N/A"}" | headers:[${cols.debug.allHeaders.join(", ")}]`
+      );
 
-      // Load conferencia-specific data (standalone — no connection to arena students/teachers)
+      // Filter rows by date range if provided and a date column was detected
+      let filteredRows = rows;
+      if (dataInicio && dataFim && cols.dateIdx >= 0) {
+        const start = new Date(dataInicio);
+        const end = new Date(dataFim + "T23:59:59");
+        const orig = rows.length;
+        filteredRows = rows.filter((row) => {
+          const d = parseExcelDate(row[headers[cols.dateIdx]]);
+          if (!d) return true;
+          return d >= start && d <= end;
+        });
+        console.log(`[Conferência] Filtro ${dataInicio}→${dataFim}: ${orig} → ${filteredRows.length} linhas`);
+      }
+
       const profsDb = await db
         .select()
         .from(conferenciaProfessores)
@@ -527,49 +582,62 @@ export function registerConferenciaRoutes(app: Express): void {
         .from(conferenciaAliases)
         .where(eq(conferenciaAliases.arenaId, arenaId));
 
-      // alias → confAlunoId
+      // Fallback: match against main arena students when conferência list misses
+      const arenaStudentsDb = await db
+        .select({ id: students.id, nome: students.nome })
+        .from(students)
+        .where(and(eq(students.arenaId, arenaId), eq(students.ativo, true)));
+
       const aliasToAlunoId = new Map(
         aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
       );
 
-      function matchAluno(nomePlataforma: string) {
-        const normInput = normalizeNome(nomePlataforma);
-
-        // Exact alias match first
-        const aliasAlunoId = aliasToAlunoId.get(normInput);
+      function matchAluno(nomePlataforma: string): {
+        aluno: (typeof alunosDb)[0] | null;
+        arenaStudent: { id: string; nome: string } | null;
+        score: number;
+        status: "confirmado" | "pendente" | "nao_encontrado";
+      } {
+        // 1. Exact alias
+        const aliasAlunoId = aliasToAlunoId.get(normalizeNome(nomePlataforma));
         if (aliasAlunoId) {
           const aluno = alunosDb.find((a) => a.id === aliasAlunoId);
-          if (aluno) return { aluno, score: 100, status: "confirmado" };
+          if (aluno) return { aluno, arenaStudent: null, score: 100, status: "confirmado" };
         }
 
-        // Fuzzy match against conferencia student names
-        let bestScore = 0;
-        let bestAluno: (typeof alunosDb)[0] | null = null;
-
+        // 2. Fuzzy — conferência prof students (also check their aliases)
+        let bestScore = 0, bestAluno: (typeof alunosDb)[0] | null = null;
         for (const aluno of alunosDb) {
-          const score = bestSim(nomePlataforma, aluno.nome);
-          if (score > bestScore) {
-            bestScore = score;
-            bestAluno = aluno;
+          let s = bestSim(nomePlataforma, aluno.nome);
+          for (const al of aliasesDb.filter((a) => a.studentId === aluno.id)) {
+            s = Math.max(s, bestSim(nomePlataforma, al.alias));
           }
-          // Also check aliases for this aluno
-          for (const alias of aliasesDb.filter((a) => a.studentId === aluno.id)) {
-            const aliasScore = bestSim(nomePlataforma, alias.alias);
-            if (aliasScore > bestScore) {
-              bestScore = aliasScore;
-              bestAluno = aluno;
-            }
-          }
+          if (s > bestScore) { bestScore = s; bestAluno = aluno; }
+        }
+        if (bestScore >= 82) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "confirmado" };
+        if (bestScore >= 55) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "pendente" };
+
+        // 3. Fallback — main arena students
+        let bestArenaScore = 0, bestArenaStudent: { id: string; nome: string } | null = null;
+        for (const s of arenaStudentsDb) {
+          const sc = bestSim(nomePlataforma, s.nome);
+          if (sc > bestArenaScore) { bestArenaScore = sc; bestArenaStudent = s; }
+        }
+        if (bestArenaScore >= 78) {
+          return {
+            aluno: null,
+            arenaStudent: bestArenaStudent,
+            score: bestArenaScore,
+            status: bestArenaScore >= 88 ? "confirmado" : "pendente",
+          };
         }
 
-        if (bestScore >= 82) return { aluno: bestAluno!, score: bestScore, status: "confirmado" };
-        if (bestScore >= 55) return { aluno: bestAluno!, score: bestScore, status: "pendente" };
-        return { aluno: null as null, score: bestScore, status: "nao_encontrado" };
+        return { aluno: null, arenaStudent: null, score: Math.max(bestScore, bestArenaScore), status: "nao_encontrado" };
       }
 
       let encontrados = 0, possiveis = 0, naoEncontrados = 0;
 
-      const registrosToInsert = rows
+      const registrosToInsert = filteredRows
         .map((row) => {
           const nomePlataforma = cleanName(
             String(cols.nameIdx >= 0 ? row[headers[cols.nameIdx]] : "")
@@ -577,27 +645,34 @@ export function registerConferenciaRoutes(app: Express): void {
           if (!nomePlataforma) return null;
 
           const valorRaw = String(cols.valueIdx >= 0 ? row[headers[cols.valueIdx]] : "0");
-          const valor = String(
-            Math.round((parseFloat(valorRaw.replace(",", ".")) || 0) * 100) / 100
-          );
+          const valor = String(Math.round((parseFloat(valorRaw.replace(",", ".")) || 0) * 100) / 100);
           const data = cols.dateIdx >= 0 ? String(row[headers[cols.dateIdx]]) : "";
-          const checkinsRaw =
-            cols.checkinsIdx >= 0
-              ? parseInt(String(row[headers[cols.checkinsIdx]]))
-              : 1;
+          const checkinsRaw = cols.checkinsIdx >= 0 ? parseInt(String(row[headers[cols.checkinsIdx]])) : 1;
           const checkins = isNaN(checkinsRaw) ? 1 : Math.max(1, checkinsRaw);
 
-          const match = matchAluno(nomePlataforma);
+          // Detect plan/modalidade
+          const modalidade = cols.modalidadeIdx >= 0
+            ? String(row[headers[cols.modalidadeIdx]] ?? "").trim()
+            : "";
 
-          let professorId: string | undefined;
+          // Arena-only modalidades → 100% to arena, auto-confirmed, no professor
+          const arenaOnly = isArenaOnly(modalidade);
+
+          const match = arenaOnly
+            ? { aluno: null, arenaStudent: null, score: 100, status: "confirmado" as const }
+            : matchAluno(nomePlataforma);
+
+          let professorId: string | null = null;
           let percentual = "0";
           let valorProfessor = "0";
           let valorArena = valor;
+          let categoria = "arena";
 
-          if (match.aluno) {
+          if (arenaOnly) {
+            encontrados++;
+          } else if (match.aluno) {
             if (match.status === "confirmado") encontrados++;
             else possiveis++;
-
             professorId = match.aluno.professorId;
             const prof = profMap.get(professorId!);
             if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
@@ -605,7 +680,11 @@ export function registerConferenciaRoutes(app: Express): void {
               const pct = parseFloat(percentual) / 100;
               valorProfessor = String(Math.round(parseFloat(valor) * pct * 100) / 100);
               valorArena = String(Math.round(parseFloat(valor) * (1 - pct) * 100) / 100);
+              categoria = "comissao";
             }
+          } else if (match.arenaStudent) {
+            if (match.status === "confirmado") encontrados++;
+            else possiveis++;
           } else {
             naoEncontrados++;
           }
@@ -614,16 +693,17 @@ export function registerConferenciaRoutes(app: Express): void {
             arenaId,
             sessaoId: "__PLACEHOLDER__",
             nomePlataforma,
-            studentId: match.aluno?.id ?? null,
-            alunoNomeMatch: match.aluno?.nome ?? null,
+            studentId: match.aluno?.id ?? match.arenaStudent?.id ?? null,
+            alunoNomeMatch: match.aluno?.nome ?? match.arenaStudent?.nome ?? null,
             similaridade: match.score,
             valor,
             data,
             checkins,
             plataforma: platform!,
+            modalidade: modalidade || null,
             status: match.status as string,
-            categoria: "comissao" as string,
-            professorId: professorId ?? null,
+            categoria,
+            professorId,
             percentual,
             valorProfessor,
             valorArena,
@@ -641,6 +721,8 @@ export function registerConferenciaRoutes(app: Express): void {
           encontrados,
           possiveis,
           naoEncontrados,
+          periodoInicio: dataInicio ?? null,
+          periodoFim: dataFim ?? null,
         })
         .returning();
 

@@ -61,6 +61,8 @@ interface Sessao {
   possiveis: number;
   naoEncontrados: number;
   criadoEm: string;
+  periodoInicio?: string | null;
+  periodoFim?: string | null;
 }
 
 interface Registro {
@@ -73,6 +75,7 @@ interface Registro {
   data: string | null;
   checkins: number;
   plataforma: string;
+  modalidade: string | null;
   status: string;
   categoria: string;
   professorId: string | null;
@@ -362,8 +365,12 @@ interface Props {
 export default function ConferenciaManager({ arenaId }: Props) {
   const [view, setView] = useState<"main" | "sessao">("main");
   const [sessaoId, setSessaoId] = useState<string | null>(null);
-  // "configuracao" (Professores e Alunos) is the first/default tab
-  const [mainTab, setMainTab] = useState<"configuracao" | "lista">("configuracao");
+  const [mainTab, setMainTab] = useState<"conferir" | "professores">("conferir");
+
+  const handleSelectSessao = (id: string) => {
+    setSessaoId(id);
+    setView("sessao");
+  };
 
   if (view === "sessao" && sessaoId) {
     return (
@@ -383,16 +390,15 @@ export default function ConferenciaManager({ arenaId }: Props) {
       <div>
         <h1 className="text-xl font-bold text-foreground">Conferência</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Sistema de auditoria independente — cadastre professores/alunos e importe os Excels para
-          cruzamento financeiro automático.
+          Auditoria de repasses TotalPass e Wellhub — cruze a planilha com os alunos da arena automaticamente.
         </p>
       </div>
 
       <div className="flex gap-1 border-b">
         {(
           [
-            { key: "configuracao", label: "Professores e Alunos" },
-            { key: "lista", label: "Conferências" },
+            { key: "conferir", label: "Conferir Planilha" },
+            { key: "professores", label: "Professores" },
           ] as const
         ).map((t) => (
           <button
@@ -411,23 +417,11 @@ export default function ConferenciaManager({ arenaId }: Props) {
         ))}
       </div>
 
-      {mainTab === "configuracao" && (
-        <ConfiguracaoView
-          arenaId={arenaId}
-          onSelectSessao={(id) => {
-            setSessaoId(id);
-            setView("sessao");
-          }}
-        />
+      {mainTab === "conferir" && (
+        <ConferirView arenaId={arenaId} onSelectSessao={handleSelectSessao} />
       )}
-      {mainTab === "lista" && (
-        <ListaView
-          arenaId={arenaId}
-          onSelectSessao={(id) => {
-            setSessaoId(id);
-            setView("sessao");
-          }}
-        />
+      {mainTab === "professores" && (
+        <ConfiguracaoView arenaId={arenaId} />
       )}
     </div>
   );
@@ -443,15 +437,324 @@ interface UploadingFile {
   debug?: { nameCol: string | null; valueCol: string | null };
 }
 
-// ── Configuração View ─────────────────────────────────────────────────────────
+const MESES_PT = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
 
-function ConfiguracaoView({
+function formatPeriodoSessao(s: Sessao): string | null {
+  if (!s.periodoInicio) return null;
+  const d = new Date(s.periodoInicio + "T12:00:00");
+  return `${MESES_PT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+const ARENA_ONLY_MODS_FE = [
+  "day use", "dayuse", "day-use", "esportes coletivos",
+  "utilizacao livre", "coletivo livre", "atividade livre", "livre",
+];
+
+function isArenaOnlyMod(mod: string): boolean {
+  if (!mod) return false;
+  const norm = mod.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  return ARENA_ONLY_MODS_FE.some((k) => norm.includes(k));
+}
+
+// ── Conferir View (upload + histórico merged) ─────────────────────────────────
+
+function ConferirView({
   arenaId,
   onSelectSessao,
 }: {
   arenaId: string;
   onSelectSessao: (id: string) => void;
 }) {
+  const hoje = new Date();
+  const defaultDate = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+  const [mesSel, setMesSel] = useState(defaultDate.getMonth() + 1);
+  const [anoSel, setAnoSel] = useState(defaultDate.getFullYear());
+  const [dragging, setDragging] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
+    queryKey: ["/api/conferencia/sessoes"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/sessao/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] }),
+  });
+
+  const isUploading = uploadingFiles.some((f) => f.status === "processing");
+
+  const dataInicio = `${anoSel}-${String(mesSel).padStart(2, "0")}-01`;
+  const lastDay = new Date(anoSel, mesSel, 0).getDate();
+  const dataFim = `${anoSel}-${String(mesSel).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  const curYear = new Date().getFullYear();
+  const anos = [curYear - 2, curYear - 1, curYear, curYear + 1];
+
+  const processUploadFile = async (file: File): Promise<SessaoDetalhe | null> => {
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      toast({ title: "Formato inválido", description: `${file.name}: envie .xlsx ou .xls`, variant: "destructive" });
+      return null;
+    }
+    const platform = detectPlatformFromFilename(file.name) || "outro";
+    setUploadingFiles((prev) => [...prev, { name: file.name, platform, status: "processing" }]);
+    try {
+      const content = await fileToBase64(file);
+      const res = await apiRequest("POST", "/api/conferencia/upload", {
+        filename: file.name, content, platform, dataInicio, dataFim,
+      });
+      const sessao: SessaoDetalhe = await res.json();
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      qc.setQueryData(["/api/conferencia/sessao", sessao.id], sessao);
+      setUploadingFiles((prev) =>
+        prev.map((f) => f.name === file.name ? { ...f, status: "done", debug: sessao.debug } : f)
+      );
+      return sessao;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
+      setUploadingFiles((prev) =>
+        prev.map((f) => f.name === file.name ? { ...f, status: "error", error: msg } : f)
+      );
+      toast({ title: `Erro: ${file.name}`, description: msg, variant: "destructive" });
+      return null;
+    }
+  };
+
+  const handleUploadFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploadingFiles([]);
+    const results = await Promise.all(files.map((f) => processUploadFile(f)));
+    const succeeded = results.filter(Boolean) as SessaoDetalhe[];
+    if (succeeded.length === 1) {
+      const s = succeeded[0];
+      const total = s.encontrados + s.possiveis;
+      toast({
+        title: `${total} correspondência${total !== 1 ? "s" : ""} encontrada${total !== 1 ? "s" : ""}`,
+        description: `${s.encontrados} confirmados · ${s.possiveis} possíveis · ${s.naoEncontrados} não encontrados`,
+      });
+      onSelectSessao(s.id);
+    } else if (succeeded.length > 1) {
+      toast({ title: `${succeeded.length} arquivos processados` });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* ── Period picker ──────────────────────────────────────────────────── */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div>
+              <p className="text-xs text-muted-foreground font-medium mb-1">Período de referência</p>
+              <div className="flex items-center gap-2">
+                <Select value={String(mesSel)} onValueChange={(v) => setMesSel(Number(v))}>
+                  <SelectTrigger className="h-8 w-36 text-sm" data-testid="select-mes">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MESES_PT.map((m, i) => (
+                      <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={String(anoSel)} onValueChange={(v) => setAnoSel(Number(v))}>
+                  <SelectTrigger className="h-8 w-24 text-sm" data-testid="select-ano">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground self-end pb-0.5">
+              Filtra registros de{" "}
+              <strong>{new Date(dataInicio + "T12:00:00").toLocaleDateString("pt-BR")}</strong>{" "}
+              até{" "}
+              <strong>{new Date(dataFim + "T12:00:00").toLocaleDateString("pt-BR")}</strong>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Upload drop zone ───────────────────────────────────────────────── */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">
+          Arraste o Excel do TotalPass ou Wellhub. O sistema detecta automaticamente nomes, valores e{" "}
+          <strong>modalidades/planos</strong> e cruza com todos os alunos da arena.{" "}
+          <em>Day Use</em> e <em>Esportes Coletivos / Utilização Livre</em> são classificados
+          automaticamente como receita integral da arena (sem comissão de professor).
+        </p>
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length) handleUploadFiles(files);
+          }}
+          onClick={() => !isUploading && fileRef.current?.click()}
+          data-testid="upload-zone-conferir"
+          className={cn(
+            "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
+            dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30",
+            isUploading && "opacity-60 cursor-not-allowed"
+          )}
+        >
+          {isUploading ? (
+            <>
+              <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
+              <span className="text-sm text-muted-foreground">Processando arquivos…</span>
+            </>
+          ) : (
+            <>
+              <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
+              <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
+              <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
+            </>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              if (files.length) handleUploadFiles(files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
+        {uploadingFiles.length > 0 && (
+          <div className="space-y-1.5 mt-2">
+            {uploadingFiles.map((f) => (
+              <div
+                key={f.name}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
+                  f.status === "processing" && "bg-muted",
+                  f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
+                  f.status === "error" && "bg-red-50 dark:bg-red-950/40"
+                )}
+              >
+                {f.status === "processing" && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
+                {f.status === "done" && <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                {f.status === "error" && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
+                <span className="truncate flex-1">{f.name}</span>
+                <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(f.platform || "outro")}</Badge>
+                {f.status === "error" && f.error && (
+                  <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
+                )}
+                {f.status === "done" && f.debug && (
+                  <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
+                    nome: <strong>{f.debug.nameCol ?? "?"}</strong> · valor:{" "}
+                    <strong>{f.debug.valueCol ?? "?"}</strong>
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── History list ───────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 pt-1">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+          Histórico de Conferências
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
+      ) : sessoes.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground text-sm border border-dashed rounded-lg">
+          Nenhuma conferência realizada ainda. Faça o upload acima.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sessoes.map((s) => {
+            const periodo = formatPeriodoSessao(s);
+            return (
+              <Card
+                key={s.id}
+                className="cursor-pointer hover:shadow-md transition-shadow border"
+                onClick={() => onSelectSessao(s.id)}
+                data-testid={`sessao-card-${s.id}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileSpreadsheet className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {plataformaLabel(s.plataforma)}
+                        </Badge>
+                        {periodo && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs shrink-0 text-blue-700 border-blue-300 dark:text-blue-400 dark:border-blue-700"
+                          >
+                            {periodo}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle className="h-3 w-3" /> {s.encontrados} encontrados
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                          <AlertCircle className="h-3 w-3" /> {s.possiveis} possíveis
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                          <XCircle className="h-3 w-3" /> {s.naoEncontrados} não encontrados
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {s.totalRegistros} registros ·{" "}
+                          {new Date(s.criadoEm).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteMutation.mutate(s.id);
+                        }}
+                        data-testid={`button-delete-sessao-${s.id}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Configuração View ─────────────────────────────────────────────────────────
+
+function ConfiguracaoView({ arenaId }: { arenaId: string }) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
   const [editingProf, setEditingProf] = useState<string | null>(null);
@@ -460,10 +763,6 @@ function ConfiguracaoView({
   const [novoAluno, setNovoAluno] = useState<Record<string, string>>({});
   const [listMode, setListMode] = useState<Record<string, boolean>>({});
   const [listaTexto, setListaTexto] = useState<Record<string, string>>({});
-  // Upload zone state
-  const [dragging, setDragging] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -588,176 +887,8 @@ function ConfiguracaoView({
     addAlunoMutation.mutate({ profId, nome });
   };
 
-  // ── Upload helpers ────────────────────────────────────────────────────────
-  const isUploading = uploadingFiles.some((f) => f.status === "processing");
-
-  const processUploadFile = async (file: File): Promise<SessaoDetalhe | null> => {
-    if (!file.name.match(/\.(xlsx|xls)$/i)) {
-      toast({
-        title: "Formato inválido",
-        description: `${file.name}: envie arquivos .xlsx ou .xls`,
-        variant: "destructive",
-      });
-      return null;
-    }
-    const detectedPlatform = detectPlatformFromFilename(file.name);
-    const platform = detectedPlatform || "outro";
-    setUploadingFiles((prev) => [...prev, { name: file.name, platform, status: "processing" }]);
-    try {
-      const content = await fileToBase64(file);
-      const res = await apiRequest("POST", "/api/conferencia/upload", {
-        filename: file.name,
-        content,
-        platform,
-      });
-      const sessao: SessaoDetalhe = await res.json();
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-      qc.setQueryData(["/api/conferencia/sessao", sessao.id], sessao);
-      setUploadingFiles((prev) =>
-        prev.map((f) =>
-          f.name === file.name ? { ...f, status: "done", debug: sessao.debug } : f
-        )
-      );
-      return sessao;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
-      setUploadingFiles((prev) =>
-        prev.map((f) => (f.name === file.name ? { ...f, status: "error", error: msg } : f))
-      );
-      toast({ title: `Erro: ${file.name}`, description: msg, variant: "destructive" });
-      return null;
-    }
-  };
-
-  const handleUploadFiles = async (files: File[]) => {
-    if (files.length === 0) return;
-    setUploadingFiles([]);
-    const results = await Promise.all(files.map((f) => processUploadFile(f)));
-    const succeeded = results.filter(Boolean) as SessaoDetalhe[];
-    if (succeeded.length === 1) {
-      const s = succeeded[0];
-      toast({
-        title: `${s.encontrados} aluno${s.encontrados !== 1 ? "s" : ""} encontrado${s.encontrados !== 1 ? "s" : ""}`,
-        description: s.debug?.nameCol
-          ? `Coluna nome: "${s.debug.nameCol}" · Coluna valor: "${s.debug.valueCol ?? "não detectada"}"`
-          : s.naoEncontrados > 0
-          ? `${s.naoEncontrados} sem correspondência — verifique os nomes cadastrados`
-          : undefined,
-      });
-      onSelectSessao(s.id);
-    } else if (succeeded.length > 1) {
-      toast({
-        title: `${succeeded.length} arquivos processados`,
-        description: "Clique em qualquer conferência para ver o resultado.",
-      });
-    }
-  };
-
   return (
     <div className="space-y-4">
-      {/* ── Upload Zone ─────────────────────────────────────────────────── */}
-      <Card className="border-dashed border-2">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-            Importar Excel e Conferir
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Arraste o Excel do TotalPass ou Wellhub aqui. O sistema detecta automaticamente as
-            colunas de <strong>nome</strong> e <strong>valor</strong> e cruza com os alunos
-            cadastrados abaixo.
-          </p>
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragging(false);
-              const files = Array.from(e.dataTransfer.files);
-              if (files.length) handleUploadFiles(files);
-            }}
-            onClick={() => !isUploading && fileRef.current?.click()}
-            data-testid="upload-zone-config"
-            className={cn(
-              "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none",
-              dragging
-                ? "border-primary bg-primary/5 cursor-pointer"
-                : "border-border hover:border-primary/50 hover:bg-muted/30 cursor-pointer",
-              isUploading && "opacity-60 cursor-not-allowed"
-            )}
-          >
-            {isUploading ? (
-              <>
-                <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
-                <span className="text-sm text-muted-foreground">Processando arquivos…</span>
-              </>
-            ) : (
-              <>
-                <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
-                <span className="text-sm font-medium">
-                  Arraste os arquivos ou clique para selecionar
-                </span>
-                <span className="text-xs text-muted-foreground mt-0.5">
-                  .xlsx ou .xls · TotalPass e/ou Wellhub
-                </span>
-              </>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,.xls"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                if (files.length) handleUploadFiles(files);
-                e.target.value = "";
-              }}
-            />
-          </div>
-
-          {uploadingFiles.length > 0 && (
-            <div className="space-y-1.5 mt-2">
-              {uploadingFiles.map((f) => (
-                <div
-                  key={f.name}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
-                    f.status === "processing" && "bg-muted",
-                    f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
-                    f.status === "error" && "bg-red-50 dark:bg-red-950/40"
-                  )}
-                >
-                  {f.status === "processing" && (
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
-                  )}
-                  {f.status === "done" && (
-                    <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                  )}
-                  {f.status === "error" && (
-                    <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />
-                  )}
-                  <span className="truncate flex-1">{f.name}</span>
-                  <Badge variant="secondary" className="text-xs shrink-0">
-                    {plataformaLabel(f.platform || "outro")}
-                  </Badge>
-                  {f.status === "error" && f.error && (
-                    <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
-                  )}
-                  {f.status === "done" && f.debug && (
-                    <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
-                      col.nome: <strong>{f.debug.nameCol ?? "?"}</strong> · col.valor: <strong>{f.debug.valueCol ?? "?"}</strong>
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* ── Professor configuration ─────────────────────────────────────── */}
       {/* Add Professor Card */}
       <Card>
@@ -1759,6 +1890,126 @@ function RelatorioView({
           })}
         </div>
       )}
+
+      {/* Por Modalidade */}
+      {confirmados.length > 0 && (() => {
+        const byMod = new Map<string, { registros: Registro[] }>();
+        for (const r of confirmados) {
+          const key = r.modalidade?.trim() || "Não identificada";
+          if (!byMod.has(key)) byMod.set(key, { registros: [] });
+          byMod.get(key)!.registros.push(r);
+        }
+        const modGroups = Array.from(byMod.entries()).sort((a, b) => {
+          const recA = a[1].registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+          const recB = b[1].registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+          return recB - recA;
+        });
+        return (
+          <div>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Por Modalidade
+            </h2>
+            <Card>
+              <CardContent className="pt-3 pb-3 px-4">
+                <div className="border rounded overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs py-1.5">Modalidade</TableHead>
+                        <TableHead className="text-xs py-1.5 text-center">Alunos</TableHead>
+                        <TableHead className="text-xs py-1.5 text-center">Chk</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right">Receita</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right">Prof.</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right">Arena</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {modGroups.map(([mod, g]) => {
+                        const receita = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+                        const prof = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+                        const arena = g.registros.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+                        const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
+                        const arenaOnly = isArenaOnlyMod(mod);
+                        return (
+                          <TableRow key={mod} className="text-xs">
+                            <TableCell className="py-1.5 font-medium">
+                              {mod}
+                              {arenaOnly && (
+                                <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0">Arena</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-1.5 text-center">{g.registros.length}</TableCell>
+                            <TableCell className="py-1.5 text-center">{chks}</TableCell>
+                            <TableCell className="py-1.5 text-right font-mono">{fmtVal(String(receita))}</TableCell>
+                            <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">{fmtVal(String(prof))}</TableCell>
+                            <TableCell className="py-1.5 text-right font-mono text-blue-600 dark:text-blue-400">{fmtVal(String(arena))}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
+
+      {/* Resumo de Pagamentos */}
+      {profGroups.length > 0 && (() => {
+        const rows = profGroups.map(([key, g]) => {
+          const receita = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+          const comissao = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+          const arena = g.registros.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+          const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
+          return { key, nome: g.nome, receita, comissao, arena, chks, alunos: g.registros.length };
+        });
+        return (
+          <div>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Resumo de Pagamentos
+            </h2>
+            <Card>
+              <CardContent className="pt-3 pb-3 px-4">
+                <div className="border rounded overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs py-1.5">Professor / Arena</TableHead>
+                        <TableHead className="text-xs py-1.5 text-center">Alunos</TableHead>
+                        <TableHead className="text-xs py-1.5 text-center">Chk</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right">Receita</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right">A Pagar (Prof.)</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right">Fica (Arena)</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.map((row) => (
+                        <TableRow key={row.key} className="text-xs">
+                          <TableCell className="py-1.5 font-medium">{row.nome}</TableCell>
+                          <TableCell className="py-1.5 text-center">{row.alunos}</TableCell>
+                          <TableCell className="py-1.5 text-center">{row.chks}</TableCell>
+                          <TableCell className="py-1.5 text-right font-mono">{fmtVal(String(row.receita))}</TableCell>
+                          <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">{fmtVal(String(row.comissao))}</TableCell>
+                          <TableCell className="py-1.5 text-right font-mono text-blue-600 dark:text-blue-400">{fmtVal(String(row.arena))}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="text-xs font-bold border-t-2 bg-muted/30">
+                        <TableCell className="py-1.5">Total</TableCell>
+                        <TableCell className="py-1.5 text-center">{rows.reduce((s, r) => s + r.alunos, 0)}</TableCell>
+                        <TableCell className="py-1.5 text-center">{rows.reduce((s, r) => s + r.chks, 0)}</TableCell>
+                        <TableCell className="py-1.5 text-right font-mono">{fmtVal(String(rows.reduce((s, r) => s + r.receita, 0)))}</TableCell>
+                        <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">{fmtVal(String(rows.reduce((s, r) => s + r.comissao, 0)))}</TableCell>
+                        <TableCell className="py-1.5 text-right font-mono text-blue-600 dark:text-blue-400">{fmtVal(String(rows.reduce((s, r) => s + r.arena, 0)))}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* Não encontrados */}
       {naoEncontrados.length > 0 && (

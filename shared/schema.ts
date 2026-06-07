@@ -516,6 +516,8 @@ export const conferenciaSessoes = pgTable("conferencia_sessoes", {
   encontrados: integer("encontrados").default(0),
   possiveis: integer("possiveis").default(0),
   naoEncontrados: integer("nao_encontrados").default(0),
+  periodoInicio: text("periodo_inicio"),
+  periodoFim: text("periodo_fim"),
   criadoEm: timestamp("criado_em").defaultNow(),
 });
 
@@ -531,6 +533,7 @@ export const conferenciaRegistros = pgTable("conferencia_registros", {
   data: text("data"),
   checkins: integer("checkins").default(1),
   plataforma: text("plataforma").notNull(),
+  modalidade: text("modalidade"),
   status: text("status").notNull().default("pendente"),
   categoria: text("categoria").default("comissao"),
   professorId: text("professor_id"),
