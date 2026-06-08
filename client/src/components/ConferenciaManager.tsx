@@ -54,6 +54,34 @@ import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface ColMapping {
+  colNome: string;
+  colValor: string;
+  colModalidade: string;
+  colData: string;
+  colCheckins: string;
+}
+
+interface PreviewResponse {
+  headers: string[];
+  samples: Record<string, string[]>;
+  totalRows: number;
+  sugestoes: {
+    colNome: string | null;
+    colValor: string | null;
+    colModalidade: string | null;
+    colData: string | null;
+    colCheckins: string | null;
+  };
+}
+
+interface PendingMapFile {
+  file: File;
+  content: string;
+  platform: string;
+  preview: PreviewResponse;
+}
+
 interface Sessao {
   id: string;
   plataforma: string;
@@ -183,6 +211,181 @@ function detectPlatformFromFilename(filename: string): string {
   if (lower.includes("totalpass")) return "totalpass";
   if (lower.includes("wellhub") || lower.includes("gympass")) return "wellhub";
   return "";
+}
+
+// ── Column Mapping Dialog ─────────────────────────────────────────────────────
+
+function ColMapDialog({
+  pending,
+  onConfirm,
+  onCancel,
+}: {
+  pending: PendingMapFile;
+  onConfirm: (mapping: ColMapping) => void;
+  onCancel: () => void;
+}) {
+  const { preview, file, platform } = pending;
+  const { headers, samples, totalRows, sugestoes } = preview;
+
+  const [colNome, setColNome] = useState(sugestoes.colNome ?? "");
+  const [colValor, setColValor] = useState(sugestoes.colValor ?? "");
+  const [colModalidade, setColModalidade] = useState(sugestoes.colModalidade ?? "");
+  const [colData, setColData] = useState(sugestoes.colData ?? "");
+  const [colCheckins, setColCheckins] = useState(sugestoes.colCheckins ?? "");
+
+  const NONE = "__nenhuma__";
+
+  const fields = [
+    {
+      key: "colNome" as const,
+      label: "Coluna do Nome do Aluno",
+      required: true,
+      hint: "Ex: Visitante (Wellhub), Colaborador (TotalPass), Nome, Cliente…",
+      value: colNome,
+      set: setColNome,
+    },
+    {
+      key: "colValor" as const,
+      label: "Coluna do Valor (R$)",
+      required: true,
+      hint: "Ex: Repasse, Valor, Net, Total…",
+      value: colValor,
+      set: setColValor,
+    },
+    {
+      key: "colModalidade" as const,
+      label: "Coluna de Modalidade / Plano",
+      required: false,
+      hint: "Ex: Plano, Atividade, Produto, Categoria… (opcional)",
+      value: colModalidade,
+      set: setColModalidade,
+    },
+    {
+      key: "colData" as const,
+      label: "Coluna de Data",
+      required: false,
+      hint: "Ex: Data, Período, Competência, Mês… (opcional)",
+      value: colData,
+      set: setColData,
+    },
+    {
+      key: "colCheckins" as const,
+      label: "Coluna de Visitas / Check-ins",
+      required: false,
+      hint: "Ex: Visitas, Check-ins, Acessos, Qtd… (opcional)",
+      value: colCheckins,
+      set: setColCheckins,
+    },
+  ];
+
+  const canConfirm = !!colNome && !!colValor;
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5 text-primary" />
+            Mapeamento de Colunas
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* File info */}
+        <div className="flex items-center gap-3 rounded-lg bg-muted/50 px-4 py-3 text-sm">
+          <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{file.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {totalRows} linhas · {headers.length} colunas · {plataformaLabel(platform)}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-sm text-muted-foreground -mt-1">
+          Indique qual coluna da planilha corresponde a cada campo. Os campos obrigatórios são{" "}
+          <strong>Nome do Aluno</strong> e <strong>Valor</strong>.
+        </p>
+
+        <div className="space-y-5">
+          {fields.map((f) => {
+            const curVal = f.value;
+            const sampleVals = curVal && curVal !== NONE ? (samples[curVal] ?? []) : [];
+
+            return (
+              <div key={f.key}>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <label className="text-sm font-medium text-foreground">{f.label}</label>
+                  {f.required && (
+                    <span className="text-xs text-destructive font-semibold">*</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{f.hint}</p>
+                <Select
+                  value={curVal || NONE}
+                  onValueChange={(v) => f.set(v === NONE ? "" : v)}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "h-9",
+                      f.required && !curVal && "border-destructive/50"
+                    )}
+                    data-testid={`select-col-${f.key}`}
+                  >
+                    <SelectValue placeholder="Selecione uma coluna…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {!f.required && (
+                      <SelectItem value={NONE}>
+                        <span className="text-muted-foreground italic">— Não usar —</span>
+                      </SelectItem>
+                    )}
+                    {headers.map((h) => (
+                      <SelectItem key={h} value={h}>
+                        <span className="font-medium">{h}</span>
+                        {samples[h]?.length > 0 && (
+                          <span className="ml-2 text-muted-foreground text-xs">
+                            ex: {samples[h].slice(0, 2).join(", ")}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {sampleVals.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {sampleVals.map((v) => (
+                      <span
+                        key={v}
+                        className="inline-block rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                      >
+                        {v}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <DialogFooter className="gap-2 pt-2">
+          <Button variant="outline" onClick={onCancel} data-testid="button-colmap-cancelar">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() =>
+              onConfirm({ colNome, colValor, colModalidade, colData, colCheckins })
+            }
+            disabled={!canConfirm}
+            data-testid="button-colmap-processar"
+          >
+            Processar planilha
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // ── PDF Export ────────────────────────────────────────────────────────────────
@@ -620,6 +823,8 @@ function MesView({
   const [mesTab, setMesTab] = useState<"arquivos" | "professores">("arquivos");
   const [dragging, setDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const [pendingMap, setPendingMap] = useState<PendingMapFile | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -643,17 +848,49 @@ function MesView({
 
   const isUploading = uploadingFiles.some((f) => f.status === "processing");
 
-  const processUploadFile = async (file: File): Promise<SessaoDetalhe | null> => {
+  // Step 1: preview headers — called right after file selection
+  const previewFile = async (file: File): Promise<void> => {
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
       toast({ title: "Formato inválido", description: `${file.name}: envie .xlsx ou .xls`, variant: "destructive" });
-      return null;
+      return;
     }
-    const platform = detectPlatformFromFilename(file.name) || "outro";
-    setUploadingFiles((prev) => [...prev, { name: file.name, platform, status: "processing" }]);
+    setIsPreviewing(true);
     try {
       const content = await fileToBase64(file);
+      const platform = detectPlatformFromFilename(file.name) || "outro";
+      const res = await apiRequest("POST", "/api/conferencia/preview-headers", {
+        filename: file.name,
+        content,
+      });
+      const preview: PreviewResponse = await res.json();
+      setPendingMap({ file, content, platform, preview });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao ler arquivo";
+      toast({ title: `Erro ao ler ${file.name}`, description: msg, variant: "destructive" });
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  // Step 2: upload with confirmed column mapping
+  const doUploadWithMapping = async (mapping: ColMapping): Promise<void> => {
+    if (!pendingMap) return;
+    const { file, content, platform } = pendingMap;
+    setPendingMap(null);
+
+    setUploadingFiles((prev) => [...prev, { name: file.name, platform, status: "processing" }]);
+    try {
       const res = await apiRequest("POST", "/api/conferencia/upload", {
-        filename: file.name, content, platform, dataInicio, dataFim,
+        filename: file.name,
+        content,
+        platform,
+        dataInicio,
+        dataFim,
+        colNome: mapping.colNome || undefined,
+        colValor: mapping.colValor || undefined,
+        colModalidade: mapping.colModalidade || undefined,
+        colData: mapping.colData || undefined,
+        colCheckins: mapping.colCheckins || undefined,
       });
       const sessao: SessaoDetalhe = await res.json();
       qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
@@ -661,32 +898,28 @@ function MesView({
       setUploadingFiles((prev) =>
         prev.map((f) => f.name === file.name ? { ...f, status: "done", debug: sessao.debug } : f)
       );
-      return sessao;
+      const total = sessao.encontrados + sessao.possiveis;
+      toast({
+        title: `${total} correspondência${total !== 1 ? "s" : ""} encontrada${total !== 1 ? "s" : ""}`,
+        description: `${sessao.encontrados} confirmados · ${sessao.possiveis} possíveis · ${sessao.naoEncontrados} não encontrados`,
+      });
+      onSelectSessao(sessao.id);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
       setUploadingFiles((prev) =>
         prev.map((f) => f.name === file.name ? { ...f, status: "error", error: msg } : f)
       );
       toast({ title: `Erro: ${file.name}`, description: msg, variant: "destructive" });
-      return null;
     }
   };
 
   const handleUploadFiles = async (files: File[]) => {
     if (files.length === 0) return;
     setUploadingFiles([]);
-    const results = await Promise.all(files.map((f) => processUploadFile(f)));
-    const succeeded = results.filter(Boolean) as SessaoDetalhe[];
-    if (succeeded.length === 1) {
-      const s = succeeded[0];
-      const total = s.encontrados + s.possiveis;
-      toast({
-        title: `${total} correspondência${total !== 1 ? "s" : ""} encontrada${total !== 1 ? "s" : ""}`,
-        description: `${s.encontrados} confirmados · ${s.possiveis} possíveis · ${s.naoEncontrados} não encontrados`,
-      });
-      onSelectSessao(s.id);
-    } else if (succeeded.length > 1) {
-      toast({ title: `${succeeded.length} arquivos processados` });
+    // For now, process files one at a time (show mapping dialog per file)
+    // For multiple files, queue them after the first
+    if (files.length > 0) {
+      await previewFile(files[0]);
     }
   };
 
@@ -727,6 +960,15 @@ function MesView({
         ))}
       </div>
 
+      {/* Column mapping dialog — shown before upload */}
+      {pendingMap && (
+        <ColMapDialog
+          pending={pendingMap}
+          onConfirm={(mapping) => doUploadWithMapping(mapping)}
+          onCancel={() => setPendingMap(null)}
+        />
+      )}
+
       {/* Arquivos tab */}
       {mesTab === "arquivos" && (
         <div className="space-y-4">
@@ -734,8 +976,8 @@ function MesView({
           <div>
             <p className="text-xs text-muted-foreground mb-2">
               Arraste o Excel do TotalPass ou Wellhub referente a{" "}
-              <strong>{mesLabel}</strong>. O sistema detecta nomes, valores e modalidades
-              automaticamente e cruza com os alunos da arena.
+              <strong>{mesLabel}</strong>. Você poderá indicar quais colunas correspondem
+              a cada campo antes de processar.
             </p>
             <div
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -746,18 +988,23 @@ function MesView({
                 const files = Array.from(e.dataTransfer.files);
                 if (files.length) handleUploadFiles(files);
               }}
-              onClick={() => !isUploading && fileRef.current?.click()}
+              onClick={() => !isUploading && !isPreviewing && fileRef.current?.click()}
               data-testid="upload-zone-conferir"
               className={cn(
                 "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
                 dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30",
-                isUploading && "opacity-60 cursor-not-allowed"
+                (isUploading || isPreviewing) && "opacity-60 cursor-not-allowed"
               )}
             >
-              {isUploading ? (
+              {isPreviewing ? (
                 <>
                   <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
-                  <span className="text-sm text-muted-foreground">Processando arquivos…</span>
+                  <span className="text-sm text-muted-foreground">Lendo colunas do arquivo…</span>
+                </>
+              ) : isUploading ? (
+                <>
+                  <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
+                  <span className="text-sm text-muted-foreground">Processando arquivo…</span>
                 </>
               ) : (
                 <>

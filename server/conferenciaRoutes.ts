@@ -380,6 +380,55 @@ function isArenaOnly(modalidade: string): boolean {
 
 export function registerConferenciaRoutes(app: Express): void {
 
+  // POST /api/conferencia/preview-headers — parse file, return headers + sample values + auto-detected suggestions
+  app.post("/api/conferencia/preview-headers", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const { filename, content } = req.body as { filename: string; content: string };
+    if (!filename || !content) {
+      return res.status(400).json({ message: "filename e content são obrigatórios" });
+    }
+    try {
+      const buffer = Buffer.from(content, "base64");
+      const rows = parseExcelRows(buffer);
+      if (!rows.length) {
+        return res.status(400).json({ message: "Arquivo vazio ou sem dados reconhecidos" });
+      }
+      const headers = Object.keys(rows[0]);
+      const cols = detectColumns(headers, rows);
+
+      // Build sample values per column (up to 5 distinct non-empty values)
+      const samples: Record<string, string[]> = {};
+      for (const h of headers) {
+        const vals: string[] = [];
+        for (const row of rows) {
+          const v = String(row[h] ?? "").trim();
+          if (v && !vals.includes(v)) vals.push(v);
+          if (vals.length >= 5) break;
+        }
+        samples[h] = vals;
+      }
+
+      return res.json({
+        headers,
+        samples,
+        totalRows: rows.length,
+        sugestoes: {
+          colNome: cols.nameIdx >= 0 ? headers[cols.nameIdx] : null,
+          colValor: cols.valueIdx >= 0 ? headers[cols.valueIdx] : null,
+          colModalidade: cols.modalidadeIdx >= 0 ? headers[cols.modalidadeIdx] : null,
+          colData: cols.dateIdx >= 0 ? headers[cols.dateIdx] : null,
+          colCheckins: cols.checkinsIdx >= 0 ? headers[cols.checkinsIdx] : null,
+        },
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
+      return res.status(500).json({ message: msg });
+    }
+  });
+
   // ── Professor CRUD ─────────────────────────────────────────────────────────
 
   // GET /api/conferencia/professores — list with their students (filtered by ?periodo=YYYY-MM)
@@ -566,12 +615,28 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(403).json({ message: "Acesso negado" });
     }
 
-    const { filename, content, platform: platformBody, dataInicio, dataFim } = req.body as {
+    const {
+      filename,
+      content,
+      platform: platformBody,
+      dataInicio,
+      dataFim,
+      colNome,
+      colValor,
+      colModalidade,
+      colData,
+      colCheckins,
+    } = req.body as {
       filename: string;
       content: string;
       platform?: string;
       dataInicio?: string;
       dataFim?: string;
+      colNome?: string;
+      colValor?: string;
+      colModalidade?: string;
+      colData?: string;
+      colCheckins?: string;
     };
     if (!filename || !content) {
       return res.status(400).json({ message: "filename e content são obrigatórios" });
@@ -587,10 +652,37 @@ export function registerConferenciaRoutes(app: Express): void {
       }
 
       const headers = Object.keys(rows[0]);
-      const cols = detectColumns(headers, rows);
-      console.log(
-        `[Conferência] ${filename} | nome:"${cols.debug.nameCol ?? "N/A"}" | valor:"${cols.debug.valueCol ?? "N/A"}" | modalidade:"${cols.debug.modalidadeCol ?? "N/A"}" | headers:[${cols.debug.allHeaders.join(", ")}]`
-      );
+
+      // If explicit column mapping was provided by the user, use it; otherwise auto-detect.
+      let cols: ColMap;
+      if (colNome) {
+        const nameIdx = headers.indexOf(colNome);
+        const valueIdx = colValor ? headers.indexOf(colValor) : -1;
+        const dateIdx = colData ? headers.indexOf(colData) : -1;
+        const checkinsIdx = colCheckins ? headers.indexOf(colCheckins) : -1;
+        const modalidadeIdx = colModalidade ? headers.indexOf(colModalidade) : -1;
+        cols = {
+          nameIdx,
+          valueIdx,
+          dateIdx,
+          checkinsIdx,
+          modalidadeIdx,
+          debug: {
+            nameCol: nameIdx >= 0 ? headers[nameIdx] : null,
+            valueCol: valueIdx >= 0 ? headers[valueIdx] : null,
+            modalidadeCol: modalidadeIdx >= 0 ? headers[modalidadeIdx] : null,
+            allHeaders: headers,
+          },
+        };
+        console.log(
+          `[Conferência] ${filename} | MAPEAMENTO MANUAL: nome:"${cols.debug.nameCol ?? "N/A"}" | valor:"${cols.debug.valueCol ?? "N/A"}" | modalidade:"${cols.debug.modalidadeCol ?? "N/A"}"`
+        );
+      } else {
+        cols = detectColumns(headers, rows);
+        console.log(
+          `[Conferência] ${filename} | AUTO-DETECT: nome:"${cols.debug.nameCol ?? "N/A"}" | valor:"${cols.debug.valueCol ?? "N/A"}" | modalidade:"${cols.debug.modalidadeCol ?? "N/A"}" | headers:[${cols.debug.allHeaders.join(", ")}]`
+        );
+      }
 
       // Filter rows by date range if provided and a date column was detected
       let filteredRows = rows;
