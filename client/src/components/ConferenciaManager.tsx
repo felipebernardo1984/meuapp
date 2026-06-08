@@ -822,6 +822,7 @@ function MesView({
 }) {
   const [mesTab, setMesTab] = useState<"arquivos" | "professores">("arquivos");
   const [dragging, setDragging] = useState(false);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [pendingMap, setPendingMap] = useState<PendingMapFile | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -867,6 +868,10 @@ function MesView({
     // Session/auth errors
     if (raw.startsWith("401") || raw.startsWith("403")) {
       return "Sessão expirada. Faça login novamente e tente de novo.";
+    }
+    // Network / body-too-large errors
+    if (raw === "Failed to fetch" || raw.includes("NetworkError") || raw.includes("fetch")) {
+      return "Arquivo grande demais ou falha de rede. Verifique sua conexão e tente novamente.";
     }
     return raw;
   };
@@ -948,14 +953,28 @@ function MesView({
     }
   };
 
-  const handleUploadFiles = async (files: File[]) => {
-    if (files.length === 0) return;
-    setUploadingFiles([]);
-    // For now, process files one at a time (show mapping dialog per file)
-    // For multiple files, queue them after the first
-    if (files.length > 0) {
-      await previewFile(files[0]);
+  // Stage files for review before processing (user can remove wrong files)
+  const stageFiles = (files: File[]) => {
+    const valid = files.filter((f) => f.name.match(/\.(xlsx|xls)$/i));
+    if (valid.length === 0) {
+      toast({ title: "Formato inválido", description: "Envie arquivos .xlsx ou .xls", variant: "destructive" });
+      return;
     }
+    setStagedFiles((prev) => {
+      const existingNames = new Set(prev.map((f) => f.name));
+      return [...prev, ...valid.filter((f) => !existingNames.has(f.name))];
+    });
+  };
+
+  // Remove a staged file without processing
+  const removeStagedFile = (file: File) => {
+    setStagedFiles((prev) => prev.filter((f) => f !== file));
+  };
+
+  // Process one staged file: show column mapping dialog → upload
+  const processStagedFile = async (file: File) => {
+    setStagedFiles((prev) => prev.filter((f) => f !== file));
+    await previewFile(file);
   };
 
   return (
@@ -1020,34 +1039,18 @@ function MesView({
               onDrop={(e) => {
                 e.preventDefault();
                 setDragging(false);
-                const files = Array.from(e.dataTransfer.files);
-                if (files.length) handleUploadFiles(files);
+                stageFiles(Array.from(e.dataTransfer.files));
               }}
-              onClick={() => !isUploading && !isPreviewing && fileRef.current?.click()}
+              onClick={() => fileRef.current?.click()}
               data-testid="upload-zone-conferir"
               className={cn(
                 "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
-                dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30",
-                (isUploading || isPreviewing) && "opacity-60 cursor-not-allowed"
+                dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"
               )}
             >
-              {isPreviewing ? (
-                <>
-                  <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
-                  <span className="text-sm text-muted-foreground">Lendo colunas do arquivo…</span>
-                </>
-              ) : isUploading ? (
-                <>
-                  <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
-                  <span className="text-sm text-muted-foreground">Processando arquivo…</span>
-                </>
-              ) : (
-                <>
-                  <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
-                  <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
-                  <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
-                </>
-              )}
+              <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
+              <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
+              <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
               <input
                 ref={fileRef}
                 type="file"
@@ -1055,13 +1058,54 @@ function MesView({
                 multiple
                 className="hidden"
                 onChange={(e) => {
-                  const files = Array.from(e.target.files ?? []);
-                  if (files.length) handleUploadFiles(files);
+                  stageFiles(Array.from(e.target.files ?? []));
                   e.target.value = "";
                 }}
               />
             </div>
 
+            {/* Staged files — waiting to be processed */}
+            {stagedFiles.length > 0 && (
+              <div className="space-y-1.5 mt-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Arquivos selecionados — clique em Processar para enviar
+                </p>
+                {stagedFiles.map((file) => {
+                  const platform = detectPlatformFromFilename(file.name) || "outro";
+                  return (
+                    <div
+                      key={file.name}
+                      className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="truncate flex-1 text-sm">{file.name}</span>
+                      <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(platform)}</Badge>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 px-3 text-xs shrink-0"
+                        disabled={isPreviewing || isUploading}
+                        onClick={() => processStagedFile(file)}
+                        data-testid={`button-processar-${file.name}`}
+                      >
+                        {isPreviewing ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Processar"}
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeStagedFile(file)}
+                        data-testid={`button-remover-staged-${file.name}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Processing / done / error status */}
             {uploadingFiles.length > 0 && (
               <div className="space-y-1.5 mt-2">
                 {uploadingFiles.map((f) => (
