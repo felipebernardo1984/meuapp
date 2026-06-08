@@ -1938,18 +1938,25 @@ function LinkAlunoDialog({
   onClose,
 }: {
   registro: Registro;
-  onConfirm: (confAlunoId: string, salvarAlias: boolean) => void;
+  onConfirm: (studentId: string, salvarAlias: boolean) => void;
   onClose: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [salvarAlias, setSalvarAlias] = useState(true);
 
-  const { data: alunos = [] } = useQuery<ConfAluno[]>({
-    queryKey: ["/api/conferencia/alunos"],
+  // Search main arena students (they change month to month — no pre-registration needed)
+  const { data: arenaAlunos = [] } = useQuery<Array<{ id: string; nome: string; professorId: string | null }>>({
+    queryKey: ["/api/alunos"],
   });
 
-  const filtered = alunos.filter((a) =>
+  // Professors for name resolution
+  const { data: professores = [] } = useQuery<Array<{ id: string; nome: string }>>({
+    queryKey: ["/api/professores"],
+  });
+  const profById = new Map(professores.map((p) => [p.id, p.nome]));
+
+  const filtered = arenaAlunos.filter((a) =>
     a.nome.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -1958,56 +1965,70 @@ function LinkAlunoDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base">Vincular Aluno</DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Selecione o aluno da arena que corresponde a este nome da plataforma.
+            O vínculo será salvo para reconhecimento automático nos próximos uploads.
+          </p>
         </DialogHeader>
         <div className="space-y-3">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Nome na plataforma</p>
-            <p className="text-sm font-medium bg-muted/40 rounded px-3 py-1.5">
+            <p className="text-sm font-semibold bg-muted/50 rounded px-3 py-2 border">
               {registro.nomePlataforma}
             </p>
           </div>
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Buscar aluno…"
+              placeholder="Buscar aluno cadastrado na arena…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-sm"
+              autoFocus
+              className="pl-8 h-9 text-sm"
             />
           </div>
-          <div className="max-h-52 overflow-y-auto space-y-1 border rounded-md p-1">
+          <div className="max-h-56 overflow-y-auto space-y-0.5 border rounded-lg p-1 bg-muted/20">
             {filtered.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">
-                Nenhum aluno encontrado
+              <p className="text-xs text-muted-foreground text-center py-6">
+                {search ? "Nenhum aluno encontrado para essa busca" : "Nenhum aluno ativo na arena"}
               </p>
             ) : (
-              filtered.map((a) => (
-                <button
-                  key={a.id}
-                  onClick={() => setSelected(a.id)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 rounded text-sm transition-colors",
-                    selected === a.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  )}
-                  data-testid={`option-aluno-${a.id}`}
-                >
-                  <span className="font-medium">{a.nome}</span>
-                  {a.professorNome && (
-                    <span className="text-xs ml-2 opacity-70">{a.professorNome}</span>
-                  )}
-                </button>
-              ))
+              filtered.map((a) => {
+                const profNome = a.professorId ? profById.get(a.professorId) : null;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => setSelected(a.id)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between gap-2",
+                      selected === a.id
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-background hover:shadow-sm"
+                    )}
+                    data-testid={`option-aluno-${a.id}`}
+                  >
+                    <span className="font-medium truncate">{a.nome}</span>
+                    {profNome && (
+                      <span className={cn("text-xs shrink-0", selected === a.id ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                        {profNome}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
-          <label className="flex items-center gap-2 text-xs cursor-pointer">
+          <label className="flex items-start gap-2.5 text-xs cursor-pointer py-1">
             <input
               type="checkbox"
               checked={salvarAlias}
               onChange={(e) => setSalvarAlias(e.target.checked)}
+              className="mt-0.5 shrink-0"
             />
-            Salvar como apelido (reconhecer automaticamente no próximo upload)
+            <span>
+              <span className="font-medium text-foreground">Salvar como apelido</span>
+              <span className="text-muted-foreground"> — reconhecer automaticamente nos próximos uploads</span>
+            </span>
           </label>
         </div>
         <DialogFooter>
@@ -2020,7 +2041,7 @@ function LinkAlunoDialog({
             onClick={() => selected && onConfirm(selected, salvarAlias)}
             data-testid="button-confirmar-vinculo"
           >
-            Vincular
+            Vincular Aluno
           </Button>
         </DialogFooter>
       </DialogContent>

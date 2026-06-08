@@ -330,6 +330,19 @@ function parseExcelDate(val: unknown): Date | null {
   return null;
 }
 
+/** Parse a monetary value from an Excel cell.
+ * Handles: JS numbers, "R$ 12,50", "1.234,50", "12.50" */
+function parseValor(raw: unknown): number {
+  if (typeof raw === "number") return isNaN(raw) ? 0 : raw;
+  let s = String(raw ?? "").replace(/R\$\s*/gi, "").replace(/\s/g, "").trim();
+  if (!s || s === "-") return 0;
+  // Brazilian format: comma is decimal separator, dots are thousands separators
+  if (s.includes(",")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  }
+  return parseFloat(s) || 0;
+}
+
 /** Modalidades that go 100% to the arena (no professor commission) */
 const ARENA_ONLY_KEYWORDS = [
   "day use", "dayuse", "day-use", "day_use",
@@ -623,21 +636,21 @@ export function registerConferenciaRoutes(app: Express): void {
           }
           if (s > bestScore) { bestScore = s; bestAluno = aluno; }
         }
-        if (bestScore >= 82) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "confirmado" };
-        if (bestScore >= 55) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "pendente" };
+        if (bestScore >= 80) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "confirmado" };
+        if (bestScore >= 52) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "pendente" };
 
-        // 3. Fallback — main arena students
+        // 3. Fallback — main arena students (always runs; handles "alunos mudam mês a mês")
         let bestArenaScore = 0, bestArenaStudent: { id: string; nome: string; professorId: string | null } | null = null;
         for (const s of arenaStudentsDb) {
           const sc = bestSim(nomePlataforma, s.nome);
           if (sc > bestArenaScore) { bestArenaScore = sc; bestArenaStudent = s; }
         }
-        if (bestArenaScore >= 75) {
+        if (bestArenaScore >= 62) {
           return {
             aluno: null,
             arenaStudent: bestArenaStudent,
             score: bestArenaScore,
-            status: bestArenaScore >= 85 ? "confirmado" : "pendente",
+            status: bestArenaScore >= 78 ? "confirmado" : "pendente",
           };
         }
 
@@ -657,8 +670,8 @@ export function registerConferenciaRoutes(app: Express): void {
           );
           if (!nomePlataforma) return null;
 
-          const valorRaw = String(cols.valueIdx >= 0 ? row[headers[cols.valueIdx]] : "0");
-          const valor = String(Math.round((parseFloat(valorRaw.replace(",", ".")) || 0) * 100) / 100);
+          const valorNum = parseValor(cols.valueIdx >= 0 ? row[headers[cols.valueIdx]] : 0);
+          const valor = String(Math.round(valorNum * 100) / 100);
           const data = cols.dateIdx >= 0 ? String(row[headers[cols.dateIdx]]) : "";
           const checkinsRaw = cols.checkinsIdx >= 0 ? parseInt(String(row[headers[cols.checkinsIdx]])) : 1;
           const checkins = isNaN(checkinsRaw) ? 1 : Math.max(1, checkinsRaw);
@@ -869,18 +882,22 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(eq(conferenciaProfessores.arenaId, arenaId));
     const profMap = new Map(profsDb.map((p) => [p.id, p]));
 
-    // If linking to a conferencia aluno
+    // Build teachers map for resolution
+    const teachersForPut = await db.select().from(teachers).where(eq(teachers.arenaId, arenaId));
+    const teacherMapForPut = new Map(teachersForPut.map((t) => [t.id, t]));
+
+    // If linking to a student
     if (studentId !== undefined) {
       updates.studentId = studentId || null;
       if (studentId) {
+        // 1. Try conf-professor student list
         const [confAluno] = await db
           .select()
           .from(conferenciaProfessorAlunos)
           .where(eq(conferenciaProfessorAlunos.id, String(studentId)));
         if (confAluno) {
           updates.alunoNomeMatch = confAluno.nome;
-          const resolvedProfId =
-            professorId !== undefined ? String(professorId) : confAluno.professorId;
+          const resolvedProfId = professorId !== undefined ? String(professorId) : confAluno.professorId;
           if (resolvedProfId) {
             updates.professorId = resolvedProfId;
             const prof = profMap.get(resolvedProfId);
@@ -889,6 +906,27 @@ export function registerConferenciaRoutes(app: Express): void {
               updates.percentual = String(prof.percentualComissao);
               updates.valorProfessor = String(Math.round(valorNum * pct2 * 100) / 100);
               updates.valorArena = String(Math.round(valorNum * (1 - pct2) * 100) / 100);
+            }
+          }
+        } else {
+          // 2. Try main arena students table (handles alunos que mudam mês a mês)
+          const [arenaStudent] = await db
+            .select({ id: students.id, nome: students.nome, professorId: students.professorId })
+            .from(students)
+            .where(and(eq(students.id, String(studentId)), eq(students.arenaId, arenaId)));
+          if (arenaStudent) {
+            updates.alunoNomeMatch = arenaStudent.nome;
+            const arenaTeacherId = arenaStudent.professorId;
+            if (arenaTeacherId) {
+              const teacher = teacherMapForPut.get(arenaTeacherId);
+              if (teacher?.percentualComissao && parseFloat(teacher.percentualComissao) > 0) {
+                updates.professorId = arenaTeacherId;
+                const pct2 = parseFloat(teacher.percentualComissao) / 100;
+                updates.percentual = String(teacher.percentualComissao);
+                updates.valorProfessor = String(Math.round(valorNum * pct2 * 100) / 100);
+                updates.valorArena = String(Math.round(valorNum * (1 - pct2) * 100) / 100);
+                updates.categoria = "comissao";
+              }
             }
           }
         }
@@ -942,7 +980,9 @@ export function registerConferenciaRoutes(app: Express): void {
 
     res.json({
       ...updated,
-      professorNome: updated.professorId ? (profMap.get(updated.professorId)?.nome ?? null) : null,
+      professorNome: updated.professorId
+        ? (profMap.get(updated.professorId)?.nome ?? teacherMapForPut.get(updated.professorId)?.nome ?? null)
+        : null,
     });
   });
 
