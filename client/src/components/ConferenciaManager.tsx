@@ -358,6 +358,106 @@ function ColMapDialog({
 
 // ── PDF Export ────────────────────────────────────────────────────────────────
 
+function parseDataSort(d: string | null | undefined): string {
+  if (!d) return "";
+  const m = d.match(/^(\d{2})\/(\d{2})\/(\d{4})(.*)/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}${m[4] ?? ""}`;
+  return d;
+}
+
+function fmtData(d: string | null | undefined): string {
+  if (!d || d === "undefined") return "—";
+  const m = d.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+([\d:]+)/);
+  if (m) return `${m[1]}/${m[2]}/${m[3]} ${m[4]}`;
+  const m2 = d.match(/^(\d{4})-(\d{2})-(\d{2})T([\d:]+)/);
+  if (m2) return `${m2[3]}/${m2[2]}/${m2[1]} ${m2[4]}`;
+  return d;
+}
+
+function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, professorNome: string) {
+  const regs = sessao.registros.filter(
+    (r) => r.status === "confirmado" && (professorKey === "__arena__" ? !r.professorId : r.professorId === professorKey)
+  );
+  if (regs.length === 0) return;
+
+  const pct = regs[0]?.percentual ?? "0";
+  const subtotal = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const comissao = regs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+  const arena = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const chks = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const dataStr = new Date(sessao.criadoEm).toLocaleDateString("pt-BR");
+
+  const sortedRegs = [...regs].sort((a, b) => {
+    const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
+    return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
+  });
+
+  const rows = sortedRegs.map((r) => `
+    <tr>
+      <td>${r.nomePlataforma}</td>
+      <td>${r.alunoNomeMatch ?? r.nomePlataforma}</td>
+      <td style="text-align:center">${fmtData(r.data)}</td>
+      <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
+      ${professorKey !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+    </tr>`).join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Comprovante — ${professorNome}</title>
+<style>
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { font-family:Arial,sans-serif;font-size:11px;color:#111;padding:24px; }
+  h1 { font-size:16px;margin-bottom:2px; }
+  .subtitle { color:#555;font-size:11px;margin-bottom:16px; }
+  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:bold; }
+  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px; }
+  .summary-card { border:1px solid #ddd;border-radius:6px;padding:10px 14px; }
+  .summary-card .val { font-size:14px;font-weight:bold;margin-bottom:2px; }
+  .summary-card .lbl { font-size:9px;color:#666; }
+  table { width:100%;border-collapse:collapse;border:1px solid #ddd; }
+  th { background:#f9f9f9;text-align:left;padding:5px 8px;font-size:10px;border-bottom:1px solid #ddd; }
+  td { padding:5px 8px;border-bottom:1px solid #eee;font-size:10px; }
+  .total-row { background:#1e293b;color:white;border-radius:6px;padding:10px 16px;margin-top:16px; }
+  @media print { body { padding:10px; } }
+</style>
+</head>
+<body>
+  <h1>${professorNome}${professorKey !== "__arena__" ? `<span class="badge">${pct}% comissão</span>` : ""}</h1>
+  <div class="subtitle">Comprovante de receita — ${plataformaLabel(sessao.plataforma)} · ${sessao.nomeArquivo} · ${dataStr}</div>
+  <div class="summary-grid">
+    <div class="summary-card"><div class="val">${regs.length}</div><div class="lbl">Alunos</div></div>
+    <div class="summary-card"><div class="val">${chks}</div><div class="lbl">Check-ins</div></div>
+    <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Total</div></div>
+    ${professorKey !== "__arena__" ? `<div class="summary-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(comissao)}</div><div class="lbl">Sua Comissão (${pct}%)</div></div>` : `<div class="summary-card"><div class="val">${fmt(arena)}</div><div class="lbl">Valor Arena</div></div>`}
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nome na Plataforma</th>
+        <th>Aluno na Arena</th>
+        <th style="text-align:center">Data/Horário</th>
+        <th style="text-align:right">Valor</th>
+        ${professorKey !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="total-row">
+    <strong>${fmt(subtotal)}</strong> total · ${chks} check-in${chks !== 1 ? "s" : ""}${professorKey !== "__arena__" ? ` · Comissão: <strong>${fmt(comissao)}</strong> · Arena: ${fmt(arena)}` : ""}
+  </div>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
 function exportToPDF(sessao: SessaoDetalhe) {
   const confirmados = sessao.registros.filter((r) => r.status === "confirmado");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
@@ -1651,6 +1751,19 @@ function SessaoView({
     enabled: !!sessao,
   });
 
+  const rematchMutation = useMutation({
+    mutationFn: () =>
+      apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/rematch`).then((r) => r.json()),
+    onSuccess: (result: { updated: number; dayuseDetected: number; encontrados: number; possiveis: number; naoEncontrados: number }) => {
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", sessaoId] });
+      const msg = result.updated === 0
+        ? "Nenhum registro pendente para atualizar"
+        : `${result.updated} registro${result.updated !== 1 ? "s" : ""} atualizado${result.updated !== 1 ? "s" : ""}${result.dayuseDetected > 0 ? ` · ${result.dayuseDetected} day use detectado${result.dayuseDetected !== 1 ? "s" : ""}` : ""}`;
+      toast({ title: "Conferência atualizada", description: msg });
+    },
+    onError: () => toast({ title: "Erro ao atualizar", variant: "destructive" }),
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
       apiRequest("PUT", `/api/conferencia/registro/${id}`, data).then((r) => r.json()),
@@ -1688,12 +1801,18 @@ function SessaoView({
     new Map(registros.filter((r) => r.professorNome).map((r) => [r.professorId, r.professorNome])).entries()
   ).map(([id, nome]) => ({ id: id!, nome: nome! }));
 
-  const filtered = registros.filter((r) => {
-    if (filtroStatus !== "todos" && r.status !== filtroStatus) return false;
-    if (filtroProfessor !== "todos" && r.professorId !== filtroProfessor) return false;
-    if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
-    return true;
-  });
+  const filtered = registros
+    .filter((r) => {
+      if (filtroStatus !== "todos" && r.status !== filtroStatus) return false;
+      if (filtroProfessor !== "todos" && r.professorId !== filtroProfessor) return false;
+      if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
+      if (nc !== 0) return nc;
+      return parseDataSort(a.data).localeCompare(parseDataSort(b.data));
+    });
 
   const confirmedValor = registros.filter((r) => r.status === "confirmado").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const pendenteValor = registros.filter((r) => r.status === "pendente").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
@@ -1748,12 +1867,23 @@ function SessaoView({
             {" · "}{sessao.totalRegistros} registros
           </p>
         </div>
-        <div className="flex gap-1.5 shrink-0">
+        <div className="flex gap-1.5 shrink-0 flex-wrap">
           <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs" data-testid="button-export-csv">
             <Download className="h-3.5 w-3.5" /> CSV
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs" data-testid="button-export-pdf">
             <Printer className="h-3.5 w-3.5" /> PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => rematchMutation.mutate()}
+            disabled={rematchMutation.isPending}
+            className="gap-1.5 text-xs"
+            data-testid="button-rematch"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
+            {rematchMutation.isPending ? "Atualizando…" : "Atualizar"}
           </Button>
         </div>
       </div>
@@ -1850,11 +1980,11 @@ function SessaoView({
               />
             </div>
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="h-8 text-sm w-44" data-testid="select-filtro-status">
-                <SelectValue />
+              <SelectTrigger className="h-8 text-sm w-36" data-testid="select-filtro-status">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos os status</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="confirmado">✓ Confirmados</SelectItem>
                 <SelectItem value="pendente">~ Possíveis</SelectItem>
                 <SelectItem value="nao_encontrado">✗ Não encontrados</SelectItem>
@@ -1863,11 +1993,11 @@ function SessaoView({
             </Select>
             {filteredProfs.length > 0 && (
               <Select value={filtroProfessor} onValueChange={setFiltroProfessor}>
-                <SelectTrigger className="h-8 text-sm w-44" data-testid="select-filtro-professor">
-                  <SelectValue placeholder="Professor" />
+                <SelectTrigger className="h-8 text-sm w-40" data-testid="select-filtro-professor">
+                  <SelectValue placeholder="Professores" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os professores</SelectItem>
+                  <SelectItem value="todos">Todos</SelectItem>
                   {filteredProfs.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
                   ))}
@@ -1941,6 +2071,19 @@ function SessaoView({
                                 · {r.checkins} check-in{r.checkins !== 1 ? "s" : ""}
                               </span>
                             )}
+                            {r.categoria === "dayuse" && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 shrink-0">
+                                Day Use
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Data e horário ── */}
+                        {r.data && r.data !== "undefined" && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <CalendarDays className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                            <span className="text-[11px] text-muted-foreground tabular-nums">{fmtData(r.data)}</span>
                           </div>
                         )}
 
@@ -2045,7 +2188,7 @@ function SessaoView({
       )}
 
       {/* ── Relatório Tab ── */}
-      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} />}
+      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} />}
 
       {/* ── Link Dialog ── */}
       {linkDialog && (
@@ -2070,9 +2213,13 @@ function SessaoView({
 function RelatorioView({
   registros,
   plataforma,
+  sessao,
+  sessaoId,
 }: {
   registros: Registro[];
   plataforma: string;
+  sessao: SessaoDetalhe;
+  sessaoId: string;
 }) {
   const confirmados = registros.filter((r) => r.status === "confirmado");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
@@ -2168,10 +2315,29 @@ function RelatorioView({
                         {pct}% comissão
                       </Badge>
                     )}
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {g.registros.length} aluno{g.registros.length !== 1 ? "s" : ""} · {chks}{" "}
-                      check-in{chks !== 1 ? "s" : ""}
+                    <span className="text-xs text-muted-foreground">
+                      {g.registros.length} aluno{g.registros.length !== 1 ? "s" : ""} · {chks} check-in{chks !== 1 ? "s" : ""}
                     </span>
+                    <div className="ml-auto flex gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => window.open(`/api/conferencia/export/${sessaoId}?professorId=${key}`, "_blank")}
+                        data-testid={`button-csv-prof-${key}`}
+                      >
+                        <Download className="h-3 w-3" /> CSV
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => exportToPDFComprovante(sessao, key, g.nome)}
+                        data-testid={`button-comprovante-${key}`}
+                      >
+                        <Printer className="h-3 w-3" /> Comprovante
+                      </Button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {[
@@ -2208,15 +2374,19 @@ function RelatorioView({
                         <TableRow className="bg-muted/40">
                           <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
                           <TableHead className="text-xs py-2">Aluno na Arena</TableHead>
-                          <TableHead className="text-xs py-2">Modalidade</TableHead>
-                          <TableHead className="text-xs py-2 text-center">Chk</TableHead>
+                          <TableHead className="text-xs py-2">Data/Hora</TableHead>
                           <TableHead className="text-xs py-2 text-right">Total</TableHead>
                           <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
                           <TableHead className="text-xs py-2 text-right">Arena</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {g.registros.map((r) => (
+                        {[...g.registros]
+                          .sort((a, b) => {
+                            const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
+                            return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
+                          })
+                          .map((r) => (
                           <TableRow key={r.id} className="text-xs">
                             <TableCell className="py-2 font-medium max-w-[160px]">
                               <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
@@ -2229,15 +2399,15 @@ function RelatorioView({
                               ) : (
                                 <span className="text-muted-foreground italic">—</span>
                               )}
-                            </TableCell>
-                            <TableCell className="py-2 max-w-[120px]">
-                              {r.modalidade ? (
-                                <span className="block truncate text-muted-foreground" title={r.modalidade}>{r.modalidade}</span>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
+                              {r.categoria === "dayuse" && (
+                                <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                  Day Use
+                                </Badge>
                               )}
                             </TableCell>
-                            <TableCell className="py-2 text-center tabular-nums">{r.checkins ?? 1}</TableCell>
+                            <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
+                              {fmtData(r.data)}
+                            </TableCell>
                             <TableCell className="py-2 text-right font-mono tabular-nums">
                               {fmtVal(r.valor)}
                             </TableCell>

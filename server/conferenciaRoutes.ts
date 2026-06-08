@@ -964,6 +964,195 @@ export function registerConferenciaRoutes(app: Express): void {
     res.json({ ...sessao, registros: enriched });
   });
 
+  // POST /api/conferencia/sessao/:id/rematch — re-run matching with fresh professor/student data
+  app.post("/api/conferencia/sessao/:id/rematch", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+
+    const [sessao] = await db
+      .select()
+      .from(conferenciaSessoes)
+      .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
+    if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
+
+    const allRegistros = await db
+      .select()
+      .from(conferenciaRegistros)
+      .where(eq(conferenciaRegistros.sessaoId, sessao.id));
+
+    const toRematch = allRegistros.filter(
+      (r) => r.status === "pendente" || r.status === "nao_encontrado"
+    );
+
+    if (toRematch.length === 0) {
+      return res.json({ updated: 0, dayuseDetected: 0, message: "Nenhum registro pendente para atualizar" });
+    }
+
+    const profsDb = await db
+      .select()
+      .from(conferenciaProfessores)
+      .where(eq(conferenciaProfessores.arenaId, arenaId));
+    const profMap = new Map(profsDb.map((p) => [p.id, p]));
+    const profIds = new Set(profsDb.map((p) => p.id));
+
+    const allAlunosDb = await db
+      .select()
+      .from(conferenciaProfessorAlunos)
+      .where(eq(conferenciaProfessorAlunos.arenaId, arenaId));
+    const alunosDb = allAlunosDb.filter((a) => profIds.has(a.professorId));
+
+    const aliasesDb = await db
+      .select()
+      .from(conferenciaAliases)
+      .where(eq(conferenciaAliases.arenaId, arenaId));
+
+    const arenaStudentsDb = await db
+      .select({ id: students.id, nome: students.nome, professorId: students.professorId })
+      .from(students)
+      .where(and(eq(students.arenaId, arenaId), eq(students.ativo, true)));
+
+    const teachersDb = await db
+      .select()
+      .from(teachers)
+      .where(eq(teachers.arenaId, arenaId));
+    const teacherMapR = new Map(teachersDb.map((t) => [t.id, t]));
+
+    const aliasToAlunoId = new Map(
+      aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
+    );
+
+    const matchAlunoR = (nomePlataforma: string) => {
+      const aliasAlunoId = aliasToAlunoId.get(normalizeNome(nomePlataforma));
+      if (aliasAlunoId) {
+        const aluno = alunosDb.find((a) => a.id === aliasAlunoId);
+        if (aluno) return { aluno, arenaStudent: null, score: 100, status: "confirmado" as const };
+      }
+      let bestScore = 0, bestAluno: (typeof alunosDb)[0] | null = null;
+      for (const aluno of alunosDb) {
+        let s = bestSim(nomePlataforma, aluno.nome);
+        for (const al of aliasesDb.filter((a) => a.studentId === aluno.id)) {
+          s = Math.max(s, bestSim(nomePlataforma, al.alias));
+        }
+        if (s > bestScore) { bestScore = s; bestAluno = aluno; }
+      }
+      if (bestScore >= 80) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "confirmado" as const };
+      if (bestScore >= 52) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "pendente" as const };
+      let bestArenaScore = 0, bestArenaStudent: { id: string; nome: string; professorId: string | null } | null = null;
+      for (const s of arenaStudentsDb) {
+        const sc = bestSim(nomePlataforma, s.nome);
+        if (sc > bestArenaScore) { bestArenaScore = sc; bestArenaStudent = s; }
+      }
+      if (bestArenaScore >= 62) {
+        return { aluno: null, arenaStudent: bestArenaStudent, score: bestArenaScore, status: (bestArenaScore >= 78 ? "confirmado" : "pendente") as "confirmado" | "pendente" };
+      }
+      return { aluno: null, arenaStudent: null, score: Math.max(bestScore, bestArenaScore), status: "nao_encontrado" as const };
+    };
+
+    const updatePayloads = toRematch.map((r) => {
+      const match = matchAlunoR(r.nomePlataforma);
+      let professorId: string | null = null;
+      let percentual = "0", valorProfessor = "0", valorArena = r.valor, categoria = "arena";
+
+      if (match.aluno) {
+        professorId = match.aluno.professorId;
+        const prof = profMap.get(professorId!);
+        if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
+          percentual = String(prof.percentualComissao);
+          const pct = parseFloat(percentual) / 100;
+          valorProfessor = String(Math.round(parseFloat(r.valor) * pct * 100) / 100);
+          valorArena = String(Math.round(parseFloat(r.valor) * (1 - pct) * 100) / 100);
+          categoria = "comissao";
+        }
+      } else if (match.arenaStudent) {
+        const tid = match.arenaStudent.professorId;
+        if (tid) {
+          const teacher = teacherMapR.get(tid);
+          if (teacher?.percentualComissao && parseFloat(teacher.percentualComissao) > 0) {
+            professorId = tid;
+            percentual = String(teacher.percentualComissao);
+            const pct = parseFloat(percentual) / 100;
+            valorProfessor = String(Math.round(parseFloat(r.valor) * pct * 100) / 100);
+            valorArena = String(Math.round(parseFloat(r.valor) * (1 - pct) * 100) / 100);
+            categoria = "comissao";
+          }
+        }
+      }
+
+      return {
+        id: r.id,
+        studentId: match.aluno?.id ?? match.arenaStudent?.id ?? null,
+        alunoNomeMatch: match.aluno?.nome ?? match.arenaStudent?.nome ?? null,
+        similaridade: match.score,
+        status: match.status as string,
+        categoria, professorId, percentual, valorProfessor, valorArena,
+      };
+    });
+
+    await Promise.all(
+      updatePayloads.map((u) =>
+        db.update(conferenciaRegistros).set({
+          studentId: u.studentId, alunoNomeMatch: u.alunoNomeMatch,
+          similaridade: u.similaridade, status: u.status, categoria: u.categoria,
+          professorId: u.professorId, percentual: u.percentual,
+          valorProfessor: u.valorProfessor, valorArena: u.valorArena,
+        }).where(eq(conferenciaRegistros.id, u.id))
+      )
+    );
+
+    // ── Detect aula vs day use: same student, different values in same session ──
+    const freshRegs = await db
+      .select()
+      .from(conferenciaRegistros)
+      .where(eq(conferenciaRegistros.sessaoId, sessao.id));
+
+    const byNome = new Map<string, typeof freshRegs>();
+    for (const r of freshRegs) {
+      if (r.status === "ignorado") continue;
+      const key = normalizeNome(r.nomePlataforma);
+      if (!byNome.has(key)) byNome.set(key, []);
+      byNome.get(key)!.push(r);
+    }
+
+    const dayuseOps: Array<Promise<unknown>> = [];
+    for (const [, group] of byNome) {
+      if (!group.some((r) => r.professorId)) continue;
+      const vals = group.map((r) => parseFloat(r.valor || "0")).filter((v) => v > 0);
+      if (vals.length < 2) continue;
+      const minVal = Math.min(...vals), maxVal = Math.max(...vals);
+      if (maxVal <= minVal * 1.10) continue;
+      for (const r of group) {
+        const v = parseFloat(r.valor || "0");
+        if (v > minVal * 1.10 && r.professorId) {
+          dayuseOps.push(
+            db.update(conferenciaRegistros).set({
+              categoria: "dayuse", professorId: null,
+              percentual: "0", valorProfessor: "0", valorArena: r.valor,
+            }).where(eq(conferenciaRegistros.id, r.id))
+          );
+        }
+      }
+    }
+    if (dayuseOps.length > 0) await Promise.all(dayuseOps);
+
+    const finalRegs = await db
+      .select()
+      .from(conferenciaRegistros)
+      .where(eq(conferenciaRegistros.sessaoId, sessao.id));
+
+    const encontrados = finalRegs.filter((r) => r.status === "confirmado").length;
+    const possiveis = finalRegs.filter((r) => r.status === "pendente").length;
+    const naoEncontrados = finalRegs.filter((r) => r.status === "nao_encontrado").length;
+
+    await db
+      .update(conferenciaSessoes)
+      .set({ encontrados, possiveis, naoEncontrados })
+      .where(eq(conferenciaSessoes.id, sessao.id));
+
+    res.json({ updated: updatePayloads.length, dayuseDetected: dayuseOps.length, encontrados, possiveis, naoEncontrados });
+  });
+
   // PUT /api/conferencia/registro/:id — confirm/update a record
   app.put("/api/conferencia/registro/:id", async (req, res) => {
     const arenaId = req.session.arenaId;
@@ -1132,10 +1321,19 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
     if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
 
-    const registros = await db
+    const allRegsExport = await db
       .select()
       .from(conferenciaRegistros)
       .where(eq(conferenciaRegistros.sessaoId, req.params.id));
+
+    const professorIdFilter = req.query.professorId as string | undefined;
+    const registros = professorIdFilter
+      ? allRegsExport.filter((r) =>
+          professorIdFilter === "__arena__"
+            ? !r.professorId
+            : r.professorId === professorIdFilter
+        )
+      : allRegsExport;
 
     const profsDb = await db
       .select()
