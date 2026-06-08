@@ -115,7 +115,11 @@ function looksLikeName(val: string): boolean {
   if (!/^[A-ZÀ-Ü]/.test(words[0])) return false;
   // At least 70% of characters are letters or spaces
   const letters = cleaned.replace(/[^a-zA-ZÀ-ÿ\s]/g, "");
-  return letters.length >= cleaned.length * 0.65;
+  if (letters.length < cleaned.length * 0.65) return false;
+  // Reject company/establishment name suffixes common in Brazil
+  const upper = cleaned.toUpperCase();
+  if (/\b(LTDA|S\.A|S\/A|EIRELI|EPP|ME|INC|LLC|CORP|SPORTS LTD|CLUBE|ACADEMIA|ARENA|CENTER|STUDIO|FIT)\b/.test(upper)) return false;
+  return true;
 }
 
 /** Returns true if the string looks like a monetary value */
@@ -130,6 +134,12 @@ function looksLikeMonetary(val: string): boolean {
   return num < 100000 && (val.includes(",") || /R\$/.test(val) || val.includes("."));
 }
 
+// Header words that indicate a company/establishment column — never the student name
+const COMPANY_HEADER_WORDS = [
+  "estabelecimento", "academia", "empresa", "parceiro", "local", "unidade",
+  "cnpj", "razao", "razão", "corporat", "branch", "filial",
+];
+
 /** Detect which column index is most likely to be person names by analyzing rows */
 function detectNameColumnByContent(headers: string[], rows: Array<Record<string, unknown>>): number {
   const sample = rows.slice(0, Math.min(40, rows.length));
@@ -138,9 +148,19 @@ function detectNameColumnByContent(headers: string[], rows: Array<Record<string,
   let bestIdx = -1;
 
   for (let i = 0; i < headers.length; i++) {
+    // Skip columns whose header strongly suggests a company/establishment field
+    const nh = normHeader(headers[i]);
+    if (COMPANY_HEADER_WORDS.some((w) => nh.includes(w))) continue;
+
+    const values = sample.map((row) => String(row[headers[i]] ?? "").trim()).filter(Boolean);
+    const uniqueValues = new Set(values);
+
+    // If fewer than 20% of values are unique, this is likely an establishment/status column, not student names
+    const uniquenessRatio = values.length > 0 ? uniqueValues.size / values.length : 0;
+    if (uniquenessRatio < 0.2 && values.length >= 5) continue;
+
     let score = 0;
-    for (const row of sample) {
-      const val = String(row[headers[i]] ?? "").trim();
+    for (const val of values) {
       if (looksLikeName(val)) score++;
     }
     // Need at least 25% of rows to look like names
@@ -362,16 +382,21 @@ export function registerConferenciaRoutes(app: Express): void {
 
   // ── Professor CRUD ─────────────────────────────────────────────────────────
 
-  // GET /api/conferencia/professores — list with their students
+  // GET /api/conferencia/professores — list with their students (filtered by ?periodo=YYYY-MM)
   app.get("/api/conferencia/professores", async (req, res) => {
     const arenaId = req.session.arenaId;
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
+    const periodo = req.query.periodo as string | undefined;
     const profs = await db
       .select()
       .from(conferenciaProfessores)
-      .where(eq(conferenciaProfessores.arenaId, arenaId))
+      .where(
+        periodo
+          ? and(eq(conferenciaProfessores.arenaId, arenaId), eq(conferenciaProfessores.periodo, periodo))
+          : eq(conferenciaProfessores.arenaId, arenaId)
+      )
       .orderBy(conferenciaProfessores.criadoEm);
 
     const alunos = await db
@@ -393,12 +418,12 @@ export function registerConferenciaRoutes(app: Express): void {
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
-    const { nome, percentualComissao } = req.body as { nome: string; percentualComissao?: string };
+    const { nome, percentualComissao, periodo } = req.body as { nome: string; percentualComissao?: string; periodo?: string };
     if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
 
     const [prof] = await db
       .insert(conferenciaProfessores)
-      .values({ arenaId, nome: nome.trim(), percentualComissao: String(percentualComissao ?? "0") })
+      .values({ arenaId, nome: nome.trim(), percentualComissao: String(percentualComissao ?? "0"), periodo: periodo ?? null })
       .returning();
     res.json({ ...prof, alunos: [] });
   });
@@ -581,16 +606,26 @@ export function registerConferenciaRoutes(app: Express): void {
         console.log(`[Conferência] Filtro ${dataInicio}→${dataFim}: ${orig} → ${filteredRows.length} linhas`);
       }
 
+      // Derive period from upload date (e.g., "2026-05-01" → "2026-05")
+      const periodoUpload = dataInicio ? dataInicio.substring(0, 7) : null;
+
       const profsDb = await db
         .select()
         .from(conferenciaProfessores)
-        .where(eq(conferenciaProfessores.arenaId, arenaId));
+        .where(
+          periodoUpload
+            ? and(eq(conferenciaProfessores.arenaId, arenaId), eq(conferenciaProfessores.periodo, periodoUpload))
+            : eq(conferenciaProfessores.arenaId, arenaId)
+        );
       const profMap = new Map(profsDb.map((p) => [p.id, p]));
 
-      const alunosDb = await db
+      // Only use students belonging to professors of this period
+      const profIds = new Set(profsDb.map((p) => p.id));
+      const allAlunosDb = await db
         .select()
         .from(conferenciaProfessorAlunos)
         .where(eq(conferenciaProfessorAlunos.arenaId, arenaId));
+      const alunosDb = allAlunosDb.filter((a) => profIds.has(a.professorId));
 
       const aliasesDb = await db
         .select()

@@ -885,14 +885,14 @@ function MesView({
       )}
 
       {/* Professores tab */}
-      {mesTab === "professores" && <ConfiguracaoView arenaId={arenaId} />}
+      {mesTab === "professores" && <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />}
     </div>
   );
 }
 
 // ── Configuração View ─────────────────────────────────────────────────────────
 
-function ConfiguracaoView({ arenaId }: { arenaId: string }) {
+function ConfiguracaoView({ arenaId, periodo }: { arenaId: string; periodo: string }) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
   const [editingProf, setEditingProf] = useState<string | null>(null);
@@ -904,15 +904,19 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  const profQueryKey = ["/api/conferencia/professores", periodo];
+
   const { data: professores = [], isLoading } = useQuery<ConfProfessor[]>({
-    queryKey: ["/api/conferencia/professores"],
+    queryKey: profQueryKey,
+    queryFn: () =>
+      fetch(`/api/conferencia/professores?periodo=${periodo}`).then((r) => r.json()),
   });
 
   const addProfMutation = useMutation({
     mutationFn: (data: { nome: string; percentualComissao: string }) =>
-      apiRequest("POST", "/api/conferencia/professores", data).then((r) => r.json()),
+      apiRequest("POST", "/api/conferencia/professores", { ...data, periodo }).then((r) => r.json()),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+      qc.invalidateQueries({ queryKey: profQueryKey });
       setNovoProfNome("");
       setNovoProfPct("0");
       toast({ title: "Professor adicionado!" });
@@ -940,7 +944,7 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
         percentualComissao,
       }).then((r) => r.json()),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+      qc.invalidateQueries({ queryKey: profQueryKey });
       setEditingProf(null);
       toast({ title: "Professor atualizado!" });
     },
@@ -955,7 +959,7 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
   const delProfMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/professores/${id}`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+      qc.invalidateQueries({ queryKey: profQueryKey });
       toast({ title: "Professor removido" });
     },
     onError: (err: Error) =>
@@ -972,7 +976,7 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
         r.json()
       ),
     onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+      qc.invalidateQueries({ queryKey: profQueryKey });
       setNovoAluno((prev) => ({ ...prev, [vars.profId]: "" }));
     },
     onError: (err: Error) =>
@@ -989,7 +993,7 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
         (r) => r.json()
       ),
     onSuccess: (data: { adicionados: number }, vars) => {
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+      qc.invalidateQueries({ queryKey: profQueryKey });
       setListaTexto((prev) => ({ ...prev, [vars.profId]: "" }));
       setListMode((prev) => ({ ...prev, [vars.profId]: false }));
       toast({ title: `${data.adicionados} aluno${data.adicionados !== 1 ? "s" : ""} adicionado${data.adicionados !== 1 ? "s" : ""}!` });
@@ -1004,7 +1008,7 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
 
   const delAlunoMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/professor-alunos/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: profQueryKey }),
     onError: (err: Error) =>
       toast({
         title: "Erro ao remover aluno",
@@ -1342,8 +1346,15 @@ function SessaoView({
     },
   });
 
+  const periodo = sessao?.periodoInicio ? sessao.periodoInicio.substring(0, 7) : undefined;
+
   const { data: confsProfs = [] } = useQuery<ConfProfessor[]>({
-    queryKey: ["/api/conferencia/professores"],
+    queryKey: ["/api/conferencia/professores", periodo],
+    queryFn: () =>
+      fetch(`/api/conferencia/professores${periodo ? `?periodo=${periodo}` : ""}`).then((r) =>
+        r.json()
+      ),
+    enabled: !!sessao,
   });
 
   const updateMutation = useMutation({
