@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -468,10 +469,15 @@ function ConferirView({
   arenaId: string;
   onSelectSessao: (id: string) => void;
 }) {
+  // Default: previous month
   const hoje = new Date();
-  const defaultDate = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
-  const [mesSel, setMesSel] = useState(defaultDate.getMonth() + 1);
-  const [anoSel, setAnoSel] = useState(defaultDate.getFullYear());
+  const prevFirst = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+  const prevLast  = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+  const defaultRange: DateRange = {
+    inicio: prevFirst.toISOString().slice(0, 10),
+    fim:    prevLast.toISOString().slice(0, 10),
+  };
+  const [dateRange, setDateRange] = useState<DateRange | null>(defaultRange);
   const [dragging, setDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -489,11 +495,8 @@ function ConferirView({
 
   const isUploading = uploadingFiles.some((f) => f.status === "processing");
 
-  const dataInicio = `${anoSel}-${String(mesSel).padStart(2, "0")}-01`;
-  const lastDay = new Date(anoSel, mesSel, 0).getDate();
-  const dataFim = `${anoSel}-${String(mesSel).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-  const curYear = new Date().getFullYear();
-  const anos = [curYear - 2, curYear - 1, curYear, curYear + 1];
+  const dataInicio = (dateRange ?? defaultRange).inicio;
+  const dataFim    = (dateRange ?? defaultRange).fim;
 
   const processUploadFile = async (file: File): Promise<SessaoDetalhe | null> => {
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
@@ -549,27 +552,8 @@ function ConferirView({
         <CardContent className="p-4">
           <div className="flex items-center gap-3 flex-wrap">
             <div>
-              <p className="text-xs text-muted-foreground font-medium mb-1">Período de referência</p>
-              <div className="flex items-center gap-2">
-                <Select value={String(mesSel)} onValueChange={(v) => setMesSel(Number(v))}>
-                  <SelectTrigger className="h-8 w-36 text-sm" data-testid="select-mes">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MESES_PT.map((m, i) => (
-                      <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={String(anoSel)} onValueChange={(v) => setAnoSel(Number(v))}>
-                  <SelectTrigger className="h-8 w-24 text-sm" data-testid="select-ano">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              <p className="text-xs text-muted-foreground font-medium mb-1.5">Período de referência</p>
+              <DateRangePicker value={dateRange} onChange={setDateRange} align="start" />
             </div>
             <p className="text-xs text-muted-foreground self-end pb-0.5">
               Filtra registros de{" "}
