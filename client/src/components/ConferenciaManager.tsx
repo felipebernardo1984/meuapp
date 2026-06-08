@@ -849,6 +849,28 @@ function MesView({
   const isUploading = uploadingFiles.some((f) => f.status === "processing");
 
   // Step 1: preview headers — called right after file selection
+  // Extracts a human-readable message from API errors.
+  // throwIfResNotOk throws Error("STATUS: {json_body}") — we parse the JSON to get the actual message.
+  const parseApiError = (err: unknown): string => {
+    if (!(err instanceof Error)) return "Erro desconhecido";
+    const raw = err.message;
+    // Format: "403: {"message":"Acesso negado"}" or "500: {"message":"..."}"
+    const match = raw.match(/^\d+:\s*(\{[\s\S]*\})$/);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        if (parsed.message) return parsed.message;
+      } catch {
+        // not JSON — fall through
+      }
+    }
+    // Session/auth errors
+    if (raw.startsWith("401") || raw.startsWith("403")) {
+      return "Sessão expirada. Faça login novamente e tente de novo.";
+    }
+    return raw;
+  };
+
   const previewFile = async (file: File): Promise<void> => {
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
       toast({ title: "Formato inválido", description: `${file.name}: envie .xlsx ou .xls`, variant: "destructive" });
@@ -862,10 +884,18 @@ function MesView({
         filename: file.name,
         content,
       });
-      const preview: PreviewResponse = await res.json();
+      let preview: PreviewResponse;
+      try {
+        preview = await res.json();
+      } catch {
+        throw new Error("O servidor retornou uma resposta inválida. Tente novamente.");
+      }
+      if (!preview?.headers?.length) {
+        throw new Error("Nenhuma coluna encontrada no arquivo. Verifique se é um arquivo Excel válido.");
+      }
       setPendingMap({ file, content, platform, preview });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao ler arquivo";
+      const msg = parseApiError(err);
       toast({ title: `Erro ao ler ${file.name}`, description: msg, variant: "destructive" });
     } finally {
       setIsPreviewing(false);
@@ -892,7 +922,12 @@ function MesView({
         colData: mapping.colData || undefined,
         colCheckins: mapping.colCheckins || undefined,
       });
-      const sessao: SessaoDetalhe = await res.json();
+      let sessao: SessaoDetalhe;
+      try {
+        sessao = await res.json();
+      } catch {
+        throw new Error("O servidor retornou uma resposta inválida ao processar o arquivo.");
+      }
       qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
       qc.setQueryData(["/api/conferencia/sessao", sessao.id], sessao);
       setUploadingFiles((prev) =>
@@ -905,7 +940,7 @@ function MesView({
       });
       onSelectSessao(sessao.id);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
+      const msg = parseApiError(err);
       setUploadingFiles((prev) =>
         prev.map((f) => f.name === file.name ? { ...f, status: "error", error: msg } : f)
       );
