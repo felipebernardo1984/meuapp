@@ -238,41 +238,36 @@ function ColMapDialog({
   const fields = [
     {
       key: "colNome" as const,
-      label: "Coluna do Nome do Aluno",
+      label: "Nome do Aluno",
       required: true,
-      hint: "Ex: Visitante (Wellhub), Colaborador (TotalPass), Nome, Cliente…",
       value: colNome,
       set: setColNome,
     },
     {
       key: "colValor" as const,
-      label: "Coluna do Valor (R$)",
+      label: "Valor de Pagamento ou Repasse",
       required: true,
-      hint: "Ex: Repasse, Valor, Net, Total…",
       value: colValor,
       set: setColValor,
     },
     {
       key: "colModalidade" as const,
-      label: "Coluna de Modalidade / Plano",
+      label: "Modalidade ou Plano",
       required: false,
-      hint: "Ex: Plano, Atividade, Produto, Categoria… (opcional)",
       value: colModalidade,
       set: setColModalidade,
     },
     {
       key: "colData" as const,
-      label: "Coluna de Data",
+      label: "Data check-in",
       required: false,
-      hint: "Ex: Data, Período, Competência, Mês… (opcional)",
       value: colData,
       set: setColData,
     },
     {
       key: "colCheckins" as const,
-      label: "Coluna de Visitas / Check-ins",
+      label: "Visitas / Check-ins",
       required: false,
-      hint: "Ex: Visitas, Check-ins, Acessos, Qtd… (opcional)",
       value: colCheckins,
       set: setColCheckins,
     },
@@ -302,71 +297,44 @@ function ColMapDialog({
         </div>
 
         <p className="text-sm text-muted-foreground -mt-1">
-          Indique qual coluna da planilha corresponde a cada campo. Os campos obrigatórios são{" "}
-          <strong>Nome do Aluno</strong> e <strong>Valor</strong>.
+          Indique qual coluna da planilha corresponde a cada campo.
         </p>
 
-        <div className="space-y-5">
-          {fields.map((f) => {
-            const curVal = f.value;
-            const sampleVals = curVal && curVal !== NONE ? (samples[curVal] ?? []) : [];
-
-            return (
-              <div key={f.key}>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <label className="text-sm font-medium text-foreground">{f.label}</label>
-                  {f.required && (
-                    <span className="text-xs text-destructive font-semibold">*</span>
+        <div className="space-y-4">
+          {fields.map((f) => (
+            <div key={f.key} className="flex items-center gap-3">
+              <label className="text-sm font-medium text-foreground w-52 shrink-0 flex items-center gap-1">
+                {f.label}
+                {f.required && <span className="text-destructive font-semibold">*</span>}
+              </label>
+              <Select
+                value={f.value || NONE}
+                onValueChange={(v) => f.set(v === NONE ? "" : v)}
+              >
+                <SelectTrigger
+                  className={cn(
+                    "h-9 flex-1",
+                    f.required && !f.value && "border-destructive/50"
                   )}
-                </div>
-                <p className="text-xs text-muted-foreground mb-2">{f.hint}</p>
-                <Select
-                  value={curVal || NONE}
-                  onValueChange={(v) => f.set(v === NONE ? "" : v)}
+                  data-testid={`select-col-${f.key}`}
                 >
-                  <SelectTrigger
-                    className={cn(
-                      "h-9",
-                      f.required && !curVal && "border-destructive/50"
-                    )}
-                    data-testid={`select-col-${f.key}`}
-                  >
-                    <SelectValue placeholder="Selecione uma coluna…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {!f.required && (
-                      <SelectItem value={NONE}>
-                        <span className="text-muted-foreground italic">— Não usar —</span>
-                      </SelectItem>
-                    )}
-                    {headers.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        <span className="font-medium">{h}</span>
-                        {samples[h]?.length > 0 && (
-                          <span className="ml-2 text-muted-foreground text-xs">
-                            ex: {samples[h].slice(0, 2).join(", ")}
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {sampleVals.length > 0 && (
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {sampleVals.map((v) => (
-                      <span
-                        key={v}
-                        className="inline-block rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-                      >
-                        {v}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  <SelectValue placeholder="Selecione uma coluna…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {!f.required && (
+                    <SelectItem value={NONE}>
+                      <span className="text-muted-foreground italic">— Não usar —</span>
+                    </SelectItem>
+                  )}
+                  {headers.map((h) => (
+                    <SelectItem key={h} value={h}>
+                      {h}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
         </div>
 
         <DialogFooter className="gap-2 pt-2">

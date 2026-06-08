@@ -684,19 +684,10 @@ export function registerConferenciaRoutes(app: Express): void {
         );
       }
 
-      // Filter rows by date range if provided and a date column was detected
-      let filteredRows = rows;
-      if (dataInicio && dataFim && cols.dateIdx >= 0) {
-        const start = new Date(dataInicio);
-        const end = new Date(dataFim + "T23:59:59");
-        const orig = rows.length;
-        filteredRows = rows.filter((row) => {
-          const d = parseExcelDate(row[headers[cols.dateIdx]]);
-          if (!d) return true;
-          return d >= start && d <= end;
-        });
-        console.log(`[Conferência] Filtro ${dataInicio}→${dataFim}: ${orig} → ${filteredRows.length} linhas`);
-      }
+      // Process all rows in the file — no date filtering.
+      // The period context is used only for professor list lookup, not for row exclusion.
+      const filteredRows = rows;
+      console.log(`[Conferência] ${filename} | ${rows.length} linhas processadas (sem filtro de data)`);
 
       // Derive period from upload date (e.g., "2026-05-01" → "2026-05")
       const periodoUpload = dataInicio ? dataInicio.substring(0, 7) : null;
