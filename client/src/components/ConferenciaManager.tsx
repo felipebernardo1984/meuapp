@@ -48,6 +48,7 @@ import {
   Pencil,
   X,
   Printer,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -363,15 +364,15 @@ interface Props {
   arenaId: string;
 }
 
-export default function ConferenciaManager({ arenaId }: Props) {
-  const [view, setView] = useState<"main" | "sessao">("main");
-  const [sessaoId, setSessaoId] = useState<string | null>(null);
-  const [mainTab, setMainTab] = useState<"conferir" | "professores">("conferir");
+interface MesRef {
+  ano: number;
+  mes: number;
+}
 
-  const handleSelectSessao = (id: string) => {
-    setSessaoId(id);
-    setView("sessao");
-  };
+export default function ConferenciaManager({ arenaId }: Props) {
+  const [view, setView] = useState<"landing" | "mes" | "sessao">("landing");
+  const [mesSel, setMesSel] = useState<MesRef | null>(null);
+  const [sessaoId, setSessaoId] = useState<string | null>(null);
 
   if (view === "sessao" && sessaoId) {
     return (
@@ -380,51 +381,28 @@ export default function ConferenciaManager({ arenaId }: Props) {
         arenaId={arenaId}
         onVoltar={() => {
           setSessaoId(null);
-          setView("main");
+          setView(mesSel ? "mes" : "landing");
         }}
       />
     );
   }
 
+  if (view === "mes" && mesSel) {
+    return (
+      <MesView
+        mes={mesSel}
+        arenaId={arenaId}
+        onVoltar={() => setView("landing")}
+        onSelectSessao={(id) => { setSessaoId(id); setView("sessao"); }}
+      />
+    );
+  }
+
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-4">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Conferência</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Auditoria de repasses TotalPass e Wellhub — cruze a planilha com os alunos da arena automaticamente.
-        </p>
-      </div>
-
-      <div className="flex gap-1 border-b">
-        {(
-          [
-            { key: "conferir", label: "Conferir Planilha" },
-            { key: "professores", label: "Professores" },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setMainTab(t.key)}
-            className={cn(
-              "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-              mainTab === t.key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-            data-testid={`tab-main-${t.key}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {mainTab === "conferir" && (
-        <ConferirView arenaId={arenaId} onSelectSessao={handleSelectSessao} />
-      )}
-      {mainTab === "professores" && (
-        <ConfiguracaoView arenaId={arenaId} />
-      )}
-    </div>
+    <LandingView
+      arenaId={arenaId}
+      onEntrarMes={(mes) => { setMesSel(mes); setView("mes"); }}
+    />
   );
 }
 
@@ -460,33 +438,203 @@ function isArenaOnlyMod(mod: string): boolean {
   return ARENA_ONLY_MODS_FE.some((k) => norm.includes(k));
 }
 
-// ── Conferir View (upload + histórico merged) ─────────────────────────────────
+// ── groupByMonth helper ───────────────────────────────────────────────────────
 
-function ConferirView({
+interface MesGroup {
+  mes: MesRef;
+  label: string;
+  sessoes: Sessao[];
+}
+
+function groupByMonth(sessoes: Sessao[]): MesGroup[] {
+  const map = new Map<string, MesGroup>();
+  for (const s of sessoes) {
+    if (!s.periodoInicio) continue;
+    const d = new Date(s.periodoInicio + "T12:00:00");
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        mes: { ano: d.getFullYear(), mes: d.getMonth() + 1 },
+        label: `${MESES_PT[d.getMonth()]} ${d.getFullYear()}`,
+        sessoes: [],
+      });
+    }
+    map.get(key)!.sessoes.push(s);
+  }
+  return Array.from(map.values()).sort(
+    (a, b) => b.mes.ano - a.mes.ano || b.mes.mes - a.mes.mes
+  );
+}
+
+// ── Landing View ──────────────────────────────────────────────────────────────
+
+function LandingView({
   arenaId,
-  onSelectSessao,
+  onEntrarMes,
 }: {
   arenaId: string;
+  onEntrarMes: (mes: MesRef) => void;
+}) {
+  const hoje = new Date();
+  const prevMonth = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+  const [mesSel, setMesSel] = useState(prevMonth.getMonth() + 1);
+  const [anoSel, setAnoSel] = useState(prevMonth.getFullYear());
+  const curYear = hoje.getFullYear();
+  const anos = [curYear - 2, curYear - 1, curYear, curYear + 1];
+
+  const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
+    queryKey: ["/api/conferencia/sessoes"],
+  });
+
+  const mesGroups = groupByMonth(sessoes);
+
+  return (
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-bold text-foreground">Conferência</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Conferência mensal de repasses TotalPass e Wellhub
+        </p>
+      </div>
+
+      {/* Month entry card */}
+      <Card className="border-primary/20">
+        <CardContent className="p-5">
+          <p className="text-sm font-semibold mb-3">Selecione o mês para conferir</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={String(mesSel)} onValueChange={(v) => setMesSel(Number(v))}>
+              <SelectTrigger className="h-9 w-40" data-testid="select-mes-landing">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MESES_PT.map((m, i) => (
+                  <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(anoSel)} onValueChange={(v) => setAnoSel(Number(v))}>
+              <SelectTrigger className="h-9 w-24" data-testid="select-ano-landing">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {anos.map((a) => (
+                  <SelectItem key={a} value={String(a)}>{a}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => onEntrarMes({ mes: mesSel, ano: anoSel })}
+              className="gap-1.5"
+              data-testid="button-conferir-mes"
+            >
+              Conferir {MESES_PT[mesSel - 1]} {anoSel}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Dentro do mês você envia os arquivos, configura professores e visualiza os repasses calculados.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Past months list */}
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground text-sm">Carregando…</div>
+      ) : mesGroups.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
+            Meses conferidos
+          </p>
+          {mesGroups.map((g) => {
+            const totalEncontrados = g.sessoes.reduce((s, ss) => s + ss.encontrados, 0);
+            const totalPossiveis   = g.sessoes.reduce((s, ss) => s + ss.possiveis, 0);
+            const totalNao         = g.sessoes.reduce((s, ss) => s + ss.naoEncontrados, 0);
+            const plataformas = Array.from(new Set(g.sessoes.map((ss) => plataformaLabel(ss.plataforma)))).join(" + ");
+            return (
+              <Card
+                key={`${g.mes.ano}-${g.mes.mes}`}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => onEntrarMes(g.mes)}
+                data-testid={`mes-card-${g.mes.ano}-${g.mes.mes}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <CalendarDays className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-sm">{g.label}</p>
+                        <Badge variant="secondary" className="text-xs">{plataformas}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {g.sessoes.length} arquivo{g.sessoes.length !== 1 ? "s" : ""}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle className="h-3 w-3" /> {totalEncontrados} confirmados
+                        </span>
+                        {totalPossiveis > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-3 w-3" /> {totalPossiveis} possíveis
+                          </span>
+                        )}
+                        {totalNao > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                            <XCircle className="h-3 w-3" /> {totalNao} não encontrados
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-16 text-muted-foreground text-sm border border-dashed rounded-xl">
+          Nenhuma conferência realizada ainda.<br />
+          Selecione um mês acima para começar.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Mes View (workspace for a specific month) ─────────────────────────────────
+
+function MesView({
+  mes,
+  arenaId,
+  onVoltar,
+  onSelectSessao,
+}: {
+  mes: MesRef;
+  arenaId: string;
+  onVoltar: () => void;
   onSelectSessao: (id: string) => void;
 }) {
-  // Default: previous month
-  const hoje = new Date();
-  const prevFirst = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
-  const prevLast  = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
-  const defaultRange: DateRange = {
-    inicio: prevFirst.toISOString().slice(0, 10),
-    fim:    prevLast.toISOString().slice(0, 10),
-  };
-  const [dateRange, setDateRange] = useState<DateRange | null>(defaultRange);
+  const [mesTab, setMesTab] = useState<"arquivos" | "professores">("arquivos");
   const [dragging, setDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  const mesLabel = `${MESES_PT[mes.mes - 1]} ${mes.ano}`;
+  const monthKey = `${mes.ano}-${String(mes.mes).padStart(2, "0")}`;
+  const dataInicio = `${monthKey}-01`;
+  const lastDay = new Date(mes.ano, mes.mes, 0).getDate();
+  const dataFim = `${monthKey}-${String(lastDay).padStart(2, "0")}`;
+
   const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
     queryKey: ["/api/conferencia/sessoes"],
   });
+
+  const mesSessoes = sessoes.filter((s) => s.periodoInicio?.startsWith(monthKey));
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/sessao/${id}`),
@@ -494,9 +642,6 @@ function ConferirView({
   });
 
   const isUploading = uploadingFiles.some((f) => f.status === "processing");
-
-  const dataInicio = (dateRange ?? defaultRange).inicio;
-  const dataFim    = (dateRange ?? defaultRange).fim;
 
   const processUploadFile = async (file: File): Promise<SessaoDetalhe | null> => {
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
@@ -546,192 +691,201 @@ function ConferirView({
   };
 
   return (
-    <div className="space-y-4">
-      {/* ── Period picker ──────────────────────────────────────────────────── */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div>
-              <p className="text-xs text-muted-foreground font-medium mb-1.5">Período de referência</p>
-              <DateRangePicker value={dateRange} onChange={setDateRange} align="start" />
-            </div>
-            <p className="text-xs text-muted-foreground self-end pb-0.5">
-              Filtra registros de{" "}
-              <strong>{new Date(dataInicio + "T12:00:00").toLocaleDateString("pt-BR")}</strong>{" "}
-              até{" "}
-              <strong>{new Date(dataFim + "T12:00:00").toLocaleDateString("pt-BR")}</strong>
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-landing">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-lg font-bold text-foreground">{mesLabel}</h1>
+          <p className="text-xs text-muted-foreground">Conferência TotalPass & Wellhub</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b">
+        {(
+          [
+            { key: "arquivos", label: "Arquivos" },
+            { key: "professores", label: "Professores" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setMesTab(t.key)}
+            className={cn(
+              "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+              mesTab === t.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+            data-testid={`tab-mes-${t.key}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Arquivos tab */}
+      {mesTab === "arquivos" && (
+        <div className="space-y-4">
+          {/* Upload zone */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Arraste o Excel do TotalPass ou Wellhub referente a{" "}
+              <strong>{mesLabel}</strong>. O sistema detecta nomes, valores e modalidades
+              automaticamente e cruza com os alunos da arena.
             </p>
-          </div>
-        </CardContent>
-      </Card>
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length) handleUploadFiles(files);
+              }}
+              onClick={() => !isUploading && fileRef.current?.click()}
+              data-testid="upload-zone-conferir"
+              className={cn(
+                "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
+                dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30",
+                isUploading && "opacity-60 cursor-not-allowed"
+              )}
+            >
+              {isUploading ? (
+                <>
+                  <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
+                  <span className="text-sm text-muted-foreground">Processando arquivos…</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
+                  <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
+                  <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
+                </>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".xlsx,.xls"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  if (files.length) handleUploadFiles(files);
+                  e.target.value = "";
+                }}
+              />
+            </div>
 
-      {/* ── Upload drop zone ───────────────────────────────────────────────── */}
-      <div>
-        <p className="text-xs text-muted-foreground mb-2">
-          Arraste o Excel do TotalPass ou Wellhub. O sistema detecta automaticamente nomes, valores e{" "}
-          <strong>modalidades/planos</strong> e cruza com todos os alunos da arena.{" "}
-          <em>Day Use</em> e <em>Esportes Coletivos / Utilização Livre</em> são classificados
-          automaticamente como receita integral da arena (sem comissão de professor).
-        </p>
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            const files = Array.from(e.dataTransfer.files);
-            if (files.length) handleUploadFiles(files);
-          }}
-          onClick={() => !isUploading && fileRef.current?.click()}
-          data-testid="upload-zone-conferir"
-          className={cn(
-            "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
-            dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30",
-            isUploading && "opacity-60 cursor-not-allowed"
-          )}
-        >
-          {isUploading ? (
-            <>
-              <RefreshCw className="h-7 w-7 text-muted-foreground animate-spin mb-1.5" />
-              <span className="text-sm text-muted-foreground">Processando arquivos…</span>
-            </>
-          ) : (
-            <>
-              <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
-              <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
-              <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
-            </>
-          )}
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".xlsx,.xls"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              const files = Array.from(e.target.files ?? []);
-              if (files.length) handleUploadFiles(files);
-              e.target.value = "";
-            }}
-          />
-        </div>
-
-        {uploadingFiles.length > 0 && (
-          <div className="space-y-1.5 mt-2">
-            {uploadingFiles.map((f) => (
-              <div
-                key={f.name}
-                className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
-                  f.status === "processing" && "bg-muted",
-                  f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
-                  f.status === "error" && "bg-red-50 dark:bg-red-950/40"
-                )}
-              >
-                {f.status === "processing" && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
-                {f.status === "done" && <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
-                {f.status === "error" && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
-                <span className="truncate flex-1">{f.name}</span>
-                <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(f.platform || "outro")}</Badge>
-                {f.status === "error" && f.error && (
-                  <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
-                )}
-                {f.status === "done" && f.debug && (
-                  <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
-                    nome: <strong>{f.debug.nameCol ?? "?"}</strong> · valor:{" "}
-                    <strong>{f.debug.valueCol ?? "?"}</strong>
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── History list ───────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 pt-1">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-          Histórico de Conferências
-        </span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
-      {isLoading ? (
-        <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
-      ) : sessoes.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground text-sm border border-dashed rounded-lg">
-          Nenhuma conferência realizada ainda. Faça o upload acima.
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {sessoes.map((s) => {
-            const periodo = formatPeriodoSessao(s);
-            return (
-              <Card
-                key={s.id}
-                className="cursor-pointer hover:shadow-md transition-shadow border"
-                onClick={() => onSelectSessao(s.id)}
-                data-testid={`sessao-card-${s.id}`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileSpreadsheet className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
-                        <Badge variant="secondary" className="text-xs shrink-0">
-                          {plataformaLabel(s.plataforma)}
-                        </Badge>
-                        {periodo && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs shrink-0 text-blue-700 border-blue-300 dark:text-blue-400 dark:border-blue-700"
-                          >
-                            {periodo}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle className="h-3 w-3" /> {s.encontrados} encontrados
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                          <AlertCircle className="h-3 w-3" /> {s.possiveis} possíveis
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                          <XCircle className="h-3 w-3" /> {s.naoEncontrados} não encontrados
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {s.totalRegistros} registros ·{" "}
-                          {new Date(s.criadoEm).toLocaleDateString("pt-BR")}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteMutation.mutate(s.id);
-                        }}
-                        data-testid={`button-delete-sessao-${s.id}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
+            {uploadingFiles.length > 0 && (
+              <div className="space-y-1.5 mt-2">
+                {uploadingFiles.map((f) => (
+                  <div
+                    key={f.name}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
+                      f.status === "processing" && "bg-muted",
+                      f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
+                      f.status === "error" && "bg-red-50 dark:bg-red-950/40"
+                    )}
+                  >
+                    {f.status === "processing" && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
+                    {f.status === "done" && <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                    {f.status === "error" && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
+                    <span className="truncate flex-1">{f.name}</span>
+                    <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(f.platform || "outro")}</Badge>
+                    {f.status === "error" && f.error && (
+                      <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
+                    )}
+                    {f.status === "done" && f.debug && (
+                      <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
+                        nome: <strong>{f.debug.nameCol ?? "?"}</strong> · valor:{" "}
+                        <strong>{f.debug.valueCol ?? "?"}</strong>
+                      </span>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sessions for this month */}
+          {isLoading ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
+          ) : mesSessoes.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Arquivos de {mesLabel}
+              </p>
+              {mesSessoes.map((s) => (
+                <Card
+                  key={s.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow border"
+                  onClick={() => onSelectSessao(s.id)}
+                  data-testid={`sessao-card-${s.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <FileSpreadsheet className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            {plataformaLabel(s.plataforma)}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle className="h-3 w-3" /> {s.encontrados} encontrados
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-3 w-3" /> {s.possiveis} possíveis
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                            <XCircle className="h-3 w-3" /> {s.naoEncontrados} não encontrados
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {s.totalRegistros} registros ·{" "}
+                            {new Date(s.criadoEm).toLocaleDateString("pt-BR")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteMutation.mutate(s.id);
+                          }}
+                          data-testid={`button-delete-sessao-${s.id}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : !isUploading && (
+            <div className="text-center py-10 text-muted-foreground text-sm border border-dashed rounded-lg">
+              Nenhum arquivo enviado para {mesLabel}.<br />
+              Arraste os arquivos acima para começar.
+            </div>
+          )}
         </div>
       )}
+
+      {/* Professores tab */}
+      {mesTab === "professores" && <ConfiguracaoView arenaId={arenaId} />}
     </div>
   );
 }
