@@ -9,6 +9,7 @@ import {
   conferenciaProfessores,
   conferenciaProfessorAlunos,
   students,
+  teachers,
 } from "@shared/schema";
 
 // ── Fuzzy matching (pure JS — no external AI/API) ─────────────────────────────
@@ -65,7 +66,8 @@ function wordOverlapSim(a: string, b: string): number {
   if (wa.size === 0 || wb.size === 0) return 0;
   let overlap = 0;
   for (const w of Array.from(wa)) if (wb.has(w)) overlap++;
-  const containment = overlap / wa.size; // % of registered words found in platform name
+  // Use the smaller set for containment — handles "Gustavo Pereira" ↔ "GUSTAVO HENRIQUE PEREIRA"
+  const containment = overlap / Math.min(wa.size, wb.size);
   const union = wa.size + wb.size - overlap;
   const jaccard = union > 0 ? overlap / union : 0;
   return Math.round(Math.max(containment * 88, jaccard * 100));
@@ -584,9 +586,16 @@ export function registerConferenciaRoutes(app: Express): void {
 
       // Fallback: match against main arena students when conferência list misses
       const arenaStudentsDb = await db
-        .select({ id: students.id, nome: students.nome })
+        .select({ id: students.id, nome: students.nome, professorId: students.professorId })
         .from(students)
         .where(and(eq(students.arenaId, arenaId), eq(students.ativo, true)));
+
+      // Teachers map for auto-commission when matched via arena student fallback
+      const teachersDb = await db
+        .select()
+        .from(teachers)
+        .where(eq(teachers.arenaId, arenaId));
+      const teacherMap = new Map(teachersDb.map((t) => [t.id, t]));
 
       const aliasToAlunoId = new Map(
         aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
@@ -594,7 +603,7 @@ export function registerConferenciaRoutes(app: Express): void {
 
       const matchAluno = (nomePlataforma: string): {
         aluno: (typeof alunosDb)[0] | null;
-        arenaStudent: { id: string; nome: string } | null;
+        arenaStudent: { id: string; nome: string; professorId: string | null } | null;
         score: number;
         status: "confirmado" | "pendente" | "nao_encontrado";
       } => {
@@ -618,22 +627,26 @@ export function registerConferenciaRoutes(app: Express): void {
         if (bestScore >= 55) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "pendente" };
 
         // 3. Fallback — main arena students
-        let bestArenaScore = 0, bestArenaStudent: { id: string; nome: string } | null = null;
+        let bestArenaScore = 0, bestArenaStudent: { id: string; nome: string; professorId: string | null } | null = null;
         for (const s of arenaStudentsDb) {
           const sc = bestSim(nomePlataforma, s.nome);
           if (sc > bestArenaScore) { bestArenaScore = sc; bestArenaStudent = s; }
         }
-        if (bestArenaScore >= 78) {
+        if (bestArenaScore >= 75) {
           return {
             aluno: null,
             arenaStudent: bestArenaStudent,
             score: bestArenaScore,
-            status: bestArenaScore >= 88 ? "confirmado" : "pendente",
+            status: bestArenaScore >= 85 ? "confirmado" : "pendente",
           };
         }
 
         return { aluno: null, arenaStudent: null, score: Math.max(bestScore, bestArenaScore), status: "nao_encontrado" };
       };
+
+      console.log(
+        `[Conferência] Base de alunos: ${alunosDb.length} conf-alunos | ${arenaStudentsDb.length} alunos-arena | ${aliasesDb.length} aliases`
+      );
 
       let encontrados = 0, possiveis = 0, naoEncontrados = 0;
 
@@ -685,6 +698,19 @@ export function registerConferenciaRoutes(app: Express): void {
           } else if (match.arenaStudent) {
             if (match.status === "confirmado") encontrados++;
             else possiveis++;
+            // Auto-assign professor from the main arena student's teacher record
+            const arenaTeacherId = match.arenaStudent.professorId;
+            if (arenaTeacherId) {
+              const teacher = teacherMap.get(arenaTeacherId);
+              if (teacher?.percentualComissao && parseFloat(teacher.percentualComissao) > 0) {
+                professorId = arenaTeacherId;
+                percentual = String(teacher.percentualComissao);
+                const pct = parseFloat(percentual) / 100;
+                valorProfessor = String(Math.round(parseFloat(valor) * pct * 100) / 100);
+                valorArena = String(Math.round(parseFloat(valor) * (1 - pct) * 100) / 100);
+                categoria = "comissao";
+              }
+            }
           } else {
             naoEncontrados++;
           }
@@ -740,7 +766,9 @@ export function registerConferenciaRoutes(app: Express): void {
 
       const enriched = registros.map((r) => ({
         ...r,
-        professorNome: r.professorId ? (profMap.get(r.professorId)?.nome ?? null) : null,
+        professorNome: r.professorId
+          ? (profMap.get(r.professorId)?.nome ?? teacherMap.get(r.professorId)?.nome ?? null)
+          : null,
       }));
 
       res.json({ ...sessao, registros: enriched, debug: cols.debug });
@@ -789,9 +817,17 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(eq(conferenciaProfessores.arenaId, arenaId));
     const profMap = new Map(profsDb.map((p) => [p.id, p]));
 
+    const teachersDbDetail = await db
+      .select()
+      .from(teachers)
+      .where(eq(teachers.arenaId, arenaId));
+    const teacherMapDetail = new Map(teachersDbDetail.map((t) => [t.id, t]));
+
     const enriched = registros.map((r) => ({
       ...r,
-      professorNome: r.professorId ? (profMap.get(r.professorId)?.nome ?? null) : null,
+      professorNome: r.professorId
+        ? (profMap.get(r.professorId)?.nome ?? teacherMapDetail.get(r.professorId)?.nome ?? null)
+        : null,
     }));
 
     res.json({ ...sessao, registros: enriched });
