@@ -887,297 +887,290 @@ function ConfiguracaoView({ arenaId }: { arenaId: string }) {
     addAlunoMutation.mutate({ profId, nome });
   };
 
+  const [expandedProf, setExpandedProf] = useState<string | null>(null);
+
   return (
-    <div className="space-y-4">
-      {/* ── Professor configuration ─────────────────────────────────────── */}
-      {/* Add Professor Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Plus className="h-4 w-4 text-muted-foreground" />
-            Adicionar Professor
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex gap-2 items-end flex-wrap">
-            <div className="flex-1 min-w-[180px]">
-              <p className="text-xs text-muted-foreground mb-1">Nome do professor</p>
+    <div className="space-y-5">
+
+      {/* ── Header + inline add form ─────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1">
+          <h2 className="text-base font-semibold text-foreground">Professores da Conferência</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Configure os professores e vincule os alunos de cada um para o cruzamento automático.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Add-professor inline form ──────────────────────────────────── */}
+      <Card className="border-dashed">
+        <CardContent className="p-4">
+          <div className="flex gap-3 items-end flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Nome</p>
               <Input
-                placeholder="Ex: Prof. Felipe"
+                placeholder="Nome do professor…"
                 value={novoProfNome}
                 onChange={(e) => setNovoProfNome(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddProf()}
                 data-testid="input-novo-prof-nome"
               />
             </div>
-            <div className="w-32">
-              <p className="text-xs text-muted-foreground mb-1">% Comissão</p>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                placeholder="30"
-                value={novoProfPct}
-                onChange={(e) => setNovoProfPct(e.target.value)}
-                data-testid="input-novo-prof-pct"
-              />
+            <div className="w-36">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">% Comissão</p>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={novoProfPct}
+                  onChange={(e) => setNovoProfPct(e.target.value)}
+                  className="pr-7"
+                  data-testid="input-novo-prof-pct"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+              </div>
             </div>
             <Button
               onClick={handleAddProf}
               disabled={!novoProfNome.trim() || addProfMutation.isPending}
+              className="shrink-0"
               data-testid="button-add-professor"
             >
               {addProfMutation.isPending ? (
-                <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
               ) : (
-                <Plus className="h-3.5 w-3.5 mr-1" />
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
               )}
-              Adicionar
+              Adicionar Professor
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Depois de criar o professor, adicione os alunos dele com os nomes exatamente como
-            aparecem no Excel (o sistema usa similaridade para corresponder automaticamente).
-          </p>
         </CardContent>
       </Card>
 
-      {/* Professor List */}
+      {/* ── Professor table / list ─────────────────────────────────────── */}
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground text-sm">Carregando…</div>
+        <div className="flex items-center justify-center py-12 text-muted-foreground text-sm gap-2">
+          <RefreshCw className="h-4 w-4 animate-spin" /> Carregando professores…
+        </div>
       ) : professores.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground text-sm border border-dashed rounded-lg">
-          Nenhum professor cadastrado ainda. Adicione o primeiro professor acima.
+        <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-xl">
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Users className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <p className="text-sm font-medium text-foreground">Nenhum professor cadastrado</p>
+          <p className="text-xs text-muted-foreground mt-1">Use o formulário acima para adicionar o primeiro professor.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {professores.map((prof) => (
-            <Card key={prof.id} data-testid={`card-prof-${prof.id}`}>
-              <CardHeader className="pb-2 pt-3 px-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
-                    {initials(prof.nome)}
-                  </div>
-                  {editingProf === prof.id ? (
-                    <div className="flex-1 flex gap-2 items-center flex-wrap">
-                      <Input
-                        value={editNome}
-                        onChange={(e) => setEditNome(e.target.value)}
-                        className="flex-1 h-8 text-sm"
-                        data-testid={`input-edit-prof-nome-${prof.id}`}
-                      />
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          value={editPct}
-                          onChange={(e) => setEditPct(e.target.value)}
-                          className="w-20 h-8 text-sm"
-                          placeholder="%"
-                          data-testid={`input-edit-prof-pct-${prof.id}`}
-                        />
-                        <span className="text-xs text-muted-foreground">%</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        className="h-8"
-                        onClick={() =>
-                          editProfMutation.mutate({
-                            id: prof.id,
-                            nome: editNome,
-                            percentualComissao: editPct,
-                          })
-                        }
-                        disabled={editProfMutation.isPending}
-                        data-testid={`button-save-prof-${prof.id}`}
-                      >
-                        Salvar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2"
-                        onClick={() => setEditingProf(null)}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
+        <Card>
+          <div className="divide-y">
+            {professores.map((prof) => {
+              const isEditing = editingProf === prof.id;
+              const isExpanded = expandedProf === prof.id;
+              const pctNum = parseFloat(prof.percentualComissao || "0");
+              return (
+                <div key={prof.id} data-testid={`card-prof-${prof.id}`}>
+                  {/* ── Row ── */}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    {/* Avatar */}
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 select-none">
+                      {initials(prof.nome)}
                     </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-between gap-2 min-w-0">
-                      <div className="min-w-0">
-                        <span className="font-semibold text-sm">{prof.nome}</span>
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          {prof.percentualComissao}% comissão
-                        </Badge>
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {prof.alunos.length} aluno{prof.alunos.length !== 1 ? "s" : ""}
-                        </span>
+
+                    {/* Name / edit inline */}
+                    {isEditing ? (
+                      <div className="flex-1 flex gap-2 items-center flex-wrap">
+                        <Input
+                          value={editNome}
+                          onChange={(e) => setEditNome(e.target.value)}
+                          className="flex-1 min-w-[150px] h-8 text-sm"
+                          autoFocus
+                          data-testid={`input-edit-prof-nome-${prof.id}`}
+                        />
+                        <div className="relative w-24">
+                          <Input
+                            type="number"
+                            value={editPct}
+                            onChange={(e) => setEditPct(e.target.value)}
+                            className="h-8 text-sm pr-6"
+                            placeholder="0"
+                            data-testid={`input-edit-prof-pct-${prof.id}`}
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="h-8"
+                          onClick={() => editProfMutation.mutate({ id: prof.id, nome: editNome, percentualComissao: editPct })}
+                          disabled={editProfMutation.isPending}
+                          data-testid={`button-save-prof-${prof.id}`}
+                        >
+                          {editProfMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Salvar"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setEditingProf(null)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
+                    ) : (
+                      <div className="flex-1 flex items-center gap-3 min-w-0">
+                        <span className="font-medium text-sm text-foreground truncate">{prof.nome}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge
+                            variant={pctNum > 0 ? "default" : "secondary"}
+                            className="text-xs tabular-nums"
+                          >
+                            {pctNum > 0 ? `${pctNum}%` : "Sem comissão"}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {prof.alunos.length} aluno{prof.alunos.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    {!isEditing && (
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
-                          size="icon"
                           variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            setEditingProf(prof.id);
-                            setEditNome(prof.nome);
-                            setEditPct(prof.percentualComissao);
-                          }}
-                          data-testid={`button-edit-prof-${prof.id}`}
+                          size="sm"
+                          className="h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                          onClick={() => setExpandedProf(isExpanded ? null : prof.id)}
+                          data-testid={`button-expand-prof-${prof.id}`}
                         >
-                          <Pencil className="h-3 w-3" />
+                          <Users className="h-3.5 w-3.5" />
+                          Alunos
+                          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-90")} />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 text-destructive"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => { setEditingProf(prof.id); setEditNome(prof.nome); setEditPct(prof.percentualComissao); }}
+                          data-testid={`button-edit-prof-${prof.id}`}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
                           onClick={() => delProfMutation.mutate(prof.id)}
                           disabled={delProfMutation.isPending}
                           data-testid={`button-del-prof-${prof.id}`}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
+                    )}
+                  </div>
+
+                  {/* ── Expanded: student management ── */}
+                  {isExpanded && (
+                    <div className="border-t bg-muted/30 px-4 py-4 space-y-3">
+                      {/* Student chips */}
+                      {prof.alunos.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {prof.alunos.map((a) => (
+                            <div
+                              key={a.id}
+                              className="flex items-center gap-1 bg-background border rounded-full pl-3 pr-1.5 py-0.5 text-xs shadow-sm"
+                              data-testid={`tag-aluno-${a.id}`}
+                            >
+                              <span className="text-foreground">{a.nome}</span>
+                              <button
+                                onClick={() => delAlunoMutation.mutate(a.id)}
+                                className="h-4 w-4 flex items-center justify-center rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                                data-testid={`button-del-aluno-${a.id}`}
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Input mode toggle */}
+                      <div className="flex items-center gap-1 border rounded-lg p-0.5 w-fit bg-background">
+                        {[{ id: false, label: "Adicionar um" }, { id: true, label: "Colar lista" }].map((m) => (
+                          <button
+                            key={String(m.id)}
+                            onClick={() => setListMode((prev) => ({ ...prev, [prof.id]: m.id }))}
+                            className={cn(
+                              "text-xs px-3 py-1.5 rounded-md transition-colors font-medium",
+                              listMode[prof.id] === m.id
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                            data-testid={`toggle-modo-${m.id ? "lista" : "individual"}-${prof.id}`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Single add */}
+                      {!listMode[prof.id] && (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Nome como aparece no Excel…"
+                            value={novoAluno[prof.id] ?? ""}
+                            onChange={(e) => setNovoAluno((prev) => ({ ...prev, [prof.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === "Enter" && handleAddAluno(prof.id)}
+                            className="h-9 text-sm flex-1"
+                            data-testid={`input-novo-aluno-${prof.id}`}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-9 px-4"
+                            onClick={() => handleAddAluno(prof.id)}
+                            disabled={!novoAluno[prof.id]?.trim() || addAlunoMutation.isPending}
+                            data-testid={`button-add-aluno-${prof.id}`}
+                          >
+                            {addAlunoMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Paste list */}
+                      {listMode[prof.id] && (() => {
+                        const nomes = (listaTexto[prof.id] ?? "").split("\n").map((n) => n.trim()).filter(Boolean);
+                        return (
+                          <div className="space-y-2">
+                            <textarea
+                              placeholder={"Cole os nomes aqui, um por linha:\n\nJoão da Silva\nMaria Souza\nPedro Alves\n…"}
+                              value={listaTexto[prof.id] ?? ""}
+                              onChange={(e) => setListaTexto((prev) => ({ ...prev, [prof.id]: e.target.value }))}
+                              rows={5}
+                              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                              data-testid={`textarea-lista-alunos-${prof.id}`}
+                            />
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">
+                                {nomes.length > 0 ? `${nomes.length} nome${nomes.length !== 1 ? "s" : ""} detectado${nomes.length !== 1 ? "s" : ""}` : "Um nome por linha"}
+                              </span>
+                              <Button
+                                size="sm"
+                                onClick={() => nomes.length > 0 && addAlunosLoteMutation.mutate({ profId: prof.id, nomes })}
+                                disabled={nomes.length === 0 || addAlunosLoteMutation.isPending}
+                                data-testid={`button-add-lote-${prof.id}`}
+                              >
+                                {addAlunosLoteMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1.5" />}
+                                Adicionar {nomes.length > 0 ? nomes.length : ""} aluno{nomes.length !== 1 ? "s" : ""}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0 pb-3 px-4">
-                {/* Student tags */}
-                {prof.alunos.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic mb-2">
-                    Nenhum aluno cadastrado neste professor ainda.
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {prof.alunos.map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex items-center gap-1 bg-muted rounded-full pl-3 pr-1.5 py-0.5 text-xs"
-                        data-testid={`tag-aluno-${a.id}`}
-                      >
-                        <span>{a.nome}</span>
-                        <button
-                          onClick={() => delAlunoMutation.mutate(a.id)}
-                          className="h-4 w-4 flex items-center justify-center rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
-                          data-testid={`button-del-aluno-${a.id}`}
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Mode toggle */}
-                <div className="flex items-center gap-2 mb-2">
-                  <button
-                    onClick={() =>
-                      setListMode((prev) => ({ ...prev, [prof.id]: false }))
-                    }
-                    className={cn(
-                      "text-xs px-2.5 py-1 rounded-full transition-colors border",
-                      !listMode[prof.id]
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "text-muted-foreground border-border hover:border-primary/50"
-                    )}
-                    data-testid={`toggle-modo-individual-${prof.id}`}
-                  >
-                    Um por um
-                  </button>
-                  <button
-                    onClick={() =>
-                      setListMode((prev) => ({ ...prev, [prof.id]: true }))
-                    }
-                    className={cn(
-                      "text-xs px-2.5 py-1 rounded-full transition-colors border",
-                      listMode[prof.id]
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "text-muted-foreground border-border hover:border-primary/50"
-                    )}
-                    data-testid={`toggle-modo-lista-${prof.id}`}
-                  >
-                    Colar lista
-                  </button>
-                </div>
-
-                {/* Single input mode */}
-                {!listMode[prof.id] && (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Nome do aluno (como aparece no Excel)…"
-                      value={novoAluno[prof.id] ?? ""}
-                      onChange={(e) =>
-                        setNovoAluno((prev) => ({ ...prev, [prof.id]: e.target.value }))
-                      }
-                      onKeyDown={(e) => e.key === "Enter" && handleAddAluno(prof.id)}
-                      className="h-8 text-sm"
-                      data-testid={`input-novo-aluno-${prof.id}`}
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 px-3 shrink-0"
-                      onClick={() => handleAddAluno(prof.id)}
-                      disabled={!novoAluno[prof.id]?.trim() || addAlunoMutation.isPending}
-                      data-testid={`button-add-aluno-${prof.id}`}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* List paste mode */}
-                {listMode[prof.id] && (
-                  <div className="space-y-2">
-                    <textarea
-                      placeholder={"Cole a lista de nomes aqui (um por linha):\n\nJoão da Silva\nMaria Souza\nPedro Alves\n…"}
-                      value={listaTexto[prof.id] ?? ""}
-                      onChange={(e) =>
-                        setListaTexto((prev) => ({ ...prev, [prof.id]: e.target.value }))
-                      }
-                      rows={6}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-                      data-testid={`textarea-lista-alunos-${prof.id}`}
-                    />
-                    {(() => {
-                      const nomes = (listaTexto[prof.id] ?? "")
-                        .split("\n")
-                        .map((n) => n.trim())
-                        .filter(Boolean);
-                      return (
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            {nomes.length > 0
-                              ? `${nomes.length} nome${nomes.length !== 1 ? "s" : ""} detectado${nomes.length !== 1 ? "s" : ""}`
-                              : "Cole os nomes acima, um por linha"}
-                          </span>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              if (nomes.length > 0)
-                                addAlunosLoteMutation.mutate({ profId: prof.id, nomes });
-                            }}
-                            disabled={nomes.length === 0 || addAlunosLoteMutation.isPending}
-                            data-testid={`button-add-lote-${prof.id}`}
-                          >
-                            {addAlunosLoteMutation.isPending ? (
-                              <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                            ) : (
-                              <Plus className="h-3.5 w-3.5 mr-1.5" />
-                            )}
-                            Adicionar {nomes.length > 0 ? `${nomes.length} ` : ""}aluno{nomes.length !== 1 ? "s" : ""}
-                          </Button>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        </Card>
       )}
-
     </div>
   );
 }
