@@ -1603,30 +1603,43 @@ function SessaoView({
                     {/* Main content */}
                     <div className="flex-1 min-w-0 p-3 flex items-start gap-3">
                       <div className="flex-1 min-w-0">
+                        {/* ── Nome na plataforma + badges ── */}
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-sm text-foreground truncate max-w-xs">
+                          <span className="font-semibold text-sm text-foreground">
                             {r.nomePlataforma}
                           </span>
+                          {r.modalidade && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal shrink-0">
+                              {r.modalidade}
+                            </Badge>
+                          )}
                           {r.similaridade != null && r.status !== "nao_encontrado" && r.status !== "ignorado" && (
-                            <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                            <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
                               {r.similaridade}%
                             </span>
                           )}
                         </div>
 
+                        {/* ── Aluno correspondido + professor + check-ins ── */}
                         {r.alunoNomeMatch && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            <span className="text-foreground/70">→ {r.alunoNomeMatch}</span>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <span className="text-xs text-muted-foreground">→</span>
+                            <span className="text-xs font-medium text-foreground">{r.alunoNomeMatch}</span>
                             {profNome && (
-                              <span className="ml-2 font-medium text-primary">· {profNome}</span>
+                              <span className="text-xs font-medium text-primary">· {profNome}</span>
                             )}
                             {parseFloat(r.percentual) > 0 && (
-                              <span className="ml-1 text-muted-foreground">({r.percentual}%)</span>
+                              <span className="text-[11px] text-muted-foreground">({r.percentual}%)</span>
                             )}
-                          </p>
+                            {r.checkins > 0 && (
+                              <span className="text-[11px] text-muted-foreground">
+                                · {r.checkins} check-in{r.checkins !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
                         )}
 
-                        {/* Destinar inline for unmatched */}
+                        {/* ── Destinar inline for unmatched ── */}
                         {r.status === "nao_encontrado" && (
                           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                             <span className="text-xs text-muted-foreground">Destinar para:</span>
@@ -1648,21 +1661,23 @@ function SessaoView({
                         )}
                       </div>
 
-                      {/* Value block */}
-                      <div className="text-right shrink-0 min-w-[80px]">
+                      {/* ── Value block ── */}
+                      <div className="text-right shrink-0 min-w-[90px]">
                         <p className="font-bold text-sm tabular-nums">{fmtVal(r.valor)}</p>
                         {hasSplit ? (
-                          <div className="mt-0.5 text-[11px] space-x-0.5">
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">{fmtVal(r.valorProfessor)}</span>
-                            <span className="text-muted-foreground">/</span>
-                            <span className="text-blue-600 dark:text-blue-400 font-medium tabular-nums">{fmtVal(r.valorArena)}</span>
+                          <div className="mt-0.5 space-y-px">
+                            <div className="text-[11px] text-emerald-600 dark:text-emerald-400 tabular-nums">
+                              Prof: {fmtVal(r.valorProfessor)}
+                            </div>
+                            <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums">
+                              Arena: {fmtVal(r.valorArena)}
+                            </div>
                           </div>
-                        ) : r.status === "nao_encontrado" && profNome === null ? (
-                          <p className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums mt-0.5">{fmtVal(r.valor)} arena</p>
+                        ) : r.status !== "ignorado" ? (
+                          <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums mt-0.5">
+                            Arena: {fmtVal(r.valor)}
+                          </div>
                         ) : null}
-                        {r.checkins > 1 && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{r.checkins}× chk</p>
-                        )}
                       </div>
                     </div>
 
@@ -1885,28 +1900,46 @@ function RelatorioView({
                   <div className="border rounded overflow-hidden">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-xs py-1.5">Aluno</TableHead>
-                          <TableHead className="text-xs py-1.5 text-center">Chk</TableHead>
-                          <TableHead className="text-xs py-1.5 text-right">Total</TableHead>
-                          <TableHead className="text-xs py-1.5 text-right">Prof.</TableHead>
-                          <TableHead className="text-xs py-1.5 text-right">Arena</TableHead>
+                        <TableRow className="bg-muted/40">
+                          <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
+                          <TableHead className="text-xs py-2">Aluno na Arena</TableHead>
+                          <TableHead className="text-xs py-2">Modalidade</TableHead>
+                          <TableHead className="text-xs py-2 text-center">Chk</TableHead>
+                          <TableHead className="text-xs py-2 text-right">Total</TableHead>
+                          <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
+                          <TableHead className="text-xs py-2 text-right">Arena</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {g.registros.map((r) => (
                           <TableRow key={r.id} className="text-xs">
-                            <TableCell className="py-1.5">
-                              {r.alunoNomeMatch ?? r.nomePlataforma}
+                            <TableCell className="py-2 font-medium max-w-[160px]">
+                              <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
                             </TableCell>
-                            <TableCell className="py-1.5 text-center">{r.checkins ?? 1}</TableCell>
-                            <TableCell className="py-1.5 text-right font-mono">
+                            <TableCell className="py-2 max-w-[140px]">
+                              {r.alunoNomeMatch ? (
+                                <span className="block truncate text-emerald-700 dark:text-emerald-400 font-medium" title={r.alunoNomeMatch}>
+                                  {r.alunoNomeMatch}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground italic">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-2 max-w-[120px]">
+                              {r.modalidade ? (
+                                <span className="block truncate text-muted-foreground" title={r.modalidade}>{r.modalidade}</span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-2 text-center tabular-nums">{r.checkins ?? 1}</TableCell>
+                            <TableCell className="py-2 text-right font-mono tabular-nums">
                               {fmtVal(r.valor)}
                             </TableCell>
-                            <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">
+                            <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                               {fmtVal(r.valorProfessor)}
                             </TableCell>
-                            <TableCell className="py-1.5 text-right font-mono text-blue-600 dark:text-blue-400">
+                            <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
                               {fmtVal(r.valorArena)}
                             </TableCell>
                           </TableRow>
