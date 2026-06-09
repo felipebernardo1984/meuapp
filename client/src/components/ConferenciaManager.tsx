@@ -1320,7 +1320,6 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   const gestaoProfessorId = config?.gestaoProfessorId ?? null;
   const pctArenaNum = parseFloat(localPctArena) || 0;
   const pctGestaoNum = parseFloat(localPctGestao) || 0;
-  const pctProfDisplay = Math.max(0, 100 - pctArenaNum - pctGestaoNum);
   const gestaoAtiva = pctGestaoNum > 0;
 
   const save = (patch: Partial<RepasseConfig & { pctArena: string; pctGestao: string }>) =>
@@ -1332,27 +1331,17 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
       gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : gestaoProfessorId,
     });
 
-  const sumOk = Math.round(pctArenaNum + pctGestaoNum + pctProfDisplay) === 100;
-
   return (
     <Card className="border">
       <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
-          <span className={cn(
-            "text-xs font-mono px-2 py-0.5 rounded-full border",
-            sumOk
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
-              : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800"
-          )}>
-            {Math.round(pctArenaNum + pctGestaoNum + pctProfDisplay)}% {sumOk ? "✓" : "≠ 100%"}
-          </span>
         </div>
         <p className="text-[11px] text-muted-foreground -mt-1">
-          Arena + Gestão + Professores = 100% do total recebido. Edite Arena e Gestão; Professores é calculado automaticamente.
+          Defina quanto do total recebido vai para Arena e para Gestão. O restante vai para os professores conforme a % individual de cada um.
         </p>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {/* % Arena */}
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-1.5">% Arena</p>
@@ -1366,7 +1355,6 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
                   const v = e.target.value;
                   const vNum = parseFloat(v) || 0;
                   setLocalPctArena(v);
-                  // auto-adjust gestão so sum stays ≤ 100
                   const maxGestao = Math.max(0, 100 - vNum);
                   if (pctGestaoNum > maxGestao) setLocalPctGestao(String(maxGestao));
                 }}
@@ -1399,15 +1387,6 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
                 data-testid="input-pct-gestao"
               />
               <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
-            </div>
-          </div>
-
-          {/* % Professores — read-only indicator */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Professores</p>
-            <div className="h-9 rounded-md border bg-muted/50 px-3 flex items-center">
-              <span className="text-sm font-semibold tabular-nums">{Math.round(pctProfDisplay)}%</span>
-              <span className="text-[10px] text-muted-foreground ml-1.5">(auto)</span>
             </div>
           </div>
         </div>
