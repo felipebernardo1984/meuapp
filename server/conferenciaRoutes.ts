@@ -209,23 +209,25 @@ function detectValueColumnByContent(
 
 function detectColumns(headers: string[], rows: Array<Record<string, unknown>>): ColMap {
   const nameByHeader = findByHeader(headers, [
+    "colaborador", "visitante",
     "nome", "aluno", "cliente", "name", "usuario", "user", "membro",
     "participante", "employee", "associado", "beneficiario", "titular", "socio",
   ]);
   const valueByHeader = findByHeader(headers, [
-    "valor", "repasse", "value", "amount", "total", "receita",
-    "pagamento", "tarifa", "preco", "custo", "mensalidade", "net", "bruto",
+    "repasse", "pagamento",
+    "valor", "value", "amount", "total", "receita",
+    "tarifa", "preco", "custo", "mensalidade", "net", "bruto",
   ]);
   const dateIdx = findByHeader(headers, [
-    "data", "date", "periodo", "mes", "competencia", "month", "vigencia",
+    "validado", "data", "date", "periodo", "mes", "competencia", "month", "vigencia",
   ]);
   const checkinsIdx = findByHeader(headers, [
     "visita", "checkin", "check-in", "acesso", "session", "frequencia",
     "quantidade", "qtd", "sessions", "visits", "utilizacao", "uso",
   ]);
   const modalidadeIdx = findByHeader(headers, [
-    "plano", "modalidade", "atividade", "tipo", "categoria", "activity",
-    "produto", "servico", "beneficio", "nivel", "pacote", "plan", "classe",
+    "produto", "plano", "modalidade", "atividade", "tipo", "categoria", "activity",
+    "servico", "beneficio", "nivel", "pacote", "plan", "classe",
   ]);
 
   const nameIdx = nameByHeader >= 0 ? nameByHeader : detectNameColumnByContent(headers, rows);
@@ -257,8 +259,9 @@ function parseExcelRows(buffer: Buffer): Array<Record<string, unknown>> {
   if (allRows.length < 2) return [];
 
   const HEADER_KEYWORDS = [
+    "colaborador", "visitante", "validado", "produto",
     "nome", "cpf", "usuario", "cliente", "beneficiario", "titular", "membro",
-    "valor", "repasse", "receita", "tarifa", "preco", "custo",
+    "valor", "repasse", "pagamento", "receita", "tarifa", "preco", "custo",
     "data", "periodo", "competencia", "mes", "vigencia",
     "visita", "checkin", "check-in", "acesso", "frequencia", "sessao",
     "empresa", "plano", "status",
@@ -348,6 +351,30 @@ function parseExcelDate(val: unknown): Date | null {
   const m3 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
   if (m3) return new Date(parseInt(m3[3]), parseInt(m3[2]) - 1, parseInt(m3[1]));
   return null;
+}
+
+/** Parse a date+time value from an Excel cell, preserving time when present.
+ *  Returns a formatted string like "DD/MM/YYYY HH:MM" or "DD/MM/YYYY". */
+function parseExcelDateTimeStr(val: unknown): string {
+  if (val === null || val === undefined || val === "") return "";
+  if (typeof val === "number" && val > 0 && val < 100000) {
+    const days = Math.floor(val);
+    const timeFraction = val - days;
+    const ms = (days - 25569) * 86400 * 1000;
+    const d = new Date(ms);
+    if (isNaN(d.getTime())) return String(val);
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const yyyy = d.getUTCFullYear();
+    const totalSeconds = Math.round(timeFraction * 86400);
+    if (totalSeconds > 0) {
+      const hh = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+      const min = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+      return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+    }
+    return `${dd}/${mm}/${yyyy}`;
+  }
+  return String(val).trim();
 }
 
 /** Parse a monetary value from an Excel cell.
@@ -811,7 +838,7 @@ export function registerConferenciaRoutes(app: Express): void {
 
           const valorNum = parseValor(cols.valueIdx >= 0 ? row[headers[cols.valueIdx]] : 0);
           const valor = String(Math.round(valorNum * 100) / 100);
-          const data = cols.dateIdx >= 0 ? String(row[headers[cols.dateIdx]]) : "";
+          const data = cols.dateIdx >= 0 ? parseExcelDateTimeStr(row[headers[cols.dateIdx]]) : "";
           const checkinsRaw = cols.checkinsIdx >= 0 ? parseInt(String(row[headers[cols.checkinsIdx]])) : 1;
           const checkins = isNaN(checkinsRaw) ? 1 : Math.max(1, checkinsRaw);
 

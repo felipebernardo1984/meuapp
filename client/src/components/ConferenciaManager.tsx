@@ -234,45 +234,40 @@ function ColMapDialog({
   const [colValor, setColValor] = useState(sugestoes.colValor ?? "");
   const [colModalidade, setColModalidade] = useState(sugestoes.colModalidade ?? "");
   const [colData, setColData] = useState(sugestoes.colData ?? "");
-  const [colCheckins, setColCheckins] = useState(sugestoes.colCheckins ?? "");
 
   const NONE = "__nenhuma__";
+
+  const isTotalPass = platform === "totalpass";
+  const isWellhub = platform === "wellhub";
 
   const fields = [
     {
       key: "colNome" as const,
-      label: "Nome do Aluno",
+      label: isTotalPass ? "Nome do Aluno (Colaborador)" : isWellhub ? "Nome do Aluno (Visitante)" : "Nome do Aluno",
       required: true,
       value: colNome,
       set: setColNome,
     },
     {
       key: "colValor" as const,
-      label: "Valor de Pagamento ou Repasse",
+      label: isTotalPass ? "Pagamento (Repasse)" : "Pagamento",
       required: true,
       value: colValor,
       set: setColValor,
     },
     {
       key: "colModalidade" as const,
-      label: "Modalidade ou Plano",
+      label: isTotalPass ? "Modalidade (Plano da academia)" : isWellhub ? "Modalidade (Produto)" : "Modalidade ou Plano",
       required: false,
       value: colModalidade,
       set: setColModalidade,
     },
     {
       key: "colData" as const,
-      label: "Data check-in",
+      label: isTotalPass ? "Data check-in (Validado em)" : isWellhub ? "Data do check-in (Data)" : "Data check-in",
       required: false,
       value: colData,
       set: setColData,
-    },
-    {
-      key: "colCheckins" as const,
-      label: "Visitas / Check-ins",
-      required: false,
-      value: colCheckins,
-      set: setColCheckins,
     },
   ];
 
@@ -346,7 +341,7 @@ function ColMapDialog({
           </Button>
           <Button
             onClick={() =>
-              onConfirm({ colNome, colValor, colModalidade, colData, colCheckins })
+              onConfirm({ colNome, colValor, colModalidade, colData, colCheckins: "" })
             }
             disabled={!canConfirm}
             data-testid="button-colmap-processar"
