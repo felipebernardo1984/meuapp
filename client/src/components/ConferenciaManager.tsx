@@ -230,12 +230,30 @@ function ColMapDialog({
   const { preview, file, platform } = pending;
   const { headers, samples, totalRows, sugestoes } = preview;
 
-  const [colNome, setColNome] = useState(sugestoes.colNome ?? "");
-  const [colValor, setColValor] = useState(sugestoes.colValor ?? "");
-  const [colModalidade, setColModalidade] = useState(sugestoes.colModalidade ?? "");
-  const [colData, setColData] = useState(sugestoes.colData ?? "");
-
   const NONE = "__nenhuma__";
+
+  const PLATFORM_KEYWORDS: Record<string, { nome: string; valor: string; modalidade: string; data: string }> = {
+    totalpass: { nome: "colaborador", valor: "repasse", modalidade: "plano da academia", data: "validado" },
+    wellhub:   { nome: "visitante",   valor: "pagamento", modalidade: "produto",          data: "data"     },
+  };
+
+  function findHeader(keyword: string): string {
+    const kw = keyword.toLowerCase();
+    return headers.find((h) => h.toLowerCase().includes(kw)) ?? "";
+  }
+
+  function bestDefault(keyword: string, sugestao: string | null): string {
+    const found = findHeader(keyword);
+    if (found) return found;
+    return sugestao ?? "";
+  }
+
+  const kws = PLATFORM_KEYWORDS[platform];
+
+  const [colNome, setColNome] = useState(kws ? bestDefault(kws.nome, sugestoes.colNome) : (sugestoes.colNome ?? ""));
+  const [colValor, setColValor] = useState(kws ? bestDefault(kws.valor, sugestoes.colValor) : (sugestoes.colValor ?? ""));
+  const [colModalidade, setColModalidade] = useState(kws ? bestDefault(kws.modalidade, sugestoes.colModalidade) : (sugestoes.colModalidade ?? ""));
+  const [colData, setColData] = useState(kws ? bestDefault(kws.data, sugestoes.colData) : (sugestoes.colData ?? ""));
 
   const fields = [
     {
