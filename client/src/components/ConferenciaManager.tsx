@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -49,6 +49,9 @@ import {
   X,
   Printer,
   CalendarDays,
+  RotateCcw,
+  RotateCw,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -1386,11 +1389,13 @@ function ConfiguracaoView({ arenaId, periodo }: { arenaId: string; periodo: stri
       apiRequest("POST", `/api/conferencia/professores/${profId}/alunos/lote`, { nomes }).then(
         (r) => r.json()
       ),
-    onSuccess: (data: { adicionados: number }, vars) => {
+    onSuccess: (data: { adicionados: number; ignorados?: number }, vars) => {
       qc.invalidateQueries({ queryKey: profQueryKey });
       setListaTexto((prev) => ({ ...prev, [vars.profId]: "" }));
       setListMode((prev) => ({ ...prev, [vars.profId]: false }));
-      toast({ title: `${data.adicionados} aluno${data.adicionados !== 1 ? "s" : ""} adicionado${data.adicionados !== 1 ? "s" : ""}!` });
+      const ignorados = data.ignorados ?? 0;
+      const desc = ignorados > 0 ? `${ignorados} já existia${ignorados !== 1 ? "m" : ""} e foi${ignorados !== 1 ? "ram" : ""} ignorado${ignorados !== 1 ? "s" : ""}` : undefined;
+      toast({ title: `${data.adicionados} aluno${data.adicionados !== 1 ? "s" : ""} adicionado${data.adicionados !== 1 ? "s" : ""}!`, description: desc });
     },
     onError: (err: Error) =>
       toast({
@@ -1420,6 +1425,15 @@ function ConfiguracaoView({ arenaId, periodo }: { arenaId: string; periodo: stri
   const handleAddAluno = (profId: string) => {
     const nome = novoAluno[profId]?.trim();
     if (!nome) return;
+    const prof = professores.find(p => p.id === profId);
+    const jaExiste = prof?.alunos.some(a =>
+      a.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "") ===
+      nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "")
+    );
+    if (jaExiste) {
+      toast({ title: "Aluno já existe", description: `"${nome}" já está na lista deste professor.`, variant: "destructive" });
+      return;
+    }
     addAlunoMutation.mutate({ profId, nome });
   };
 
@@ -1728,6 +1742,10 @@ function SessaoView({
   const [buscaNome, setBuscaNome] = useState("");
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
   const [destinarPara, setDestinarPara] = useState("");
+  const [manuallyLinked, setManuallyLinked] = useState<Set<string>>(new Set());
+  const [histPast, setHistPast] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
+  const [histFuture, setHistFuture] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
+  const prevProfTotal = useRef(-1);
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -1761,8 +1779,36 @@ function SessaoView({
         : `${result.updated} registro${result.updated !== 1 ? "s" : ""} atualizado${result.updated !== 1 ? "s" : ""}${result.dayuseDetected > 0 ? ` · ${result.dayuseDetected} day use detectado${result.dayuseDetected !== 1 ? "s" : ""}` : ""}`;
       toast({ title: "Conferência atualizada", description: msg });
     },
-    onError: () => toast({ title: "Erro ao atualizar", variant: "destructive" }),
+    onError: (err: unknown) => {
+      const isAuth = err instanceof Error && err.message.includes("403");
+      toast({
+        title: isAuth ? "Sessão expirada" : "Erro ao atualizar",
+        description: isAuth ? "Faça login novamente para continuar." : undefined,
+        variant: "destructive",
+      });
+    },
   });
+
+  // Link multiple records with the same nomePlataforma at once (full refresh)
+  const linkProfMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      apiRequest("PUT", `/api/conferencia/registro/${id}`, data).then((r) => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", sessaoId] });
+    },
+    onError: () => toast({ title: "Erro ao vincular", variant: "destructive" }),
+  });
+
+  // Auto-rematch when professors/students are added
+  useEffect(() => {
+    const total = confsProfs.reduce((s, p) => s + p.alunos.length, 0) + confsProfs.length;
+    if (prevProfTotal.current >= 0 && total > prevProfTotal.current && sessao && !rematchMutation.isPending) {
+      const hasPending = sessao.registros.some(r => r.status === "pendente" || r.status === "nao_encontrado");
+      if (hasPending) rematchMutation.mutate();
+    }
+    prevProfTotal.current = total;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confsProfs]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
@@ -1820,18 +1866,56 @@ function SessaoView({
   const totalValor = confirmedValor + pendenteValor + naoEncontradoValor;
   const naoEncontradosCount = registros.filter((r) => r.status === "nao_encontrado").length;
 
+  const snapReg = (r: Registro) => ({
+    status: r.status,
+    studentId: r.studentId,
+    professorId: r.professorId,
+    percentual: r.percentual,
+    categoria: r.categoria,
+    alunoNomeMatch: r.alunoNomeMatch,
+    valorProfessor: r.valorProfessor,
+    valorArena: r.valorArena,
+  });
+
+  const doUpdate = (id: string, data: Record<string, unknown>) => {
+    const cur = registros.find(r => r.id === id);
+    if (cur) {
+      setHistPast(prev => [...prev.slice(-49), { id, snap: snapReg(cur) }]);
+      setHistFuture([]);
+    }
+    updateMutation.mutate({ id, data });
+  };
+
+  const handleUndo = () => {
+    const last = histPast.at(-1);
+    if (!last) return;
+    const cur = registros.find(r => r.id === last.id);
+    if (cur) setHistFuture(prev => [...prev, { id: last.id, snap: snapReg(cur) }]);
+    setHistPast(prev => prev.slice(0, -1));
+    updateMutation.mutate({ id: last.id, data: last.snap });
+  };
+
+  const handleRedo = () => {
+    const nxt = histFuture.at(-1);
+    if (!nxt) return;
+    const cur = registros.find(r => r.id === nxt.id);
+    if (cur) setHistPast(prev => [...prev, { id: nxt.id, snap: snapReg(cur) }]);
+    setHistFuture(prev => prev.slice(0, -1));
+    updateMutation.mutate({ id: nxt.id, data: nxt.snap });
+  };
+
   const handleConfirmar = (r: Registro) => {
-    updateMutation.mutate({ id: r.id, data: { status: "confirmado", salvarAlias: true } });
+    doUpdate(r.id, { status: "confirmado", salvarAlias: true });
   };
 
   const handleIgnorar = (r: Registro) => {
-    updateMutation.mutate({ id: r.id, data: { status: "ignorado" } });
+    doUpdate(r.id, { status: "ignorado" });
   };
 
   const handleDestinar = (registroId: string, professorId: string | null) => {
     const prof = confsProfs.find((p) => p.id === professorId);
     const percentual = prof?.percentualComissao ?? "0";
-    updateMutation.mutate({ id: registroId, data: { professorId, percentual } });
+    doUpdate(registroId, { professorId, percentual });
   };
 
   const handleBulkDestinar = () => {
@@ -1867,24 +1951,48 @@ function SessaoView({
             {" · "}{sessao.totalRegistros} registros
           </p>
         </div>
-        <div className="flex gap-1.5 shrink-0 flex-wrap">
+        <div className="flex gap-1.5 shrink-0 flex-wrap items-center">
           <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs" data-testid="button-export-csv">
             <Download className="h-3.5 w-3.5" /> CSV
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs" data-testid="button-export-pdf">
             <Printer className="h-3.5 w-3.5" /> PDF
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => rematchMutation.mutate()}
-            disabled={rematchMutation.isPending}
-            className="gap-1.5 text-xs"
-            data-testid="button-rematch"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
-            {rematchMutation.isPending ? "Atualizando…" : "Atualizar"}
-          </Button>
+          <div className="flex items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleUndo}
+              disabled={histPast.length === 0 || updateMutation.isPending}
+              className="h-8 w-8"
+              title="Desfazer"
+              data-testid="button-undo"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRedo}
+              disabled={histFuture.length === 0 || updateMutation.isPending}
+              className="h-8 w-8"
+              title="Refazer"
+              data-testid="button-redo"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => rematchMutation.mutate()}
+              disabled={rematchMutation.isPending}
+              className="gap-1.5 text-xs"
+              data-testid="button-rematch"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
+              {rematchMutation.isPending ? "Atualizando…" : "Atualizar"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -2076,6 +2184,12 @@ function SessaoView({
                                 Day Use
                               </Badge>
                             )}
+                            {manuallyLinked.has(r.id) && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 shrink-0 gap-0.5">
+                                <Link2 className="h-2.5 w-2.5" />
+                                Vinculado
+                              </Badge>
+                            )}
                           </div>
                         )}
 
@@ -2167,6 +2281,17 @@ function SessaoView({
                           Vincular
                         </Button>
                       )}
+                      {r.status === "confirmado" && manuallyLinked.has(r.id) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs w-full"
+                          onClick={() => setLinkDialog(r)}
+                          data-testid={`button-editar-vinculo-${r.id}`}
+                        >
+                          Editar
+                        </Button>
+                      )}
                       {(r.status === "pendente" || r.status === "nao_encontrado") && (
                         <Button
                           size="sm"
@@ -2194,11 +2319,28 @@ function SessaoView({
       {linkDialog && (
         <LinkAlunoDialog
           registro={linkDialog}
-          onConfirm={(confAlunoId, salvarAlias) => {
-            updateMutation.mutate({
+          confsProfs={confsProfs}
+          onConfirmProf={(professorId) => {
+            const prof = confsProfs.find(p => p.id === professorId);
+            const percentual = prof?.percentualComissao ?? "0";
+            const pct = parseFloat(percentual);
+            linkProfMutation.mutate({
               id: linkDialog.id,
-              data: { studentId: confAlunoId, status: "confirmado", salvarAlias },
+              data: {
+                professorId,
+                percentual,
+                status: "confirmado",
+                categoria: pct > 0 ? "comissao" : "arena",
+                alunoNomeMatch: linkDialog.nomePlataforma,
+                vincularTodos: true,
+              },
             });
+            setManuallyLinked(prev => new Set([...prev, linkDialog.id]));
+            setLinkDialog(null);
+          }}
+          onConfirmStudent={(confAlunoId, salvarAlias) => {
+            doUpdate(linkDialog.id, { studentId: confAlunoId, status: "confirmado", salvarAlias, vincularTodos: true });
+            setManuallyLinked(prev => new Set([...prev, linkDialog.id]));
             setLinkDialog(null);
           }}
           onClose={() => setLinkDialog(null)}
@@ -2580,29 +2722,32 @@ function RelatorioView({
 
 function LinkAlunoDialog({
   registro,
-  onConfirm,
+  confsProfs,
+  onConfirmProf,
+  onConfirmStudent,
   onClose,
 }: {
   registro: Registro;
-  onConfirm: (studentId: string, salvarAlias: boolean) => void;
+  confsProfs: ConfProfessor[];
+  onConfirmProf: (professorId: string) => void;
+  onConfirmStudent: (studentId: string, salvarAlias: boolean) => void;
   onClose: () => void;
 }) {
+  const [mode, setMode] = useState<"prof" | "aluno">("prof");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [salvarAlias, setSalvarAlias] = useState(true);
+  const [selectedProf, setSelectedProf] = useState<string | null>(null);
 
-  // Search main arena students (they change month to month — no pre-registration needed)
   const { data: arenaAlunos = [] } = useQuery<Array<{ id: string; nome: string; professorId: string | null }>>({
     queryKey: ["/api/alunos"],
   });
-
-  // Professors for name resolution
   const { data: professores = [] } = useQuery<Array<{ id: string; nome: string }>>({
     queryKey: ["/api/professores"],
   });
   const profById = new Map(professores.map((p) => [p.id, p.nome]));
 
-  const filtered = arenaAlunos.filter((a) =>
+  const filteredAlunos = arenaAlunos.filter((a) =>
     a.nome.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -2610,85 +2755,162 @@ function LinkAlunoDialog({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-base">Vincular Aluno</DialogTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Selecione o aluno da arena que corresponde a este nome da plataforma.
-            O vínculo será salvo para reconhecimento automático nos próximos uploads.
-          </p>
+          <DialogTitle className="text-base">Vincular Registro</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {/* Platform name */}
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Nome na plataforma</p>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Nome na plataforma</p>
             <p className="text-sm font-semibold bg-muted/50 rounded px-3 py-2 border">
               {registro.nomePlataforma}
             </p>
           </div>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Buscar aluno cadastrado na arena…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              autoFocus
-              className="pl-8 h-9 text-sm"
-            />
+
+          {/* Mode switcher */}
+          <div className="flex gap-1 border rounded-lg p-1 bg-muted/30">
+            <button
+              onClick={() => setMode("prof")}
+              className={cn("flex-1 text-xs py-1.5 rounded-md font-medium transition-colors", mode === "prof" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+            >
+              Vincular ao Professor
+            </button>
+            <button
+              onClick={() => setMode("aluno")}
+              className={cn("flex-1 text-xs py-1.5 rounded-md font-medium transition-colors", mode === "aluno" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+            >
+              Vincular ao Aluno
+            </button>
           </div>
-          <div className="max-h-56 overflow-y-auto space-y-0.5 border rounded-lg p-1 bg-muted/20">
-            {filtered.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">
-                {search ? "Nenhum aluno encontrado para essa busca" : "Nenhum aluno ativo na arena"}
+
+          {/* Professor selection */}
+          {mode === "prof" && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground">
+                Vincule diretamente a um professor. Todos os registros com o mesmo nome serão atualizados automaticamente.
               </p>
-            ) : (
-              filtered.map((a) => {
-                const profNome = a.professorId ? profById.get(a.professorId) : null;
-                return (
-                  <button
-                    key={a.id}
-                    onClick={() => setSelected(a.id)}
-                    className={cn(
-                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between gap-2",
-                      selected === a.id
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-background hover:shadow-sm"
-                    )}
-                    data-testid={`option-aluno-${a.id}`}
-                  >
-                    <span className="font-medium truncate">{a.nome}</span>
-                    {profNome && (
-                      <span className={cn("text-xs shrink-0", selected === a.id ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                        {profNome}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-          <label className="flex items-start gap-2.5 text-xs cursor-pointer py-1">
-            <input
-              type="checkbox"
-              checked={salvarAlias}
-              onChange={(e) => setSalvarAlias(e.target.checked)}
-              className="mt-0.5 shrink-0"
-            />
-            <span>
-              <span className="font-medium text-foreground">Salvar como apelido</span>
-              <span className="text-muted-foreground"> — reconhecer automaticamente nos próximos uploads</span>
-            </span>
-          </label>
+              {confsProfs.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6 border border-dashed rounded-lg">
+                  Nenhum professor configurado. Adicione professores na aba "Professores".
+                </p>
+              ) : (
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {confsProfs.map((p) => {
+                    const pct = parseFloat(p.percentualComissao || "0");
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedProf(p.id)}
+                        className={cn(
+                          "w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-colors flex items-center justify-between gap-2",
+                          selectedProf === p.id
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted/50 border-border"
+                        )}
+                        data-testid={`option-prof-${p.id}`}
+                      >
+                        <span className="font-medium truncate">{p.nome}</span>
+                        {pct > 0 && (
+                          <span className={cn("text-xs shrink-0 font-medium", selectedProf === p.id ? "text-primary-foreground/80" : "text-emerald-600 dark:text-emerald-400")}>
+                            {p.percentualComissao}%
+                          </span>
+                        )}
+                        {pct === 0 && (
+                          <span className={cn("text-xs shrink-0", selectedProf === p.id ? "text-primary-foreground/60" : "text-muted-foreground")}>
+                            Sem comissão
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Arena student selection */}
+          {mode === "aluno" && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Selecione o aluno cadastrado na arena que corresponde a este registro.
+              </p>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Buscar aluno…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoFocus
+                  className="pl-8 h-9 text-sm"
+                />
+              </div>
+              <div className="max-h-44 overflow-y-auto space-y-0.5 border rounded-lg p-1 bg-muted/20">
+                {filteredAlunos.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">
+                    {search ? "Nenhum aluno encontrado" : "Nenhum aluno ativo na arena"}
+                  </p>
+                ) : (
+                  filteredAlunos.map((a) => {
+                    const profNome = a.professorId ? profById.get(a.professorId) : null;
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => setSelected(a.id)}
+                        className={cn(
+                          "w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between gap-2",
+                          selected === a.id ? "bg-primary text-primary-foreground" : "hover:bg-background hover:shadow-sm"
+                        )}
+                        data-testid={`option-aluno-${a.id}`}
+                      >
+                        <span className="font-medium truncate">{a.nome}</span>
+                        {profNome && (
+                          <span className={cn("text-xs shrink-0", selected === a.id ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                            {profNome}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <label className="flex items-start gap-2.5 text-xs cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={salvarAlias}
+                  onChange={(e) => setSalvarAlias(e.target.checked)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>
+                  <span className="font-medium text-foreground">Salvar como apelido</span>
+                  <span className="text-muted-foreground"> — reconhecer automaticamente nos próximos uploads</span>
+                </span>
+              </label>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>
             Cancelar
           </Button>
-          <Button
-            size="sm"
-            disabled={!selected}
-            onClick={() => selected && onConfirm(selected, salvarAlias)}
-            data-testid="button-confirmar-vinculo"
-          >
-            Vincular Aluno
-          </Button>
+          {mode === "prof" ? (
+            <Button
+              size="sm"
+              disabled={!selectedProf}
+              onClick={() => selectedProf && onConfirmProf(selectedProf)}
+              data-testid="button-confirmar-vinculo-prof"
+            >
+              <Link2 className="h-3.5 w-3.5 mr-1.5" />
+              Vincular ao Professor
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              disabled={!selected}
+              onClick={() => selected && onConfirmStudent(selected, salvarAlias)}
+              data-testid="button-confirmar-vinculo-aluno"
+            >
+              Vincular Aluno
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

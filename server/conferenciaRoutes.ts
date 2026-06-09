@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import * as XLSX from "xlsx";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import {
   conferenciaSessoes,
   conferenciaRegistros,
@@ -522,6 +522,15 @@ export function registerConferenciaRoutes(app: Express): void {
     const { nome } = req.body as { nome: string };
     if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
 
+    // Duplicate check
+    const existingList = await db
+      .select({ nome: conferenciaProfessorAlunos.nome })
+      .from(conferenciaProfessorAlunos)
+      .where(and(eq(conferenciaProfessorAlunos.professorId, req.params.id), eq(conferenciaProfessorAlunos.arenaId, arenaId)));
+    const normNovo = normalizeNome(nome.trim());
+    const dup = existingList.find(a => normalizeNome(a.nome) === normNovo);
+    if (dup) return res.status(409).json({ message: `"${dup.nome}" já existe nesta lista.` });
+
     const [aluno] = await db
       .insert(conferenciaProfessorAlunos)
       .values({ arenaId, professorId: req.params.id, nome: nome.trim() })
@@ -545,17 +554,29 @@ export function registerConferenciaRoutes(app: Express): void {
         return res.status(400).json({ message: "Nenhum nome válido encontrado" });
       }
       const professorId = req.params.id;
+
+      // Skip duplicates
+      const existingInLote = await db
+        .select({ nome: conferenciaProfessorAlunos.nome })
+        .from(conferenciaProfessorAlunos)
+        .where(and(eq(conferenciaProfessorAlunos.professorId, professorId), eq(conferenciaProfessorAlunos.arenaId, arenaId)));
+      const existingNorms = new Set(existingInLote.map(a => normalizeNome(a.nome)));
+      const novos = validos.filter(n => !existingNorms.has(normalizeNome(n)));
+      const ignorados = validos.length - novos.length;
+
+      if (novos.length === 0) return res.json({ adicionados: 0, ignorados });
+
       // Insert in batches of 50 to avoid DB limits
       let total = 0;
       const batchSize = 50;
-      for (let i = 0; i < validos.length; i += batchSize) {
-        const batch = validos.slice(i, i + batchSize);
+      for (let i = 0; i < novos.length; i += batchSize) {
+        const batch = novos.slice(i, i + batchSize);
         await db
           .insert(conferenciaProfessorAlunos)
           .values(batch.map((nome) => ({ arenaId, professorId, nome })));
         total += batch.length;
       }
-      return res.json({ adicionados: total });
+      return res.json({ adicionados: total, ignorados });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao inserir alunos";
       console.error("[Conferência] Lote error:", err);
@@ -1160,7 +1181,7 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(403).json({ message: "Acesso negado" });
     }
 
-    const { studentId, status, categoria, percentual, professorId, observacao, salvarAlias } =
+    const { studentId, status, categoria, percentual, professorId, observacao, salvarAlias, vincularTodos, alunoNomeMatch: alunoNomeMatchBody } =
       req.body as Record<string, unknown>;
 
     const [registro] = await db
@@ -1181,6 +1202,7 @@ export function registerConferenciaRoutes(app: Express): void {
       valorProfessor: newValorProf,
       valorArena: newValorArena,
       observacao: observacao !== undefined ? observacao : registro.observacao,
+      ...(alunoNomeMatchBody !== undefined && { alunoNomeMatch: String(alunoNomeMatchBody) }),
     };
 
     const profsDb = await db
@@ -1268,6 +1290,37 @@ export function registerConferenciaRoutes(app: Express): void {
           studentId: String(updates.studentId),
           alias: registro.nomePlataforma,
         });
+      }
+    }
+
+    // Auto-link other records with same nomePlataforma when vincularTodos is requested
+    if (vincularTodos && updated) {
+      const normNomePlat = normalizeNome(registro.nomePlataforma);
+      const sameNameRegs = await db
+        .select()
+        .from(conferenciaRegistros)
+        .where(
+          and(
+            eq(conferenciaRegistros.sessaoId, registro.sessaoId),
+            inArray(conferenciaRegistros.status, ["pendente", "nao_encontrado"])
+          )
+        );
+      const toLink = sameNameRegs.filter(r => normalizeNome(r.nomePlataforma) === normNomePlat);
+      if (toLink.length > 0) {
+        const updPct = parseFloat(String(updated.percentual || "0")) / 100;
+        await Promise.all(toLink.map(r => {
+          const v = parseFloat(r.valor || "0");
+          return db.update(conferenciaRegistros).set({
+            status: "confirmado",
+            professorId: updated.professorId,
+            percentual: updated.percentual,
+            valorProfessor: String(Math.round(v * updPct * 100) / 100),
+            valorArena: String(Math.round(v * (1 - updPct) * 100) / 100),
+            categoria: updated.categoria,
+            alunoNomeMatch: updated.alunoNomeMatch,
+            studentId: updated.studentId,
+          }).where(eq(conferenciaRegistros.id, r.id));
+        }));
       }
     }
 
