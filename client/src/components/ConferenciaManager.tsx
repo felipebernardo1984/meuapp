@@ -2695,14 +2695,71 @@ function RelatorioView({
             Breakdown por Professor
           </h2>
           {profGroups.map(([key, g]) => {
+            const regulares = g.registros.filter((r) => r.categoria === "comissao");
+            const atribuidos = g.registros.filter((r) => r.categoria !== "comissao");
+
             const subtotal = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-            const comissao = g.registros.reduce(
-              (s, r) => s + parseFloat(r.valorProfessor || "0"),
-              0
-            );
+            const comissao = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
             const arena = g.registros.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
             const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
             const pct = g.registros[0]?.percentual ?? "0";
+
+            const renderTabela = (rows: Registro[]) => (
+              <div className="border rounded overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
+                      <TableHead className="text-xs py-2">Modalidade</TableHead>
+                      <TableHead className="text-xs py-2">Data/Hora</TableHead>
+                      <TableHead className="text-xs py-2 text-right">Total</TableHead>
+                      <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
+                      <TableHead className="text-xs py-2 text-right">Arena</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...rows]
+                      .sort((a, b) => {
+                        const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
+                        return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
+                      })
+                      .map((r) => (
+                        <TableRow key={r.id} className="text-xs">
+                          <TableCell className="py-2 font-medium max-w-[160px]">
+                            <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {r.modalidade ? (
+                                <span className="text-xs font-medium">{r.modalidade}</span>
+                              ) : (
+                                <span className="text-muted-foreground italic text-xs">—</span>
+                              )}
+                              {r.categoria === "dayuse" && (
+                                <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                  Day Use
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
+                            {fmtData(r.data)}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums">
+                            {fmtVal(r.valor)}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                            {fmtVal(r.valorProfessor)}
+                          </TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
+                            {fmtVal(r.valorArena)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            );
 
             return (
               <Card key={key}>
@@ -2740,87 +2797,46 @@ function RelatorioView({
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {[
-                      {
-                        label: "Receita",
-                        val: fmtVal(String(subtotal)),
-                        color: "text-foreground",
-                      },
-                      {
-                        label: "Prof.",
-                        val: fmtVal(String(comissao)),
-                        color: "text-emerald-600 dark:text-emerald-400",
-                      },
-                      {
-                        label: "Arena",
-                        val: fmtVal(String(arena)),
-                        color: "text-blue-600 dark:text-blue-400",
-                      },
+                      { label: "Receita", val: fmtVal(String(subtotal)), color: "text-foreground" },
+                      { label: "Prof.", val: fmtVal(String(comissao)), color: "text-emerald-600 dark:text-emerald-400" },
+                      { label: "Arena", val: fmtVal(String(arena)), color: "text-blue-600 dark:text-blue-400" },
                     ].map((i) => (
-                      <div
-                        key={i.label}
-                        className="bg-muted/40 rounded-md px-2.5 py-1.5 text-center"
-                      >
+                      <div key={i.label} className="bg-muted/40 rounded-md px-2.5 py-1.5 text-center">
                         <div className={cn("font-bold text-sm", i.color)}>{i.val}</div>
                         <div className="text-xs text-muted-foreground">{i.label}</div>
                       </div>
                     ))}
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0 pb-3 px-4">
-                  <div className="border rounded overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/40">
-                          <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
-                          <TableHead className="text-xs py-2">Modalidade</TableHead>
-                          <TableHead className="text-xs py-2">Data/Hora</TableHead>
-                          <TableHead className="text-xs py-2 text-right">Total</TableHead>
-                          <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
-                          <TableHead className="text-xs py-2 text-right">Arena</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {[...g.registros]
-                          .sort((a, b) => {
-                            const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
-                            return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
-                          })
-                          .map((r) => (
-                          <TableRow key={r.id} className="text-xs">
-                            <TableCell className="py-2 font-medium max-w-[160px]">
-                              <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
-                            </TableCell>
-                            <TableCell className="py-2">
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {r.modalidade ? (
-                                  <span className="text-xs font-medium">{r.modalidade}</span>
-                                ) : (
-                                  <span className="text-muted-foreground italic text-xs">—</span>
-                                )}
-                                {r.categoria === "dayuse" && (
-                                  <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                    Day Use
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
-                              {fmtData(r.data)}
-                            </TableCell>
-                            <TableCell className="py-2 text-right font-mono tabular-nums">
-                              {fmtVal(r.valor)}
-                            </TableCell>
-                            <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                              {fmtVal(r.valorProfessor)}
-                            </TableCell>
-                            <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
-                              {fmtVal(r.valorArena)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                <CardContent className="pt-0 pb-3 px-4 space-y-3">
+                  {/* Alunos regulares (comissão natural) */}
+                  {regulares.length > 0 && (
+                    <div>
+                      {atribuidos.length > 0 && (
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                          Alunos · {regulares.length}
+                        </p>
+                      )}
+                      {renderTabela(regulares)}
+                    </div>
+                  )}
+
+                  {/* Atribuídos (dayuse, avulso, etc.) */}
+                  {atribuidos.length > 0 && (
+                    <div className="pt-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+                          Atribuídos · {atribuidos.length}
+                        </p>
+                        <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
+                      </div>
+                      {renderTabela(atribuidos)}
+                    </div>
+                  )}
+
+                  {/* Fallback: nenhum dos dois (não deveria acontecer) */}
+                  {regulares.length === 0 && atribuidos.length === 0 && renderTabela(g.registros)}
                 </CardContent>
               </Card>
             );
