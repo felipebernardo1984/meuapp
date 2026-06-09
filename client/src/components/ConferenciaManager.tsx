@@ -1737,8 +1737,8 @@ function SessaoView({
   onVoltar: () => void;
 }) {
   const [tab, setTab] = useState<"conferencia" | "relatorio">("conferencia");
-  const [filtroStatus, setFiltroStatus] = useState("todos");
-  const [filtroProfessor, setFiltroProfessor] = useState("todos");
+  const [filtroStatus, setFiltroStatus] = useState("");
+  const [filtroProfessor, setFiltroProfessor] = useState("");
   const [buscaNome, setBuscaNome] = useState("");
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
   const [destinarPara, setDestinarPara] = useState("");
@@ -1849,8 +1849,8 @@ function SessaoView({
 
   const filtered = registros
     .filter((r) => {
-      if (filtroStatus !== "todos" && r.status !== filtroStatus) return false;
-      if (filtroProfessor !== "todos" && r.professorId !== filtroProfessor) return false;
+      if (filtroStatus && r.status !== filtroStatus) return false;
+      if (filtroProfessor && r.professorId !== filtroProfessor) return false;
       if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
       return true;
     })
@@ -1958,41 +1958,43 @@ function SessaoView({
           <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs" data-testid="button-export-pdf">
             <Printer className="h-3.5 w-3.5" /> PDF
           </Button>
-          <div className="flex items-center gap-0.5">
+          <div className="flex border rounded-md overflow-hidden divide-x text-muted-foreground">
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               onClick={handleUndo}
               disabled={histPast.length === 0 || updateMutation.isPending}
-              className="h-8 w-8"
-              title="Desfazer"
+              className="rounded-none h-8 px-2.5 gap-1 text-xs border-0"
+              title="Desfazer última ação"
               data-testid="button-undo"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="h-3 w-3" />
+              <span className="hidden sm:inline">Voltar</span>
             </Button>
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               onClick={handleRedo}
               disabled={histFuture.length === 0 || updateMutation.isPending}
-              className="h-8 w-8"
+              className="rounded-none h-8 px-2.5 gap-1 text-xs border-0"
               title="Refazer"
               data-testid="button-redo"
             >
-              <RotateCw className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => rematchMutation.mutate()}
-              disabled={rematchMutation.isPending}
-              className="gap-1.5 text-xs"
-              data-testid="button-rematch"
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
-              {rematchMutation.isPending ? "Atualizando…" : "Atualizar"}
+              <RotateCw className="h-3 w-3" />
+              <span className="hidden sm:inline">Refazer</span>
             </Button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => rematchMutation.mutate()}
+            disabled={rematchMutation.isPending}
+            className="gap-1.5 text-xs"
+            data-testid="button-rematch"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
+            {rematchMutation.isPending ? "Atualizando…" : "Atualizar"}
+          </Button>
         </div>
       </div>
 
@@ -2087,12 +2089,12 @@ function SessaoView({
                 data-testid="input-busca-nome"
               />
             </div>
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+            <Select value={filtroStatus} onValueChange={(v) => setFiltroStatus(v === "__all__" ? "" : v)}>
               <SelectTrigger className="h-8 text-sm w-36" data-testid="select-filtro-status">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="__all__">Todos os status</SelectItem>
                 <SelectItem value="confirmado">✓ Confirmados</SelectItem>
                 <SelectItem value="pendente">~ Possíveis</SelectItem>
                 <SelectItem value="nao_encontrado">✗ Não encontrados</SelectItem>
@@ -2100,12 +2102,12 @@ function SessaoView({
               </SelectContent>
             </Select>
             {filteredProfs.length > 0 && (
-              <Select value={filtroProfessor} onValueChange={setFiltroProfessor}>
+              <Select value={filtroProfessor} onValueChange={(v) => setFiltroProfessor(v === "__all__" ? "" : v)}>
                 <SelectTrigger className="h-8 text-sm w-40" data-testid="select-filtro-professor">
                   <SelectValue placeholder="Professores" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="__all__">Todos os professores</SelectItem>
                   {filteredProfs.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
                   ))}
@@ -2201,21 +2203,27 @@ function SessaoView({
                           </div>
                         )}
 
-                        {/* ── Destinar inline for unmatched ── */}
-                        {r.status === "nao_encontrado" && (
+                        {/* ── Destinar / Realocar inline ── */}
+                        {(r.status === "nao_encontrado" || r.status === "confirmado") && confsProfs.length > 0 && (
                           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                            <span className="text-xs text-muted-foreground">Destinar para:</span>
+                            <span className="text-xs text-muted-foreground">
+                              {r.status === "confirmado" ? "Realocar para:" : "Destinar para:"}
+                            </span>
                             <Select
-                              value={r.professorId ?? "__none__"}
-                              onValueChange={(v) => handleDestinar(r.id, v === "__none__" || v === "arena" ? null : v)}
+                              value={r.professorId ?? "arena"}
+                              onValueChange={(v) => handleDestinar(r.id, v === "arena" ? null : v)}
                             >
                               <SelectTrigger className="h-6 text-xs w-44 py-0" data-testid={`select-destinar-${r.id}`}>
                                 <SelectValue placeholder="Professor ou arena…" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="arena">Arena (sem comissão)</SelectItem>
+                                <SelectItem value="arena">
+                                  Arena {!r.professorId && r.status === "confirmado" ? "(atual)" : "(sem comissão)"}
+                                </SelectItem>
                                 {confsProfs.map((p) => (
-                                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` (${p.percentualComissao}%)` : ""}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>

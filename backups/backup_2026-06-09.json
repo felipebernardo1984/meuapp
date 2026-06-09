@@ -1,0 +1,36 @@
+{
+  "createdAt": "2026-06-09T01:36:05.922Z",
+  "arenas": [
+    {
+      "id": "87ce72f1-b152-479c-80e7-beb25626644b",
+      "name": "Arena Padrão",
+      "subscriptionPlan": "premium",
+      "gestorLogin": "333",
+      "gestorSenha": "333",
+      "gestorNome": null,
+      "gestorCpf": null,
+      "gestorEmail": null,
+      "gestorTelefone": null,
+      "subscriptionStartDate": "08/06/2026",
+      "subscriptionValue": "R$ 199,00",
+      "subscriptionStatus": "Ativo",
+      "nextBillingDate": "15/06/2026",
+      "statusConta": "ativo",
+      "trialExpiraEm": null,
+      "endereco": null,
+      "urlAgenda": null,
+      "createdAt": "2026-06-08T00:54:34.881Z",
+      "updatedAt": "2026-06-08T00:54:34.881Z"
+    }
+  ],
+  "plans": [],
+  "teachers": [],
+  "students": [],
+  "checkins": [],
+  "payments": [],
+  "charges": [],
+  "despesas": [],
+  "turmas": [],
+  "turmaAlunos": [],
+  "recursos": []
+}
