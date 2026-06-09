@@ -1287,27 +1287,12 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
     queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
   });
 
-  const [localPctArena, setLocalPctArena] = useState<string>("100");
   const [localPctGestao, setLocalPctGestao] = useState<string>("0");
 
-  // Auto-init: when config loads, seed from stored values OR auto-detect from professors
   useEffect(() => {
     if (config === undefined) return;
-    const storedArena = parseFloat(config.pctArena) || 0;
-    const storedGestao = parseFloat(config.pctGestao ?? "0") || 0;
-    // If still at default (100/0) and professors have commission configured, auto-suggest split
-    if (storedArena === 100 && storedGestao === 0 && professores.length > 0) {
-      const avgProf = professores.reduce((s, p) => s + (parseFloat(p.percentualComissao) || 0), 0) / professores.length;
-      if (avgProf > 0 && avgProf < 100) {
-        const suggestArena = Math.round(100 - avgProf);
-        setLocalPctArena(String(suggestArena));
-        setLocalPctGestao("0");
-        return;
-      }
-    }
-    setLocalPctArena(String(storedArena));
-    setLocalPctGestao(String(storedGestao));
-  }, [config, professores.length]);
+    setLocalPctGestao(String(parseFloat(config.pctGestao ?? "0") || 0));
+  }, [config]);
 
   const saveMutation = useMutation({
     mutationFn: (vals: RepasseConfig & { periodo: string }) =>
@@ -1318,14 +1303,13 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
 
   const gestaoTipo = config?.gestaoTipo ?? "caixa";
   const gestaoProfessorId = config?.gestaoProfessorId ?? null;
-  const pctArenaNum = parseFloat(localPctArena) || 0;
   const pctGestaoNum = parseFloat(localPctGestao) || 0;
   const gestaoAtiva = pctGestaoNum > 0;
 
-  const save = (patch: Partial<RepasseConfig & { pctArena: string; pctGestao: string }>) =>
+  const save = (patch: Partial<RepasseConfig & { pctGestao: string }>) =>
     saveMutation.mutate({
       periodo,
-      pctArena: patch.pctArena ?? localPctArena,
+      pctArena: "0",
       pctGestao: patch.pctGestao ?? localPctGestao,
       gestaoTipo: patch.gestaoTipo ?? gestaoTipo,
       gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : gestaoProfessorId,
@@ -1338,57 +1322,31 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
           <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
         </div>
         <p className="text-[11px] text-muted-foreground -mt-1">
-          Defina quanto do total recebido vai para Arena e para Gestão. O restante vai para os professores conforme a % individual de cada um.
+          Defina a % do total recebido que vai para a Gestão. O restante, após as comissões dos professores, fica para a Arena.
         </p>
 
-        <div className="grid grid-cols-2 gap-2">
-          {/* % Arena */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Arena</p>
-            <div className="relative">
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={localPctArena}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  const vNum = parseFloat(v) || 0;
-                  setLocalPctArena(v);
-                  const maxGestao = Math.max(0, 100 - vNum);
-                  if (pctGestaoNum > maxGestao) setLocalPctGestao(String(maxGestao));
-                }}
-                onBlur={() => save({ pctArena: localPctArena, pctGestao: localPctGestao })}
-                className="pr-7 h-9"
-                data-testid="input-pct-arena"
-              />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
-            </div>
-          </div>
-
-          {/* % Gestão */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Gestão</p>
+        <div className="flex items-end gap-3">
+          <div className="w-40">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Gestão (do total recebido)</p>
             <div className="relative">
               <Input
                 type="number"
                 min="0"
                 max="100"
                 value={localPctGestao}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  const vNum = parseFloat(v) || 0;
-                  setLocalPctGestao(v);
-                  const maxArena = Math.max(0, 100 - vNum);
-                  if (pctArenaNum > maxArena) setLocalPctArena(String(maxArena));
-                }}
-                onBlur={() => save({ pctArena: localPctArena, pctGestao: localPctGestao })}
+                onChange={(e) => setLocalPctGestao(e.target.value)}
+                onBlur={() => save({ pctGestao: localPctGestao })}
                 className="pr-7 h-9"
                 data-testid="input-pct-gestao"
               />
               <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
             </div>
           </div>
+          <p className="text-[11px] text-muted-foreground pb-2">
+            {pctGestaoNum === 0
+              ? "Nenhuma taxa de gestão configurada."
+              : `${pctGestaoNum}% do total vai para gestão; a arena recebe o restante após comissões.`}
+          </p>
         </div>
 
         {gestaoAtiva && (
@@ -2018,22 +1976,19 @@ function SessaoView({
   const totalValor = confirmedValor + pendenteValor + naoEncontradoValor;
   const naoEncontradosCount = registros.filter((r) => r.status === "nao_encontrado").length;
 
-  const pctArenaNum = repasseConfig ? (parseFloat(repasseConfig.pctArena) || 0) : 100;
   const pctGestaoNum = repasseConfig ? (parseFloat(repasseConfig.pctGestao ?? "0") || 0) : 0;
-  const totalSplitConfig = pctArenaNum + pctGestaoNum;
   const gestaoAtiva = pctGestaoNum > 0;
   const gestaoNome =
     repasseConfig?.gestaoTipo === "professor" && repasseConfig.gestaoProfessorId
       ? (confsProfs.find((p) => p.id === repasseConfig.gestaoProfessorId)?.nome ?? "Gestão")
       : "Gestão";
 
+  // pctGestao = % of the total received → gestão gets that % of total; arena = total − prof − gestão
   const calcDisplayValores = (r: Registro) => {
     const v = parseFloat(r.valor || "0");
     const vProf = parseFloat(r.valorProfessor || "0");
-    const remaining = v - vProf;
-    if (!gestaoAtiva || totalSplitConfig <= 0) return { vArena: remaining, vGestao: 0 };
-    const vArena = remaining * (pctArenaNum / totalSplitConfig);
-    const vGestao = remaining - vArena;
+    const vGestao = gestaoAtiva ? v * (pctGestaoNum / 100) : 0;
+    const vArena = v - vProf - vGestao;
     return { vArena, vGestao };
   };
 
@@ -2632,9 +2587,7 @@ function RelatorioView({
     enabled: !!periodo,
   });
 
-  const pctArenaNum = repasseCfg ? (parseFloat(repasseCfg.pctArena) || 0) : 100;
   const pctGestaoNum = repasseCfg ? (parseFloat(repasseCfg.pctGestao ?? "0") || 0) : 0;
-  const totalSplitCfg = pctArenaNum + pctGestaoNum;
 
   const confirmados = registros.filter((r) => r.status === "confirmado");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
@@ -2642,9 +2595,9 @@ function RelatorioView({
     (s, r) => s + parseFloat(r.valorProfessor || "0"),
     0
   );
-  const totalArenaRaw = confirmados.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const totalGestao = totalSplitCfg > 0 ? totalArenaRaw * (pctGestaoNum / totalSplitCfg) : 0;
-  const totalArena = totalArenaRaw - totalGestao;
+  // gestão = pctGestao% of total received; arena = total − prof − gestão
+  const totalGestao = pctGestaoNum > 0 ? totalRecebido * (pctGestaoNum / 100) : 0;
+  const totalArena = totalRecebido - totalProfessores - totalGestao;
   const totalCheckins = confirmados.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const naoEncontrados = registros.filter((r) => r.status === "nao_encontrado");
 
@@ -2684,7 +2637,7 @@ function RelatorioView({
             val: fmtVal(String(totalArena)),
             icon: Building2,
             color: "text-blue-600 dark:text-blue-400",
-            sub: pctArenaNum > 0 ? `${pctArenaNum}% do total` : null,
+            sub: totalRecebido > 0 ? `${Math.round(totalArena / totalRecebido * 100)}% do total` : null,
           },
           {
             label: "Gestor",
