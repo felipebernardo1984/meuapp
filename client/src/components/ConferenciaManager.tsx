@@ -1061,7 +1061,6 @@ function MesView({
       {/* Header */}
       <div>
         <h1 className="text-lg font-bold text-foreground">{mesLabel}</h1>
-        <p className="text-xs text-muted-foreground">TotalPass & Wellhub · professores e arquivos do mês</p>
       </div>
 
       {/* Column mapping dialog — shown before upload */}
