@@ -470,22 +470,24 @@ export function registerConferenciaRoutes(app: Express): void {
       .select()
       .from(conferenciaRepasseConfig)
       .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)));
-    res.json(config ?? { pctArena: "100", gestaoTipo: "caixa", gestaoProfessorId: null });
+    res.json(config ?? { pctArena: "100", pctGestao: "0", gestaoTipo: "caixa", gestaoProfessorId: null });
   });
 
   // PUT /api/conferencia/repasse-config
   app.put("/api/conferencia/repasse-config", async (req, res) => {
     const arenaId = req.session.arenaId;
     if (!arenaId || req.session.userType !== "gestor") return res.status(403).json({ message: "Acesso negado" });
-    const { periodo, pctArena, gestaoTipo, gestaoProfessorId } = req.body as {
+    const { periodo, pctArena, pctGestao, gestaoTipo, gestaoProfessorId } = req.body as {
       periodo: string;
       pctArena: string;
+      pctGestao: string;
       gestaoTipo: string;
       gestaoProfessorId: string | null;
     };
     if (!periodo) return res.status(400).json({ message: "periodo obrigatório" });
     const vals = {
       pctArena: String(pctArena ?? "100"),
+      pctGestao: String(pctGestao ?? "0"),
       gestaoTipo: gestaoTipo ?? "caixa",
       gestaoProfessorId: gestaoProfessorId ?? null,
     };
