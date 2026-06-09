@@ -2618,7 +2618,9 @@ function RelatorioView({
     (s, r) => s + parseFloat(r.valorProfessor || "0"),
     0
   );
-  const totalArena = confirmados.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const totalArenaRaw = confirmados.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const totalGestao = totalArenaRaw * (pctGestaoNum / 100);
+  const totalArena = totalArenaRaw - totalGestao;
   const totalCheckins = confirmados.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const naoEncontrados = registros.filter((r) => r.status === "nao_encontrado");
 
@@ -2662,8 +2664,8 @@ function RelatorioView({
             color: "text-blue-600 dark:text-blue-400",
           },
           {
-            label: "% Gestor",
-            val: `${pctGestaoNum}%`,
+            label: "Gestor",
+            val: fmtVal(String(totalGestao)),
             icon: Percent,
             color: "text-violet-600 dark:text-violet-400",
           },
