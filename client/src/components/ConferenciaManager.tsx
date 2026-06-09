@@ -891,7 +891,6 @@ function MesView({
   onVoltar: () => void;
   onSelectSessao: (id: string) => void;
 }) {
-  const [mesTab, setMesTab] = useState<"arquivos" | "professores">("arquivos");
   const [dragging, setDragging] = useState(false);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -1049,40 +1048,16 @@ function MesView({
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-landing">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-lg font-bold text-foreground">{mesLabel}</h1>
-          <p className="text-xs text-muted-foreground">Conferência TotalPass & Wellhub</p>
+          <h1 className="text-lg font-bold text-foreground">Conferência — {mesLabel}</h1>
+          <p className="text-xs text-muted-foreground">TotalPass & Wellhub · professores e arquivos do mês</p>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 border-b">
-        {(
-          [
-            { key: "arquivos", label: "Arquivos" },
-            { key: "professores", label: "Professores" },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setMesTab(t.key)}
-            className={cn(
-              "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-              mesTab === t.key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-            data-testid={`tab-mes-${t.key}`}
-          >
-            {t.label}
-          </button>
-        ))}
       </div>
 
       {/* Column mapping dialog — shown before upload */}
@@ -1094,195 +1069,194 @@ function MesView({
         />
       )}
 
-      {/* Arquivos tab */}
-      {mesTab === "arquivos" && (
-        <div className="space-y-4">
+      {/* ── Professores (first) ─────────────────────────────────────────── */}
+      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />
+
+      {/* ── Arquivos (below) ────────────────────────────────────────────── */}
+      <div className="border-t pt-5 space-y-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground mb-0.5">Arquivos do mês</p>
+          <p className="text-xs text-muted-foreground mb-3">
+            Arraste o Excel do TotalPass ou Wellhub referente a <strong>{mesLabel}</strong>.
+            As colunas serão mapeadas antes de processar.
+          </p>
+
           {/* Upload zone */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-2">
-              Arraste o Excel do TotalPass ou Wellhub referente a{" "}
-              <strong>{mesLabel}</strong>. Você poderá indicar quais colunas correspondem
-              a cada campo antes de processar.
-            </p>
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragging(false);
-                stageFiles(Array.from(e.dataTransfer.files));
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              stageFiles(Array.from(e.dataTransfer.files));
+            }}
+            onClick={() => fileRef.current?.click()}
+            data-testid="upload-zone-conferir"
+            className={cn(
+              "border-2 border-dashed rounded-lg px-4 py-7 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
+              dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"
+            )}
+          >
+            <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
+            <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
+            <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                stageFiles(Array.from(e.target.files ?? []));
+                e.target.value = "";
               }}
-              onClick={() => fileRef.current?.click()}
-              data-testid="upload-zone-conferir"
-              className={cn(
-                "border-2 border-dashed rounded-lg px-4 py-8 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
-                dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"
-              )}
-            >
-              <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
-              <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
-              <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xlsx,.xls"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  stageFiles(Array.from(e.target.files ?? []));
-                  e.target.value = "";
-                }}
-              />
-            </div>
-
-            {/* Staged files — waiting to be processed */}
-            {stagedFiles.length > 0 && (
-              <div className="space-y-1.5 mt-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Arquivos selecionados — clique em Processar para enviar
-                </p>
-                {stagedFiles.map((file) => {
-                  const platform = detectPlatformFromFilename(file.name) || "outro";
-                  return (
-                    <div
-                      key={file.name}
-                      className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
-                    >
-                      <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="truncate flex-1 text-sm">{file.name}</span>
-                      <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(platform)}</Badge>
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="h-7 px-3 text-xs shrink-0"
-                        disabled={isPreviewing || isUploading}
-                        onClick={() => processStagedFile(file)}
-                        data-testid={`button-processar-${file.name}`}
-                      >
-                        {isPreviewing ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Processar"}
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeStagedFile(file)}
-                        data-testid={`button-remover-staged-${file.name}`}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Processing / done / error status */}
-            {uploadingFiles.length > 0 && (
-              <div className="space-y-1.5 mt-2">
-                {uploadingFiles.map((f) => (
-                  <div
-                    key={f.name}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
-                      f.status === "processing" && "bg-muted",
-                      f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
-                      f.status === "error" && "bg-red-50 dark:bg-red-950/40"
-                    )}
-                  >
-                    {f.status === "processing" && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
-                    {f.status === "done" && <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
-                    {f.status === "error" && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
-                    <span className="truncate flex-1">{f.name}</span>
-                    <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(f.platform || "outro")}</Badge>
-                    {f.status === "error" && f.error && (
-                      <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
-                    )}
-                    {f.status === "done" && f.debug && (
-                      <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
-                        nome: <strong>{f.debug.nameCol ?? "?"}</strong> · valor:{" "}
-                        <strong>{f.debug.valueCol ?? "?"}</strong>
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            />
           </div>
 
-          {/* Sessions for this month */}
-          {isLoading ? (
-            <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
-          ) : mesSessoes.length > 0 ? (
-            <div className="space-y-2">
+          {/* Staged files — waiting to be processed */}
+          {stagedFiles.length > 0 && (
+            <div className="space-y-1.5 mt-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Arquivos de {mesLabel}
+                Arquivos selecionados — clique em Processar para enviar
               </p>
-              {mesSessoes.map((s) => (
-                <Card
-                  key={s.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow border"
-                  onClick={() => onSelectSessao(s.id)}
-                  data-testid={`sessao-card-${s.id}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <FileSpreadsheet className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            {plataformaLabel(s.plataforma)}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle className="h-3 w-3" /> {s.encontrados} encontrados
-                          </span>
-                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                            <AlertCircle className="h-3 w-3" /> {s.possiveis} possíveis
-                          </span>
-                          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                            <XCircle className="h-3 w-3" /> {s.naoEncontrados} não encontrados
-                          </span>
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {s.totalRegistros} registros ·{" "}
-                            {new Date(s.criadoEm).toLocaleDateString("pt-BR")}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteMutation.mutate(s.id);
-                          }}
-                          data-testid={`button-delete-sessao-${s.id}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {stagedFiles.map((file) => {
+                const platform = detectPlatformFromFilename(file.name) || "outro";
+                return (
+                  <div
+                    key={file.name}
+                    className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="truncate flex-1 text-sm">{file.name}</span>
+                    <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(platform)}</Badge>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-7 px-3 text-xs shrink-0"
+                      disabled={isPreviewing || isUploading}
+                      onClick={() => processStagedFile(file)}
+                      data-testid={`button-processar-${file.name}`}
+                    >
+                      {isPreviewing ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Processar"}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeStagedFile(file)}
+                      data-testid={`button-remover-staged-${file.name}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
-          ) : !isUploading && (
-            <div className="text-center py-10 text-muted-foreground text-sm border border-dashed rounded-lg">
-              Nenhum arquivo enviado para {mesLabel}.<br />
-              Arraste os arquivos acima para começar.
+          )}
+
+          {/* Processing / done / error status */}
+          {uploadingFiles.length > 0 && (
+            <div className="space-y-1.5 mt-2">
+              {uploadingFiles.map((f) => (
+                <div
+                  key={f.name}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
+                    f.status === "processing" && "bg-muted",
+                    f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
+                    f.status === "error" && "bg-red-50 dark:bg-red-950/40"
+                  )}
+                >
+                  {f.status === "processing" && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
+                  {f.status === "done" && <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                  {f.status === "error" && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
+                  <span className="truncate flex-1">{f.name}</span>
+                  <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(f.platform || "outro")}</Badge>
+                  {f.status === "error" && f.error && (
+                    <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
+                  )}
+                  {f.status === "done" && f.debug && (
+                    <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
+                      nome: <strong>{f.debug.nameCol ?? "?"}</strong> · valor:{" "}
+                      <strong>{f.debug.valueCol ?? "?"}</strong>
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
-      )}
 
-      {/* Professores tab */}
-      {mesTab === "professores" && <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />}
+        {/* Sessions for this month */}
+        {isLoading ? (
+          <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
+        ) : mesSessoes.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Arquivos enviados — {mesLabel}
+            </p>
+            {mesSessoes.map((s) => (
+              <Card
+                key={s.id}
+                className="cursor-pointer hover:shadow-md transition-shadow border"
+                onClick={() => onSelectSessao(s.id)}
+                data-testid={`sessao-card-${s.id}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileSpreadsheet className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {plataformaLabel(s.plataforma)}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle className="h-3 w-3" /> {s.encontrados} encontrados
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                          <AlertCircle className="h-3 w-3" /> {s.possiveis} possíveis
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                          <XCircle className="h-3 w-3" /> {s.naoEncontrados} não encontrados
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {s.totalRegistros} reg ·{" "}
+                          {new Date(s.criadoEm).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteMutation.mutate(s.id);
+                        }}
+                        data-testid={`button-delete-sessao-${s.id}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : !isUploading && (
+          <div className="text-center py-8 text-muted-foreground text-sm border border-dashed rounded-lg">
+            Nenhum arquivo enviado para {mesLabel}.<br />
+            Arraste os arquivos acima para começar.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1799,12 +1773,11 @@ function SessaoView({
     onError: () => toast({ title: "Erro ao vincular", variant: "destructive" }),
   });
 
-  // Auto-rematch when professors/students are added
+  // Auto-rematch whenever professors or students change (add OR remove)
   useEffect(() => {
     const total = confsProfs.reduce((s, p) => s + p.alunos.length, 0) + confsProfs.length;
-    if (prevProfTotal.current >= 0 && total > prevProfTotal.current && sessao && !rematchMutation.isPending) {
-      const hasPending = sessao.registros.some(r => r.status === "pendente" || r.status === "nao_encontrado");
-      if (hasPending) rematchMutation.mutate();
+    if (prevProfTotal.current >= 0 && total !== prevProfTotal.current && sessao && !rematchMutation.isPending) {
+      rematchMutation.mutate();
     }
     prevProfTotal.current = total;
   // eslint-disable-next-line react-hooks/exhaustive-deps
