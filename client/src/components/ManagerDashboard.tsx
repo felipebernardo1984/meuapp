@@ -952,6 +952,8 @@ export default function ManagerDashboard({
   const alunoPlanoSelecionado = alunos.find((a) => a.id === alunoPlanoId);
 
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [conferenciaTitle, setConferenciaTitle] = useState("Conferência");
+  const [conferenciaKey, setConferenciaKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -988,6 +990,12 @@ export default function ManagerDashboard({
     if (section === "comissoes") { refetchComissoes(); setActiveSection("comissoes"); return; }
     if (section === "checkins") { setActiveSection("checkins"); return; }
     if (section === "ajuda") { setActiveSection("ajuda"); return; }
+    if (section === "conferencia") {
+      setConferenciaTitle("Conferência");
+      setConferenciaKey((k) => k + 1);
+      setActiveSection("conferencia");
+      return;
+    }
     if (section === "conta") {
       const hasQrcode = !!contaBancariaData?.pixQrcodeImage;
       setFormContaBancaria({
@@ -1102,7 +1110,7 @@ export default function ManagerDashboard({
             <Menu className="h-5 w-5" />
           </button>
           <h1 className="text-xl font-semibold truncate" data-testid="text-manager-title">
-            {sectionTitle[activeSection] ?? "Painel do Gestor"}
+            {activeSection === "conferencia" ? conferenciaTitle : (sectionTitle[activeSection] ?? "Painel do Gestor")}
           </h1>
         </div>
         <div className={["agenda","financeiro","alertas"].includes(activeSection) ? "flex-1 overflow-y-auto" : "flex-1 overflow-y-auto p-3 sm:p-4 md:p-6"}>
@@ -5231,7 +5239,11 @@ export default function ManagerDashboard({
       {/* ── Seção Despesas ── */}
       {activeSection === "conferencia" && (
         <div className="flex-1 overflow-y-auto">
-          <ConferenciaManager arenaId={arenaId ?? ""} />
+          <ConferenciaManager
+            key={conferenciaKey}
+            arenaId={arenaId ?? ""}
+            onTitleChange={setConferenciaTitle}
+          />
         </div>
       )}
 

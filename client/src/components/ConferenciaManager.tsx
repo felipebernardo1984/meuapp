@@ -645,6 +645,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
 
 interface Props {
   arenaId: string;
+  onTitleChange?: (title: string) => void;
 }
 
 interface MesRef {
@@ -652,10 +653,18 @@ interface MesRef {
   mes: number;
 }
 
-export default function ConferenciaManager({ arenaId }: Props) {
+export default function ConferenciaManager({ arenaId, onTitleChange }: Props) {
   const [view, setView] = useState<"landing" | "mes" | "sessao">("landing");
   const [mesSel, setMesSel] = useState<MesRef | null>(null);
   const [sessaoId, setSessaoId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (view === "mes" && mesSel) {
+      onTitleChange?.(`${MESES_PT[mesSel.mes - 1]} ${mesSel.ano}`);
+    } else {
+      onTitleChange?.("Conferência");
+    }
+  }, [view, mesSel]);
 
   if (view === "sessao" && sessaoId) {
     return (
@@ -773,14 +782,6 @@ function LandingView({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Conferência</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Conferência mensal de repasses TotalPass e Wellhub
-        </p>
-      </div>
-
       {/* Month entry card */}
       <Card className="border-primary/20">
         <CardContent className="p-5">
@@ -1058,11 +1059,6 @@ function MesView({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-lg font-bold text-foreground">{mesLabel}</h1>
-      </div>
-
       {/* Column mapping dialog — shown before upload */}
       {pendingMap && (
         <ColMapDialog
