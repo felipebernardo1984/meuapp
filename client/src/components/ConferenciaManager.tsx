@@ -2636,6 +2636,7 @@ function RelatorioView({
   plataforma,
   sessao,
   sessaoId,
+  arenaId,
   periodo,
 }: {
   registros: Registro[];
@@ -2686,6 +2687,9 @@ function RelatorioView({
 
   return (
     <div className="space-y-5">
+      {/* Repasse & Gestão config — editável direto no relatório */}
+      {periodo && <RepasseConfigCard arenaId={arenaId} periodo={periodo} />}
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
