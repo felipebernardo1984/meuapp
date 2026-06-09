@@ -1,1 +1,2 @@
 - [Conferência Excel header detection](conferencia-excel-parsing.md) — TotalPass/Wellhub exports have title rows; must auto-detect real header row, not use row 0.
+- [Conferência Repasse Config](conferencia-repasse-config.md) — pctArena/gestão split stored per-period; gestão is display-only computed from (valor - vArena - vProf), not stored in records.

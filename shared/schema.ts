@@ -568,3 +568,13 @@ export const conferenciaProfessorAlunos = pgTable("conferencia_professor_alunos"
   nome: text("nome").notNull(),
   criadoEm: timestamp("criado_em").defaultNow(),
 });
+
+export const conferenciaRepasseConfig = pgTable("conferencia_repasse_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  arenaId: text("arena_id").notNull(),
+  periodo: text("periodo").notNull(),
+  pctArena: text("pct_arena").notNull().default("100"),
+  gestaoTipo: text("gestao_tipo").notNull().default("caixa"),
+  gestaoProfessorId: text("gestao_professor_id"),
+  criadoEm: timestamp("criado_em").defaultNow(),
+});

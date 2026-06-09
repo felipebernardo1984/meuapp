@@ -8,9 +8,11 @@ import {
   conferenciaAliases,
   conferenciaProfessores,
   conferenciaProfessorAlunos,
+  conferenciaRepasseConfig,
   students,
   teachers,
 } from "@shared/schema";
+import { lt } from "drizzle-orm";
 
 // ── Fuzzy matching (pure JS — no external AI/API) ─────────────────────────────
 
@@ -456,16 +458,67 @@ export function registerConferenciaRoutes(app: Express): void {
     }
   });
 
+  // ── Repasse Config ─────────────────────────────────────────────────────────
+
+  // GET /api/conferencia/repasse-config?periodo=YYYY-MM
+  app.get("/api/conferencia/repasse-config", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") return res.status(403).json({ message: "Acesso negado" });
+    const periodo = req.query.periodo as string;
+    if (!periodo) return res.status(400).json({ message: "periodo obrigatório" });
+    const [config] = await db
+      .select()
+      .from(conferenciaRepasseConfig)
+      .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)));
+    res.json(config ?? { pctArena: "100", gestaoTipo: "caixa", gestaoProfessorId: null });
+  });
+
+  // PUT /api/conferencia/repasse-config
+  app.put("/api/conferencia/repasse-config", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") return res.status(403).json({ message: "Acesso negado" });
+    const { periodo, pctArena, gestaoTipo, gestaoProfessorId } = req.body as {
+      periodo: string;
+      pctArena: string;
+      gestaoTipo: string;
+      gestaoProfessorId: string | null;
+    };
+    if (!periodo) return res.status(400).json({ message: "periodo obrigatório" });
+    const vals = {
+      pctArena: String(pctArena ?? "100"),
+      gestaoTipo: gestaoTipo ?? "caixa",
+      gestaoProfessorId: gestaoProfessorId ?? null,
+    };
+    const existing = await db
+      .select({ id: conferenciaRepasseConfig.id })
+      .from(conferenciaRepasseConfig)
+      .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)));
+    if (existing.length > 0) {
+      const [updated] = await db
+        .update(conferenciaRepasseConfig)
+        .set(vals)
+        .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)))
+        .returning();
+      return res.json(updated);
+    }
+    const [created] = await db
+      .insert(conferenciaRepasseConfig)
+      .values({ arenaId, periodo, ...vals })
+      .returning();
+    res.json(created);
+  });
+
   // ── Professor CRUD ─────────────────────────────────────────────────────────
 
   // GET /api/conferencia/professores — list with their students (filtered by ?periodo=YYYY-MM)
+  // Auto-copies from most recent prior period when none found for the requested period
   app.get("/api/conferencia/professores", async (req, res) => {
     const arenaId = req.session.arenaId;
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
     const periodo = req.query.periodo as string | undefined;
-    const profs = await db
+    let profs = await db
       .select()
       .from(conferenciaProfessores)
       .where(
@@ -474,6 +527,47 @@ export function registerConferenciaRoutes(app: Express): void {
           : eq(conferenciaProfessores.arenaId, arenaId)
       )
       .orderBy(conferenciaProfessores.criadoEm);
+
+    // Auto-copy from most recent prior period if none found
+    if (profs.length === 0 && periodo) {
+      const [prevRow] = await db
+        .select({ periodo: conferenciaProfessores.periodo })
+        .from(conferenciaProfessores)
+        .where(and(eq(conferenciaProfessores.arenaId, arenaId), lt(conferenciaProfessores.periodo, periodo)))
+        .orderBy(desc(conferenciaProfessores.periodo))
+        .limit(1);
+
+      if (prevRow?.periodo) {
+        const prevProfs = await db
+          .select()
+          .from(conferenciaProfessores)
+          .where(and(eq(conferenciaProfessores.arenaId, arenaId), eq(conferenciaProfessores.periodo, prevRow.periodo)))
+          .orderBy(conferenciaProfessores.criadoEm);
+
+        const prevAlunos = await db
+          .select()
+          .from(conferenciaProfessorAlunos)
+          .where(eq(conferenciaProfessorAlunos.arenaId, arenaId));
+
+        const result: Array<typeof prevProfs[0] & { alunos: typeof prevAlunos }> = [];
+        for (const p of prevProfs) {
+          const [newProf] = await db
+            .insert(conferenciaProfessores)
+            .values({ arenaId, nome: p.nome, percentualComissao: p.percentualComissao, periodo })
+            .returning();
+          const fromPrev = prevAlunos.filter((a) => a.professorId === p.id);
+          let newAlunos: typeof prevAlunos = [];
+          if (fromPrev.length > 0) {
+            newAlunos = await db
+              .insert(conferenciaProfessorAlunos)
+              .values(fromPrev.map((a) => ({ arenaId, professorId: newProf.id, nome: a.nome })))
+              .returning();
+          }
+          result.push({ ...newProf, alunos: newAlunos });
+        }
+        return res.json(result);
+      }
+    }
 
     const alunos = await db
       .select()

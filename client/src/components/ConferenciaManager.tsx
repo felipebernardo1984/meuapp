@@ -137,6 +137,12 @@ interface ConfProfessor {
   alunos: ConfAluno[];
 }
 
+interface RepasseConfig {
+  pctArena: string;
+  gestaoTipo: string;
+  gestaoProfessorId: string | null;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtVal(v: string | null | undefined): string {
@@ -1071,6 +1077,9 @@ function MesView({
       {/* ── Professores (first) ─────────────────────────────────────────── */}
       <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />
 
+      {/* ── Repasse & Gestão ─────────────────────────────────────────────── */}
+      <RepasseConfigCard arenaId={arenaId} periodo={monthKey} />
+
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5 space-y-4">
         <div>
@@ -1261,6 +1270,133 @@ function MesView({
 }
 
 // ── Configuração View ─────────────────────────────────────────────────────────
+
+function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; periodo: string }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: professores = [] } = useQuery<ConfProfessor[]>({
+    queryKey: ["/api/conferencia/professores", periodo],
+    queryFn: () => fetch(`/api/conferencia/professores?periodo=${periodo}`).then((r) => r.json()),
+  });
+
+  const { data: config } = useQuery<RepasseConfig>({
+    queryKey: ["/api/conferencia/repasse-config", periodo],
+    queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: (vals: RepasseConfig & { periodo: string }) =>
+      apiRequest("PUT", "/api/conferencia/repasse-config", vals).then((r) => r.json()),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/repasse-config", periodo] }),
+    onError: () => toast({ title: "Erro ao salvar configuração de repasse", variant: "destructive" }),
+  });
+
+  const pctArena = config?.pctArena ?? "100";
+  const gestaoTipo = config?.gestaoTipo ?? "caixa";
+  const gestaoProfessorId = config?.gestaoProfessorId ?? null;
+  const gestaoAtiva = parseFloat(pctArena) < 100;
+  const pctGestaoCalc = Math.max(0, 100 - parseFloat(pctArena || "100"));
+
+  const save = (patch: Partial<RepasseConfig>) =>
+    saveMutation.mutate({
+      periodo,
+      pctArena: patch.pctArena ?? pctArena,
+      gestaoTipo: patch.gestaoTipo ?? gestaoTipo,
+      gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : gestaoProfessorId,
+    });
+
+  return (
+    <Card className="border">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {gestaoAtiva
+                ? `Arena recebe ${pctArena}% · Gestão retém ${pctGestaoCalc}% da receita`
+                : "Arena recebe 100% da receita após comissões dos professores"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => save({ pctArena: gestaoAtiva ? "100" : "60", gestaoTipo: "caixa", gestaoProfessorId: null })}
+            className={cn(
+              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none",
+              gestaoAtiva ? "bg-primary" : "bg-muted-foreground/30"
+            )}
+            data-testid="toggle-gestao"
+          >
+            <span
+              className={cn(
+                "inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform",
+                gestaoAtiva ? "translate-x-[18px]" : "translate-x-0.5"
+              )}
+            />
+          </button>
+        </div>
+
+        {gestaoAtiva && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">% Repasse Arena</p>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={pctArena}
+                  onChange={(e) => save({ pctArena: e.target.value })}
+                  className="pr-7 h-9"
+                  data-testid="input-pct-arena"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Retenção gestão: <strong>{pctGestaoCalc}%</strong>
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Retenção vai para</p>
+              <Select
+                value={gestaoTipo}
+                onValueChange={(v) => save({ gestaoTipo: v, gestaoProfessorId: v === "caixa" ? null : gestaoProfessorId })}
+              >
+                <SelectTrigger className="h-9" data-testid="select-gestao-tipo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="caixa">Caixa gestão (separado)</SelectItem>
+                  <SelectItem value="professor">Professor específico</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {gestaoTipo === "professor" && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Professor gestor</p>
+                <Select
+                  value={gestaoProfessorId ?? ""}
+                  onValueChange={(v) => save({ gestaoProfessorId: v || null })}
+                >
+                  <SelectTrigger className="h-9" data-testid="select-gestao-professor">
+                    <SelectValue placeholder="Selecionar professor…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {professores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function ConfiguracaoView({ arenaId, periodo }: { arenaId: string; periodo: string }) {
   const [novoProfNome, setNovoProfNome] = useState("");
@@ -1744,6 +1880,12 @@ function SessaoView({
     enabled: !!sessao,
   });
 
+  const { data: repasseConfig } = useQuery<RepasseConfig>({
+    queryKey: ["/api/conferencia/repasse-config", periodo],
+    queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
+    enabled: !!periodo,
+  });
+
   const rematchMutation = useMutation({
     mutationFn: () =>
       apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/rematch`).then((r) => r.json()),
@@ -1839,6 +1981,26 @@ function SessaoView({
   const naoEncontradoValor = registros.filter((r) => r.status === "nao_encontrado").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalValor = confirmedValor + pendenteValor + naoEncontradoValor;
   const naoEncontradosCount = registros.filter((r) => r.status === "nao_encontrado").length;
+
+  const pctArenaNum = repasseConfig ? parseFloat(repasseConfig.pctArena) : 100;
+  const gestaoAtiva = pctArenaNum < 100;
+  const gestaoNome =
+    repasseConfig?.gestaoTipo === "professor" && repasseConfig.gestaoProfessorId
+      ? (confsProfs.find((p) => p.id === repasseConfig.gestaoProfessorId)?.nome ?? "Gestão")
+      : "Gestão";
+
+  const calcDisplayValores = (r: Registro) => {
+    const v = parseFloat(r.valor || "0");
+    const vProf = parseFloat(r.valorProfessor || "0");
+    const vArena = gestaoAtiva ? v * (pctArenaNum / 100) : v - vProf;
+    const vGestao = gestaoAtiva ? Math.max(0, v - vArena - vProf) : 0;
+    return { vArena, vGestao };
+  };
+
+  const confirmedRegs = registros.filter((r) => r.status === "confirmado");
+  const totalProfessorAgg = confirmedRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+  const totalArenaDisplay = confirmedRegs.reduce((s, r) => s + calcDisplayValores(r).vArena, 0);
+  const totalGestaoAgg = confirmedRegs.reduce((s, r) => s + calcDisplayValores(r).vGestao, 0);
 
   const snapReg = (r: Registro) => ({
     status: r.status,
@@ -2036,6 +2198,24 @@ function SessaoView({
         </Card>
       </div>
 
+      {/* ── Distribuição financeira (quando gestão ativa) ── */}
+      {gestaoAtiva && confirmedRegs.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="text-center bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/40 rounded-lg p-3">
+            <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-1">Professores</p>
+            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{fmtVal(String(totalProfessorAgg))}</p>
+          </div>
+          <div className="text-center bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200/70 dark:border-violet-800/40 rounded-lg p-3">
+            <p className="text-[10px] font-semibold text-violet-700 dark:text-violet-400 uppercase tracking-wider mb-1">{gestaoNome}</p>
+            <p className="text-sm font-bold text-violet-700 dark:text-violet-400 tabular-nums">{fmtVal(String(totalGestaoAgg))}</p>
+          </div>
+          <div className="text-center bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/40 rounded-lg p-3">
+            <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">Repasse Arena</p>
+            <p className="text-sm font-bold text-blue-700 dark:text-blue-400 tabular-nums">{fmtVal(String(totalArenaDisplay))}</p>
+          </div>
+        </div>
+      )}
+
       {/* ── Tabs ── */}
       <div className="flex gap-1 border-b">
         {(["conferencia", "relatorio"] as const).map((t) => (
@@ -2175,6 +2355,7 @@ function SessaoView({
               {filtered.map((r) => {
                 const si = statusInfo(r.status);
                 const hasSplit = parseFloat(r.percentual) > 0 && parseFloat(r.valorProfessor) > 0;
+                const { vArena, vGestao } = calcDisplayValores(r);
                 const profNome = r.professorNome ?? confsProfs.find((p) => p.id === r.professorId)?.nome ?? null;
                 return (
                   <div
@@ -2285,13 +2466,25 @@ function SessaoView({
                             <div className="text-[11px] text-emerald-600 dark:text-emerald-400 tabular-nums">
                               Prof: {fmtVal(r.valorProfessor)}
                             </div>
+                            {gestaoAtiva && vGestao > 0 && (
+                              <div className="text-[11px] text-violet-600 dark:text-violet-400 tabular-nums">
+                                {gestaoNome}: {fmtVal(String(vGestao))}
+                              </div>
+                            )}
                             <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums">
-                              Arena: {fmtVal(r.valorArena)}
+                              Arena: {fmtVal(String(vArena))}
                             </div>
                           </div>
                         ) : r.status !== "ignorado" ? (
-                          <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums mt-0.5">
-                            Arena: {fmtVal(r.valor)}
+                          <div className="mt-0.5 space-y-px">
+                            {gestaoAtiva && vGestao > 0 && (
+                              <div className="text-[11px] text-violet-600 dark:text-violet-400 tabular-nums">
+                                {gestaoNome}: {fmtVal(String(vGestao))}
+                              </div>
+                            )}
+                            <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums">
+                              Arena: {fmtVal(String(vArena))}
+                            </div>
                           </div>
                         ) : null}
                       </div>
