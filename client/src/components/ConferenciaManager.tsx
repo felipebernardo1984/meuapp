@@ -51,6 +51,7 @@ import {
   RotateCcw,
   RotateCw,
   Link2,
+  Percent,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -1077,6 +1078,9 @@ function MesView({
       {/* ── Professores (first) ─────────────────────────────────────────── */}
       <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />
 
+      {/* ── Repasse & Gestão (below Professores) ────────────────────────── */}
+      <RepasseConfigCard arenaId={arenaId} periodo={monthKey} />
+
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5 space-y-4">
         <div>
@@ -1282,10 +1286,15 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
     queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
   });
 
-  const [localPct, setLocalPct] = useState<string>("100");
+  const [localPctArena, setLocalPctArena] = useState<string>("100");
+  const [localPctGestao, setLocalPctGestao] = useState<string>("0");
 
   useEffect(() => {
-    if (config?.pctArena !== undefined) setLocalPct(config.pctArena);
+    if (config?.pctArena !== undefined) {
+      const pA = String(config.pctArena);
+      setLocalPctArena(pA);
+      setLocalPctGestao(String(Math.max(0, 100 - (parseFloat(pA) || 0))));
+    }
   }, [config?.pctArena]);
 
   const saveMutation = useMutation({
@@ -1297,14 +1306,13 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
 
   const gestaoTipo = config?.gestaoTipo ?? "caixa";
   const gestaoProfessorId = config?.gestaoProfessorId ?? null;
-  const pctArenaNum = parseFloat(localPct) || 0;
+  const pctArenaNum = parseFloat(localPctArena) || 0;
   const gestaoAtiva = pctArenaNum < 100;
-  const pctGestaoCalc = Math.max(0, 100 - pctArenaNum);
 
   const save = (patch: Partial<RepasseConfig & { pctArena: string }>) =>
     saveMutation.mutate({
       periodo,
-      pctArena: patch.pctArena ?? localPct,
+      pctArena: patch.pctArena ?? localPctArena,
       gestaoTipo: patch.gestaoTipo ?? gestaoTipo,
       gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : gestaoProfessorId,
     });
@@ -1314,27 +1322,49 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
       <CardContent className="p-4 space-y-3">
         <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* % Arena */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Repasse Arena</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Arena</p>
             <div className="relative">
               <Input
                 type="number"
                 min="0"
                 max="100"
-                value={localPct}
-                onChange={(e) => setLocalPct(e.target.value)}
-                onBlur={() => save({ pctArena: localPct })}
+                value={localPctArena}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setLocalPctArena(v);
+                  setLocalPctGestao(String(Math.max(0, 100 - (parseFloat(v) || 0))));
+                }}
+                onBlur={() => save({ pctArena: localPctArena })}
                 className="pr-7 h-9"
                 data-testid="input-pct-arena"
               />
               <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              {gestaoAtiva
-                ? <>Gestão retém: <strong>{pctGestaoCalc}%</strong></>
-                : "Arena recebe 100% após comissões"}
-            </p>
+          </div>
+
+          {/* % Gestão */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Gestão</p>
+            <div className="relative">
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={localPctGestao}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setLocalPctGestao(v);
+                  setLocalPctArena(String(Math.max(0, 100 - (parseFloat(v) || 0))));
+                }}
+                onBlur={() => save({ pctArena: localPctArena })}
+                className="pr-7 h-9"
+                data-testid="input-pct-gestao"
+              />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+            </div>
           </div>
 
           {gestaoAtiva && (
@@ -2179,23 +2209,6 @@ function SessaoView({
         </Card>
       </div>
 
-      {/* ── Distribuição financeira (quando gestão ativa) ── */}
-      {gestaoAtiva && confirmedRegs.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="text-center bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/40 rounded-lg p-3">
-            <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-1">Professores</p>
-            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{fmtVal(String(totalProfessorAgg))}</p>
-          </div>
-          <div className="text-center bg-violet-50/60 dark:bg-violet-950/30 border border-violet-200/70 dark:border-violet-800/40 rounded-lg p-3">
-            <p className="text-[10px] font-semibold text-violet-700 dark:text-violet-400 uppercase tracking-wider mb-1">{gestaoNome}</p>
-            <p className="text-sm font-bold text-violet-700 dark:text-violet-400 tabular-nums">{fmtVal(String(totalGestaoAgg))}</p>
-          </div>
-          <div className="text-center bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/40 rounded-lg p-3">
-            <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">Repasse Arena</p>
-            <p className="text-sm font-bold text-blue-700 dark:text-blue-400 tabular-nums">{fmtVal(String(totalArenaDisplay))}</p>
-          </div>
-        </div>
-      )}
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 border-b">
@@ -2573,9 +2586,7 @@ function RelatorioView({
   plataforma,
   sessao,
   sessaoId,
-  arenaId: _arenaId,
   periodo,
-  confsProfs,
 }: {
   registros: Registro[];
   plataforma: string;
@@ -2585,42 +2596,14 @@ function RelatorioView({
   periodo: string | undefined;
   confsProfs: ConfProfessor[];
 }) {
-  const qc = useQueryClient();
-  const { toast } = useToast();
-
   const { data: repasseCfg } = useQuery<RepasseConfig>({
     queryKey: ["/api/conferencia/repasse-config", periodo],
     queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
     enabled: !!periodo,
   });
 
-  const [localPct, setLocalPct] = useState<string>("100");
-  useEffect(() => {
-    if (repasseCfg?.pctArena !== undefined) setLocalPct(repasseCfg.pctArena);
-  }, [repasseCfg?.pctArena]);
-
-  const saveRepasse = useMutation({
-    mutationFn: (vals: RepasseConfig & { periodo: string }) =>
-      apiRequest("PUT", "/api/conferencia/repasse-config", vals).then((r) => r.json()),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/repasse-config", periodo] }),
-    onError: () => toast({ title: "Erro ao salvar configuração de repasse", variant: "destructive" }),
-  });
-
-  const rGestaoTipo = repasseCfg?.gestaoTipo ?? "caixa";
-  const rGestaoProfId = repasseCfg?.gestaoProfessorId ?? null;
-  const pctArenaNum = parseFloat(localPct) || 0;
-  const rGestaoAtiva = pctArenaNum < 100;
-  const pctGestao = Math.max(0, 100 - pctArenaNum);
-
-  const saveRepPassePatch = (patch: Partial<RepasseConfig & { pctArena: string }>) => {
-    if (!periodo) return;
-    saveRepasse.mutate({
-      periodo,
-      pctArena: patch.pctArena ?? localPct,
-      gestaoTipo: patch.gestaoTipo ?? rGestaoTipo,
-      gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : rGestaoProfId,
-    });
-  };
+  const pctArenaNum = repasseCfg ? parseFloat(repasseCfg.pctArena) || 0 : 100;
+  const pctGestaoNum = Math.max(0, 100 - pctArenaNum);
 
   const confirmados = registros.filter((r) => r.status === "confirmado");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
@@ -2651,7 +2634,7 @@ function RelatorioView({
   return (
     <div className="space-y-5">
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           {
             label: "Total Recebido",
@@ -2670,6 +2653,12 @@ function RelatorioView({
             val: fmtVal(String(totalArena)),
             icon: Building2,
             color: "text-blue-600 dark:text-blue-400",
+          },
+          {
+            label: "% Gestor",
+            val: `${pctGestaoNum}%`,
+            icon: Percent,
+            color: "text-violet-600 dark:text-violet-400",
           },
           {
             label: "Total Check-ins",
@@ -2893,85 +2882,6 @@ function RelatorioView({
           </div>
         );
       })()}
-
-      {/* Repasse & Gestão — configuração inline */}
-      {periodo && (
-        <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            Repasse &amp; Gestão
-          </h2>
-          <Card className="border">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4 flex-wrap">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1.5">% Repasse Arena</p>
-                  <div className="relative w-28">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={localPct}
-                      onChange={(e) => setLocalPct(e.target.value)}
-                      onBlur={() => saveRepPassePatch({ pctArena: localPct })}
-                      className="pr-7 h-9 text-sm"
-                      data-testid="input-pct-arena-relatorio"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    {rGestaoAtiva
-                      ? <>Gestão retém: <strong>{pctGestao}%</strong></>
-                      : "Arena recebe 100% após comissões"}
-                  </p>
-                </div>
-
-                {rGestaoAtiva && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Retenção vai para</p>
-                    <Select
-                      value={rGestaoTipo}
-                      onValueChange={(v) => saveRepPassePatch({ gestaoTipo: v, gestaoProfessorId: v === "caixa" ? null : rGestaoProfId })}
-                    >
-                      <SelectTrigger className="h-9 w-48" data-testid="select-gestao-tipo-relatorio">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="caixa">Caixa gestão (separado)</SelectItem>
-                        <SelectItem value="professor">Professor específico</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {rGestaoAtiva && rGestaoTipo === "professor" && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Professor gestor</p>
-                    <Select
-                      value={rGestaoProfId ?? ""}
-                      onValueChange={(v) => saveRepPassePatch({ gestaoProfessorId: v || null })}
-                    >
-                      <SelectTrigger className="h-9 w-48" data-testid="select-gestao-prof-relatorio">
-                        <SelectValue placeholder="Selecionar professor…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {confsProfs.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {saveRepasse.isPending && (
-                  <div className="self-end pb-2">
-                    <p className="text-xs text-muted-foreground">Salvando…</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Resumo de Pagamentos */}
       {profGroups.length > 0 && (() => {
