@@ -1317,18 +1317,14 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
 
   return (
     <Card className="border">
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
-        </div>
-        <p className="text-[11px] text-muted-foreground -mt-1">
-          Defina a % do total recebido que vai para a Gestão. O restante, após as comissões dos professores, fica para a Arena.
-        </p>
+      <CardContent className="p-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-semibold text-foreground mr-1">Repasse &amp; Gestão</p>
 
-        <div className="flex items-end gap-3">
-          <div className="w-40">
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Gestão (do total recebido)</p>
-            <div className="relative">
+          {/* % Gestão */}
+          <div className="flex items-center gap-1">
+            <p className="text-xs text-muted-foreground whitespace-nowrap">% Gestão</p>
+            <div className="relative w-20">
               <Input
                 type="number"
                 min="0"
@@ -1336,28 +1332,22 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
                 value={localPctGestao}
                 onChange={(e) => setLocalPctGestao(e.target.value)}
                 onBlur={() => save({ pctGestao: localPctGestao })}
-                className="pr-7 h-9"
+                className="pr-6 h-8 text-sm"
                 data-testid="input-pct-gestao"
               />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground pb-2">
-            {pctGestaoNum === 0
-              ? "Nenhuma taxa de gestão configurada."
-              : `${pctGestaoNum}% do total vai para gestão; a arena recebe o restante após comissões.`}
-          </p>
-        </div>
 
-        {gestaoAtiva && (
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Gestão vai para</p>
+          {/* Caixa Gestão — só aparece quando gestão > 0 */}
+          {gestaoAtiva && (
+            <div className="flex items-center gap-1">
+              <p className="text-xs text-muted-foreground whitespace-nowrap">Caixa Gestão</p>
               <Select
                 value={gestaoTipo}
                 onValueChange={(v) => save({ gestaoTipo: v, gestaoProfessorId: v === "caixa" ? null : gestaoProfessorId })}
               >
-                <SelectTrigger className="h-9" data-testid="select-gestao-tipo">
+                <SelectTrigger className="h-8 text-xs w-44" data-testid="select-gestao-tipo">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1366,27 +1356,28 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
                 </SelectContent>
               </Select>
             </div>
+          )}
 
-            {gestaoTipo === "professor" && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1.5">Professor gestor</p>
-                <Select
-                  value={gestaoProfessorId ?? ""}
-                  onValueChange={(v) => save({ gestaoProfessorId: v || null })}
-                >
-                  <SelectTrigger className="h-9" data-testid="select-gestao-professor">
-                    <SelectValue placeholder="Selecionar professor…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {professores.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-        )}
+          {/* Professor gestor — só quando tipo = professor */}
+          {gestaoAtiva && gestaoTipo === "professor" && (
+            <div className="flex items-center gap-1">
+              <p className="text-xs text-muted-foreground whitespace-nowrap">Professor</p>
+              <Select
+                value={gestaoProfessorId ?? ""}
+                onValueChange={(v) => save({ gestaoProfessorId: v || null })}
+              >
+                <SelectTrigger className="h-8 text-xs w-40" data-testid="select-gestao-professor">
+                  <SelectValue placeholder="Selecionar…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {professores.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
