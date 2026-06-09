@@ -2889,46 +2889,44 @@ function RelatorioView({
               Por Modalidade
             </h2>
             <Card>
-              <CardContent className="pt-3 pb-3 px-4">
-                <div className="border rounded overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs py-1.5">Modalidade</TableHead>
-                        <TableHead className="text-xs py-1.5 text-center">Alunos</TableHead>
-                        <TableHead className="text-xs py-1.5 text-center">Chk</TableHead>
-                        <TableHead className="text-xs py-1.5 text-right">Receita</TableHead>
-                        <TableHead className="text-xs py-1.5 text-right">Prof.</TableHead>
-                        <TableHead className="text-xs py-1.5 text-right">Arena</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {modGroups.map(([mod, g]) => {
-                        const receita = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-                        const prof = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-                        const arena = arenaSum(g.registros);
-                        const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
-                        const uniqueAlunos = new Set(g.registros.map(r => r.studentId ?? r.nomePlataforma.toLowerCase().trim())).size;
-                        const arenaOnly = isArenaOnlyMod(mod);
-                        return (
-                          <TableRow key={mod} className="text-xs">
-                            <TableCell className="py-1.5 font-medium">
-                              {mod}
-                              {arenaOnly && (
-                                <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0">Arena</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="py-1.5 text-center">{uniqueAlunos}</TableCell>
-                            <TableCell className="py-1.5 text-center">{chks}</TableCell>
-                            <TableCell className="py-1.5 text-right font-mono">{fmtVal(String(receita))}</TableCell>
-                            <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">{fmtVal(String(prof))}</TableCell>
-                            <TableCell className="py-1.5 text-right font-mono text-blue-600 dark:text-blue-400">{fmtVal(String(arena))}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead className="text-xs font-semibold py-2 pl-4">Modalidade</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-center">Alunos</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-center">Chk</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right">Receita</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right text-emerald-700 dark:text-emerald-400">Professor</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right pr-4 text-blue-700 dark:text-blue-400">Arena</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {modGroups.map(([mod, g], idx) => {
+                      const receita = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+                      const prof = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+                      const arena = arenaSum(g.registros);
+                      const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
+                      const uniqueAlunos = new Set(g.registros.map(r => r.studentId ?? r.nomePlataforma.toLowerCase().trim())).size;
+                      const arenaOnly = isArenaOnlyMod(mod);
+                      return (
+                        <TableRow key={mod} className={cn("text-xs", idx % 2 === 1 && "bg-muted/20")}>
+                          <TableCell className="py-2 pl-4 font-medium">
+                            {mod}
+                            {arenaOnly && (
+                              <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0">Arena</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2 text-center tabular-nums">{uniqueAlunos}</TableCell>
+                          <TableCell className="py-2 text-center tabular-nums">{chks}</TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums">{fmtVal(String(receita))}</TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmtVal(String(prof))}</TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400 pr-4">{fmtVal(String(arena))}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </div>
