@@ -1079,9 +1079,6 @@ function MesView({
       {/* ── Professores (first) ─────────────────────────────────────────── */}
       <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />
 
-      {/* ── Repasse & Gestão (below Professores) ────────────────────────── */}
-      <RepasseConfigCard arenaId={arenaId} periodo={monthKey} />
-
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5 space-y-4">
         <div>
