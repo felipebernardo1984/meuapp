@@ -455,7 +455,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
     <thead>
       <tr>
         <th>Nome na Plataforma</th>
-        <th>Aluno na Arena</th>
+        <th>Modalidade</th>
         <th style="text-align:center">Data/Horário</th>
         <th style="text-align:right">Valor</th>
         ${professorKey !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
@@ -513,7 +513,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
           (r) => `
         <tr>
           <td>${r.nomePlataforma}</td>
-          <td>${r.alunoNomeMatch ?? r.nomePlataforma}</td>
+          <td>${r.modalidade ?? "—"}</td>
           <td style="text-align:center">${r.checkins ?? 1}</td>
           <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
           <td style="text-align:right">${fmt(parseFloat(r.valorProfessor || "0"))}</td>
@@ -2762,7 +2762,7 @@ function RelatorioView({
                       <TableHeader>
                         <TableRow className="bg-muted/40">
                           <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
-                          <TableHead className="text-xs py-2">Aluno na Arena</TableHead>
+                          <TableHead className="text-xs py-2">Modalidade</TableHead>
                           <TableHead className="text-xs py-2">Data/Hora</TableHead>
                           <TableHead className="text-xs py-2 text-right">Total</TableHead>
                           <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
@@ -2780,19 +2780,19 @@ function RelatorioView({
                             <TableCell className="py-2 font-medium max-w-[160px]">
                               <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
                             </TableCell>
-                            <TableCell className="py-2 max-w-[140px]">
-                              {r.alunoNomeMatch ? (
-                                <span className="block truncate text-emerald-700 dark:text-emerald-400 font-medium" title={r.alunoNomeMatch}>
-                                  {r.alunoNomeMatch}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground italic">—</span>
-                              )}
-                              {r.categoria === "dayuse" && (
-                                <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                  Day Use
-                                </Badge>
-                              )}
+                            <TableCell className="py-2">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {r.modalidade ? (
+                                  <span className="text-xs font-medium">{r.modalidade}</span>
+                                ) : (
+                                  <span className="text-muted-foreground italic text-xs">—</span>
+                                )}
+                                {r.categoria === "dayuse" && (
+                                  <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                    Day Use
+                                  </Badge>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
                               {fmtData(r.data)}
