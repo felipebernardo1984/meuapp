@@ -1073,6 +1073,7 @@ export default function ManagerDashboard({
     checkins: "Log de Check-ins",
     conta: "Conta Bancária",
     quadras: "Quadras",
+    conferencia: "Conferência",
     ajuda: "Ajuda",
   };
 

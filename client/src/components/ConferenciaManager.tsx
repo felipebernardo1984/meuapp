@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/table";
 import {
   Upload,
-  ArrowLeft,
   CheckCircle,
   AlertCircle,
   XCircle,
@@ -1060,14 +1059,9 @@ function MesView({
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={onVoltar} data-testid="button-voltar-landing">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-lg font-bold text-foreground">Conferência — {mesLabel}</h1>
-          <p className="text-xs text-muted-foreground">TotalPass & Wellhub · professores e arquivos do mês</p>
-        </div>
+      <div>
+        <h1 className="text-lg font-bold text-foreground">Conferência — {mesLabel}</h1>
+        <p className="text-xs text-muted-foreground">TotalPass & Wellhub · professores e arquivos do mês</p>
       </div>
 
       {/* Column mapping dialog — shown before upload */}
@@ -1726,6 +1720,8 @@ function SessaoView({
   const [buscaNome, setBuscaNome] = useState("");
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
   const [destinarPara, setDestinarPara] = useState("");
+  const [redirectModalidade, setRedirectModalidade] = useState("");
+  const [redirectAProf, setRedirectAProf] = useState("");
   const [manuallyLinked, setManuallyLinked] = useState<Set<string>>(new Set());
   const [histPast, setHistPast] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
   const [histFuture, setHistFuture] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
@@ -1913,6 +1909,29 @@ function SessaoView({
     toast({ title: `${naoEnc.length} registro${naoEnc.length !== 1 ? "s" : ""} destinado${naoEnc.length !== 1 ? "s" : ""}` });
   };
 
+  const arenaRecords = registros.filter(
+    (r) => r.status === "confirmado" && r.categoria === "arena" && !r.professorId
+  );
+  const arenaModalidades = Array.from(new Set(arenaRecords.map((r) => r.modalidade).filter(Boolean))) as string[];
+
+  const handleBulkRedirectArena = () => {
+    if (!redirectAProf) return;
+    const toRedirect = redirectModalidade && redirectModalidade !== "__todos__"
+      ? arenaRecords.filter((r) => r.modalidade === redirectModalidade)
+      : arenaRecords;
+    if (toRedirect.length === 0) return;
+    const professorId = redirectAProf;
+    const prof = confsProfs.find((p) => p.id === professorId);
+    const percentual = prof?.percentualComissao ?? "0";
+    const categoria = parseFloat(percentual) > 0 ? "comissao" : "arena";
+    toRedirect.forEach((r) => {
+      updateMutation.mutate({ id: r.id, data: { professorId, percentual, categoria } });
+    });
+    toast({ title: `${toRedirect.length} registro${toRedirect.length !== 1 ? "s" : ""} redirecionado${toRedirect.length !== 1 ? "s" : ""} para ${prof?.nome ?? "professor"}` });
+    setRedirectModalidade("");
+    setRedirectAProf("");
+  };
+
   const handleExportCSV = () => window.open(`/api/conferencia/export/${sessaoId}`, "_blank");
   const handleExportPDF = () => exportToPDF(sessao);
 
@@ -1921,9 +1940,6 @@ function SessaoView({
 
       {/* ── Header ── */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Button variant="ghost" size="icon" onClick={onVoltar} className="shrink-0" data-testid="button-voltar-conferencia">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-bold text-base sm:text-lg truncate">{sessao.nomeArquivo}</h1>
@@ -1979,28 +1995,44 @@ function SessaoView({
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border shadow-none bg-muted/30">
+        <Card
+          className={cn("border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none", filtroStatus === "" && "ring-2 ring-primary/50")}
+          onClick={() => setFiltroStatus("")}
+          data-testid="kpi-total"
+        >
           <CardContent className="p-4">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Total planilha</p>
             <p className="text-lg font-bold text-foreground leading-none">{fmtVal(String(totalValor))}</p>
             <p className="text-xs text-muted-foreground mt-1">{sessao.totalRegistros} registros</p>
           </CardContent>
         </Card>
-        <Card className="border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40">
+        <Card
+          className={cn("border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroStatus === "confirmado" && "ring-2 ring-emerald-500/60")}
+          onClick={() => setFiltroStatus(filtroStatus === "confirmado" ? "" : "confirmado")}
+          data-testid="kpi-confirmados"
+        >
           <CardContent className="p-4">
             <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-1.5">Confirmados</p>
             <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 leading-none">{sessao.encontrados}</p>
             <p className="text-xs text-emerald-600/80 dark:text-emerald-500/80 mt-1">{fmtVal(String(confirmedValor))}</p>
           </CardContent>
         </Card>
-        <Card className="border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40">
+        <Card
+          className={cn("border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroStatus === "pendente" && "ring-2 ring-amber-500/60")}
+          onClick={() => setFiltroStatus(filtroStatus === "pendente" ? "" : "pendente")}
+          data-testid="kpi-possiveis"
+        >
           <CardContent className="p-4">
             <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1.5">Possíveis</p>
             <p className="text-lg font-bold text-amber-700 dark:text-amber-400 leading-none">{sessao.possiveis}</p>
             <p className="text-xs text-amber-600/80 dark:text-amber-500/80 mt-1">{fmtVal(String(pendenteValor))}</p>
           </CardContent>
         </Card>
-        <Card className={cn("border shadow-none", naoEncontradosCount > 0 ? "bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40" : "bg-muted/30")}>
+        <Card
+          className={cn("border shadow-none cursor-pointer transition-all hover:shadow-sm select-none", naoEncontradosCount > 0 ? "bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40" : "bg-muted/30", filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
+          onClick={() => setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado")}
+          data-testid="kpi-nao-encontrados"
+        >
           <CardContent className="p-4">
             <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-1.5", naoEncontradosCount > 0 ? "text-red-700 dark:text-red-400" : "text-muted-foreground")}>Não encontrados</p>
             <p className={cn("text-lg font-bold leading-none", naoEncontradosCount > 0 ? "text-red-700 dark:text-red-400" : "text-foreground")}>{sessao.naoEncontrados}</p>
@@ -2030,7 +2062,7 @@ function SessaoView({
       {tab === "conferencia" && (
         <div className="space-y-3">
 
-          {/* Bulk destinar bar */}
+          {/* Bulk destinar bar — não encontrados */}
           {naoEncontradosCount > 0 && (
             <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
               <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -2052,6 +2084,46 @@ function SessaoView({
               </Select>
               <Button size="sm" onClick={handleBulkDestinar} disabled={!destinarPara || updateMutation.isPending} data-testid="button-bulk-destinar">
                 Aplicar a todos
+              </Button>
+            </div>
+          )}
+
+          {/* Bulk redirecionar bar — registros de arena sem professor */}
+          {arenaRecords.length > 0 && confsProfs.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60">
+              <Users className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <p className="text-sm text-blue-800 dark:text-blue-300 flex-1 min-w-0">
+                <strong>{arenaRecords.length}</strong> registro{arenaRecords.length !== 1 ? "s" : ""} de arena — redirecionar para professor:
+              </p>
+              {arenaModalidades.length > 1 && (
+                <Select value={redirectModalidade} onValueChange={setRedirectModalidade} data-testid="select-redirect-modalidade">
+                  <SelectTrigger className="h-8 w-52 text-xs bg-white dark:bg-background">
+                    <SelectValue placeholder="Todas as modalidades" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__todos__">Todas as modalidades ({arenaRecords.length})</SelectItem>
+                    {arenaModalidades.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m} ({arenaRecords.filter((r) => r.modalidade === m).length})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Select value={redirectAProf} onValueChange={setRedirectAProf} data-testid="select-redirect-prof">
+                <SelectTrigger className="h-8 w-44 text-xs bg-white dark:bg-background">
+                  <SelectValue placeholder="Selecionar professor…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {confsProfs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` (${p.percentualComissao}%)` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" onClick={handleBulkRedirectArena} disabled={!redirectAProf || updateMutation.isPending} data-testid="button-bulk-redirect-arena">
+                Redirecionar
               </Button>
             </div>
           )}
