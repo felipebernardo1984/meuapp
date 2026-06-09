@@ -2589,6 +2589,15 @@ function RelatorioView({
 
   const pctGestaoNum = repasseCfg ? (parseFloat(repasseCfg.pctGestao ?? "0") || 0) : 0;
 
+  // Arena display = valor − valorProfessor − gestão% do total (DB stores pre-gestão value)
+  const arenaRow = (r: Registro) => {
+    const v = parseFloat(r.valor || "0");
+    const vProf = parseFloat(r.valorProfessor || "0");
+    const vGestao = pctGestaoNum > 0 ? v * (pctGestaoNum / 100) : 0;
+    return v - vProf - vGestao;
+  };
+  const arenaSum = (regs: Registro[]) => regs.reduce((s, r) => s + arenaRow(r), 0);
+
   const confirmados = registros.filter((r) => r.status === "confirmado");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalProfessores = confirmados.reduce(
@@ -2686,7 +2695,7 @@ function RelatorioView({
 
             const subtotal = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
             const comissao = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-            const arena = g.registros.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+            const arena = arenaSum(g.registros);
             const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
             const pct = g.registros[0]?.percentual ?? "0";
 
@@ -2711,7 +2720,7 @@ function RelatorioView({
                       {fmtVal(r.valorProfessor)}
                     </TableCell>
                     <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
-                      {fmtVal(r.valorArena)}
+                      {fmtVal(String(arenaRow(r)))}
                     </TableCell>
                   </TableRow>
                 ));
@@ -2897,7 +2906,7 @@ function RelatorioView({
                       {modGroups.map(([mod, g]) => {
                         const receita = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
                         const prof = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-                        const arena = g.registros.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+                        const arena = arenaSum(g.registros);
                         const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
                         const arenaOnly = isArenaOnlyMod(mod);
                         return (
@@ -2930,7 +2939,7 @@ function RelatorioView({
         const rows = profGroups.map(([key, g]) => {
           const receita = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
           const comissao = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-          const arena = g.registros.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+          const arena = arenaSum(g.registros);
           const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
           return { key, nome: g.nome, receita, comissao, arena, chks, alunos: g.registros.length };
         });
