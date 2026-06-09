@@ -2694,30 +2694,35 @@ function RelatorioView({
             val: fmtVal(String(totalRecebido)),
             icon: TrendingUp,
             color: "text-primary",
-          },
-          {
-            label: "Comissões Prof.",
-            val: fmtVal(String(totalProfessores)),
-            icon: Users,
-            color: "text-emerald-600 dark:text-emerald-400",
+            sub: null,
           },
           {
             label: "Valor Arena",
             val: fmtVal(String(totalArena)),
             icon: Building2,
             color: "text-blue-600 dark:text-blue-400",
+            sub: pctArenaNum > 0 ? `${pctArenaNum}% do total` : null,
           },
           {
             label: "Gestor",
             val: fmtVal(String(totalGestao)),
             icon: Percent,
             color: "text-violet-600 dark:text-violet-400",
+            sub: pctGestaoNum > 0 ? `${pctGestaoNum}% do total` : null,
+          },
+          {
+            label: "Comissões Prof.",
+            val: fmtVal(String(totalProfessores)),
+            icon: Users,
+            color: "text-emerald-600 dark:text-emerald-400",
+            sub: totalRecebido > 0 ? `${Math.round(totalProfessores / totalRecebido * 100)}% do total` : null,
           },
           {
             label: "Total Check-ins",
             val: String(totalCheckins),
             icon: CheckCircle,
             color: "text-amber-600 dark:text-amber-400",
+            sub: null,
           },
         ].map((c) => (
           <Card key={c.label}>
@@ -2726,6 +2731,7 @@ function RelatorioView({
               <div>
                 <div className={cn("text-base font-bold leading-none", c.color)}>{c.val}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{c.label}</div>
+                {c.sub && <div className="text-[10px] text-muted-foreground/70 mt-0.5">{c.sub}</div>}
               </div>
             </CardContent>
           </Card>
@@ -2841,13 +2847,14 @@ function RelatorioView({
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {[
-                      { label: "Receita", val: fmtVal(String(subtotal)), color: "text-foreground" },
-                      { label: "Prof.", val: fmtVal(String(comissao)), color: "text-emerald-600 dark:text-emerald-400" },
-                      { label: "Arena", val: fmtVal(String(arena)), color: "text-blue-600 dark:text-blue-400" },
+                      { label: "Receita", val: fmtVal(String(subtotal)), color: "text-foreground", sub: null },
+                      { label: "Arena", val: fmtVal(String(arena)), color: "text-blue-600 dark:text-blue-400", sub: subtotal > 0 ? `${Math.round(arena/subtotal*100)}%` : null },
+                      { label: "Comissão Prof.", val: fmtVal(String(comissao)), color: "text-emerald-600 dark:text-emerald-400", sub: subtotal > 0 ? `${Math.round(comissao/subtotal*100)}%` : null },
                     ].map((i) => (
                       <div key={i.label} className="bg-muted/40 rounded-md px-2.5 py-1.5 text-center">
                         <div className={cn("font-bold text-sm", i.color)}>{i.val}</div>
                         <div className="text-xs text-muted-foreground">{i.label}</div>
+                        {i.sub && <div className="text-[10px] text-muted-foreground/60">{i.sub}</div>}
                       </div>
                     ))}
                   </div>
