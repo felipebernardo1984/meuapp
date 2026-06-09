@@ -1284,10 +1284,12 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
     queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
   });
 
+  const [localPctArena, setLocalPctArena] = useState<string>("100");
   const [localPctGestao, setLocalPctGestao] = useState<string>("0");
 
   useEffect(() => {
     if (config === undefined) return;
+    setLocalPctArena(String(parseFloat(config.pctArena) || 100));
     setLocalPctGestao(String(parseFloat(config.pctGestao ?? "0") || 0));
   }, [config]);
 
@@ -1303,10 +1305,10 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   const pctGestaoNum = parseFloat(localPctGestao) || 0;
   const gestaoAtiva = pctGestaoNum > 0;
 
-  const save = (patch: Partial<RepasseConfig & { pctGestao: string }>) =>
+  const save = (patch: Partial<RepasseConfig & { pctArena: string; pctGestao: string }>) =>
     saveMutation.mutate({
       periodo,
-      pctArena: "0",
+      pctArena: patch.pctArena ?? localPctArena,
       pctGestao: patch.pctGestao ?? localPctGestao,
       gestaoTipo: patch.gestaoTipo ?? gestaoTipo,
       gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : gestaoProfessorId,
@@ -1314,66 +1316,82 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
 
   return (
     <Card className="border">
-      <CardContent className="p-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold text-foreground mr-1">Repasse &amp; Gestão</p>
+      <CardContent className="p-4 space-y-3">
+        <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
 
-          {/* % Gestão */}
-          <div className="flex items-center gap-1">
-            <p className="text-xs text-muted-foreground whitespace-nowrap">% Gestão</p>
-            <div className="relative w-20">
+        <div className="grid grid-cols-2 gap-3">
+          {/* Repasse Arena */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Repasse Arena</p>
+            <p className="text-[11px] text-muted-foreground mb-1.5">% do bruto que vai para a arena</p>
+            <div className="relative">
               <Input
-                type="number"
-                min="0"
-                max="100"
-                value={localPctGestao}
-                onChange={(e) => setLocalPctGestao(e.target.value)}
-                onBlur={() => save({ pctGestao: localPctGestao })}
-                className="pr-6 h-8 text-sm"
-                data-testid="input-pct-gestao"
+                type="number" min="0" max="100"
+                value={localPctArena}
+                onChange={(e) => setLocalPctArena(e.target.value)}
+                onBlur={() => save({ pctArena: localPctArena })}
+                className="pr-7 h-9"
+                data-testid="input-pct-arena"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
             </div>
           </div>
 
-          {/* Caixa Gestão — só aparece quando gestão > 0 */}
-          {gestaoAtiva && (
-            <div className="flex items-center gap-1">
-              <p className="text-xs text-muted-foreground whitespace-nowrap">Caixa Gestão</p>
-              <Select
-                value={gestaoTipo}
-                onValueChange={(v) => save({ gestaoTipo: v, gestaoProfessorId: v === "caixa" ? null : gestaoProfessorId })}
-              >
-                <SelectTrigger className="h-8 text-xs w-44" data-testid="select-gestao-tipo">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="caixa">Caixa gestão (separado)</SelectItem>
-                  <SelectItem value="professor">Professor específico</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Gestão */}
+          <div className="space-y-2">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">% Gestão</p>
+              <p className="text-[11px] text-muted-foreground mb-1.5">% do bruto para taxa de gestão</p>
+              <div className="relative">
+                <Input
+                  type="number" min="0" max="100"
+                  value={localPctGestao}
+                  onChange={(e) => setLocalPctGestao(e.target.value)}
+                  onBlur={() => save({ pctGestao: localPctGestao })}
+                  className="pr-7 h-9"
+                  data-testid="input-pct-gestao"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+              </div>
             </div>
-          )}
 
-          {/* Professor gestor — só quando tipo = professor */}
-          {gestaoAtiva && gestaoTipo === "professor" && (
-            <div className="flex items-center gap-1">
-              <p className="text-xs text-muted-foreground whitespace-nowrap">Professor</p>
-              <Select
-                value={gestaoProfessorId ?? ""}
-                onValueChange={(v) => save({ gestaoProfessorId: v || null })}
-              >
-                <SelectTrigger className="h-8 text-xs w-40" data-testid="select-gestao-professor">
-                  <SelectValue placeholder="Selecionar…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {professores.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+            {gestaoAtiva && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Gestão vai para</p>
+                <Select
+                  value={gestaoTipo}
+                  onValueChange={(v) => save({ gestaoTipo: v, gestaoProfessorId: v === "caixa" ? null : gestaoProfessorId })}
+                >
+                  <SelectTrigger className="h-9" data-testid="select-gestao-tipo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="caixa">Caixa gestão (separado)</SelectItem>
+                    <SelectItem value="professor">Professor específico</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {gestaoAtiva && gestaoTipo === "professor" && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Professor gestor</p>
+                <Select
+                  value={gestaoProfessorId ?? ""}
+                  onValueChange={(v) => save({ gestaoProfessorId: v || null })}
+                >
+                  <SelectTrigger className="h-9" data-testid="select-gestao-professor">
+                    <SelectValue placeholder="Selecionar professor…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {professores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1964,6 +1982,7 @@ function SessaoView({
   const totalValor = confirmedValor + pendenteValor + naoEncontradoValor;
   const naoEncontradosCount = registros.filter((r) => r.status === "nao_encontrado").length;
 
+  const pctArenaNum = repasseConfig ? (parseFloat(repasseConfig.pctArena) || 0) : 100;
   const pctGestaoNum = repasseConfig ? (parseFloat(repasseConfig.pctGestao ?? "0") || 0) : 0;
   const gestaoAtiva = pctGestaoNum > 0;
   const gestaoNome =
@@ -1971,12 +1990,11 @@ function SessaoView({
       ? (confsProfs.find((p) => p.id === repasseConfig.gestaoProfessorId)?.nome ?? "Gestão")
       : "Gestão";
 
-  // pctGestao = % of the total received → gestão gets that % of total; arena = total − prof − gestão
+  // Both pctArena and pctGestao are % of the gross (bruto)
   const calcDisplayValores = (r: Registro) => {
     const v = parseFloat(r.valor || "0");
-    const vProf = parseFloat(r.valorProfessor || "0");
+    const vArena = v * (pctArenaNum / 100);
     const vGestao = gestaoAtiva ? v * (pctGestaoNum / 100) : 0;
-    const vArena = v - vProf - vGestao;
     return { vArena, vGestao };
   };
 
@@ -2575,15 +2593,11 @@ function RelatorioView({
     enabled: !!periodo,
   });
 
+  const pctArenaNum = repasseCfg ? (parseFloat(repasseCfg.pctArena) || 0) : 100;
   const pctGestaoNum = repasseCfg ? (parseFloat(repasseCfg.pctGestao ?? "0") || 0) : 0;
 
-  // Arena display = valor − valorProfessor − gestão% do total (DB stores pre-gestão value)
-  const arenaRow = (r: Registro) => {
-    const v = parseFloat(r.valor || "0");
-    const vProf = parseFloat(r.valorProfessor || "0");
-    const vGestao = pctGestaoNum > 0 ? v * (pctGestaoNum / 100) : 0;
-    return v - vProf - vGestao;
-  };
+  // Both pctArena and pctGestao are % of bruto
+  const arenaRow = (r: Registro) => parseFloat(r.valor || "0") * (pctArenaNum / 100);
   const arenaSum = (regs: Registro[]) => regs.reduce((s, r) => s + arenaRow(r), 0);
 
   const confirmados = registros.filter((r) => r.status === "confirmado");
@@ -2592,9 +2606,8 @@ function RelatorioView({
     (s, r) => s + parseFloat(r.valorProfessor || "0"),
     0
   );
-  // gestão = pctGestao% of total received; arena = total − prof − gestão
+  const totalArena = totalRecebido * (pctArenaNum / 100);
   const totalGestao = pctGestaoNum > 0 ? totalRecebido * (pctGestaoNum / 100) : 0;
-  const totalArena = totalRecebido - totalProfessores - totalGestao;
   const totalCheckins = confirmados.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const naoEncontrados = registros.filter((r) => r.status === "nao_encontrado");
 

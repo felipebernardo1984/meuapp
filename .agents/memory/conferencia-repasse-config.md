@@ -4,13 +4,19 @@ description: How the gestão/arena split is stored and computed in the conferên
 ---
 
 ## Rule
-`conferenciaRepasseConfig` table stores one row per (arenaId, periodo). Only `pctArena` is stored; `pctGestao` is derived on the fly as `100 - pctArena - professor%`.
+`conferenciaRepasseConfig` stores one row per (arenaId, periodo) with **two independent fields**: `pctArena` and `pctGestao`. Both are % of the gross (bruto) total received — they are NOT ratios of a remainder.
 
-**Why:** Each record can have a different professor%, so gestão is per-record computed — storing a global pctGestao in the config would require recomputing on every professor change.
+**Why:** User configures Arena and Gestão as independent items. e.g. Arena=40%, Gestão=10%, Professores handle their own %. The user is responsible for ensuring all %s sum to 100%.
+
+## Formula (both SessaoView and RelatorioView)
+- `vArena  = valor × pctArena  / 100`
+- `vGestao = valor × pctGestao / 100` (zero when pctGestao = 0)
+- `vProf`  = from individual professor %, stored in `valorProfessor`
 
 ## How to apply
-- `gestaoAtiva = pctArena < 100`
-- Per record: `vArena = valor * pctArena/100`, `vGestao = max(0, valor - vArena - valorProfessor)`
-- When gestão = 0 (pctArena = 100), UI hides gestão lines entirely — backwards compatible with arenas that don't use this feature.
-- `gestaoTipo`: "caixa" (separate line, no professor) or "professor" (attributed to a specific conferência professor).
-- Auto-copy of professors+students from prior period: done server-side in GET /api/conferencia/professores — if period has no records, finds most recent prior period and copies all professors+students.
+- `gestaoAtiva = pctGestao > 0`; when false, gestão destination selector is hidden
+- `pctArena` defaults to 100 when no config row exists (backwards compatible)
+- UI card (RepasseConfigCard): 2-column layout — left col = % Repasse Arena, right col = % Gestão + destination selector
+- Destination (`gestaoTipo`): "caixa" (separate bucket) or "professor" (attributed to a specific conferência professor via `gestaoProfessorId`)
+- **RepasseConfigCard lives only in RelatorioView** — it was removed from MesView
+- Auto-copy of professors+students from prior period: done server-side in GET /api/conferencia/professores
