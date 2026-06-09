@@ -772,7 +772,7 @@ function LandingView({
   const mesGroups = groupByMonth(sessoes);
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-foreground">Conferência</h1>
@@ -1057,10 +1057,10 @@ function MesView({
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-bold text-foreground">Conferência — {mesLabel}</h1>
+        <h1 className="text-lg font-bold text-foreground">{mesLabel}</h1>
         <p className="text-xs text-muted-foreground">TotalPass & Wellhub · professores e arquivos do mês</p>
       </div>
 
@@ -1936,7 +1936,7 @@ function SessaoView({
   const handleExportPDF = () => exportToPDF(sessao);
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+    <div className="space-y-5">
 
       {/* ── Header ── */}
       <div className="flex items-center gap-3 flex-wrap">
