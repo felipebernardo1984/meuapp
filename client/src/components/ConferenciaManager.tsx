@@ -2151,7 +2151,7 @@ function SessaoView({
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-px -m-px overflow-visible">
         <Card
           className={cn("border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none", filtroStatus === "" && "ring-2 ring-primary/50")}
           onClick={() => setFiltroStatus("")}
@@ -2315,18 +2315,6 @@ function SessaoView({
                 data-testid="input-busca-nome"
               />
             </div>
-            <Select value={filtroStatus} onValueChange={(v) => setFiltroStatus(v === "__all__" ? "" : v)}>
-              <SelectTrigger className="h-8 text-sm w-36" data-testid="select-filtro-status">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">Todos os status</SelectItem>
-                <SelectItem value="confirmado">✓ Confirmados</SelectItem>
-                <SelectItem value="pendente">~ Possíveis</SelectItem>
-                <SelectItem value="nao_encontrado">✗ Não encontrados</SelectItem>
-                <SelectItem value="ignorado">— Ignorados</SelectItem>
-              </SelectContent>
-            </Select>
             {filteredProfs.length > 0 && (
               <Select value={filtroProfessor} onValueChange={(v) => setFiltroProfessor(v === "__all__" ? "" : v)}>
                 <SelectTrigger className="h-8 text-sm w-40" data-testid="select-filtro-professor">
