@@ -1931,32 +1931,6 @@ function SessaoView({
           <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs" data-testid="button-export-pdf">
             <Printer className="h-3.5 w-3.5" /> PDF
           </Button>
-          <div className="flex border rounded-md overflow-hidden divide-x text-muted-foreground">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleUndo}
-              disabled={histPast.length === 0 || updateMutation.isPending}
-              className="rounded-none h-8 px-2.5 gap-1 text-xs border-0"
-              title="Desfazer última ação"
-              data-testid="button-undo"
-            >
-              <RotateCcw className="h-3 w-3" />
-              <span className="hidden sm:inline">Voltar</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRedo}
-              disabled={histFuture.length === 0 || updateMutation.isPending}
-              className="rounded-none h-8 px-2.5 gap-1 text-xs border-0"
-              title="Refazer"
-              data-testid="button-redo"
-            >
-              <RotateCw className="h-3 w-3" />
-              <span className="hidden sm:inline">Refazer</span>
-            </Button>
-          </div>
           <Button
             variant="outline"
             size="sm"
@@ -1967,6 +1941,28 @@ function SessaoView({
           >
             <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
             {rematchMutation.isPending ? "Atualizando…" : "Atualizar"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUndo}
+            disabled={histPast.length === 0 || updateMutation.isPending}
+            className="h-8 w-8 p-0"
+            title="Desfazer última ação"
+            data-testid="button-undo"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRedo}
+            disabled={histFuture.length === 0 || updateMutation.isPending}
+            className="h-8 w-8 p-0"
+            title="Refazer"
+            data-testid="button-redo"
+          >
+            <RotateCw className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
