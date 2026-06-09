@@ -1320,12 +1320,18 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   return (
     <Card className="border">
       <CardContent className="p-4 space-y-3">
-        <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
+        <div>
+          <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Os % se aplicam sobre o valor <strong>após</strong> a comissão de cada professor.
+            Ex: professor 50% → arena {localPctArena}% × 50% = {Math.round(parseFloat(localPctArena||"0") * 0.5)}% do total recebido.
+          </p>
+        </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* % Arena */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Arena</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Arena <span className="text-[10px] font-normal">(pós-comissão)</span></p>
             <div className="relative">
               <Input
                 type="number"
@@ -1347,7 +1353,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
 
           {/* % Gestão */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Gestão</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Gestão <span className="text-[10px] font-normal">(pós-comissão)</span></p>
             <div className="relative">
               <Input
                 type="number"
@@ -1369,7 +1375,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
 
           {gestaoAtiva && (
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Retenção vai para</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Gestão vai para</p>
               <Select
                 value={gestaoTipo}
                 onValueChange={(v) => save({ gestaoTipo: v, gestaoProfessorId: v === "caixa" ? null : gestaoProfessorId })}
@@ -2003,8 +2009,9 @@ function SessaoView({
   const calcDisplayValores = (r: Registro) => {
     const v = parseFloat(r.valor || "0");
     const vProf = parseFloat(r.valorProfessor || "0");
-    const vArena = gestaoAtiva ? v * (pctArenaNum / 100) : v - vProf;
-    const vGestao = gestaoAtiva ? Math.max(0, v - vArena - vProf) : 0;
+    const remaining = v - vProf;
+    const vArena = gestaoAtiva ? remaining * (pctArenaNum / 100) : remaining;
+    const vGestao = gestaoAtiva ? remaining - vArena : 0;
     return { vArena, vGestao };
   };
 
