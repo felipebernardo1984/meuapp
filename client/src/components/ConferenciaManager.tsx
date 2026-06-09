@@ -2754,62 +2754,92 @@ function RelatorioView({
             const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
             const pct = g.registros[0]?.percentual ?? "0";
 
-            const renderTabela = (rows: Registro[]) => (
-              <div className="border rounded overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40">
-                      <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
-                      <TableHead className="text-xs py-2">Modalidade</TableHead>
-                      <TableHead className="text-xs py-2">Data/Hora</TableHead>
-                      <TableHead className="text-xs py-2 text-right">Total</TableHead>
-                      <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
-                      <TableHead className="text-xs py-2 text-right">Arena</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[...rows]
-                      .sort((a, b) => {
-                        const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
-                        return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
-                      })
-                      .map((r) => (
-                        <TableRow key={r.id} className="text-xs">
-                          <TableCell className="py-2 font-medium max-w-[160px]">
-                            <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {r.modalidade ? (
-                                <span className="text-xs font-medium">{r.modalidade}</span>
-                              ) : (
-                                <span className="text-muted-foreground italic text-xs">—</span>
-                              )}
-                              {r.categoria === "dayuse" && (
-                                <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                  Day Use
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
-                            {fmtData(r.data)}
-                          </TableCell>
-                          <TableCell className="py-2 text-right font-mono tabular-nums">
-                            {fmtVal(r.valor)}
-                          </TableCell>
-                          <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                            {fmtVal(r.valorProfessor)}
-                          </TableCell>
-                          <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
-                            {fmtVal(r.valorArena)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </div>
-            );
+            const renderLinhas = (rows: Registro[]) =>
+              [...rows]
+                .sort((a, b) => {
+                  const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
+                  return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
+                })
+                .map((r) => (
+                  <TableRow key={r.id} className="text-xs">
+                    <TableCell className="py-2 font-medium max-w-[160px]">
+                      <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
+                    </TableCell>
+                    <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
+                      {fmtData(r.data)}
+                    </TableCell>
+                    <TableCell className="py-2 text-right font-mono tabular-nums">
+                      {fmtVal(r.valor)}
+                    </TableCell>
+                    <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                      {fmtVal(r.valorProfessor)}
+                    </TableCell>
+                    <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
+                      {fmtVal(r.valorArena)}
+                    </TableCell>
+                  </TableRow>
+                ));
+
+            const renderTabela = (rows: Registro[]) => {
+              // group by modality
+              const byMod = new Map<string, Registro[]>();
+              for (const r of rows) {
+                const mod = r.modalidade?.trim() || "—";
+                if (!byMod.has(mod)) byMod.set(mod, []);
+                byMod.get(mod)!.push(r);
+              }
+              const mods = Array.from(byMod.entries()).sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
+              const multiMod = mods.length > 1;
+
+              const tableHeader = (hideModalidade = false) => (
+                <TableRow className="bg-muted/40">
+                  <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
+                  {!hideModalidade && <TableHead className="text-xs py-2">Modalidade</TableHead>}
+                  <TableHead className="text-xs py-2">Data/Hora</TableHead>
+                  <TableHead className="text-xs py-2 text-right">Total</TableHead>
+                  <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
+                  <TableHead className="text-xs py-2 text-right">Arena</TableHead>
+                </TableRow>
+              );
+
+              if (!multiMod) {
+                return (
+                  <div className="border rounded overflow-hidden">
+                    <Table>
+                      <TableHeader>{tableHeader(true)}</TableHeader>
+                      <TableBody>{renderLinhas(rows)}</TableBody>
+                    </Table>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-2">
+                  {mods.map(([mod, modRows]) => {
+                    const isDayUse = modRows.some((r) => r.categoria === "dayuse");
+                    return (
+                      <div key={mod} className="border rounded overflow-hidden">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/60 border-b">
+                          <span className="text-xs font-semibold text-foreground">{mod}</span>
+                          {isDayUse && (
+                            <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                              Day Use
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {modRows.length} aluno{modRows.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <Table>
+                          <TableHeader>{tableHeader(true)}</TableHeader>
+                          <TableBody>{renderLinhas(modRows)}</TableBody>
+                        </Table>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            };
 
             return (
               <Card key={key}>
