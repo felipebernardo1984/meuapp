@@ -1077,9 +1077,6 @@ function MesView({
       {/* ── Professores (first) ─────────────────────────────────────────── */}
       <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />
 
-      {/* ── Repasse & Gestão ─────────────────────────────────────────────── */}
-      <RepasseConfigCard arenaId={arenaId} periodo={monthKey} />
-
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5 space-y-4">
         <div>
@@ -1285,6 +1282,12 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
     queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
   });
 
+  const [localPct, setLocalPct] = useState<string>("100");
+
+  useEffect(() => {
+    if (config?.pctArena !== undefined) setLocalPct(config.pctArena);
+  }, [config?.pctArena]);
+
   const saveMutation = useMutation({
     mutationFn: (vals: RepasseConfig & { periodo: string }) =>
       apiRequest("PUT", "/api/conferencia/repasse-config", vals).then((r) => r.json()),
@@ -1292,16 +1295,16 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
     onError: () => toast({ title: "Erro ao salvar configuração de repasse", variant: "destructive" }),
   });
 
-  const pctArena = config?.pctArena ?? "100";
   const gestaoTipo = config?.gestaoTipo ?? "caixa";
   const gestaoProfessorId = config?.gestaoProfessorId ?? null;
-  const gestaoAtiva = parseFloat(pctArena) < 100;
-  const pctGestaoCalc = Math.max(0, 100 - parseFloat(pctArena || "100"));
+  const pctArenaNum = parseFloat(localPct) || 0;
+  const gestaoAtiva = pctArenaNum < 100;
+  const pctGestaoCalc = Math.max(0, 100 - pctArenaNum);
 
-  const save = (patch: Partial<RepasseConfig>) =>
+  const save = (patch: Partial<RepasseConfig & { pctArena: string }>) =>
     saveMutation.mutate({
       periodo,
-      pctArena: patch.pctArena ?? pctArena,
+      pctArena: patch.pctArena ?? localPct,
       gestaoTipo: patch.gestaoTipo ?? gestaoTipo,
       gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : gestaoProfessorId,
     });
@@ -1309,54 +1312,32 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   return (
     <Card className="border">
       <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-sm font-semibold text-foreground">Repasse &amp; Gestão</p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">% Repasse Arena</p>
+            <div className="relative">
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={localPct}
+                onChange={(e) => setLocalPct(e.target.value)}
+                onBlur={() => save({ pctArena: localPct })}
+                className="pr-7 h-9"
+                data-testid="input-pct-arena"
+              />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
               {gestaoAtiva
-                ? `Arena recebe ${pctArena}% · Gestão retém ${pctGestaoCalc}% da receita`
-                : "Arena recebe 100% da receita após comissões dos professores"}
+                ? <>Gestão retém: <strong>{pctGestaoCalc}%</strong></>
+                : "Arena recebe 100% após comissões"}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => save({ pctArena: gestaoAtiva ? "100" : "60", gestaoTipo: "caixa", gestaoProfessorId: null })}
-            className={cn(
-              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none",
-              gestaoAtiva ? "bg-primary" : "bg-muted-foreground/30"
-            )}
-            data-testid="toggle-gestao"
-          >
-            <span
-              className={cn(
-                "inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform",
-                gestaoAtiva ? "translate-x-[18px]" : "translate-x-0.5"
-              )}
-            />
-          </button>
-        </div>
 
-        {gestaoAtiva && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">% Repasse Arena</p>
-              <div className="relative">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={pctArena}
-                  onChange={(e) => save({ pctArena: e.target.value })}
-                  className="pr-7 h-9"
-                  data-testid="input-pct-arena"
-                />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Retenção gestão: <strong>{pctGestaoCalc}%</strong>
-              </p>
-            </div>
-
+          {gestaoAtiva && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1.5">Retenção vai para</p>
               <Select
@@ -1372,27 +1353,27 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
                 </SelectContent>
               </Select>
             </div>
+          )}
 
-            {gestaoTipo === "professor" && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1.5">Professor gestor</p>
-                <Select
-                  value={gestaoProfessorId ?? ""}
-                  onValueChange={(v) => save({ gestaoProfessorId: v || null })}
-                >
-                  <SelectTrigger className="h-9" data-testid="select-gestao-professor">
-                    <SelectValue placeholder="Selecionar professor…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {professores.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-        )}
+          {gestaoAtiva && gestaoTipo === "professor" && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Professor gestor</p>
+              <Select
+                value={gestaoProfessorId ?? ""}
+                onValueChange={(v) => save({ gestaoProfessorId: v || null })}
+              >
+                <SelectTrigger className="h-9" data-testid="select-gestao-professor">
+                  <SelectValue placeholder="Selecionar professor…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {professores.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -2548,7 +2529,7 @@ function SessaoView({
       )}
 
       {/* ── Relatório Tab ── */}
-      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} />}
+      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} arenaId={arenaId} periodo={periodo} confsProfs={confsProfs} />}
 
       {/* ── Link Dialog ── */}
       {linkDialog && (
@@ -2592,12 +2573,55 @@ function RelatorioView({
   plataforma,
   sessao,
   sessaoId,
+  arenaId: _arenaId,
+  periodo,
+  confsProfs,
 }: {
   registros: Registro[];
   plataforma: string;
   sessao: SessaoDetalhe;
   sessaoId: string;
+  arenaId: string;
+  periodo: string | undefined;
+  confsProfs: ConfProfessor[];
 }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: repasseCfg } = useQuery<RepasseConfig>({
+    queryKey: ["/api/conferencia/repasse-config", periodo],
+    queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
+    enabled: !!periodo,
+  });
+
+  const [localPct, setLocalPct] = useState<string>("100");
+  useEffect(() => {
+    if (repasseCfg?.pctArena !== undefined) setLocalPct(repasseCfg.pctArena);
+  }, [repasseCfg?.pctArena]);
+
+  const saveRepasse = useMutation({
+    mutationFn: (vals: RepasseConfig & { periodo: string }) =>
+      apiRequest("PUT", "/api/conferencia/repasse-config", vals).then((r) => r.json()),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/repasse-config", periodo] }),
+    onError: () => toast({ title: "Erro ao salvar configuração de repasse", variant: "destructive" }),
+  });
+
+  const rGestaoTipo = repasseCfg?.gestaoTipo ?? "caixa";
+  const rGestaoProfId = repasseCfg?.gestaoProfessorId ?? null;
+  const pctArenaNum = parseFloat(localPct) || 0;
+  const rGestaoAtiva = pctArenaNum < 100;
+  const pctGestao = Math.max(0, 100 - pctArenaNum);
+
+  const saveRepPassePatch = (patch: Partial<RepasseConfig & { pctArena: string }>) => {
+    if (!periodo) return;
+    saveRepasse.mutate({
+      periodo,
+      pctArena: patch.pctArena ?? localPct,
+      gestaoTipo: patch.gestaoTipo ?? rGestaoTipo,
+      gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : rGestaoProfId,
+    });
+  };
+
   const confirmados = registros.filter((r) => r.status === "confirmado");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalProfessores = confirmados.reduce(
@@ -2869,6 +2893,85 @@ function RelatorioView({
           </div>
         );
       })()}
+
+      {/* Repasse & Gestão — configuração inline */}
+      {periodo && (
+        <div>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Repasse &amp; Gestão
+          </h2>
+          <Card className="border">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-4 flex-wrap">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">% Repasse Arena</p>
+                  <div className="relative w-28">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={localPct}
+                      onChange={(e) => setLocalPct(e.target.value)}
+                      onBlur={() => saveRepPassePatch({ pctArena: localPct })}
+                      className="pr-7 h-9 text-sm"
+                      data-testid="input-pct-arena-relatorio"
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {rGestaoAtiva
+                      ? <>Gestão retém: <strong>{pctGestao}%</strong></>
+                      : "Arena recebe 100% após comissões"}
+                  </p>
+                </div>
+
+                {rGestaoAtiva && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Retenção vai para</p>
+                    <Select
+                      value={rGestaoTipo}
+                      onValueChange={(v) => saveRepPassePatch({ gestaoTipo: v, gestaoProfessorId: v === "caixa" ? null : rGestaoProfId })}
+                    >
+                      <SelectTrigger className="h-9 w-48" data-testid="select-gestao-tipo-relatorio">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="caixa">Caixa gestão (separado)</SelectItem>
+                        <SelectItem value="professor">Professor específico</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {rGestaoAtiva && rGestaoTipo === "professor" && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Professor gestor</p>
+                    <Select
+                      value={rGestaoProfId ?? ""}
+                      onValueChange={(v) => saveRepPassePatch({ gestaoProfessorId: v || null })}
+                    >
+                      <SelectTrigger className="h-9 w-48" data-testid="select-gestao-prof-relatorio">
+                        <SelectValue placeholder="Selecionar professor…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {confsProfs.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {saveRepasse.isPending && (
+                  <div className="self-end pb-2">
+                    <p className="text-xs text-muted-foreground">Salvando…</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Resumo de Pagamentos */}
       {profGroups.length > 0 && (() => {
