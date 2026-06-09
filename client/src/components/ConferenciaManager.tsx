@@ -237,34 +237,31 @@ function ColMapDialog({
 
   const NONE = "__nenhuma__";
 
-  const isTotalPass = platform === "totalpass";
-  const isWellhub = platform === "wellhub";
-
   const fields = [
     {
       key: "colNome" as const,
-      label: isTotalPass ? "Nome do Aluno (Colaborador)" : isWellhub ? "Nome do Aluno (Visitante)" : "Nome do Aluno",
+      label: "Nome do Aluno",
       required: true,
       value: colNome,
       set: setColNome,
     },
     {
       key: "colValor" as const,
-      label: isTotalPass ? "Pagamento (Repasse)" : "Pagamento",
+      label: "Pagamento",
       required: true,
       value: colValor,
       set: setColValor,
     },
     {
       key: "colModalidade" as const,
-      label: isTotalPass ? "Modalidade (Plano da academia)" : isWellhub ? "Modalidade (Produto)" : "Modalidade ou Plano",
+      label: "Modalidade ou Plano",
       required: false,
       value: colModalidade,
       set: setColModalidade,
     },
     {
       key: "colData" as const,
-      label: isTotalPass ? "Data check-in (Validado em)" : isWellhub ? "Data do check-in (Data)" : "Data check-in",
+      label: "Data check-in",
       required: false,
       value: colData,
       set: setColData,
