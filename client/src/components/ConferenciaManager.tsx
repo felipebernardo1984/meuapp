@@ -2909,6 +2909,7 @@ function RelatorioView({
                         const prof = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
                         const arena = arenaSum(g.registros);
                         const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
+                        const uniqueAlunos = new Set(g.registros.map(r => r.studentId ?? r.nomePlataforma.toLowerCase().trim())).size;
                         const arenaOnly = isArenaOnlyMod(mod);
                         return (
                           <TableRow key={mod} className="text-xs">
@@ -2918,7 +2919,7 @@ function RelatorioView({
                                 <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 py-0">Arena</Badge>
                               )}
                             </TableCell>
-                            <TableCell className="py-1.5 text-center">{g.registros.length}</TableCell>
+                            <TableCell className="py-1.5 text-center">{uniqueAlunos}</TableCell>
                             <TableCell className="py-1.5 text-center">{chks}</TableCell>
                             <TableCell className="py-1.5 text-right font-mono">{fmtVal(String(receita))}</TableCell>
                             <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">{fmtVal(String(prof))}</TableCell>
@@ -2942,7 +2943,8 @@ function RelatorioView({
           const comissao = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
           const arena = arenaSum(g.registros);
           const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
-          return { key, nome: g.nome, receita, comissao, arena, chks, alunos: g.registros.length };
+          const alunos = new Set(g.registros.map(r => r.studentId ?? r.nomePlataforma.toLowerCase().trim())).size;
+          return { key, nome: g.nome, receita, comissao, arena, chks, alunos };
         });
         return (
           <div>
