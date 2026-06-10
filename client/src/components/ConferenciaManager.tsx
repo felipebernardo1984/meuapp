@@ -496,6 +496,114 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   w.onload = () => w.print();
 }
 
+function exportComprovanteConsolidado(
+  sessoes: SessaoDetalhe[],
+  professorId: string,
+  professorNome: string,
+  percentualComissao: string,
+  mesLabel: string
+) {
+  type RegComArquivo = Registro & { nomeArquivo: string };
+
+  const allRegs: RegComArquivo[] = [];
+  for (const s of sessoes) {
+    const regs = s.registros.filter(
+      (r) =>
+        r.status === "confirmado" &&
+        (professorId === "__arena__" ? !r.professorId : r.professorId === professorId)
+    );
+    regs.forEach((r) => allRegs.push({ ...r, nomeArquivo: s.nomeArquivo }));
+  }
+
+  if (allRegs.length === 0) return;
+
+  const pct = percentualComissao;
+  const subtotal = allRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const comissao = allRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+  const arena = allRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const chks = allRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const sorted = [...allRegs].sort((a, b) => {
+    const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
+    return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
+  });
+
+  const rows = sorted
+    .map(
+      (r) => `
+    <tr>
+      <td>${r.nomePlataforma}</td>
+      <td>${r.modalidade ?? "—"}</td>
+      <td style="text-align:center">${fmtData(r.data)}</td>
+      <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
+      ${professorId !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+      <td style="color:#555;font-size:9px">${r.nomeArquivo}</td>
+    </tr>`
+    )
+    .join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Comprovante Consolidado — ${professorNome}</title>
+<style>
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { font-family:Arial,sans-serif;font-size:11px;color:#111;padding:24px; }
+  h1 { font-size:16px;margin-bottom:2px; }
+  .subtitle { color:#555;font-size:11px;margin-bottom:16px; }
+  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:bold; }
+  .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:bold; }
+  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px; }
+  .summary-card { border:1px solid #ddd;border-radius:6px;padding:10px 14px; }
+  .summary-card .val { font-size:14px;font-weight:bold;margin-bottom:2px; }
+  .summary-card .lbl { font-size:9px;color:#666; }
+  table { width:100%;border-collapse:collapse;border:1px solid #ddd; }
+  th { background:#f9f9f9;text-align:left;padding:5px 8px;font-size:10px;border-bottom:1px solid #ddd; }
+  td { padding:5px 8px;border-bottom:1px solid #eee;font-size:10px; }
+  .total-row { background:#1e293b;color:white;border-radius:6px;padding:10px 16px;margin-top:16px; }
+  .file-pills { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px; }
+  .file-pill { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:3px 8px;font-size:9px;color:#475569; }
+  @media print { body { padding:10px; } }
+</style>
+</head>
+<body>
+  <h1>${professorNome}${professorId !== "__arena__" ? `<span class="badge">${pct}% comissão</span>` : ""}<span class="badge-consolidated">Consolidado</span></h1>
+  <div class="subtitle">Comprovante de receita consolidado — ${mesLabel} · ${sessoes.length} arquivo${sessoes.length !== 1 ? "s" : ""}</div>
+  <div class="file-pills">${sessoes.map((s) => `<span class="file-pill">${s.nomeArquivo}</span>`).join("")}</div>
+  <div class="summary-grid">
+    <div class="summary-card"><div class="val">${allRegs.length}</div><div class="lbl">Alunos</div></div>
+    <div class="summary-card"><div class="val">${chks}</div><div class="lbl">Check-ins</div></div>
+    <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Total</div></div>
+    ${professorId !== "__arena__" ? `<div class="summary-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(comissao)}</div><div class="lbl">Sua Comissão (${pct}%)</div></div>` : `<div class="summary-card"><div class="val">${fmt(arena)}</div><div class="lbl">Valor Arena</div></div>`}
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nome na Plataforma</th>
+        <th>Modalidade</th>
+        <th style="text-align:center">Data/Horário</th>
+        <th style="text-align:right">Valor</th>
+        ${professorId !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
+        <th>Arquivo</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="total-row">
+    <strong>${fmt(subtotal)}</strong> total · ${chks} check-in${chks !== 1 ? "s" : ""}${professorId !== "__arena__" ? ` · Comissão: <strong>${fmt(comissao)}</strong> · Arena: ${fmt(arena)}` : ""}
+  </div>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
 function exportToPDF(sessao: SessaoDetalhe) {
   const confirmados = sessao.registros.filter((r) => r.status === "confirmado");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
@@ -1095,7 +1203,7 @@ function MesView({
       )}
 
       {/* ── Professores (first) ─────────────────────────────────────────── */}
-      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />
+      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} sessaoIds={mesSessoes.map((s) => s.id)} mesLabel={mesLabel} />
 
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5">
@@ -1416,7 +1524,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   );
 }
 
-function ConfiguracaoView({ arenaId, periodo }: { arenaId: string; periodo: string }) {
+function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string }) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
   const [editingProf, setEditingProf] = useState<string | null>(null);
@@ -1424,6 +1532,8 @@ function ConfiguracaoView({ arenaId, periodo }: { arenaId: string; periodo: stri
   const [editPct, setEditPct] = useState("0");
   const [novoAluno, setNovoAluno] = useState<Record<string, string>>({});
   const [listMode, setListMode] = useState<Record<string, boolean>>({});
+  const [comprovanteLoading, setComprovanteLoading] = useState<string | null>(null);
+  const qcOuter = useQueryClient();
   const [listaTexto, setListaTexto] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -1435,6 +1545,28 @@ function ConfiguracaoView({ arenaId, periodo }: { arenaId: string; periodo: stri
     queryFn: () =>
       fetch(`/api/conferencia/professores?periodo=${periodo}`).then((r) => r.json()),
   });
+
+  const handleComprovanteConsolidado = async (prof: ConfProfessor) => {
+    if (sessaoIds.length === 0) {
+      toast({ title: "Nenhum arquivo enviado", description: "Envie os arquivos do mês antes de gerar o comprovante.", variant: "destructive" });
+      return;
+    }
+    setComprovanteLoading(prof.id);
+    try {
+      const sessoes = await Promise.all(
+        sessaoIds.map((id) => {
+          const cached = qcOuter.getQueryData<SessaoDetalhe>(["/api/conferencia/sessao", id]);
+          if (cached) return Promise.resolve(cached);
+          return fetch(`/api/conferencia/sessao/${id}`).then((r) => r.json() as Promise<SessaoDetalhe>);
+        })
+      );
+      exportComprovanteConsolidado(sessoes, prof.id, prof.nome, prof.percentualComissao, mesLabel);
+    } catch {
+      toast({ title: "Erro ao gerar comprovante", variant: "destructive" });
+    } finally {
+      setComprovanteLoading(null);
+    }
+  };
 
   const addProfMutation = useMutation({
     mutationFn: (data: { nome: string; percentualComissao: string }) =>
@@ -1709,6 +1841,23 @@ function ConfiguracaoView({ arenaId, periodo }: { arenaId: string; periodo: stri
                     {/* Actions */}
                     {!isEditing && (
                       <div className="flex items-center gap-1 shrink-0">
+                        {sessaoIds.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs gap-1.5"
+                            onClick={() => handleComprovanteConsolidado(prof)}
+                            disabled={comprovanteLoading === prof.id}
+                            data-testid={`button-comprovante-consolidado-${prof.id}`}
+                          >
+                            {comprovanteLoading === prof.id ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Printer className="h-3 w-3" />
+                            )}
+                            Comprovante
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
