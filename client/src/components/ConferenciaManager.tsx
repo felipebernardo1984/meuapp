@@ -434,7 +434,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   const rows = sortedRegs.map((r) => `
     <tr>
       <td>${r.nomePlataforma}</td>
-      <td>${r.alunoNomeMatch ?? r.nomePlataforma}</td>
+      <td>${r.modalidade ?? "—"}</td>
       <td style="text-align:center">${fmtData(r.data)}</td>
       <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
       ${professorKey !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
@@ -1972,8 +1972,15 @@ function SessaoView({
   });
 
   const addMensalistaMutation = useMutation({
-    mutationFn: (body: { studentId: string; alunoNome: string; professorId: string; valor: string; comprovante?: string | null }) =>
-      apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/mensalista`, body).then((r) => r.json()),
+    mutationFn: async (body: { studentId: string; alunoNome: string; professorId: string; valor: string; comprovante?: string | null }) => {
+      const res = await apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/mensalista`, body);
+      const ct = res.headers.get("content-type") ?? "";
+      if (!ct.includes("application/json")) {
+        const txt = await res.text();
+        throw new Error(`Resposta inesperada do servidor (${res.status}): ${txt.slice(0, 120)}`);
+      }
+      return res.json() as Promise<Registro>;
+    },
     onSuccess: (novo: Registro) => {
       qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", sessaoId], (old) => {
         if (!old) return old;
@@ -2148,7 +2155,10 @@ function SessaoView({
     setRedirectAProf("");
   };
 
-  const handleExportCSV = () => { window.location.href = `/api/conferencia/export/${sessaoId}`; };
+  const handleExportCSV = () => {
+    const w = window.open(`/api/conferencia/export/${sessaoId}`, "_blank");
+    if (!w) window.location.href = `/api/conferencia/export/${sessaoId}`;
+  };
   const handleExportPDF = () => exportToPDF(sessao);
 
   return (
