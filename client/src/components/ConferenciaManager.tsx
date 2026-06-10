@@ -1880,6 +1880,7 @@ function SessaoView({
   const [mValor, setMValor] = useState("");
   const [mComprovante, setMComprovante] = useState<string | null>(null);
   const [mAlunoComboOpen, setMAlunoComboOpen] = useState(false);
+  const [mSearchQuery, setMSearchQuery] = useState("");
 
   const { data: sessao, isLoading } = useQuery<SessaoDetalhe>({
     queryKey: ["/api/conferencia/sessao", sessaoId],
@@ -2647,9 +2648,31 @@ function SessaoView({
                   </PopoverTrigger>
                   <PopoverContent className="w-[300px] p-0" align="end">
                     <Command>
-                      <CommandInput placeholder="Buscar aluno cadastrado…" className="h-9" />
+                      <CommandInput
+                        placeholder="Buscar ou digitar nome…"
+                        className="h-9"
+                        value={mSearchQuery}
+                        onValueChange={setMSearchQuery}
+                      />
                       <CommandList>
-                        <CommandEmpty>Nenhum aluno encontrado.</CommandEmpty>
+                        <CommandEmpty>
+                          {mSearchQuery.trim() ? (
+                            <button
+                              className="w-full px-3 py-2 text-sm text-left hover:bg-muted/60 transition-colors flex items-center gap-2"
+                              onClick={() => {
+                                setMAlunoNome(mSearchQuery.trim());
+                                setMAlunoId("");
+                                setMSearchQuery("");
+                                setMAlunoComboOpen(false);
+                              }}
+                            >
+                              <UserPlus className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              <span>Usar <strong>"{mSearchQuery.trim()}"</strong> como nome</span>
+                            </button>
+                          ) : (
+                            <span className="px-3 py-2 text-sm text-muted-foreground">Nenhum aluno encontrado.</span>
+                          )}
+                        </CommandEmpty>
                         <CommandGroup>
                           {[...arenaStudents]
                             .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
@@ -2660,6 +2683,7 @@ function SessaoView({
                                 onSelect={() => {
                                   setMAlunoId(s.id);
                                   setMAlunoNome(s.nome);
+                                  setMSearchQuery("");
                                   setMAlunoComboOpen(false);
                                 }}
                               >
