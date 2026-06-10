@@ -2630,47 +2630,51 @@ function SessaoView({
 
           <div className="space-y-4 py-1">
             <div className="space-y-1.5">
-              <Label className="text-xs">Aluno</Label>
-              <Popover open={mAlunoComboOpen} onOpenChange={setMAlunoComboOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full h-9 justify-between text-sm font-normal"
-                    data-testid="select-mensalista-aluno"
-                  >
-                    {mAlunoId
-                      ? arenaStudents.find((s) => s.id === mAlunoId)?.nome ?? "Selecionar aluno…"
-                      : "Selecionar aluno…"}
-                    <Search className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[320px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Buscar aluno por nome…" className="h-9" />
-                    <CommandList>
-                      <CommandEmpty>Nenhum aluno encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {[...arenaStudents]
-                          .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-                          .map((s) => (
-                            <CommandItem
-                              key={s.id}
-                              value={s.nome}
-                              onSelect={() => {
-                                setMAlunoId(s.id);
-                                setMAlunoNome(s.nome);
-                                setMAlunoComboOpen(false);
-                              }}
-                            >
-                              {s.nome}
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <Label className="text-xs">Nome do aluno</Label>
+              <div className="flex gap-1.5">
+                <Input
+                  placeholder="Digite o nome…"
+                  value={mAlunoNome}
+                  onChange={(e) => { setMAlunoNome(e.target.value); setMAlunoId(""); }}
+                  className="h-9 text-sm flex-1"
+                  data-testid="input-mensalista-nome"
+                />
+                <Popover open={mAlunoComboOpen} onOpenChange={setMAlunoComboOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 px-2 shrink-0" title="Buscar aluno cadastrado" data-testid="button-buscar-aluno">
+                      <Search className="h-3.5 w-3.5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="end">
+                    <Command>
+                      <CommandInput placeholder="Buscar aluno cadastrado…" className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>Nenhum aluno encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {[...arenaStudents]
+                            .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+                            .map((s) => (
+                              <CommandItem
+                                key={s.id}
+                                value={s.nome}
+                                onSelect={() => {
+                                  setMAlunoId(s.id);
+                                  setMAlunoNome(s.nome);
+                                  setMAlunoComboOpen(false);
+                                }}
+                              >
+                                {s.nome}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {mAlunoId && (
+                <p className="text-[11px] text-muted-foreground">Aluno vinculado ao cadastro da arena</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -2757,7 +2761,7 @@ function SessaoView({
           <DialogFooter>
             <Button variant="ghost" onClick={() => setMensalistaOpen(false)}>Cancelar</Button>
             <Button
-              disabled={!mAlunoId || !mValor || parseFloat(mValor) <= 0 || addMensalistaMutation.isPending}
+              disabled={!mAlunoNome.trim() || !mValor || parseFloat(mValor) <= 0 || addMensalistaMutation.isPending}
               onClick={() => {
                 addMensalistaMutation.mutate({
                   studentId: mAlunoId,
