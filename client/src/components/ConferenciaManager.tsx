@@ -447,6 +447,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 <title>Comprovante — ${professorNome}</title>
 <style>
   * { margin:0;padding:0;box-sizing:border-box; }
+  @page { margin: 0; }
   body { font-family:Arial,sans-serif;font-size:11px;color:#111;padding:24px; }
   h1 { font-size:16px;margin-bottom:2px; }
   .subtitle { color:#555;font-size:11px;margin-bottom:16px; }
@@ -459,7 +460,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   th { background:#f9f9f9;text-align:left;padding:5px 8px;font-size:10px;border-bottom:1px solid #ddd; }
   td { padding:5px 8px;border-bottom:1px solid #eee;font-size:10px; }
   .total-row { background:#1e293b;color:white;border-radius:6px;padding:10px 16px;margin-top:16px; }
-  @media print { body { padding:10px; } }
+  @media print { body { padding:16px; } }
 </style>
 </head>
 <body>
@@ -594,6 +595,7 @@ function exportComprovanteConsolidado(
 <meta charset="UTF-8">
 <title>Comprovante Consolidado — ${professorNome}</title>
 <style>
+  @page { margin: 0; }
   * { margin:0;padding:0;box-sizing:border-box; }
   body { font-family:Arial,sans-serif;font-size:11px;color:#111;padding:24px; }
   h1 { font-size:16px;margin-bottom:2px; }
@@ -619,7 +621,7 @@ function exportComprovanteConsolidado(
   .grand-total { background:#1e293b;color:white;border-radius:6px;padding:12px 16px;margin-top:28px;font-size:11px; }
   .page-break { height:24px; }
   @media print {
-    body { padding:10px; }
+    body { padding:16px; }
     .page-break { page-break-after:always;height:0; }
   }
 </style>
@@ -774,7 +776,8 @@ function exportToPDF(sessao: SessaoDetalhe) {
   .total-row { display: flex; gap: 20px; background: #1e293b; color: white; border-radius: 6px; padding: 10px 16px; margin: 16px 0; flex-wrap: wrap; }
   .total-item .lbl { font-size: 9px; opacity: 0.7; }
   .total-item .val { font-size: 13px; font-weight: bold; }
-  @media print { body { padding: 10px; } }
+  @page { margin: 0; }
+  @media print { body { padding: 16px; } }
 </style>
 </head>
 <body>
@@ -2379,9 +2382,6 @@ function SessaoView({
           </p>
         </div>
         <div className="flex gap-1.5 shrink-0 flex-wrap items-center">
-          <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5 text-xs" data-testid="button-export-csv">
-            <Download className="h-3.5 w-3.5" /> CSV
-          </Button>
           <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs" data-testid="button-export-pdf">
             <Printer className="h-3.5 w-3.5" /> PDF
           </Button>
@@ -3278,15 +3278,6 @@ function RelatorioView({
                           <UserPlus className="h-3 w-3" /> Mensalista
                         </Button>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs gap-1"
-                        onClick={() => window.open(`/api/conferencia/export/${sessaoId}?professorId=${key}`, "_blank")}
-                        data-testid={`button-csv-prof-${key}`}
-                      >
-                        <Download className="h-3 w-3" /> CSV
-                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
