@@ -446,21 +446,22 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 <meta charset="UTF-8">
 <title>Comprovante — ${professorNome}</title>
 <style>
+  @page { size: A4 portrait; margin: 0; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  @page { margin: 0; }
-  body { font-family:Arial,sans-serif;font-size:11px;color:#111;padding:24px; }
-  h1 { font-size:16px;margin-bottom:2px; }
-  .subtitle { color:#555;font-size:11px;margin-bottom:16px; }
-  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:bold; }
-  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px; }
-  .summary-card { border:1px solid #ddd;border-radius:6px;padding:10px 14px; }
-  .summary-card .val { font-size:14px;font-weight:bold;margin-bottom:2px; }
-  .summary-card .lbl { font-size:9px;color:#666; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#111;
+         width:210mm;min-height:297mm;padding:12mm 15mm;margin:0 auto; }
+  h1 { font-size:15px;margin-bottom:2px; }
+  .subtitle { color:#555;font-size:10px;margin-bottom:14px; }
+  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:9px;padding:2px 7px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px; }
+  .summary-card { border:1px solid #ddd;border-radius:5px;padding:8px 12px; }
+  .summary-card .val { font-size:13px;font-weight:bold;margin-bottom:2px; }
+  .summary-card .lbl { font-size:8px;color:#666; }
   table { width:100%;border-collapse:collapse;border:1px solid #ddd; }
-  th { background:#f9f9f9;text-align:left;padding:5px 8px;font-size:10px;border-bottom:1px solid #ddd; }
-  td { padding:5px 8px;border-bottom:1px solid #eee;font-size:10px; }
-  .total-row { background:#1e293b;color:white;border-radius:6px;padding:10px 16px;margin-top:16px; }
-  @media print { body { padding:16px; } }
+  th { background:#f9f9f9;text-align:left;padding:4px 7px;font-size:9px;border-bottom:1px solid #ddd; }
+  td { padding:4px 7px;border-bottom:1px solid #eee;font-size:9px; }
+  .total-row { background:#1e293b;color:white;border-radius:5px;padding:8px 14px;margin-top:14px; }
+  @media print { body { padding:12mm 15mm; } }
 </style>
 </head>
 <body>
@@ -595,34 +596,35 @@ function exportComprovanteConsolidado(
 <meta charset="UTF-8">
 <title>Comprovante Consolidado — ${professorNome}</title>
 <style>
-  @page { margin: 0; }
+  @page { size: A4 portrait; margin: 0; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:11px;color:#111;padding:24px; }
-  h1 { font-size:16px;margin-bottom:2px; }
-  .subtitle { color:#555;font-size:11px;margin-bottom:16px; }
-  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:bold; }
-  .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:bold; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#111;
+         width:210mm;min-height:297mm;padding:12mm 15mm;margin:0 auto; }
+  h1 { font-size:15px;margin-bottom:2px; }
+  .subtitle { color:#555;font-size:10px;margin-bottom:14px; }
+  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:9px;padding:2px 7px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;padding:2px 7px;border-radius:20px;margin-left:6px;font-weight:bold; }
   /* Grand totals */
-  .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px; }
-  .grand-card { border:1px solid #ddd;border-radius:6px;padding:10px 14px; }
-  .grand-card .val { font-size:14px;font-weight:bold;margin-bottom:2px; }
-  .grand-card .lbl { font-size:9px;color:#666; }
+  .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
+  .grand-card { border:1px solid #ddd;border-radius:5px;padding:8px 12px; }
+  .grand-card .val { font-size:13px;font-weight:bold;margin-bottom:2px; }
+  .grand-card .lbl { font-size:8px;color:#666; }
   /* Section */
-  .section { margin-bottom:28px; }
-  .section-header { display:flex;align-items:baseline;gap:10px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #1e293b; }
-  .section-platform { font-size:13px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
-  .section-file { font-size:10px;color:#64748b; }
-  .section-summary { display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:#475569; }
-  table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:6px; }
-  th { background:#f9f9f9;text-align:left;padding:5px 8px;font-size:10px;border-bottom:1px solid #ddd; }
-  td { padding:5px 8px;border-bottom:1px solid #eee;font-size:10px; }
-  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:6px 12px;font-size:10px;color:#334155; }
+  .section { margin-bottom:20px; }
+  .section-header { display:flex;align-items:baseline;gap:10px;margin-bottom:6px;padding-bottom:5px;border-bottom:2px solid #1e293b; }
+  .section-platform { font-size:12px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
+  .section-file { font-size:9px;color:#64748b; }
+  .section-summary { display:flex;gap:14px;flex-wrap:wrap;margin-bottom:6px;font-size:9px;color:#475569; }
+  table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:5px; }
+  th { background:#f9f9f9;text-align:left;padding:4px 7px;font-size:9px;border-bottom:1px solid #ddd; }
+  td { padding:4px 7px;border-bottom:1px solid #eee;font-size:9px; }
+  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:5px 10px;font-size:9px;color:#334155; }
   /* Grand total bar */
-  .grand-total { background:#1e293b;color:white;border-radius:6px;padding:12px 16px;margin-top:28px;font-size:11px; }
-  .page-break { height:24px; }
+  .grand-total { background:#1e293b;color:white;border-radius:5px;padding:10px 14px;margin-top:20px;font-size:10px; }
+  .page-break { height:0; }
   @media print {
-    body { padding:16px; }
-    .page-break { page-break-after:always;height:0; }
+    body { padding:12mm 15mm; }
+    .page-break { page-break-after:always; }
   }
 </style>
 </head>
@@ -776,8 +778,8 @@ function exportToPDF(sessao: SessaoDetalhe) {
   .total-row { display: flex; gap: 20px; background: #1e293b; color: white; border-radius: 6px; padding: 10px 16px; margin: 16px 0; flex-wrap: wrap; }
   .total-item .lbl { font-size: 9px; opacity: 0.7; }
   .total-item .val { font-size: 13px; font-weight: bold; }
-  @page { margin: 0; }
-  @media print { body { padding: 16px; } }
+  @page { size: A4 portrait; margin: 0; }
+  @media print { body { padding: 12mm 15mm; } }
 </style>
 </head>
 <body>
