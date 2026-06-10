@@ -51,7 +51,6 @@ import {
   RotateCcw,
   RotateCw,
   Link2,
-  Percent,
   Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -1874,12 +1873,6 @@ function SessaoView({
     enabled: !!sessao,
   });
 
-  const { data: repasseConfig } = useQuery<RepasseConfig>({
-    queryKey: ["/api/conferencia/repasse-config", periodo],
-    queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
-    enabled: !!periodo,
-  });
-
   const rematchMutation = useMutation({
     mutationFn: () =>
       apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/rematch`).then((r) => r.json()),
@@ -1976,26 +1969,17 @@ function SessaoView({
   const totalValor = confirmedValor + pendenteValor + naoEncontradoValor;
   const naoEncontradosCount = registros.filter((r) => r.status === "nao_encontrado").length;
 
-  const pctArenaNum = repasseConfig ? (parseFloat(repasseConfig.pctArena) || 0) : 100;
-  const gestaoAtiva = pctArenaNum < 100;
-  const gestaoNome =
-    repasseConfig?.gestaoTipo === "professor" && repasseConfig.gestaoProfessorId
-      ? (confsProfs.find((p) => p.id === repasseConfig.gestaoProfessorId)?.nome ?? "Gestão")
-      : "Gestão";
-
-  // Arena = pctArena% of bruto; Gestão = remainder after arena + professor
+  // Arena = valor - valorProfessor (o que sobra após comissão do professor)
   const calcDisplayValores = (r: Registro) => {
     const v = parseFloat(r.valor || "0");
     const vProf = parseFloat(r.valorProfessor || "0");
-    const vArena = v * (pctArenaNum / 100);
-    const vGestao = gestaoAtiva ? Math.max(0, v - vArena - vProf) : 0;
-    return { vArena, vGestao };
+    const vArena = Math.max(0, v - vProf);
+    return { vArena };
   };
 
   const confirmedRegs = registros.filter((r) => r.status === "confirmado");
   const totalProfessorAgg = confirmedRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
   const totalArenaDisplay = confirmedRegs.reduce((s, r) => s + calcDisplayValores(r).vArena, 0);
-  const totalGestaoAgg = confirmedRegs.reduce((s, r) => s + calcDisplayValores(r).vGestao, 0);
 
   const snapReg = (r: Registro) => ({
     status: r.status,
@@ -2321,7 +2305,7 @@ function SessaoView({
               {filtered.map((r) => {
                 const si = statusInfo(r.status);
                 const hasSplit = parseFloat(r.percentual) > 0 && parseFloat(r.valorProfessor) > 0;
-                const { vArena, vGestao } = calcDisplayValores(r);
+                const { vArena } = calcDisplayValores(r);
                 const profNome = r.professorNome ?? confsProfs.find((p) => p.id === r.professorId)?.nome ?? null;
                 return (
                   <div
@@ -2432,22 +2416,12 @@ function SessaoView({
                             <div className="text-[11px] text-emerald-600 dark:text-emerald-400 tabular-nums">
                               Prof: {fmtVal(r.valorProfessor)}
                             </div>
-                            {gestaoAtiva && vGestao > 0 && (
-                              <div className="text-[11px] text-violet-600 dark:text-violet-400 tabular-nums">
-                                {gestaoNome}: {fmtVal(String(vGestao))}
-                              </div>
-                            )}
                             <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums">
                               Arena: {fmtVal(String(vArena))}
                             </div>
                           </div>
                         ) : r.status !== "ignorado" ? (
                           <div className="mt-0.5 space-y-px">
-                            {gestaoAtiva && vGestao > 0 && (
-                              <div className="text-[11px] text-violet-600 dark:text-violet-400 tabular-nums">
-                                {gestaoNome}: {fmtVal(String(vGestao))}
-                              </div>
-                            )}
                             <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums">
                               Arena: {fmtVal(String(vArena))}
                             </div>
@@ -2587,16 +2561,8 @@ function RelatorioView({
     enabled: !!periodo,
   });
 
-  const pctArenaNum = repasseCfg ? (parseFloat(repasseCfg.pctArena) || 0) : 100;
-  const gestaoAtivaRel = pctArenaNum < 100;
-
-  // Arena = pctArena% of bruto; Gestão = remainder after arena + professor
-  const arenaRow = (r: Registro) => parseFloat(r.valor || "0") * (pctArenaNum / 100);
-  const gestaoRow = (r: Registro) => {
-    if (!gestaoAtivaRel) return 0;
-    const v = parseFloat(r.valor || "0");
-    return Math.max(0, v - arenaRow(r) - parseFloat(r.valorProfessor || "0"));
-  };
+  // Arena = valor - valorProfessor (o que sobra após comissão do professor)
+  const arenaRow = (r: Registro) => Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
   const arenaSum = (regs: Registro[]) => regs.reduce((s, r) => s + arenaRow(r), 0);
 
   const confirmados = registros.filter((r) => r.status === "confirmado");
@@ -2605,8 +2571,7 @@ function RelatorioView({
     (s, r) => s + parseFloat(r.valorProfessor || "0"),
     0
   );
-  const totalArena = totalRecebido * (pctArenaNum / 100);
-  const totalGestao = gestaoAtivaRel ? Math.max(0, totalRecebido - totalArena - totalProfessores) : 0;
+  const totalArena = Math.max(0, totalRecebido - totalProfessores);
   const totalCheckins = confirmados.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const naoEncontrados = registros.filter((r) => r.status === "nao_encontrado");
 
@@ -2628,11 +2593,8 @@ function RelatorioView({
 
   return (
     <div className="space-y-5">
-      {/* Repasse & Gestão config — editável direto no relatório */}
-      {periodo && <RepasseConfigCard arenaId={arenaId} periodo={periodo} />}
-
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           {
             label: "Total Recebido",
@@ -2647,13 +2609,6 @@ function RelatorioView({
             icon: Building2,
             color: "text-blue-600 dark:text-blue-400",
             sub: totalRecebido > 0 ? `${Math.round(totalArena / totalRecebido * 100)}% do total` : null,
-          },
-          {
-            label: "Gestor",
-            val: fmtVal(String(totalGestao)),
-            icon: Percent,
-            color: "text-violet-600 dark:text-violet-400",
-            sub: gestaoAtivaRel && totalGestao > 0 ? "sobra após arena + prof." : null,
           },
           {
             label: "Comissões Prof.",
