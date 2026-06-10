@@ -1846,6 +1846,7 @@ function SessaoView({
   const [destinarPara, setDestinarPara] = useState("");
   const [redirectModalidade, setRedirectModalidade] = useState("");
   const [redirectAProf, setRedirectAProf] = useState("");
+  const [showArenaList, setShowArenaList] = useState(false);
   const [manuallyLinked, setManuallyLinked] = useState<Set<string>>(new Set());
   const [histPast, setHistPast] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
   const [histFuture, setHistFuture] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
@@ -2227,41 +2228,88 @@ function SessaoView({
 
           {/* Bulk redirecionar bar — registros de arena sem professor */}
           {arenaRecords.length > 0 && confsProfs.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60">
-              <Users className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-              <p className="text-sm text-blue-800 dark:text-blue-300 flex-1 min-w-0">
-                <strong>{arenaRecords.length}</strong> registro{arenaRecords.length !== 1 ? "s" : ""} de arena — redirecionar para professor:
-              </p>
-              {arenaModalidades.length > 1 && (
-                <Select value={redirectModalidade} onValueChange={setRedirectModalidade} data-testid="select-redirect-modalidade">
-                  <SelectTrigger className="h-8 w-52 text-xs bg-white dark:bg-background">
-                    <SelectValue placeholder="Todas as modalidades" />
+            <div className="rounded-lg border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/30 overflow-hidden">
+              {/* Header row */}
+              <div className="flex items-center gap-2 flex-wrap p-3">
+                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <p className="text-sm text-blue-800 dark:text-blue-300 flex-1 min-w-0">
+                  <strong>{arenaRecords.length}</strong> registro{arenaRecords.length !== 1 ? "s" : ""} sem professor — redirecionar para:
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 shrink-0"
+                  onClick={() => setShowArenaList((v) => !v)}
+                  data-testid="button-toggle-arena-list"
+                >
+                  {showArenaList ? "Ocultar lista" : "Ver alunos"}
+                </Button>
+                {arenaModalidades.length > 1 && (
+                  <Select value={redirectModalidade} onValueChange={setRedirectModalidade} data-testid="select-redirect-modalidade">
+                    <SelectTrigger className="h-8 w-52 text-xs bg-white dark:bg-background">
+                      <SelectValue placeholder="Todas as modalidades" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__todos__">Todas as modalidades ({arenaRecords.length})</SelectItem>
+                      {arenaModalidades.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m} ({arenaRecords.filter((r) => r.modalidade === m).length})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Select value={redirectAProf} onValueChange={setRedirectAProf} data-testid="select-redirect-prof">
+                  <SelectTrigger className="h-8 w-44 text-xs bg-white dark:bg-background">
+                    <SelectValue placeholder="Selecionar professor…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__todos__">Todas as modalidades ({arenaRecords.length})</SelectItem>
-                    {arenaModalidades.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {m} ({arenaRecords.filter((r) => r.modalidade === m).length})
+                    {confsProfs.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` (${p.percentualComissao}%)` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <Button size="sm" onClick={handleBulkRedirectArena} disabled={!redirectAProf || updateMutation.isPending} data-testid="button-bulk-redirect-arena">
+                  Redirecionar
+                </Button>
+              </div>
+
+              {/* Expandable student list */}
+              {showArenaList && (
+                <div className="border-t border-blue-200 dark:border-blue-800/60 bg-white/60 dark:bg-blue-950/20 px-3 py-2 max-h-56 overflow-y-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0.5">
+                    {(() => {
+                      const listRecords = redirectModalidade && redirectModalidade !== "__todos__"
+                        ? arenaRecords.filter((r) => r.modalidade === redirectModalidade)
+                        : arenaRecords;
+                      return [...listRecords]
+                        .sort((a, b) => (a.alunoNomeMatch ?? a.nomePlataforma).localeCompare(b.alunoNomeMatch ?? b.nomePlataforma, "pt-BR"))
+                        .map((r) => (
+                          <div key={r.id} className="flex items-center justify-between gap-2 py-1 border-b border-blue-100 dark:border-blue-900/40 last:border-0">
+                            <div className="min-w-0">
+                              <span className="text-xs font-medium text-foreground truncate block">
+                                {r.alunoNomeMatch ?? r.nomePlataforma}
+                              </span>
+                              {r.alunoNomeMatch && r.alunoNomeMatch !== r.nomePlataforma && (
+                                <span className="text-[10px] text-muted-foreground truncate block">
+                                  {r.nomePlataforma}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-xs tabular-nums font-mono text-foreground">{fmtVal(r.valor)}</span>
+                              {r.modalidade && (
+                                <span className="block text-[10px] text-muted-foreground">{r.modalidade}</span>
+                              )}
+                            </div>
+                          </div>
+                        ));
+                    })()}
+                  </div>
+                </div>
               )}
-              <Select value={redirectAProf} onValueChange={setRedirectAProf} data-testid="select-redirect-prof">
-                <SelectTrigger className="h-8 w-44 text-xs bg-white dark:bg-background">
-                  <SelectValue placeholder="Selecionar professor…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {confsProfs.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` (${p.percentualComissao}%)` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button size="sm" onClick={handleBulkRedirectArena} disabled={!redirectAProf || updateMutation.isPending} data-testid="button-bulk-redirect-arena">
-                Redirecionar
-              </Button>
             </div>
           )}
 
