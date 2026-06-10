@@ -1984,7 +1984,7 @@ function SessaoView({
       setMensalistaOpen(false);
       setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null); setMAlunoComboOpen(false);
     },
-    onError: () => toast({ title: "Erro ao adicionar mensalista", variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Erro ao adicionar mensalista", description: err.message, variant: "destructive" }),
   });
 
   const deleteMensalistaMutation = useMutation({
@@ -2790,7 +2790,7 @@ function SessaoView({
           <DialogFooter>
             <Button variant="ghost" onClick={() => setMensalistaOpen(false)}>Cancelar</Button>
             <Button
-              disabled={!mAlunoNome.trim() || !mValor || parseFloat(mValor) <= 0 || addMensalistaMutation.isPending}
+              disabled={!mAlunoNome.trim() || !mValor || isNaN(parseFloat(mValor)) || parseFloat(mValor) <= 0 || addMensalistaMutation.isPending}
               onClick={() => {
                 addMensalistaMutation.mutate({
                   studentId: mAlunoId,

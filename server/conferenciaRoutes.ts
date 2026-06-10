@@ -1308,63 +1308,74 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(403).json({ message: "Acesso negado" });
     }
 
-    const [sessao] = await db
-      .select()
-      .from(conferenciaSessoes)
-      .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
-    if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
-
-    const { studentId, alunoNome, professorId, valor, comprovante } = req.body as Record<string, string>;
-    if (!alunoNome?.trim()) return res.status(400).json({ message: "alunoNome é obrigatório" });
-    const valorNum = parseFloat(valor);
-    if (isNaN(valorNum) || valorNum < 0) return res.status(400).json({ message: "Valor inválido" });
-
-    let percentual = "0";
-    let valorProfessor = "0";
-    let valorArena = String(valorNum);
-    let profNome: string | null = null;
-
-    if (professorId) {
-      const [prof] = await db
+    try {
+      const [sessao] = await db
         .select()
-        .from(conferenciaProfessores)
-        .where(and(eq(conferenciaProfessores.id, professorId), eq(conferenciaProfessores.arenaId, arenaId)));
-      if (prof) {
-        profNome = prof.nome;
-        percentual = prof.percentualComissao ?? "0";
-        const pct = parseFloat(percentual) / 100;
-        const vpM = Math.round(valorNum * pct * 100) / 100;
-        valorProfessor = String(vpM);
-        valorArena = String(Math.round((valorNum - vpM) * 100) / 100);
+        .from(conferenciaSessoes)
+        .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
+      if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
+
+      const { studentId, alunoNome, professorId, valor, comprovante } = req.body as Record<string, string | null>;
+      if (!alunoNome?.trim()) return res.status(400).json({ message: "alunoNome é obrigatório" });
+      const valorNum = parseFloat(String(valor ?? "0"));
+      if (isNaN(valorNum) || valorNum <= 0) return res.status(400).json({ message: "Valor inválido ou zero" });
+
+      let percentual = "0";
+      let valorProfessor = "0";
+      let valorArena = String(valorNum);
+      let profNome: string | null = null;
+
+      const profId = typeof professorId === "string" && professorId.trim() && professorId !== "__none__"
+        ? professorId.trim()
+        : null;
+
+      if (profId) {
+        const [prof] = await db
+          .select()
+          .from(conferenciaProfessores)
+          .where(and(eq(conferenciaProfessores.id, profId), eq(conferenciaProfessores.arenaId, arenaId)));
+        if (prof) {
+          profNome = prof.nome;
+          percentual = prof.percentualComissao ?? "0";
+          const pct = parseFloat(percentual) / 100;
+          const vpM = Math.round(valorNum * pct * 100) / 100;
+          valorProfessor = String(vpM);
+          valorArena = String(Math.round((valorNum - vpM) * 100) / 100);
+        }
       }
+
+      const stuId = typeof studentId === "string" && studentId.trim() ? studentId.trim() : null;
+
+      const [novo] = await db
+        .insert(conferenciaRegistros)
+        .values({
+          arenaId,
+          sessaoId: sessao.id,
+          nomePlataforma: alunoNome.trim(),
+          studentId: stuId,
+          alunoNomeMatch: alunoNome.trim(),
+          similaridade: 100,
+          valor: String(valorNum),
+          data: new Date().toISOString().slice(0, 10),
+          checkins: 0,
+          plataforma: sessao.plataforma,
+          modalidade: null,
+          status: "confirmado",
+          categoria: "mensalista",
+          professorId: profId,
+          percentual,
+          valorProfessor,
+          valorArena,
+          observacao: null,
+          comprovante: typeof comprovante === "string" && comprovante.trim() ? comprovante : null,
+        })
+        .returning();
+
+      res.json({ ...novo, professorNome: profNome });
+    } catch (err) {
+      console.error("[mensalista POST]", err);
+      res.status(500).json({ message: String(err instanceof Error ? err.message : err) });
     }
-
-    const [novo] = await db
-      .insert(conferenciaRegistros)
-      .values({
-        arenaId,
-        sessaoId: sessao.id,
-        nomePlataforma: alunoNome.trim(),
-        studentId: studentId || null,
-        alunoNomeMatch: alunoNome.trim(),
-        similaridade: 100,
-        valor: String(valorNum),
-        data: new Date().toISOString().slice(0, 10),
-        checkins: 0,
-        plataforma: sessao.plataforma,
-        modalidade: null,
-        status: "confirmado",
-        categoria: "mensalista",
-        professorId: professorId || null,
-        percentual,
-        valorProfessor,
-        valorArena,
-        observacao: null,
-        comprovante: comprovante || null,
-      })
-      .returning();
-
-    res.json({ ...novo, professorNome: profNome });
   });
 
   // DELETE /api/conferencia/registro/:id — remove a mensalista entry
