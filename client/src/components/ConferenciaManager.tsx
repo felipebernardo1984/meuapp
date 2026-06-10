@@ -23,6 +23,19 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Table,
   TableBody,
   TableCell,
@@ -1866,6 +1879,7 @@ function SessaoView({
   const [mProfId, setMProfId] = useState("");
   const [mValor, setMValor] = useState("");
   const [mComprovante, setMComprovante] = useState<string | null>(null);
+  const [mAlunoComboOpen, setMAlunoComboOpen] = useState(false);
 
   const { data: sessao, isLoading } = useQuery<SessaoDetalhe>({
     queryKey: ["/api/conferencia/sessao", sessaoId],
@@ -2617,24 +2631,46 @@ function SessaoView({
           <div className="space-y-4 py-1">
             <div className="space-y-1.5">
               <Label className="text-xs">Aluno</Label>
-              <Select
-                value={mAlunoId}
-                onValueChange={(v) => {
-                  setMAlunoId(v);
-                  const s = arenaStudents.find((s) => s.id === v);
-                  if (s) setMAlunoNome(s.nome);
-                }}
-                data-testid="select-mensalista-aluno"
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Selecionar aluno…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[...arenaStudents].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={mAlunoComboOpen} onOpenChange={setMAlunoComboOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full h-9 justify-between text-sm font-normal"
+                    data-testid="select-mensalista-aluno"
+                  >
+                    {mAlunoId
+                      ? arenaStudents.find((s) => s.id === mAlunoId)?.nome ?? "Selecionar aluno…"
+                      : "Selecionar aluno…"}
+                    <Search className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar aluno por nome…" className="h-9" />
+                    <CommandList>
+                      <CommandEmpty>Nenhum aluno encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {[...arenaStudents]
+                          .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+                          .map((s) => (
+                            <CommandItem
+                              key={s.id}
+                              value={s.nome}
+                              onSelect={() => {
+                                setMAlunoId(s.id);
+                                setMAlunoNome(s.nome);
+                                setMAlunoComboOpen(false);
+                              }}
+                            >
+                              {s.nome}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-1.5">
