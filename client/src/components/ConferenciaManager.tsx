@@ -2443,12 +2443,17 @@ function SessaoView({
                           <span className="font-semibold text-sm text-foreground">
                             {r.nomePlataforma}
                           </span>
+                          {r.categoria === "mensalista" && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 shrink-0">
+                              Mensalista
+                            </Badge>
+                          )}
                           {r.modalidade && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal shrink-0">
                               {r.modalidade}
                             </Badge>
                           )}
-                          {r.similaridade != null && r.status !== "nao_encontrado" && r.status !== "ignorado" && (
+                          {r.similaridade != null && r.categoria !== "mensalista" && r.status !== "nao_encontrado" && r.status !== "ignorado" && (
                             <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
                               {r.similaridade}%
                             </span>
