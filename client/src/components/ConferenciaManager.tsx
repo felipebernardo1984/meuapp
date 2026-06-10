@@ -467,7 +467,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   <h1>${professorNome}${professorKey !== "__arena__" ? `<span class="badge">${pct}% comissão</span>` : ""}</h1>
   <div class="subtitle">Comprovante de receita — ${plataformaLabel(sessao.plataforma)} · ${sessao.nomeArquivo} · ${dataStr}</div>
   <div class="summary-grid">
-    <div class="summary-card"><div class="val">${regs.length}</div><div class="lbl">Alunos</div></div>
+    <div class="summary-card"><div class="val">${new Set(regs.map(r => r.nomePlataforma)).size}</div><div class="lbl">Alunos</div></div>
     <div class="summary-card"><div class="val">${chks}</div><div class="lbl">Check-ins</div></div>
     <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Total</div></div>
     ${professorKey !== "__arena__" ? `<div class="summary-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(comissao)}</div><div class="lbl">Sua Comissão (${pct}%)</div></div>` : `<div class="summary-card"><div class="val">${fmt(arena)}</div><div class="lbl">Valor Arena</div></div>`}
