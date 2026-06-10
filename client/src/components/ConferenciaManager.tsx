@@ -2244,18 +2244,6 @@ function SessaoView({
             {t === "conferencia" ? "Conferência" : "Relatório por Professor"}
           </button>
         ))}
-        <div className="ml-auto pb-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs gap-1.5"
-            onClick={() => setMensalistaOpen(true)}
-            data-testid="button-add-mensalista"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            Adicionar Mensalista
-          </Button>
-        </div>
       </div>
 
       {/* ── Conferência Tab ── */}
@@ -2610,7 +2598,7 @@ function SessaoView({
       )}
 
       {/* ── Relatório Tab ── */}
-      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} arenaId={arenaId} periodo={periodo} confsProfs={confsProfs} />}
+      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} arenaId={arenaId} periodo={periodo} confsProfs={confsProfs} onAddMensalista={(profId) => { setMProfId(profId); setMensalistaOpen(true); }} />}
 
       {/* ── Link Dialog ── */}
       {/* ── Mensalista Dialog ── */}
@@ -2790,6 +2778,7 @@ function RelatorioView({
   sessaoId,
   arenaId,
   periodo,
+  onAddMensalista,
 }: {
   registros: Registro[];
   plataforma: string;
@@ -2798,6 +2787,7 @@ function RelatorioView({
   arenaId: string;
   periodo: string | undefined;
   confsProfs: ConfProfessor[];
+  onAddMensalista?: (professorId: string) => void;
 }) {
   const { data: repasseCfg } = useQuery<RepasseConfig>({
     queryKey: ["/api/conferencia/repasse-config", periodo],
@@ -2999,7 +2989,18 @@ function RelatorioView({
                     <span className="text-xs text-muted-foreground">
                       {g.registros.length} aluno{g.registros.length !== 1 ? "s" : ""} · {chks} check-in{chks !== 1 ? "s" : ""}
                     </span>
-                    <div className="ml-auto flex gap-1.5">
+                    <div className="ml-auto flex gap-1.5 flex-wrap">
+                      {key !== "__arena__" && onAddMensalista && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => onAddMensalista(key)}
+                          data-testid={`button-add-mensalista-${key}`}
+                        >
+                          <UserPlus className="h-3 w-3" /> Mensalista
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
