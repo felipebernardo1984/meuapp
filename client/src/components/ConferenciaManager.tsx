@@ -426,19 +426,57 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const dataStr = new Date(sessao.criadoEm).toLocaleDateString("pt-BR");
 
-  const sortedRegs = [...regs].sort((a, b) => {
+  // Group by modalidade
+  const byMod = new Map<string, typeof regs>();
+  for (const r of [...regs].sort((a, b) => {
+    const mc = (a.modalidade ?? "—").localeCompare(b.modalidade ?? "—", "pt-BR");
+    if (mc !== 0) return mc;
     const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
     return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
-  });
+  })) {
+    const mod = r.modalidade ?? "—";
+    if (!byMod.has(mod)) byMod.set(mod, []);
+    byMod.get(mod)!.push(r);
+  }
 
-  const rows = sortedRegs.map((r) => `
-    <tr>
-      <td>${r.nomePlataforma}</td>
-      <td>${r.modalidade ?? "—"}</td>
-      <td style="text-align:center">${fmtData(r.data)}</td>
-      <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
-      ${professorKey !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
-    </tr>`).join("");
+  const modBlocks = Array.from(byMod.entries())
+    .map(([mod, mrs]) => {
+      const modChks = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+      const modAlunos = new Set(mrs.map(r => r.nomePlataforma)).size;
+      const modReceita = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+      const modComissao = mrs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+      const modArena = mrs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+      const modRows = mrs.map((r) => `
+        <tr>
+          <td>${r.nomePlataforma}</td>
+          <td style="text-align:center">${fmtData(r.data)}</td>
+          <td style="text-align:center">${r.checkins ?? 1}</td>
+          <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
+          ${professorKey !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+        </tr>`).join("");
+      return `
+      <div class="mod-block">
+        <div class="mod-header">
+          <span class="mod-name">${mod}</span>
+          <span class="mod-summary">${modAlunos} aluno${modAlunos !== 1 ? "s" : ""} · ${modChks} check-in${modChks !== 1 ? "s" : ""} · ${fmt(modReceita)}${professorKey !== "__arena__" ? ` · Comissão: ${fmt(modComissao)}` : ""}</span>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Nome na Plataforma</th>
+            <th style="text-align:center">Data/Horário</th>
+            <th style="text-align:center">Check-ins</th>
+            <th style="text-align:right">Valor</th>
+            ${professorKey !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
+          </tr></thead>
+          <tbody>${modRows}</tbody>
+          <tfoot><tr>
+            <td colspan="3"><strong>Subtotal ${mod}</strong></td>
+            <td style="text-align:right"><strong>${fmt(modReceita)}</strong></td>
+            ${professorKey !== "__arena__" ? `<td style="text-align:right"><strong style="color:#059669">${fmt(modComissao)}</strong></td>` : ""}
+          </tr></tfoot>
+        </table>
+      </div>`;
+    }).join("");
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -457,9 +495,14 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   .summary-card { border:1px solid #ddd;border-radius:5px;padding:8px 12px; }
   .summary-card .val { font-size:13px;font-weight:bold;margin-bottom:2px; }
   .summary-card .lbl { font-size:8px;color:#666; }
+  .mod-block { margin-bottom:14px;page-break-inside:avoid; }
+  .mod-header { display:flex;align-items:center;gap:10px;background:#f4f4f4;padding:5px 8px;border-radius:4px 4px 0 0;border:1px solid #ddd;border-bottom:none; }
+  .mod-name { font-weight:bold;font-size:10px; }
+  .mod-summary { color:#555;font-size:9px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1px solid #ddd; }
   th { background:#f9f9f9;text-align:left;padding:4px 7px;font-size:9px;border-bottom:1px solid #ddd; }
   td { padding:4px 7px;border-bottom:1px solid #eee;font-size:9px; }
+  tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
   .total-row { background:#1e293b;color:white;border-radius:5px;padding:8px 14px;margin-top:14px; }
   @media print { body { padding:12mm 15mm; } }
 </style>
@@ -473,18 +516,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
     <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Total</div></div>
     ${professorKey !== "__arena__" ? `<div class="summary-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(comissao)}</div><div class="lbl">Sua Comissão (${pct}%)</div></div>` : `<div class="summary-card"><div class="val">${fmt(arena)}</div><div class="lbl">Valor Arena</div></div>`}
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Nome na Plataforma</th>
-        <th>Modalidade</th>
-        <th style="text-align:center">Data/Horário</th>
-        <th style="text-align:right">Valor</th>
-        ${professorKey !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-  </table>
+  ${modBlocks}
   <div class="total-row">
     <strong>${fmt(subtotal)}</strong> total · ${chks} check-in${chks !== 1 ? "s" : ""}${professorKey !== "__arena__" ? ` · Comissão: <strong>${fmt(comissao)}</strong> · Arena: ${fmt(arena)}` : ""}
   </div>
@@ -539,24 +571,55 @@ function exportComprovanteConsolidado(
       const secComissao = regs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
       const secArena = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
 
-      const sorted = [...regs].sort((a, b) => {
+      // Group by modalidade within this section
+      const byMod = new Map<string, typeof regs>();
+      for (const r of [...regs].sort((a, b) => {
+        const mc = (a.modalidade ?? "—").localeCompare(b.modalidade ?? "—", "pt-BR");
+        if (mc !== 0) return mc;
         const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
         return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
-      });
+      })) {
+        const mod = r.modalidade ?? "—";
+        if (!byMod.has(mod)) byMod.set(mod, []);
+        byMod.get(mod)!.push(r);
+      }
 
-      const rows = sorted
-        .map(
-          (r) => `
-        <tr>
-          <td>${r.nomePlataforma}</td>
-          <td>${r.modalidade ?? "—"}</td>
-          <td style="text-align:center">${fmtData(r.data)}</td>
-          <td style="text-align:center">${r.checkins ?? 1}</td>
-          <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
-          ${professorId !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
-        </tr>`
-        )
-        .join("");
+      const secModBlocks = Array.from(byMod.entries()).map(([mod, mrs]) => {
+        const mChks = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+        const mAlunos = new Set(mrs.map(r => r.nomePlataforma)).size;
+        const mReceita = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+        const mComissao = mrs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+        const mRows = mrs.map((r) => `
+          <tr>
+            <td>${r.nomePlataforma}</td>
+            <td style="text-align:center">${fmtData(r.data)}</td>
+            <td style="text-align:center">${r.checkins ?? 1}</td>
+            <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
+            ${professorId !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+          </tr>`).join("");
+        return `
+        <div class="mod-block">
+          <div class="mod-header">
+            <span class="mod-name">${mod}</span>
+            <span class="mod-summary">${mAlunos} aluno${mAlunos !== 1 ? "s" : ""} · ${mChks} check-in${mChks !== 1 ? "s" : ""} · ${fmt(mReceita)}${professorId !== "__arena__" ? ` · Comissão: ${fmt(mComissao)}` : ""}</span>
+          </div>
+          <table>
+            <thead><tr>
+              <th>Nome na Plataforma</th>
+              <th style="text-align:center">Data/Horário</th>
+              <th style="text-align:center">Check-ins</th>
+              <th style="text-align:right">Valor</th>
+              ${professorId !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
+            </tr></thead>
+            <tbody>${mRows}</tbody>
+            <tfoot><tr>
+              <td colspan="3"><strong>Subtotal ${mod}</strong></td>
+              <td style="text-align:right"><strong>${fmt(mReceita)}</strong></td>
+              ${professorId !== "__arena__" ? `<td style="text-align:right"><strong style="color:#059669">${fmt(mComissao)}</strong></td>` : ""}
+            </tr></tfoot>
+          </table>
+        </div>`;
+      }).join("");
 
       return `
       <div class="section">
@@ -570,19 +633,7 @@ function exportComprovanteConsolidado(
           <span>Receita: <strong>${fmt(secReceita)}</strong></span>
           ${professorId !== "__arena__" ? `<span style="color:#059669">Comissão: <strong>${fmt(secComissao)}</strong></span><span>Arena: ${fmt(secArena)}</span>` : `<span>Arena: ${fmt(secArena)}</span>`}
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Nome na Plataforma</th>
-              <th>Modalidade</th>
-              <th style="text-align:center">Data/Horário</th>
-              <th style="text-align:center">Check-ins</th>
-              <th style="text-align:right">Valor</th>
-              ${professorId !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+        ${secModBlocks}
         <div class="section-total">
           <strong>${fmt(secReceita)}</strong> · ${secChks} check-in${secChks !== 1 ? "s" : ""}${professorId !== "__arena__" ? ` · Comissão: <strong>${fmt(secComissao)}</strong>` : ""}
         </div>
@@ -615,10 +666,15 @@ function exportComprovanteConsolidado(
   .section-platform { font-size:12px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
   .section-file { font-size:9px;color:#64748b; }
   .section-summary { display:flex;gap:14px;flex-wrap:wrap;margin-bottom:6px;font-size:9px;color:#475569; }
+  .mod-block { margin-bottom:10px;page-break-inside:avoid; }
+  .mod-header { display:flex;align-items:center;gap:10px;background:#f4f4f4;padding:5px 8px;border-radius:4px 4px 0 0;border:1px solid #ddd;border-bottom:none; }
+  .mod-name { font-weight:bold;font-size:10px; }
+  .mod-summary { color:#555;font-size:9px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:5px; }
   th { background:#f9f9f9;text-align:left;padding:4px 7px;font-size:9px;border-bottom:1px solid #ddd; }
   td { padding:4px 7px;border-bottom:1px solid #eee;font-size:9px; }
-  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:5px 10px;font-size:9px;color:#334155; }
+  tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
+  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:5px 10px;font-size:9px;color:#334155;margin-top:4px; }
   /* Grand total bar */
   .grand-total { background:#1e293b;color:white;border-radius:5px;padding:10px 14px;margin-top:20px;font-size:10px; }
   .page-break { height:0; }
