@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -2078,7 +2079,8 @@ function SessaoView({
   const handleDestinar = (registroId: string, professorId: string | null) => {
     const prof = confsProfs.find((p) => p.id === professorId);
     const percentual = prof?.percentualComissao ?? "0";
-    doUpdate(registroId, { professorId, percentual });
+    const categoria = parseFloat(percentual) > 0 ? "comissao" : "arena";
+    doUpdate(registroId, { professorId, percentual, status: "confirmado", categoria });
   };
 
   const handleBulkDestinar = () => {
@@ -2087,10 +2089,11 @@ function SessaoView({
     const professorId = destinarPara === "arena" ? null : destinarPara;
     const prof = confsProfs.find((p) => p.id === professorId);
     const percentual = prof?.percentualComissao ?? "0";
+    const categoria = parseFloat(percentual) > 0 ? "comissao" : "arena";
     naoEnc.forEach((r) => {
-      updateMutation.mutate({ id: r.id, data: { professorId, percentual } });
+      updateMutation.mutate({ id: r.id, data: { professorId, percentual, status: "confirmado", categoria } });
     });
-    toast({ title: `${naoEnc.length} registro${naoEnc.length !== 1 ? "s" : ""} destinado${naoEnc.length !== 1 ? "s" : ""}` });
+    toast({ title: `${naoEnc.length} registro${naoEnc.length !== 1 ? "s" : ""} confirmado${naoEnc.length !== 1 ? "s" : ""} e destinado${naoEnc.length !== 1 ? "s" : ""}` });
   };
 
   const arenaRecords = registros.filter(
@@ -2618,6 +2621,9 @@ function SessaoView({
               <UserPlus className="h-4 w-4" />
               Adicionar Mensalista
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Adicionar aluno mensalista manualmente à conferência
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-1">

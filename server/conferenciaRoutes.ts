@@ -966,8 +966,9 @@ export function registerConferenciaRoutes(app: Express): void {
             if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
               percentual = String(prof.percentualComissao);
               const pct = parseFloat(percentual) / 100;
-              valorProfessor = String(Math.round(parseFloat(valor) * pct * 100) / 100);
-              valorArena = String(Math.round(parseFloat(valor) * (1 - pct) * 100) / 100);
+              const vp = Math.round(parseFloat(valor) * pct * 100) / 100;
+              valorProfessor = String(vp);
+              valorArena = String(Math.round((parseFloat(valor) - vp) * 100) / 100);
               categoria = "comissao";
             }
           } else if (match.arenaStudent) {
@@ -981,8 +982,9 @@ export function registerConferenciaRoutes(app: Express): void {
                 professorId = arenaTeacherId;
                 percentual = String(teacher.percentualComissao);
                 const pct = parseFloat(percentual) / 100;
-                valorProfessor = String(Math.round(parseFloat(valor) * pct * 100) / 100);
-                valorArena = String(Math.round(parseFloat(valor) * (1 - pct) * 100) / 100);
+                const vp2 = Math.round(parseFloat(valor) * pct * 100) / 100;
+                valorProfessor = String(vp2);
+                valorArena = String(Math.round((parseFloat(valor) - vp2) * 100) / 100);
                 categoria = "comissao";
               }
             }
@@ -1205,8 +1207,9 @@ export function registerConferenciaRoutes(app: Express): void {
         if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
           percentual = String(prof.percentualComissao);
           const pct = parseFloat(percentual) / 100;
-          valorProfessor = String(Math.round(parseFloat(r.valor) * pct * 100) / 100);
-          valorArena = String(Math.round(parseFloat(r.valor) * (1 - pct) * 100) / 100);
+          const rVp = Math.round(parseFloat(r.valor) * pct * 100) / 100;
+          valorProfessor = String(rVp);
+          valorArena = String(Math.round((parseFloat(r.valor) - rVp) * 100) / 100);
           categoria = "comissao";
         }
       } else if (match.arenaStudent) {
@@ -1217,8 +1220,9 @@ export function registerConferenciaRoutes(app: Express): void {
             professorId = tid;
             percentual = String(teacher.percentualComissao);
             const pct = parseFloat(percentual) / 100;
-            valorProfessor = String(Math.round(parseFloat(r.valor) * pct * 100) / 100);
-            valorArena = String(Math.round(parseFloat(r.valor) * (1 - pct) * 100) / 100);
+            const rVp2 = Math.round(parseFloat(r.valor) * pct * 100) / 100;
+            valorProfessor = String(rVp2);
+            valorArena = String(Math.round((parseFloat(r.valor) - rVp2) * 100) / 100);
             categoria = "comissao";
           }
         }
@@ -1329,8 +1333,9 @@ export function registerConferenciaRoutes(app: Express): void {
         profNome = prof.nome;
         percentual = prof.percentualComissao ?? "0";
         const pct = parseFloat(percentual) / 100;
-        valorProfessor = String(Math.round(valorNum * pct * 100) / 100);
-        valorArena = String(Math.round(valorNum * (1 - pct) * 100) / 100);
+        const vpM = Math.round(valorNum * pct * 100) / 100;
+        valorProfessor = String(vpM);
+        valorArena = String(Math.round((valorNum - vpM) * 100) / 100);
       }
     }
 
@@ -1400,15 +1405,15 @@ export function registerConferenciaRoutes(app: Express): void {
 
     const pct = parseFloat(String(percentual ?? registro.percentual ?? "0")) / 100;
     const valorNum = parseFloat(registro.valor || "0");
-    const newValorProf = String(Math.round(valorNum * pct * 100) / 100);
-    const newValorArena = String(Math.round(valorNum * (1 - pct) * 100) / 100);
+    const newValorProf = Math.round(valorNum * pct * 100) / 100;
+    const newValorArena = Math.round((valorNum - newValorProf) * 100) / 100;
 
     const updates: Record<string, unknown> = {
       status: status ?? registro.status,
       categoria: categoria ?? registro.categoria,
       percentual: String(percentual ?? registro.percentual),
-      valorProfessor: newValorProf,
-      valorArena: newValorArena,
+      valorProfessor: String(newValorProf),
+      valorArena: String(newValorArena),
       observacao: observacao !== undefined ? observacao : registro.observacao,
       ...(alunoNomeMatchBody !== undefined && { alunoNomeMatch: String(alunoNomeMatchBody) }),
     };
@@ -1440,9 +1445,10 @@ export function registerConferenciaRoutes(app: Express): void {
             const prof = profMap.get(resolvedProfId);
             if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
               const pct2 = parseFloat(prof.percentualComissao) / 100;
+              const vp3 = Math.round(valorNum * pct2 * 100) / 100;
               updates.percentual = String(prof.percentualComissao);
-              updates.valorProfessor = String(Math.round(valorNum * pct2 * 100) / 100);
-              updates.valorArena = String(Math.round(valorNum * (1 - pct2) * 100) / 100);
+              updates.valorProfessor = String(vp3);
+              updates.valorArena = String(Math.round((valorNum - vp3) * 100) / 100);
             }
           }
         } else {
@@ -1459,9 +1465,10 @@ export function registerConferenciaRoutes(app: Express): void {
               if (teacher?.percentualComissao && parseFloat(teacher.percentualComissao) > 0) {
                 updates.professorId = arenaTeacherId;
                 const pct2 = parseFloat(teacher.percentualComissao) / 100;
+                const vp4 = Math.round(valorNum * pct2 * 100) / 100;
                 updates.percentual = String(teacher.percentualComissao);
-                updates.valorProfessor = String(Math.round(valorNum * pct2 * 100) / 100);
-                updates.valorArena = String(Math.round(valorNum * (1 - pct2) * 100) / 100);
+                updates.valorProfessor = String(vp4);
+                updates.valorArena = String(Math.round((valorNum - vp4) * 100) / 100);
                 updates.categoria = "comissao";
               }
             }
@@ -1518,12 +1525,13 @@ export function registerConferenciaRoutes(app: Express): void {
         const updPct = parseFloat(String(updated.percentual || "0")) / 100;
         await Promise.all(toLink.map(r => {
           const v = parseFloat(r.valor || "0");
+          const vLink = Math.round(v * updPct * 100) / 100;
           return db.update(conferenciaRegistros).set({
             status: "confirmado",
             professorId: updated.professorId,
             percentual: updated.percentual,
-            valorProfessor: String(Math.round(v * updPct * 100) / 100),
-            valorArena: String(Math.round(v * (1 - updPct) * 100) / 100),
+            valorProfessor: String(vLink),
+            valorArena: String(Math.round((v - vLink) * 100) / 100),
             categoria: updated.categoria,
             alunoNomeMatch: updated.alunoNomeMatch,
             studentId: updated.studentId,
