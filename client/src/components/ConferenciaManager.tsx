@@ -702,7 +702,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
         <div class="prof-header">
           <span class="prof-name">${g.nome}</span>
           ${!isArena ? `<span class="prof-pct">${pct}% comissão</span>` : ""}
-          <span class="prof-summary">${g.registros.length} aluno${g.registros.length !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""}</span>
+          <span class="prof-summary">${new Set(g.registros.map((r: Registro) => r.nomePlataforma)).size} aluno${new Set(g.registros.map((r: Registro) => r.nomePlataforma)).size !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""}</span>
         </div>
         <table>
           <thead>
@@ -3264,7 +3264,7 @@ function RelatorioView({
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground">
-                      {g.registros.length} aluno{g.registros.length !== 1 ? "s" : ""} · {chks} check-in{chks !== 1 ? "s" : ""}
+                      {new Set(g.registros.map((r) => r.nomePlataforma)).size} aluno{new Set(g.registros.map((r) => r.nomePlataforma)).size !== 1 ? "s" : ""} · {chks} check-in{chks !== 1 ? "s" : ""}
                     </span>
                     <div className="ml-auto flex gap-1.5 flex-wrap">
                       {key !== "__arena__" && onAddMensalista && (
