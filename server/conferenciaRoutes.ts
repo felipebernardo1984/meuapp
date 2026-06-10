@@ -227,13 +227,29 @@ function detectColumns(headers: string[], rows: Array<Record<string, unknown>>):
     "visita", "checkin", "check-in", "acesso", "session", "frequencia",
     "quantidade", "qtd", "sessions", "visits", "utilizacao", "uso",
   ]);
-  const modalidadeIdx = findByHeader(headers, [
-    "produto", "plano", "modalidade", "atividade", "tipo", "categoria", "activity",
-    "servico", "beneficio", "nivel", "pacote", "plan", "classe",
-  ]);
 
+  // Compute nameIdx first so we can guard modalidadeIdx against picking the same column
   const nameIdx = nameByHeader >= 0 ? nameByHeader : detectNameColumnByContent(headers, rows);
   const valueIdx = valueByHeader >= 0 ? valueByHeader : detectValueColumnByContent(headers, rows, nameIdx);
+
+  const rawModalidadeIdx = findByHeader(headers, [
+    "produto", "plano", "modalidade", "atividade", "tipo", "categoria", "activity",
+    "servico", "nivel", "pacote", "plan", "classe",
+    // NOTE: "beneficio" intentionally omitted — normHeader("Beneficiário") contains "beneficio"
+    // causing person-name columns to be misdetected as modality (e.g. Wellhub "Beneficiário")
+  ]);
+  // Guard: discard if it's the same column as name, or if values look like person names
+  const modalidadeIdx = (() => {
+    if (rawModalidadeIdx < 0 || rawModalidadeIdx === nameIdx) return -1;
+    const sample = rows.slice(0, Math.min(20, rows.length));
+    const vals = sample.map((r) => String(r[headers[rawModalidadeIdx]] ?? "").trim()).filter(Boolean);
+    if (vals.length === 0) return rawModalidadeIdx;
+    const uniqueRatio = new Set(vals).size / vals.length;
+    const nameLike = vals.filter(looksLikeName).length / vals.length;
+    // If >60% of values are unique AND >50% look like person names → not a modality column
+    if (uniqueRatio > 0.6 && nameLike > 0.5) return -1;
+    return rawModalidadeIdx;
+  })();
 
   return {
     nameIdx,
