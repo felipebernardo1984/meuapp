@@ -1387,6 +1387,26 @@ export function registerConferenciaRoutes(app: Express): void {
         })
         .returning();
 
+      // Also add student to professor's student list (avoid duplicates)
+      if (profId) {
+        const existing = await db
+          .select({ nome: conferenciaProfessorAlunos.nome })
+          .from(conferenciaProfessorAlunos)
+          .where(and(
+            eq(conferenciaProfessorAlunos.arenaId, arenaId),
+            eq(conferenciaProfessorAlunos.professorId, profId)
+          ));
+        const nomeNorm = alunoNome.trim().toLowerCase();
+        const alreadyExists = existing.some((a) => a.nome.toLowerCase() === nomeNorm);
+        if (!alreadyExists) {
+          await db.insert(conferenciaProfessorAlunos).values({
+            arenaId,
+            professorId: profId,
+            nome: alunoNome.trim(),
+          });
+        }
+      }
+
       res.json({ ...novo, professorNome: profNome });
     } catch (err) {
       console.error("[mensalista POST]", err);

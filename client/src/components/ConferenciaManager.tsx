@@ -426,15 +426,17 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const dataStr = new Date(sessao.criadoEm).toLocaleDateString("pt-BR");
 
-  // Group by modalidade
+  // Group by modalidade (mensalistas get their own "Mensalista" section)
   const byMod = new Map<string, typeof regs>();
   for (const r of [...regs].sort((a, b) => {
-    const mc = (a.modalidade ?? "—").localeCompare(b.modalidade ?? "—", "pt-BR");
+    const modA = r.categoria === "mensalista" ? "Mensalista" : (a.modalidade ?? "—");
+    const modB = r.categoria === "mensalista" ? "Mensalista" : (b.modalidade ?? "—");
+    const mc = modA.localeCompare(modB, "pt-BR");
     if (mc !== 0) return mc;
     const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
     return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
   })) {
-    const mod = r.modalidade ?? "—";
+    const mod = r.categoria === "mensalista" ? "Mensalista" : (r.modalidade ?? "—");
     if (!byMod.has(mod)) byMod.set(mod, []);
     byMod.get(mod)!.push(r);
   }
@@ -571,15 +573,17 @@ function exportComprovanteConsolidado(
       const secComissao = regs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
       const secArena = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
 
-      // Group by modalidade within this section
+      // Group by modalidade within this section (mensalistas get their own section)
       const byMod = new Map<string, typeof regs>();
       for (const r of [...regs].sort((a, b) => {
-        const mc = (a.modalidade ?? "—").localeCompare(b.modalidade ?? "—", "pt-BR");
+        const modA = a.categoria === "mensalista" ? "Mensalista" : (a.modalidade ?? "—");
+        const modB = b.categoria === "mensalista" ? "Mensalista" : (b.modalidade ?? "—");
+        const mc = modA.localeCompare(modB, "pt-BR");
         if (mc !== 0) return mc;
         const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
         return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
       })) {
-        const mod = r.modalidade ?? "—";
+        const mod = r.categoria === "mensalista" ? "Mensalista" : (r.modalidade ?? "—");
         if (!byMod.has(mod)) byMod.set(mod, []);
         byMod.get(mod)!.push(r);
       }
