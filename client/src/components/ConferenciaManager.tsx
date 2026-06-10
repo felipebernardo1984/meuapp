@@ -503,45 +503,90 @@ function exportComprovanteConsolidado(
   percentualComissao: string,
   mesLabel: string
 ) {
-  type RegComArquivo = Registro & { nomeArquivo: string };
+  // Build per-session sections — only sessions that have records for this professor
+  const sections = sessoes
+    .map((s) => ({
+      sessao: s,
+      regs: s.registros.filter(
+        (r) =>
+          r.status === "confirmado" &&
+          (professorId === "__arena__" ? !r.professorId : r.professorId === professorId)
+      ),
+    }))
+    .filter((sec) => sec.regs.length > 0);
 
-  const allRegs: RegComArquivo[] = [];
-  for (const s of sessoes) {
-    const regs = s.registros.filter(
-      (r) =>
-        r.status === "confirmado" &&
-        (professorId === "__arena__" ? !r.professorId : r.professorId === professorId)
-    );
-    regs.forEach((r) => allRegs.push({ ...r, nomeArquivo: s.nomeArquivo }));
-  }
-
-  if (allRegs.length === 0) return;
+  if (sections.length === 0) return;
 
   const pct = percentualComissao;
-  const subtotal = allRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-  const comissao = allRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-  const arena = allRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const chks = allRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  const sorted = [...allRegs].sort((a, b) => {
-    const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
-    return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
-  });
+  // Grand totals
+  const allRegs = sections.flatMap((s) => s.regs);
+  const totalAlunos = new Set(allRegs.map((r) => r.nomePlataforma)).size;
+  const totalChks = allRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+  const totalReceita = allRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalComissao = allRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+  const totalArena = allRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
 
-  const rows = sorted
-    .map(
-      (r) => `
-    <tr>
-      <td>${r.nomePlataforma}</td>
-      <td>${r.modalidade ?? "—"}</td>
-      <td style="text-align:center">${fmtData(r.data)}</td>
-      <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
-      ${professorId !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
-      <td style="color:#555;font-size:9px">${r.nomeArquivo}</td>
-    </tr>`
-    )
-    .join("");
+  // Build one section block per platform/arquivo
+  const sectionBlocks = sections
+    .map(({ sessao, regs }) => {
+      const secAlunos = new Set(regs.map((r) => r.nomePlataforma)).size;
+      const secChks = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+      const secReceita = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+      const secComissao = regs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+      const secArena = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+
+      const sorted = [...regs].sort((a, b) => {
+        const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
+        return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
+      });
+
+      const rows = sorted
+        .map(
+          (r) => `
+        <tr>
+          <td>${r.nomePlataforma}</td>
+          <td>${r.modalidade ?? "—"}</td>
+          <td style="text-align:center">${fmtData(r.data)}</td>
+          <td style="text-align:center">${r.checkins ?? 1}</td>
+          <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
+          ${professorId !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+        </tr>`
+        )
+        .join("");
+
+      return `
+      <div class="section">
+        <div class="section-header">
+          <span class="section-platform">${plataformaLabel(sessao.plataforma).toUpperCase()}</span>
+          <span class="section-file">${sessao.nomeArquivo}</span>
+        </div>
+        <div class="section-summary">
+          <span>${secAlunos} aluno${secAlunos !== 1 ? "s" : ""}</span>
+          <span>${secChks} check-in${secChks !== 1 ? "s" : ""}</span>
+          <span>Receita: <strong>${fmt(secReceita)}</strong></span>
+          ${professorId !== "__arena__" ? `<span style="color:#059669">Comissão: <strong>${fmt(secComissao)}</strong></span><span>Arena: ${fmt(secArena)}</span>` : `<span>Arena: ${fmt(secArena)}</span>`}
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome na Plataforma</th>
+              <th>Modalidade</th>
+              <th style="text-align:center">Data/Horário</th>
+              <th style="text-align:center">Check-ins</th>
+              <th style="text-align:right">Valor</th>
+              ${professorId !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="section-total">
+          <strong>${fmt(secReceita)}</strong> · ${secChks} check-in${secChks !== 1 ? "s" : ""}${professorId !== "__arena__" ? ` · Comissão: <strong>${fmt(secComissao)}</strong>` : ""}
+        </div>
+      </div>`;
+    })
+    .join('<div class="page-break"></div>');
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -555,44 +600,45 @@ function exportComprovanteConsolidado(
   .subtitle { color:#555;font-size:11px;margin-bottom:16px; }
   .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:bold; }
   .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:bold; }
-  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px; }
-  .summary-card { border:1px solid #ddd;border-radius:6px;padding:10px 14px; }
-  .summary-card .val { font-size:14px;font-weight:bold;margin-bottom:2px; }
-  .summary-card .lbl { font-size:9px;color:#666; }
-  table { width:100%;border-collapse:collapse;border:1px solid #ddd; }
+  /* Grand totals */
+  .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px; }
+  .grand-card { border:1px solid #ddd;border-radius:6px;padding:10px 14px; }
+  .grand-card .val { font-size:14px;font-weight:bold;margin-bottom:2px; }
+  .grand-card .lbl { font-size:9px;color:#666; }
+  /* Section */
+  .section { margin-bottom:28px; }
+  .section-header { display:flex;align-items:baseline;gap:10px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #1e293b; }
+  .section-platform { font-size:13px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
+  .section-file { font-size:10px;color:#64748b; }
+  .section-summary { display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:#475569; }
+  table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:6px; }
   th { background:#f9f9f9;text-align:left;padding:5px 8px;font-size:10px;border-bottom:1px solid #ddd; }
   td { padding:5px 8px;border-bottom:1px solid #eee;font-size:10px; }
-  .total-row { background:#1e293b;color:white;border-radius:6px;padding:10px 16px;margin-top:16px; }
-  .file-pills { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px; }
-  .file-pill { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:3px 8px;font-size:9px;color:#475569; }
-  @media print { body { padding:10px; } }
+  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:6px 12px;font-size:10px;color:#334155; }
+  /* Grand total bar */
+  .grand-total { background:#1e293b;color:white;border-radius:6px;padding:12px 16px;margin-top:28px;font-size:11px; }
+  .page-break { height:24px; }
+  @media print {
+    body { padding:10px; }
+    .page-break { page-break-after:always;height:0; }
+  }
 </style>
 </head>
 <body>
   <h1>${professorNome}${professorId !== "__arena__" ? `<span class="badge">${pct}% comissão</span>` : ""}<span class="badge-consolidated">Consolidado</span></h1>
-  <div class="subtitle">Comprovante de receita consolidado — ${mesLabel} · ${sessoes.length} arquivo${sessoes.length !== 1 ? "s" : ""}</div>
-  <div class="file-pills">${sessoes.map((s) => `<span class="file-pill">${s.nomeArquivo}</span>`).join("")}</div>
-  <div class="summary-grid">
-    <div class="summary-card"><div class="val">${allRegs.length}</div><div class="lbl">Alunos</div></div>
-    <div class="summary-card"><div class="val">${chks}</div><div class="lbl">Check-ins</div></div>
-    <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Total</div></div>
-    ${professorId !== "__arena__" ? `<div class="summary-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(comissao)}</div><div class="lbl">Sua Comissão (${pct}%)</div></div>` : `<div class="summary-card"><div class="val">${fmt(arena)}</div><div class="lbl">Valor Arena</div></div>`}
+  <div class="subtitle">Comprovante de receita consolidado — ${mesLabel} · ${sections.length} plataforma${sections.length !== 1 ? "s" : ""}</div>
+
+  <div class="grand-grid">
+    <div class="grand-card"><div class="val">${totalAlunos}</div><div class="lbl">Alunos únicos</div></div>
+    <div class="grand-card"><div class="val">${totalChks}</div><div class="lbl">Check-ins totais</div></div>
+    <div class="grand-card"><div class="val">${fmt(totalReceita)}</div><div class="lbl">Receita Total</div></div>
+    ${professorId !== "__arena__" ? `<div class="grand-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(totalComissao)}</div><div class="lbl">Comissão Total (${pct}%)</div></div>` : `<div class="grand-card"><div class="val">${fmt(totalArena)}</div><div class="lbl">Valor Arena</div></div>`}
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Nome na Plataforma</th>
-        <th>Modalidade</th>
-        <th style="text-align:center">Data/Horário</th>
-        <th style="text-align:right">Valor</th>
-        ${professorId !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
-        <th>Arquivo</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-  </table>
-  <div class="total-row">
-    <strong>${fmt(subtotal)}</strong> total · ${chks} check-in${chks !== 1 ? "s" : ""}${professorId !== "__arena__" ? ` · Comissão: <strong>${fmt(comissao)}</strong> · Arena: ${fmt(arena)}` : ""}
+
+  ${sectionBlocks}
+
+  <div class="grand-total">
+    TOTAL GERAL — <strong>${fmt(totalReceita)}</strong> · ${totalChks} check-in${totalChks !== 1 ? "s" : ""}${professorId !== "__arena__" ? ` · Comissão: <strong>${fmt(totalComissao)}</strong> · Arena: ${fmt(totalArena)}` : ""}
   </div>
 </body>
 </html>`;
