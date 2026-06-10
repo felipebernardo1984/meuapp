@@ -1086,7 +1086,7 @@ export function registerConferenciaRoutes(app: Express): void {
     const registros = await db
       .select()
       .from(conferenciaRegistros)
-      .where(eq(conferenciaRegistros.sessaoId, sessao.id));
+      .where(and(eq(conferenciaRegistros.sessaoId, sessao.id), eq(conferenciaRegistros.arenaId, arenaId)));
 
     const profsDb = await db
       .select()
@@ -1395,6 +1395,21 @@ export function registerConferenciaRoutes(app: Express): void {
     }
 
     await db.delete(conferenciaRegistros).where(eq(conferenciaRegistros.id, req.params.id));
+
+    // Recompute session counters after deletion
+    const allRegsAfterDel = await db
+      .select()
+      .from(conferenciaRegistros)
+      .where(and(eq(conferenciaRegistros.sessaoId, registro.sessaoId), eq(conferenciaRegistros.arenaId, arenaId)));
+    await db
+      .update(conferenciaSessoes)
+      .set({
+        encontrados: allRegsAfterDel.filter((r) => r.status === "confirmado").length,
+        possiveis: allRegsAfterDel.filter((r) => r.status === "pendente").length,
+        naoEncontrados: allRegsAfterDel.filter((r) => r.status === "nao_encontrado").length,
+      })
+      .where(eq(conferenciaSessoes.id, registro.sessaoId));
+
     res.json({ ok: true });
   });
 
@@ -1528,6 +1543,7 @@ export function registerConferenciaRoutes(app: Express): void {
         .where(
           and(
             eq(conferenciaRegistros.sessaoId, registro.sessaoId),
+            eq(conferenciaRegistros.arenaId, arenaId),
             inArray(conferenciaRegistros.status, ["pendente", "nao_encontrado"])
           )
         );
@@ -1555,7 +1571,7 @@ export function registerConferenciaRoutes(app: Express): void {
     const allRegs = await db
       .select()
       .from(conferenciaRegistros)
-      .where(eq(conferenciaRegistros.sessaoId, registro.sessaoId));
+      .where(and(eq(conferenciaRegistros.sessaoId, registro.sessaoId), eq(conferenciaRegistros.arenaId, arenaId)));
     await db
       .update(conferenciaSessoes)
       .set({

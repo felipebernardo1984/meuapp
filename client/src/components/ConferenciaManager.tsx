@@ -1978,11 +1978,18 @@ function SessaoView({
       qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", sessaoId], (old) => {
         if (!old) return old;
         const profNome = confsProfs.find((p) => p.id === novo.professorId)?.nome ?? null;
-        return { ...old, registros: [...old.registros, { ...novo, professorNome: profNome }] };
+        const newRegs = [...old.registros, { ...novo, professorNome: profNome }];
+        return {
+          ...old,
+          registros: newRegs,
+          encontrados: newRegs.filter((r) => r.status === "confirmado").length,
+          possiveis: newRegs.filter((r) => r.status === "pendente").length,
+          naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
+        };
       });
       toast({ title: "Mensalista adicionado", description: novo.nomePlataforma });
       setMensalistaOpen(false);
-      setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null); setMAlunoComboOpen(false);
+      setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null); setMAlunoComboOpen(false); setMSearchQuery("");
     },
     onError: (err: Error) => toast({ title: "Erro ao adicionar mensalista", description: err.message, variant: "destructive" }),
   });
@@ -1993,7 +2000,14 @@ function SessaoView({
     onSuccess: (_: unknown, id: string) => {
       qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", sessaoId], (old) => {
         if (!old) return old;
-        return { ...old, registros: old.registros.filter((r) => r.id !== id) };
+        const newRegs = old.registros.filter((r) => r.id !== id);
+        return {
+          ...old,
+          registros: newRegs,
+          encontrados: newRegs.filter((r) => r.status === "confirmado").length,
+          possiveis: newRegs.filter((r) => r.status === "pendente").length,
+          naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
+        };
       });
       toast({ title: "Mensalista removido" });
     },
@@ -2134,7 +2148,7 @@ function SessaoView({
     setRedirectAProf("");
   };
 
-  const handleExportCSV = () => window.open(`/api/conferencia/export/${sessaoId}`, "_blank");
+  const handleExportCSV = () => { window.location.href = `/api/conferencia/export/${sessaoId}`; };
   const handleExportPDF = () => exportToPDF(sessao);
 
   return (
@@ -2810,6 +2824,7 @@ function SessaoView({
 
       {linkDialog && (
         <LinkAlunoDialog
+          key={linkDialog.id}
           registro={linkDialog}
           confsProfs={confsProfs}
           onConfirmProf={(professorId) => {
