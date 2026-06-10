@@ -1981,7 +1981,7 @@ function SessaoView({
       });
       toast({ title: "Mensalista adicionado", description: novo.nomePlataforma });
       setMensalistaOpen(false);
-      setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null);
+      setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null); setMAlunoComboOpen(false);
     },
     onError: () => toast({ title: "Erro ao adicionar mensalista", variant: "destructive" }),
   });
@@ -2674,6 +2674,20 @@ function SessaoView({
             </div>
 
             <div className="space-y-1.5">
+              <Label className="text-xs">Valor (R$)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0,00"
+                value={mValor}
+                onChange={(e) => setMValor(e.target.value)}
+                className="h-9 text-sm"
+                data-testid="input-mensalista-valor"
+              />
+            </div>
+
+            <div className="space-y-1.5">
               <Label className="text-xs">Professor responsável (opcional)</Label>
               <Select value={mProfId} onValueChange={setMProfId} data-testid="select-mensalista-prof">
                 <SelectTrigger className="h-9 text-sm">
@@ -2693,28 +2707,18 @@ function SessaoView({
                 const pct = parseFloat(prof?.percentualComissao ?? "0");
                 const val = parseFloat(mValor) || 0;
                 if (pct > 0 && val > 0) {
+                  const vpPreview = Math.round(val * pct / 100 * 100) / 100;
+                  const vaPreview = Math.round((val - vpPreview) * 100) / 100;
                   return (
-                    <p className="text-[11px] text-muted-foreground">
-                      Prof: {fmtVal(String(Math.round(val * pct / 100 * 100) / 100))} · Arena: {fmtVal(String(Math.round(val * (1 - pct / 100) * 100) / 100))}
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Prof: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtVal(String(vpPreview))}</span>
+                      {" · "}
+                      Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(vaPreview))}</span>
                     </p>
                   );
                 }
                 return null;
               })()}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Valor (R$)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0,00"
-                value={mValor}
-                onChange={(e) => setMValor(e.target.value)}
-                className="h-9 text-sm"
-                data-testid="input-mensalista-valor"
-              />
             </div>
 
             <div className="space-y-1.5">
