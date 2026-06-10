@@ -2902,9 +2902,23 @@ function SessaoView({
       )}
 
       {/* ── Relatório Tab ── */}
-      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} arenaId={arenaId} periodo={periodo} confsProfs={confsProfs} onAddMensalista={(profId) => { setMProfId(profId); setMensalistaOpen(true); }} />}
+      {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} arenaId={arenaId} periodo={periodo} confsProfs={confsProfs} />}
 
-      {/* ── Link Dialog ── */}
+      {/* ── Mensalista button (below files) ── */}
+      {tab === "relatorio" && (
+        <div className="mt-3 flex justify-start">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => setMensalistaOpen(true)}
+            data-testid="button-add-mensalista-sessao"
+          >
+            <UserPlus className="h-3.5 w-3.5" /> Adicionar Mensalista
+          </Button>
+        </div>
+      )}
+
       {/* ── Mensalista Dialog ── */}
       <Dialog open={mensalistaOpen} onOpenChange={(v) => { setMensalistaOpen(v); if (!v) { setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null); } }}>
         <DialogContent className="max-w-md">
@@ -3113,7 +3127,6 @@ function RelatorioView({
   sessaoId,
   arenaId,
   periodo,
-  onAddMensalista,
 }: {
   registros: Registro[];
   plataforma: string;
@@ -3122,7 +3135,6 @@ function RelatorioView({
   arenaId: string;
   periodo: string | undefined;
   confsProfs: ConfProfessor[];
-  onAddMensalista?: (professorId: string) => void;
 }) {
   const { data: repasseCfg } = useQuery<RepasseConfig>({
     queryKey: ["/api/conferencia/repasse-config", periodo],
@@ -3325,17 +3337,6 @@ function RelatorioView({
                       {new Set(g.registros.map((r) => r.nomePlataforma)).size} aluno{new Set(g.registros.map((r) => r.nomePlataforma)).size !== 1 ? "s" : ""} · {chks} check-in{chks !== 1 ? "s" : ""}
                     </span>
                     <div className="ml-auto flex gap-1.5 flex-wrap">
-                      {key !== "__arena__" && onAddMensalista && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => onAddMensalista(key)}
-                          data-testid={`button-add-mensalista-${key}`}
-                        >
-                          <UserPlus className="h-3 w-3" /> Mensalista
-                        </Button>
-                      )}
                       <Button
                         variant="outline"
                         size="sm"
