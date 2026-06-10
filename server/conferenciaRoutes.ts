@@ -1297,6 +1297,91 @@ export function registerConferenciaRoutes(app: Express): void {
     res.json({ updated: updatePayloads.length, dayuseDetected: dayuseOps.length, encontrados, possiveis, naoEncontrados });
   });
 
+  // POST /api/conferencia/sessao/:id/mensalista — add a manual mensalista entry
+  app.post("/api/conferencia/sessao/:id/mensalista", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+
+    const [sessao] = await db
+      .select()
+      .from(conferenciaSessoes)
+      .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
+    if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
+
+    const { studentId, alunoNome, professorId, valor, comprovante } = req.body as Record<string, string>;
+    if (!alunoNome?.trim()) return res.status(400).json({ message: "alunoNome é obrigatório" });
+    const valorNum = parseFloat(valor);
+    if (isNaN(valorNum) || valorNum < 0) return res.status(400).json({ message: "Valor inválido" });
+
+    let percentual = "0";
+    let valorProfessor = "0";
+    let valorArena = String(valorNum);
+    let profNome: string | null = null;
+
+    if (professorId) {
+      const [prof] = await db
+        .select()
+        .from(conferenciaProfessores)
+        .where(and(eq(conferenciaProfessores.id, professorId), eq(conferenciaProfessores.arenaId, arenaId)));
+      if (prof) {
+        profNome = prof.nome;
+        percentual = prof.percentualComissao ?? "0";
+        const pct = parseFloat(percentual) / 100;
+        valorProfessor = String(Math.round(valorNum * pct * 100) / 100);
+        valorArena = String(Math.round(valorNum * (1 - pct) * 100) / 100);
+      }
+    }
+
+    const [novo] = await db
+      .insert(conferenciaRegistros)
+      .values({
+        arenaId,
+        sessaoId: sessao.id,
+        nomePlataforma: alunoNome.trim(),
+        studentId: studentId || null,
+        alunoNomeMatch: alunoNome.trim(),
+        similaridade: 100,
+        valor: String(valorNum),
+        data: new Date().toISOString().slice(0, 10),
+        checkins: 0,
+        plataforma: sessao.plataforma,
+        modalidade: null,
+        status: "confirmado",
+        categoria: "mensalista",
+        professorId: professorId || null,
+        percentual,
+        valorProfessor,
+        valorArena,
+        observacao: null,
+        comprovante: comprovante || null,
+      })
+      .returning();
+
+    res.json({ ...novo, professorNome: profNome });
+  });
+
+  // DELETE /api/conferencia/registro/:id — remove a mensalista entry
+  app.delete("/api/conferencia/registro/:id", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+
+    const [registro] = await db
+      .select()
+      .from(conferenciaRegistros)
+      .where(and(eq(conferenciaRegistros.id, req.params.id), eq(conferenciaRegistros.arenaId, arenaId)));
+    if (!registro) return res.status(404).json({ message: "Registro não encontrado" });
+    if (registro.categoria !== "mensalista") {
+      return res.status(400).json({ message: "Somente entradas mensalistas manuais podem ser removidas" });
+    }
+
+    await db.delete(conferenciaRegistros).where(eq(conferenciaRegistros.id, req.params.id));
+    res.json({ ok: true });
+  });
+
   // PUT /api/conferencia/registro/:id — confirm/update a record
   app.put("/api/conferencia/registro/:id", async (req, res) => {
     const arenaId = req.session.arenaId;

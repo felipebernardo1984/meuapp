@@ -541,6 +541,7 @@ export const conferenciaRegistros = pgTable("conferencia_registros", {
   valorProfessor: text("valor_professor").default("0"),
   valorArena: text("valor_arena").default("0"),
   observacao: text("observacao"),
+  comprovante: text("comprovante"),
   criadoEm: timestamp("criado_em").defaultNow(),
 });
 

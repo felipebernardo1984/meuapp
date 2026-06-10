@@ -52,7 +52,10 @@ import {
   RotateCw,
   Link2,
   Settings2,
+  ImageIcon,
+  UserPlus,
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -117,6 +120,7 @@ interface Registro {
   valorProfessor: string;
   valorArena: string;
   observacao: string | null;
+  comprovante?: string | null;
 }
 
 interface SessaoDetalhe extends Sessao {
@@ -1854,6 +1858,14 @@ function SessaoView({
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  // Mensalista dialog state
+  const [mensalistaOpen, setMensalistaOpen] = useState(false);
+  const [mAlunoId, setMAlunoId] = useState("");
+  const [mAlunoNome, setMAlunoNome] = useState("");
+  const [mProfId, setMProfId] = useState("");
+  const [mValor, setMValor] = useState("");
+  const [mComprovante, setMComprovante] = useState<string | null>(null);
+
   const { data: sessao, isLoading } = useQuery<SessaoDetalhe>({
     queryKey: ["/api/conferencia/sessao", sessaoId],
     queryFn: async () => {
@@ -1935,6 +1947,41 @@ function SessaoView({
       });
     },
     onError: () => toast({ title: "Erro ao atualizar", variant: "destructive" }),
+  });
+
+  const { data: arenaStudents = [] } = useQuery<{ id: string; nome: string }[]>({
+    queryKey: ["/api/students"],
+    queryFn: () => fetch("/api/students").then((r) => r.json()),
+    enabled: mensalistaOpen,
+  });
+
+  const addMensalistaMutation = useMutation({
+    mutationFn: (body: { studentId: string; alunoNome: string; professorId: string; valor: string; comprovante?: string | null }) =>
+      apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/mensalista`, body).then((r) => r.json()),
+    onSuccess: (novo: Registro) => {
+      qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", sessaoId], (old) => {
+        if (!old) return old;
+        const profNome = confsProfs.find((p) => p.id === novo.professorId)?.nome ?? null;
+        return { ...old, registros: [...old.registros, { ...novo, professorNome: profNome }] };
+      });
+      toast({ title: "Mensalista adicionado", description: novo.nomePlataforma });
+      setMensalistaOpen(false);
+      setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null);
+    },
+    onError: () => toast({ title: "Erro ao adicionar mensalista", variant: "destructive" }),
+  });
+
+  const deleteMensalistaMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest("DELETE", `/api/conferencia/registro/${id}`).then((r) => r.json()),
+    onSuccess: (_: unknown, id: string) => {
+      qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", sessaoId], (old) => {
+        if (!old) return old;
+        return { ...old, registros: old.registros.filter((r) => r.id !== id) };
+      });
+      toast({ title: "Mensalista removido" });
+    },
+    onError: () => toast({ title: "Erro ao remover", variant: "destructive" }),
   });
 
   if (isLoading || !sessao) {
@@ -2180,7 +2227,7 @@ function SessaoView({
 
 
       {/* ── Tabs ── */}
-      <div className="flex gap-1 border-b">
+      <div className="flex items-center gap-1 border-b">
         {(["conferencia", "relatorio"] as const).map((t) => (
           <button
             key={t}
@@ -2194,6 +2241,18 @@ function SessaoView({
             {t === "conferencia" ? "Conferência" : "Relatório por Professor"}
           </button>
         ))}
+        <div className="ml-auto pb-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1.5"
+            onClick={() => setMensalistaOpen(true)}
+            data-testid="button-add-mensalista"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Adicionar Mensalista
+          </Button>
+        </div>
       </div>
 
       {/* ── Conferência Tab ── */}
@@ -2551,6 +2610,137 @@ function SessaoView({
       {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} arenaId={arenaId} periodo={periodo} confsProfs={confsProfs} />}
 
       {/* ── Link Dialog ── */}
+      {/* ── Mensalista Dialog ── */}
+      <Dialog open={mensalistaOpen} onOpenChange={(v) => { setMensalistaOpen(v); if (!v) { setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Adicionar Mensalista
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Aluno</Label>
+              <Select
+                value={mAlunoId}
+                onValueChange={(v) => {
+                  setMAlunoId(v);
+                  const s = arenaStudents.find((s) => s.id === v);
+                  if (s) setMAlunoNome(s.nome);
+                }}
+                data-testid="select-mensalista-aluno"
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Selecionar aluno…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...arenaStudents].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Professor responsável (opcional)</Label>
+              <Select value={mProfId} onValueChange={setMProfId} data-testid="select-mensalista-prof">
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Sem professor (100% arena)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem professor (100% arena)</SelectItem>
+                  {confsProfs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` — ${p.percentualComissao}% comissão` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {mProfId && mProfId !== "__none__" && (() => {
+                const prof = confsProfs.find((p) => p.id === mProfId);
+                const pct = parseFloat(prof?.percentualComissao ?? "0");
+                const val = parseFloat(mValor) || 0;
+                if (pct > 0 && val > 0) {
+                  return (
+                    <p className="text-[11px] text-muted-foreground">
+                      Prof: {fmtVal(String(Math.round(val * pct / 100 * 100) / 100))} · Arena: {fmtVal(String(Math.round(val * (1 - pct / 100) * 100) / 100))}
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Valor (R$)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0,00"
+                value={mValor}
+                onChange={(e) => setMValor(e.target.value)}
+                className="h-9 text-sm"
+                data-testid="input-mensalista-valor"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Comprovante PIX (opcional)</Label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="comprovante-upload"
+                  className="flex items-center gap-2 cursor-pointer border rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  {mComprovante ? "Imagem carregada ✓" : "Selecionar imagem…"}
+                </label>
+                <input
+                  id="comprovante-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => setMComprovante(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                {mComprovante && (
+                  <button onClick={() => setMComprovante(null)} className="text-xs text-destructive hover:underline">remover</button>
+                )}
+              </div>
+              {mComprovante && (
+                <img src={mComprovante} alt="comprovante" className="max-h-28 rounded border object-contain mt-1" />
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMensalistaOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!mAlunoId || !mValor || parseFloat(mValor) <= 0 || addMensalistaMutation.isPending}
+              onClick={() => {
+                addMensalistaMutation.mutate({
+                  studentId: mAlunoId,
+                  alunoNome: mAlunoNome,
+                  professorId: mProfId && mProfId !== "__none__" ? mProfId : "",
+                  valor: mValor,
+                  comprovante: mComprovante,
+                });
+              }}
+              data-testid="button-confirmar-mensalista"
+            >
+              {addMensalistaMutation.isPending ? "Salvando…" : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {linkDialog && (
         <LinkAlunoDialog
           registro={linkDialog}
@@ -2694,7 +2884,8 @@ function RelatorioView({
           </h2>
           {profGroups.map(([key, g]) => {
             const regulares = g.registros.filter((r) => r.categoria === "comissao");
-            const atribuidos = g.registros.filter((r) => r.categoria !== "comissao");
+            const mensalistas = g.registros.filter((r) => r.categoria === "mensalista");
+            const atribuidos = g.registros.filter((r) => r.categoria !== "comissao" && r.categoria !== "mensalista");
 
             const subtotal = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
             const comissao = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
@@ -2864,8 +3055,61 @@ function RelatorioView({
                     </div>
                   )}
 
-                  {/* Fallback: nenhum dos dois (não deveria acontecer) */}
-                  {regulares.length === 0 && atribuidos.length === 0 && renderTabela(g.registros)}
+                  {/* Mensalistas manuais */}
+                  {mensalistas.length > 0 && (
+                    <div className="pt-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+                          Mensalistas · {mensalistas.length}
+                        </p>
+                        <div className="flex-1 border-t border-dashed border-muted-foreground/30" />
+                      </div>
+                      <div className="border rounded overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/40">
+                              <TableHead className="text-xs py-2">Aluno</TableHead>
+                              <TableHead className="text-xs py-2 text-right">Total</TableHead>
+                              <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
+                              <TableHead className="text-xs py-2 text-right">Arena</TableHead>
+                              <TableHead className="text-xs py-2 text-center w-16">Comprov.</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {[...mensalistas]
+                              .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
+                              .map((r) => (
+                                <TableRow key={r.id} className="text-xs">
+                                  <TableCell className="py-2 font-medium max-w-[160px]">
+                                    <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
+                                  </TableCell>
+                                  <TableCell className="py-2 text-right font-mono tabular-nums">{fmtVal(r.valor)}</TableCell>
+                                  <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmtVal(r.valorProfessor)}</TableCell>
+                                  <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">{fmtVal(String(arenaRow(r)))}</TableCell>
+                                  <TableCell className="py-2 text-center">
+                                    {r.comprovante ? (
+                                      <button
+                                        onClick={() => window.open(r.comprovante!, "_blank")}
+                                        className="inline-flex items-center justify-center text-primary hover:text-primary/80"
+                                        title="Ver comprovante"
+                                      >
+                                        <ImageIcon className="h-3.5 w-3.5" />
+                                      </button>
+                                    ) : (
+                                      <span className="text-muted-foreground/40">—</span>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fallback: nenhum dos três (não deveria acontecer) */}
+                  {regulares.length === 0 && atribuidos.length === 0 && mensalistas.length === 0 && renderTabela(g.registros)}
                 </CardContent>
               </Card>
             );
