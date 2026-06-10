@@ -431,11 +431,14 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
     return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
   });
 
+  const alunosUnicos = new Set(sortedRegs.map((r) => r.nomePlataforma)).size;
+
   const rows = sortedRegs.map((r) => `
     <tr>
       <td>${r.nomePlataforma}</td>
       <td>${r.modalidade ?? "—"}</td>
       <td style="text-align:center">${fmtData(r.data)}</td>
+      <td style="text-align:center">${r.checkins ?? 1}</td>
       <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
       ${professorKey !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
     </tr>`).join("");
@@ -466,7 +469,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   <h1>${professorNome}${professorKey !== "__arena__" ? `<span class="badge">${pct}% comissão</span>` : ""}</h1>
   <div class="subtitle">Comprovante de receita — ${plataformaLabel(sessao.plataforma)} · ${sessao.nomeArquivo} · ${dataStr}</div>
   <div class="summary-grid">
-    <div class="summary-card"><div class="val">${regs.length}</div><div class="lbl">Alunos</div></div>
+    <div class="summary-card"><div class="val">${alunosUnicos}</div><div class="lbl">Alunos</div></div>
     <div class="summary-card"><div class="val">${chks}</div><div class="lbl">Check-ins</div></div>
     <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Total</div></div>
     ${professorKey !== "__arena__" ? `<div class="summary-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(comissao)}</div><div class="lbl">Sua Comissão (${pct}%)</div></div>` : `<div class="summary-card"><div class="val">${fmt(arena)}</div><div class="lbl">Valor Arena</div></div>`}
@@ -477,6 +480,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
         <th>Nome na Plataforma</th>
         <th>Modalidade</th>
         <th style="text-align:center">Data/Horário</th>
+        <th style="text-align:center">Check-ins</th>
         <th style="text-align:right">Valor</th>
         ${professorKey !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
       </tr>
@@ -484,7 +488,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
     <tbody>${rows}</tbody>
   </table>
   <div class="total-row">
-    <strong>${fmt(subtotal)}</strong> total · ${chks} check-in${chks !== 1 ? "s" : ""}${professorKey !== "__arena__" ? ` · Comissão: <strong>${fmt(comissao)}</strong> · Arena: ${fmt(arena)}` : ""}
+    <strong>${fmt(subtotal)}</strong> total · ${alunosUnicos} aluno${alunosUnicos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""}${professorKey !== "__arena__" ? ` · Comissão: <strong>${fmt(comissao)}</strong> · Arena: ${fmt(arena)}` : ""}
   </div>
 </body>
 </html>`;
