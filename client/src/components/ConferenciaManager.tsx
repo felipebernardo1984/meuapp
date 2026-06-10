@@ -1098,136 +1098,139 @@ function MesView({
       <ConfiguracaoView arenaId={arenaId} periodo={monthKey} />
 
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
-      <div className="border-t pt-5 space-y-4">
-        <div>
-          <p className="text-sm font-semibold text-foreground mb-0.5">Arquivos do mês</p>
-          <p className="text-xs text-muted-foreground mb-3">
-            Arraste o Excel do TotalPass ou Wellhub referente a <strong>{mesLabel}</strong>.
-            As colunas serão mapeadas antes de processar.
-          </p>
-
-          {/* Upload zone */}
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragging(false);
-              stageFiles(Array.from(e.dataTransfer.files));
-            }}
-            onClick={() => fileRef.current?.click()}
-            data-testid="upload-zone-conferir"
-            className={cn(
-              "border-2 border-dashed rounded-lg px-4 py-7 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
-              dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"
-            )}
-          >
-            <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
-            <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
-            <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,.xls"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                stageFiles(Array.from(e.target.files ?? []));
-                e.target.value = "";
-              }}
-            />
-          </div>
-
-          {/* Staged files — waiting to be processed */}
-          {stagedFiles.length > 0 && (
-            <div className="space-y-1.5 mt-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Arquivos selecionados — clique em Processar para enviar
+      <div className="border-t pt-5">
+        <Card className="border">
+          <CardContent className="p-5 space-y-4">
+            {/* Header */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-0.5">Arquivos do mês</p>
+              <p className="text-xs text-muted-foreground">
+                Arraste o Excel do TotalPass ou Wellhub referente a <strong>{mesLabel}</strong>.
+                As colunas serão mapeadas antes de processar.
               </p>
-              {stagedFiles.map((file) => {
-                const platform = detectPlatformFromFilename(file.name) || "outro";
-                return (
+            </div>
+
+            {/* Upload zone */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                stageFiles(Array.from(e.dataTransfer.files));
+              }}
+              onClick={() => fileRef.current?.click()}
+              data-testid="upload-zone-conferir"
+              className={cn(
+                "border-2 border-dashed rounded-lg px-4 py-7 flex flex-col items-center justify-center transition-colors select-none cursor-pointer",
+                dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"
+              )}
+            >
+              <Upload className="h-7 w-7 text-muted-foreground mb-1.5" />
+              <span className="text-sm font-medium">Arraste os arquivos ou clique para selecionar</span>
+              <span className="text-xs text-muted-foreground mt-0.5">.xlsx ou .xls · TotalPass e/ou Wellhub</span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".xlsx,.xls"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  stageFiles(Array.from(e.target.files ?? []));
+                  e.target.value = "";
+                }}
+              />
+            </div>
+
+            {/* Staged files — waiting to be processed */}
+            {stagedFiles.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Arquivos selecionados — clique em Processar para enviar
+                </p>
+                {stagedFiles.map((file) => {
+                  const platform = detectPlatformFromFilename(file.name) || "outro";
+                  return (
+                    <div
+                      key={file.name}
+                      className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="truncate flex-1 text-sm">{file.name}</span>
+                      <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(platform)}</Badge>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 px-3 text-xs shrink-0"
+                        disabled={isPreviewing || isUploading}
+                        onClick={() => processStagedFile(file)}
+                        data-testid={`button-processar-${file.name}`}
+                      >
+                        {isPreviewing ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Processar"}
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeStagedFile(file)}
+                        data-testid={`button-remover-staged-${file.name}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Processing / done / error status */}
+            {uploadingFiles.length > 0 && (
+              <div className="space-y-1.5">
+                {uploadingFiles.map((f) => (
                   <div
-                    key={file.name}
-                    className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+                    key={f.name}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
+                      f.status === "processing" && "bg-muted",
+                      f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
+                      f.status === "error" && "bg-red-50 dark:bg-red-950/40"
+                    )}
                   >
-                    <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="truncate flex-1 text-sm">{file.name}</span>
-                    <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(platform)}</Badge>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="h-7 px-3 text-xs shrink-0"
-                      disabled={isPreviewing || isUploading}
-                      onClick={() => processStagedFile(file)}
-                      data-testid={`button-processar-${file.name}`}
-                    >
-                      {isPreviewing ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Processar"}
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeStagedFile(file)}
-                      data-testid={`button-remover-staged-${file.name}`}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                    {f.status === "processing" && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
+                    {f.status === "done" && <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                    {f.status === "error" && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
+                    <span className="truncate flex-1">{f.name}</span>
+                    <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(f.platform || "outro")}</Badge>
+                    {f.status === "error" && f.error && (
+                      <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
+                    )}
+                    {f.status === "done" && f.debug && (
+                      <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
+                        nome: <strong>{f.debug.nameCol ?? "?"}</strong> · valor:{" "}
+                        <strong>{f.debug.valueCol ?? "?"}</strong>
+                      </span>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
 
-          {/* Processing / done / error status */}
-          {uploadingFiles.length > 0 && (
-            <div className="space-y-1.5 mt-2">
-              {uploadingFiles.map((f) => (
-                <div
-                  key={f.name}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
-                    f.status === "processing" && "bg-muted",
-                    f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
-                    f.status === "error" && "bg-red-50 dark:bg-red-950/40"
-                  )}
-                >
-                  {f.status === "processing" && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
-                  {f.status === "done" && <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
-                  {f.status === "error" && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
-                  <span className="truncate flex-1">{f.name}</span>
-                  <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(f.platform || "outro")}</Badge>
-                  {f.status === "error" && f.error && (
-                    <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
-                  )}
-                  {f.status === "done" && f.debug && (
-                    <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
-                      nome: <strong>{f.debug.nameCol ?? "?"}</strong> · valor:{" "}
-                      <strong>{f.debug.valueCol ?? "?"}</strong>
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sessions for this month */}
-        {isLoading ? (
-          <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
-        ) : mesSessoes.length > 0 ? (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Arquivos enviados — {mesLabel}
-            </p>
-            {mesSessoes.map((s) => (
-              <Card
-                key={s.id}
-                className="cursor-pointer hover:shadow-md transition-shadow border"
-                onClick={() => onSelectSessao(s.id)}
-                data-testid={`sessao-card-${s.id}`}
-              >
-                <CardContent className="p-4">
+            {/* Sessions for this month — inside the same card */}
+            {isLoading ? (
+              <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
+            ) : mesSessoes.length > 0 ? (
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Arquivos enviados — {mesLabel}
+                </p>
+                {mesSessoes.map((s) => (
+                  <div
+                    key={s.id}
+                    className="cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all"
+                    onClick={() => onSelectSessao(s.id)}
+                    data-testid={`sessao-card-${s.id}`}
+                  >
+                    <div className="p-3">
                   <div className="flex items-center gap-3">
                     <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
                       <FileSpreadsheet className="h-4 w-4 text-primary" />
@@ -1271,16 +1274,20 @@ function MesView({
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : !isUploading && (
-          <div className="text-center py-8 text-muted-foreground text-sm border border-dashed rounded-lg">
-            Nenhum arquivo enviado para {mesLabel}.<br />
-            Arraste os arquivos acima para começar.
-          </div>
-        )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : !isUploading && (
+              <div className="border-t pt-4">
+                <div className="text-center py-6 text-muted-foreground text-sm border border-dashed rounded-lg">
+                  Nenhum arquivo enviado para {mesLabel}.<br />
+                  Arraste os arquivos acima para começar.
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
