@@ -2661,72 +2661,49 @@ function SessaoView({
           <div className="space-y-4 py-1">
             <div className="space-y-1.5">
               <Label className="text-xs">Nome do aluno</Label>
-              <div className="flex gap-1.5">
+              <div className="relative">
                 <Input
                   placeholder="Digite o nome…"
                   value={mAlunoNome}
-                  onChange={(e) => { setMAlunoNome(e.target.value); setMAlunoId(""); }}
-                  className="h-9 text-sm flex-1"
+                  onChange={(e) => {
+                    setMAlunoNome(e.target.value);
+                    setMAlunoId("");
+                    setMAlunoComboOpen(e.target.value.trim().length > 0);
+                  }}
+                  onFocus={() => { if (mAlunoNome.trim()) setMAlunoComboOpen(true); }}
+                  onBlur={() => setTimeout(() => setMAlunoComboOpen(false), 150)}
+                  className="h-9 text-sm"
                   data-testid="input-mensalista-nome"
+                  autoComplete="off"
                 />
-                <Popover open={mAlunoComboOpen} onOpenChange={setMAlunoComboOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 px-2 shrink-0" title="Buscar aluno cadastrado" data-testid="button-buscar-aluno">
-                      <Search className="h-3.5 w-3.5" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0" align="end">
-                    <Command>
-                      <CommandInput
-                        placeholder="Buscar ou digitar nome…"
-                        className="h-9"
-                        value={mSearchQuery}
-                        onValueChange={setMSearchQuery}
-                      />
-                      <CommandList>
-                        <CommandEmpty>
-                          {mSearchQuery.trim() ? (
-                            <button
-                              className="w-full px-3 py-2 text-sm text-left hover:bg-muted/60 transition-colors flex items-center gap-2"
-                              onClick={() => {
-                                setMAlunoNome(mSearchQuery.trim());
-                                setMAlunoId("");
-                                setMSearchQuery("");
-                                setMAlunoComboOpen(false);
-                              }}
-                            >
-                              <UserPlus className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                              <span>Usar <strong>"{mSearchQuery.trim()}"</strong> como nome</span>
-                            </button>
-                          ) : (
-                            <span className="px-3 py-2 text-sm text-muted-foreground">Nenhum aluno encontrado.</span>
-                          )}
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {[...arenaStudents]
-                            .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-                            .map((s) => (
-                              <CommandItem
-                                key={s.id}
-                                value={s.nome}
-                                onSelect={() => {
-                                  setMAlunoId(s.id);
-                                  setMAlunoNome(s.nome);
-                                  setMSearchQuery("");
-                                  setMAlunoComboOpen(false);
-                                }}
-                              >
-                                {s.nome}
-                              </CommandItem>
-                            ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                {mAlunoComboOpen && (() => {
+                  const matches = [...arenaStudents]
+                    .filter((s) => s.nome.toLowerCase().includes(mAlunoNome.toLowerCase().trim()))
+                    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+                    .slice(0, 8);
+                  if (matches.length === 0) return null;
+                  return (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md shadow-md bg-popover overflow-hidden">
+                      {matches.map((s) => (
+                        <button
+                          key={s.id}
+                          className="w-full px-3 py-2 text-sm text-left hover:bg-muted/60 transition-colors"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setMAlunoId(s.id);
+                            setMAlunoNome(s.nome);
+                            setMAlunoComboOpen(false);
+                          }}
+                        >
+                          {s.nome}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
               {mAlunoId && (
-                <p className="text-[11px] text-muted-foreground">Aluno vinculado ao cadastro da arena</p>
+                <p className="text-[11px] text-muted-foreground">✓ Vinculado ao cadastro da arena</p>
               )}
             </div>
 
