@@ -1582,6 +1582,20 @@ export function registerConferenciaRoutes(app: Express): void {
 
     await db.delete(conferenciaRegistros).where(eq(conferenciaRegistros.id, req.params.id));
 
+    // Also remove the corresponding professor-aluno association for this mensalista
+    if (registro.professorId && registro.nomePlataforma) {
+      await db
+        .delete(conferenciaProfessorAlunos)
+        .where(
+          and(
+            eq(conferenciaProfessorAlunos.arenaId, arenaId),
+            eq(conferenciaProfessorAlunos.professorId, registro.professorId),
+            eq(conferenciaProfessorAlunos.nome, registro.nomePlataforma),
+            eq(conferenciaProfessorAlunos.tipo, "mensalista")
+          )
+        );
+    }
+
     // Recompute session counters after deletion
     const allRegsAfterDel = await db
       .select()
