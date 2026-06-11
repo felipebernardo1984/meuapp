@@ -1729,46 +1729,52 @@ function MesView({
             {isLoading ? (
               <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
             ) : platformSessoes.length > 0 ? (
-              <div className="space-y-2 border-t pt-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <div className="space-y-1.5 border-t pt-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                   Arquivos enviados — {mesLabel}
                 </p>
                 {platformSessoes.map((s) => (
                   <div
                     key={s.id}
-                    className="cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all"
+                    className="grid items-center cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-2"
+                    style={{ gridTemplateColumns: "1fr 86px auto auto" }}
                     onClick={() => onSelectSessao(s.id)}
                     data-testid={`sessao-card-${s.id}`}
                   >
-                    <div className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileSpreadsheet className="h-4 w-4 text-primary" />
+                    {/* Col 1: name */}
+                    <div className="flex items-center gap-2 min-w-0 pr-2">
+                      <FileSpreadsheet className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
-                        <Badge variant="secondary" className="text-xs shrink-0">
-                          {plataformaLabel(s.plataforma)}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle className="h-3 w-3" /> {s.encontrados} encontrados
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                          <AlertCircle className="h-3 w-3" /> {s.possiveis} possíveis
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                          <XCircle className="h-3 w-3" /> {s.naoEncontrados} não encontrados
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {s.totalRegistros} reg ·{" "}
-                          {new Date(s.criadoEm).toLocaleDateString("pt-BR")}
-                        </span>
-                      </div>
+
+                    {/* Col 2: platform badge — fixed width so TotalPass & Wellhub look equal */}
+                    <div className="flex justify-start">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs w-full justify-center"
+                      >
+                        {plataformaLabel(s.plataforma)}
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+
+                    {/* Col 3: counts */}
+                    <div className="flex items-center gap-3 px-4">
+                      <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        <CheckCircle className="h-3 w-3 shrink-0" /> {s.encontrados} enc.
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                        <AlertCircle className="h-3 w-3 shrink-0" /> {s.possiveis} pos.
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                        <XCircle className="h-3 w-3 shrink-0" /> {s.naoEncontrados} não enc.
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {s.totalRegistros} reg
+                      </span>
+                    </div>
+
+                    {/* Col 4: actions */}
+                    <div className="flex items-center gap-0.5 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1782,8 +1788,6 @@ function MesView({
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
                     </div>
                   </div>
                 ))}
