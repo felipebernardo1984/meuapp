@@ -2629,8 +2629,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
   const [editingProf, setEditingProf] = useState<string | null>(null);
   const [editNome, setEditNome] = useState("");
   const [editPct, setEditPct] = useState("0");
-  const [novoAluno, setNovoAluno] = useState<Record<string, string>>({});
-  const [listMode, setListMode] = useState<Record<string, boolean>>({});
   const [comprovanteLoading, setComprovanteLoading] = useState<string | null>(null);
   const qcOuter = useQueryClient();
   const [listaTexto, setListaTexto] = useState<Record<string, string>>({});
@@ -2725,23 +2723,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
       }),
   });
 
-  const addAlunoMutation = useMutation({
-    mutationFn: ({ profId, nome }: { profId: string; nome: string }) =>
-      apiRequest("POST", `/api/conferencia/professores/${profId}/alunos`, { nome }).then((r) =>
-        r.json()
-      ),
-    onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: profQueryKey });
-      setNovoAluno((prev) => ({ ...prev, [vars.profId]: "" }));
-    },
-    onError: (err: Error) =>
-      toast({
-        title: "Erro ao adicionar aluno",
-        description: err.message,
-        variant: "destructive",
-      }),
-  });
-
   const addAlunosLoteMutation = useMutation({
     mutationFn: ({ profId, nomes }: { profId: string; nomes: string[] }) =>
       apiRequest("POST", `/api/conferencia/professores/${profId}/alunos/lote`, { nomes }).then(
@@ -2750,7 +2731,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
     onSuccess: (data: { adicionados: number; ignorados?: number }, vars) => {
       qc.invalidateQueries({ queryKey: profQueryKey });
       setListaTexto((prev) => ({ ...prev, [vars.profId]: "" }));
-      setListMode((prev) => ({ ...prev, [vars.profId]: false }));
       const ignorados = data.ignorados ?? 0;
       const desc = ignorados > 0 ? `${ignorados} já existia${ignorados !== 1 ? "m" : ""} e foi${ignorados !== 1 ? "ram" : ""} ignorado${ignorados !== 1 ? "s" : ""}` : undefined;
       toast({ title: `${data.adicionados} aluno${data.adicionados !== 1 ? "s" : ""} adicionado${data.adicionados !== 1 ? "s" : ""}!`, description: desc });
@@ -2784,21 +2764,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
     const nome = novoProfNome.trim();
     if (!nome) return;
     addProfMutation.mutate({ nome, percentualComissao: novoProfPct });
-  };
-
-  const handleAddAluno = (profId: string) => {
-    const nome = novoAluno[profId]?.trim();
-    if (!nome) return;
-    const prof = professores.find(p => p.id === profId);
-    const jaExiste = prof?.alunos.some(a =>
-      a.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "") ===
-      nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "")
-    );
-    if (jaExiste) {
-      toast({ title: "Aluno já existe", description: `"${nome}" já está na lista deste professor.`, variant: "destructive" });
-      return;
-    }
-    addAlunoMutation.mutate({ profId, nome });
   };
 
   const [expandedProf, setExpandedProf] = useState<Set<string>>(new Set());
@@ -3091,58 +3056,16 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                         )}
                       </div>
 
-                      {/* Input mode toggle */}
-                      <div className="flex items-center gap-1 border rounded-lg p-0.5 w-fit bg-background">
-                        {[{ id: false, label: "Adicionar um" }, { id: true, label: "Colar lista" }].map((m) => (
-                          <button
-                            key={String(m.id)}
-                            onClick={() => setListMode((prev) => ({ ...prev, [prof.id]: m.id }))}
-                            className={cn(
-                              "text-xs px-3 py-1.5 rounded-md transition-colors font-medium",
-                              listMode[prof.id] === m.id
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                            )}
-                            data-testid={`toggle-modo-${m.id ? "lista" : "individual"}-${prof.id}`}
-                          >
-                            {m.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Single add */}
-                      {!listMode[prof.id] && (
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Nome como aparece no Excel…"
-                            value={novoAluno[prof.id] ?? ""}
-                            onChange={(e) => setNovoAluno((prev) => ({ ...prev, [prof.id]: e.target.value }))}
-                            onKeyDown={(e) => e.key === "Enter" && handleAddAluno(prof.id)}
-                            className="h-9 text-sm flex-1"
-                            data-testid={`input-novo-aluno-${prof.id}`}
-                          />
-                          <Button
-                            size="sm"
-                            className="h-9 px-4"
-                            onClick={() => handleAddAluno(prof.id)}
-                            disabled={!novoAluno[prof.id]?.trim() || addAlunoMutation.isPending}
-                            data-testid={`button-add-aluno-${prof.id}`}
-                          >
-                            {addAlunoMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Paste list */}
-                      {listMode[prof.id] && (() => {
+                      {/* Add students — textarea accepts one or many names */}
+                      {(() => {
                         const nomes = (listaTexto[prof.id] ?? "").split("\n").map((n) => n.trim()).filter(Boolean);
                         return (
                           <div className="space-y-2">
                             <textarea
-                              placeholder={"Cole os nomes aqui, um por linha:\n\nJoão da Silva\nMaria Souza\nPedro Alves\n…"}
+                              placeholder={"Nome como aparece no Excel (um por linha):\n\nJoão da Silva\nMaria Souza\nPedro Alves\n…"}
                               value={listaTexto[prof.id] ?? ""}
                               onChange={(e) => setListaTexto((prev) => ({ ...prev, [prof.id]: e.target.value }))}
-                              rows={5}
+                              rows={4}
                               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
                               data-testid={`textarea-lista-alunos-${prof.id}`}
                             />
@@ -3157,7 +3080,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                                 data-testid={`button-add-lote-${prof.id}`}
                               >
                                 {addAlunosLoteMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1.5" />}
-                                Adicionar {nomes.length > 0 ? nomes.length : ""} aluno{nomes.length !== 1 ? "s" : ""}
+                                Adicionar {nomes.length > 1 ? `${nomes.length} alunos` : "aluno"}
                               </Button>
                             </div>
                           </div>
