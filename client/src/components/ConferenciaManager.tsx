@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -2641,6 +2641,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
     queryKey: profQueryKey,
     queryFn: () =>
       fetch(`/api/conferencia/professores?periodo=${periodo}`).then((r) => r.json()),
+    placeholderData: keepPreviousData,
   });
 
   const handleComprovanteConsolidado = async (prof: ConfProfessor) => {
@@ -2902,19 +2903,19 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-foreground truncate leading-snug">{prof.nome}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex-1 grid items-center min-w-0" style={{ gridTemplateColumns: "1fr 130px 80px" }}>
+                        <span className="font-medium text-sm text-foreground truncate pr-3">{prof.nome}</span>
+                        <div className="flex justify-start">
                           <Badge
                             variant={pctNum > 0 ? "default" : "secondary"}
                             className="text-xs tabular-nums"
                           >
-                            {pctNum > 0 ? `${pctNum}%` : "Sem comissão"}
+                            {pctNum > 0 ? `${pctNum}% comissão` : "Sem comissão"}
                           </Badge>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {prof.alunos.length} aluno{prof.alunos.length !== 1 ? "s" : ""}
-                          </span>
                         </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {prof.alunos.length} aluno{prof.alunos.length !== 1 ? "s" : ""}
+                        </span>
                       </div>
                     )}
 
