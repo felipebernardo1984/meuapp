@@ -1487,6 +1487,83 @@ export function registerConferenciaRoutes(app: Express): void {
     }
   });
 
+  // PUT /api/conferencia/registro/:id/mensalista — edit a mensalista record
+  app.put("/api/conferencia/registro/:id/mensalista", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+
+    const { alunoNome, valor, professorId, comprovante } = req.body as {
+      alunoNome: string; valor: string; professorId?: string; comprovante?: string | null;
+    };
+
+    const [registro] = await db
+      .select()
+      .from(conferenciaRegistros)
+      .where(and(eq(conferenciaRegistros.id, req.params.id), eq(conferenciaRegistros.arenaId, arenaId)));
+    if (!registro) return res.status(404).json({ message: "Registro não encontrado" });
+    if (registro.categoria !== "mensalista") return res.status(400).json({ message: "Somente registros mensalistas" });
+
+    const newProfId = professorId?.trim() || null;
+    let percentual = "0";
+    let profNome: string | null = null;
+
+    if (newProfId) {
+      const [prof] = await db
+        .select()
+        .from(conferenciaProfessores)
+        .where(and(eq(conferenciaProfessores.id, newProfId), eq(conferenciaProfessores.arenaId, arenaId)));
+      if (prof) { percentual = prof.percentualComissao || "0"; profNome = prof.nome; }
+    }
+
+    const valorNum = parseFloat(valor || "0");
+    const pct = parseFloat(percentual) / 100;
+    const valorProf = String(Math.round(valorNum * pct * 100) / 100);
+    const valorAr   = String(Math.round((valorNum - parseFloat(valorProf)) * 100) / 100);
+
+    const [updated] = await db
+      .update(conferenciaRegistros)
+      .set({
+        nomePlataforma: alunoNome.trim(),
+        valor: String(valorNum),
+        professorId: newProfId,
+        percentual,
+        valorProfessor: valorProf,
+        valorArena: valorAr,
+        comprovante: typeof comprovante === "string" && comprovante.trim() ? comprovante : (comprovante === null ? null : registro.comprovante),
+      })
+      .where(eq(conferenciaRegistros.id, req.params.id))
+      .returning();
+
+    // Update professor-aluno associations if professor or nome changed
+    const oldProfId = registro.professorId;
+    const oldNome = registro.nomePlataforma;
+    const newNome = alunoNome.trim();
+
+    if (oldProfId !== newProfId || oldNome !== newNome) {
+      if (oldProfId) {
+        await db.delete(conferenciaProfessorAlunos).where(and(
+          eq(conferenciaProfessorAlunos.arenaId, arenaId),
+          eq(conferenciaProfessorAlunos.professorId, oldProfId),
+          eq(conferenciaProfessorAlunos.nome, oldNome),
+          eq(conferenciaProfessorAlunos.tipo, "mensalista")
+        ));
+      }
+      if (newProfId) {
+        const existing = await db.select({ nome: conferenciaProfessorAlunos.nome })
+          .from(conferenciaProfessorAlunos)
+          .where(and(eq(conferenciaProfessorAlunos.arenaId, arenaId), eq(conferenciaProfessorAlunos.professorId, newProfId)));
+        const alreadyExists = existing.some((a) => a.nome.toLowerCase() === newNome.toLowerCase());
+        if (!alreadyExists) {
+          await db.insert(conferenciaProfessorAlunos).values({ arenaId, professorId: newProfId, nome: newNome, tipo: "mensalista" });
+        }
+      }
+    }
+
+    res.json({ ...updated, professorNome: profNome });
+  });
+
   // DELETE /api/conferencia/registro/:id — remove a mensalista entry
   app.delete("/api/conferencia/registro/:id", async (req, res) => {
     const arenaId = req.session.arenaId;
