@@ -526,34 +526,33 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 <meta charset="UTF-8">
 <title>Comprovante — ${professorNome}</title>
 <style>
-  @page { size: A4 portrait; margin: 0; }
+  @page { size: A4 portrait; margin: 16mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:9.5px;color:#111;
-         width:210mm;min-height:297mm;padding:6mm 9mm;margin:0 auto; }
-  h1 { font-size:13px;margin-bottom:1px; }
-  .subtitle { color:#555;font-size:9px;margin-bottom:9px; }
-  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:8.5px;padding:1px 6px;border-radius:20px;margin-left:5px;font-weight:bold; }
-  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:9px; }
-  .summary-card { border:1px solid #ddd;border-radius:4px;padding:5px 8px; }
-  .summary-card .val { font-size:11px;font-weight:bold;margin-bottom:1px; }
-  .summary-card .lbl { font-size:7.5px;color:#666; }
-  .mod-block { margin-bottom:8px;page-break-inside:avoid; }
-  .mod-header { display:flex;align-items:center;gap:8px;background:#f4f4f4;padding:3px 7px;border-radius:3px 3px 0 0;border:1px solid #ddd;border-bottom:none; }
-  .mod-name { font-weight:bold;font-size:9px; }
-  .mod-summary { color:#555;font-size:8.5px;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #ddd; }
-  th { background:#f9f9f9;text-align:left;padding:3px 6px;font-size:8.5px;border-bottom:1px solid #ddd; }
-  td { padding:3px 6px;border-bottom:1px solid #eee;font-size:8.5px; }
-  tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
-  .total-row { background:#1e293b;color:white;border-radius:4px;padding:5px 10px;margin-top:8px;font-size:9px; }
-  /* Mensalistas card */
-  .mensalista-block { margin-top:10px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:5px;overflow:hidden; }
-  .mensalista-header { background:#f5f3ff;padding:4px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #8b5cf6; }
-  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:1px 7px;border-radius:20px;font-weight:bold;white-space:nowrap; }
-  .mensalista-summary { color:#5b21b6;font-size:8.5px;margin-left:auto; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#111; }
+  h1 { font-size:16px;font-weight:700;margin-bottom:2px; }
+  .subtitle { color:#64748b;font-size:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0; }
+  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
+  .summary-card { border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;background:#f8fafc; }
+  .summary-card .val { font-size:13px;font-weight:700;margin-bottom:2px; }
+  .summary-card .lbl { font-size:8px;color:#94a3b8; }
+  .mod-block { margin-bottom:18px; }
+  .mod-header { display:flex;align-items:center;gap:8px;background:#f1f5f9;padding:5px 9px;border-radius:4px 4px 0 0;border:1px solid #e2e8f0;border-bottom:none; }
+  .mod-name { font-weight:700;font-size:9.5px;color:#1e293b; }
+  .mod-summary { color:#64748b;font-size:8.5px;margin-left:auto; }
+  table { width:100%;border-collapse:collapse;border:1px solid #e2e8f0; }
+  th { background:#f8fafc;text-align:left;padding:4px 8px;font-size:8.5px;border-bottom:1px solid #e2e8f0;color:#475569;font-weight:600; }
+  td { padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:8.5px; }
+  tr:last-child td { border-bottom:none; }
+  tfoot td { background:#f1f5f9;border-top:1px solid #e2e8f0; }
+  .total-row { background:#1e293b;color:white;border-radius:6px;padding:8px 12px;margin-top:18px;font-size:9.5px; }
+  .mensalista-block { margin-top:18px;border:1px solid #c4b5fd;border-radius:6px;overflow:hidden; }
+  .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #c4b5fd; }
+  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:2px 8px;border-radius:20px;font-weight:bold;white-space:nowrap; }
+  .mensalista-summary { color:#6d28d9;font-size:8.5px;margin-left:auto; }
   .mensalista-block table { border:none; }
-  .mensalista-block tfoot td { background:#ede9fe; }
-  @media print { body { padding:6mm 9mm; } }
+  .mensalista-block td { border-color:#ede9fe; }
+  .mensalista-block tfoot td { background:#ede9fe;border-top:1px solid #c4b5fd; }
 </style>
 </head>
 <body>
@@ -745,45 +744,41 @@ function exportComprovanteConsolidado(
 <meta charset="UTF-8">
 <title>Comprovante Consolidado — ${professorNome}</title>
 <style>
-  @page { size: A4 portrait; margin: 0; }
+  @page { size: A4 portrait; margin: 16mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:9.5px;color:#111;
-         width:210mm;min-height:297mm;padding:6mm 9mm;margin:0 auto; }
-  h1 { font-size:13px;margin-bottom:1px; }
-  .subtitle { color:#555;font-size:9px;margin-bottom:9px; }
-  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:8.5px;padding:1px 6px;border-radius:20px;margin-left:5px;font-weight:bold; }
-  .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:8.5px;padding:1px 6px;border-radius:20px;margin-left:5px;font-weight:bold; }
-  .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px; }
-  .grand-card { border:1px solid #ddd;border-radius:4px;padding:5px 8px; }
-  .grand-card .val { font-size:11px;font-weight:bold;margin-bottom:1px; }
-  .grand-card .lbl { font-size:7.5px;color:#666; }
-  .section { margin-bottom:12px; }
-  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:4px;padding-bottom:3px;border-bottom:2px solid #1e293b; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#111; }
+  h1 { font-size:16px;font-weight:700;margin-bottom:2px; }
+  .subtitle { color:#64748b;font-size:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0; }
+  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
+  .grand-card { border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;background:#f8fafc; }
+  .grand-card .val { font-size:13px;font-weight:700;margin-bottom:2px; }
+  .grand-card .lbl { font-size:8px;color:#94a3b8; }
+  .section { margin-bottom:22px;padding-top:16px;border-top:1px solid #e2e8f0; }
+  .section:first-of-type { border-top:none;padding-top:0; }
+  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #1e293b; }
   .section-platform { font-size:11px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
   .section-file { font-size:8.5px;color:#64748b; }
-  .section-summary { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px;font-size:8.5px;color:#475569; }
-  .mod-block { margin-bottom:7px;page-break-inside:avoid; }
-  .mod-header { display:flex;align-items:center;gap:8px;background:#f4f4f4;padding:3px 7px;border-radius:3px 3px 0 0;border:1px solid #ddd;border-bottom:none; }
-  .mod-name { font-weight:bold;font-size:9px; }
-  .mod-summary { color:#555;font-size:8.5px;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:3px; }
-  th { background:#f9f9f9;text-align:left;padding:3px 6px;font-size:8.5px;border-bottom:1px solid #ddd; }
-  td { padding:3px 6px;border-bottom:1px solid #eee;font-size:8.5px; }
-  tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
-  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:3px 8px;font-size:8.5px;color:#334155;margin-top:2px; }
-  .grand-total { background:#1e293b;color:white;border-radius:4px;padding:7px 10px;margin-top:12px;font-size:9px; }
-  /* Mensalistas card */
-  .mensalista-block { margin-top:12px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:5px;overflow:hidden; }
-  .mensalista-header { background:#f5f3ff;padding:4px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #8b5cf6; }
-  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:1px 7px;border-radius:20px;font-weight:bold;white-space:nowrap; }
-  .mensalista-summary { color:#5b21b6;font-size:8.5px;margin-left:auto; }
+  .section-summary { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:8.5px;color:#475569; }
+  .mod-block { margin-bottom:14px; }
+  .mod-header { display:flex;align-items:center;gap:8px;background:#f1f5f9;padding:5px 9px;border-radius:4px 4px 0 0;border:1px solid #e2e8f0;border-bottom:none; }
+  .mod-name { font-weight:700;font-size:9.5px;color:#1e293b; }
+  .mod-summary { color:#64748b;font-size:8.5px;margin-left:auto; }
+  table { width:100%;border-collapse:collapse;border:1px solid #e2e8f0;margin-bottom:4px; }
+  th { background:#f8fafc;text-align:left;padding:4px 8px;font-size:8.5px;border-bottom:1px solid #e2e8f0;color:#475569;font-weight:600; }
+  td { padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:8.5px; }
+  tr:last-child td { border-bottom:none; }
+  tfoot td { background:#f1f5f9;border-top:1px solid #e2e8f0; }
+  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:4px 10px;font-size:8.5px;color:#334155;margin-top:4px; }
+  .grand-total { background:#1e293b;color:white;border-radius:6px;padding:10px 14px;margin-top:20px;font-size:10px; }
+  .mensalista-block { margin-top:20px;border:1px solid #c4b5fd;border-radius:6px;overflow:hidden; }
+  .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #c4b5fd; }
+  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:2px 8px;border-radius:20px;font-weight:bold;white-space:nowrap; }
+  .mensalista-summary { color:#6d28d9;font-size:8.5px;margin-left:auto; }
   .mensalista-block table { border:none; }
-  .mensalista-block tfoot td { background:#ede9fe; }
-  .page-break { height:0; }
-  @media print {
-    body { padding:6mm 9mm; }
-    .page-break { page-break-after:always; }
-  }
+  .mensalista-block td { border-color:#ede9fe; }
+  .mensalista-block tfoot td { background:#ede9fe;border-top:1px solid #c4b5fd; }
 </style>
 </head>
 <body>
@@ -907,33 +902,35 @@ function exportArenaRelatorio(
 <meta charset="UTF-8">
 <title>Relatório Arena — ${mesLabel}</title>
 <style>
-  @page { size: A4 portrait; margin: 0; }
+  @page { size: A4 portrait; margin: 16mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:9.5px;color:#111;width:210mm;min-height:297mm;padding:6mm 9mm;margin:0 auto; }
-  h1 { font-size:13px;margin-bottom:1px; }
-  .subtitle { color:#555;font-size:9px;margin-bottom:10px; }
-  .badge-arena { display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:8.5px;padding:1px 7px;border-radius:20px;margin-left:5px;font-weight:bold; }
-  .kpi-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px; }
-  .kpi-card { border:1px solid #ddd;border-radius:4px;padding:5px 8px; }
-  .kpi-card .val { font-size:12px;font-weight:bold;margin-bottom:1px; }
-  .kpi-card .lbl { font-size:7.5px;color:#666; }
-  .section { margin-bottom:12px;page-break-inside:avoid; }
-  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:4px;padding-bottom:3px;border-bottom:2px solid #1e293b; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#111; }
+  h1 { font-size:16px;font-weight:700;margin-bottom:2px; }
+  .subtitle { color:#64748b;font-size:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0; }
+  .badge-arena { display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  .kpi-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
+  .kpi-card { border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;background:#f8fafc; }
+  .kpi-card .val { font-size:13px;font-weight:700;margin-bottom:2px; }
+  .kpi-card .lbl { font-size:8px;color:#94a3b8; }
+  .section { margin-bottom:22px;padding-top:16px;border-top:1px solid #e2e8f0; }
+  .section:first-of-type { border-top:none;padding-top:0; }
+  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #1e293b; }
   .section-platform { font-size:11px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
   .section-meta { font-size:8.5px;color:#64748b;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:3px; }
-  th { background:#f9f9f9;text-align:left;padding:3px 6px;font-size:8.5px;border-bottom:1px solid #ddd; }
-  td { padding:3px 6px;border-bottom:1px solid #eee;font-size:8.5px; }
-  tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
-  .mensalista-block { margin-top:12px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:5px;overflow:hidden; }
-  .mensalista-header { background:#f5f3ff;padding:4px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #8b5cf6; }
-  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:1px 7px;border-radius:20px;font-weight:bold; }
-  .mensalista-meta { color:#5b21b6;font-size:8.5px;margin-left:auto; }
+  table { width:100%;border-collapse:collapse;border:1px solid #e2e8f0; }
+  th { background:#f8fafc;text-align:left;padding:4px 8px;font-size:8.5px;border-bottom:1px solid #e2e8f0;color:#475569;font-weight:600; }
+  td { padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:8.5px; }
+  tr:last-child td { border-bottom:none; }
+  tfoot td { background:#f1f5f9;border-top:1px solid #e2e8f0; }
+  .mensalista-block { margin-top:20px;border:1px solid #c4b5fd;border-radius:6px;overflow:hidden; }
+  .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #c4b5fd; }
+  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:2px 8px;border-radius:20px;font-weight:bold; }
+  .mensalista-meta { color:#6d28d9;font-size:8.5px;margin-left:auto; }
   .mensalista-block table { border:none; }
-  .mensalista-block tfoot td { background:#ede9fe; }
-  .grand-total { background:#1e293b;color:white;border-radius:4px;padding:8px 10px;margin-top:12px;font-size:9.5px; }
-  .arena-repasse { font-size:12px;font-weight:bold;color:#93c5fd;margin-top:4px; }
-  @media print { body { padding:6mm 9mm; } }
+  .mensalista-block td { border-color:#ede9fe; }
+  .mensalista-block tfoot td { background:#ede9fe;border-top:1px solid #c4b5fd; }
+  .grand-total { background:#1e293b;color:white;border-radius:6px;padding:10px 14px;margin-top:20px;font-size:10px; }
+  .arena-repasse { font-size:13px;font-weight:bold;color:#93c5fd;margin-top:5px; }
 </style>
 </head>
 <body>
@@ -1065,31 +1062,33 @@ function exportToPDF(sessao: SessaoDetalhe) {
 <meta charset="UTF-8">
 <title>Conferência — ${plataformaLabel(sessao.plataforma)} — ${dataStr}</title>
 <style>
+  @page { size: A4 portrait; margin: 16mm 14mm; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 24px; }
-  h1 { font-size: 18px; margin-bottom: 2px; }
-  .subtitle { color: #555; font-size: 11px; margin-bottom: 16px; }
-  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-  .summary-card { border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; }
-  .summary-card .val { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
-  .summary-card .lbl { font-size: 10px; color: #666; }
-  .prof-block { margin-bottom: 20px; page-break-inside: avoid; }
-  .prof-header { display: flex; align-items: center; gap: 10px; background: #f4f4f4; padding: 7px 10px; border-radius: 5px 5px 0 0; border: 1px solid #ddd; border-bottom: none; }
-  .prof-name { font-weight: bold; font-size: 12px; }
-  .prof-pct { background: #e0e7ff; color: #3730a3; font-size: 10px; padding: 2px 7px; border-radius: 20px; }
-  .prof-summary { color: #555; font-size: 10px; margin-left: auto; }
-  table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; }
-  th { background: #f9f9f9; text-align: left; padding: 5px 8px; font-size: 10px; border-bottom: 1px solid #ddd; }
-  td { padding: 5px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
-  tfoot td { background: #f4f4f4; border-top: 1px solid #ccc; }
-  .section-title { font-weight: bold; font-size: 12px; margin: 16px 0 6px; color: #c0392b; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
+  h1 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .subtitle { color: #64748b; font-size: 9px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+  .summary-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; background: #f8fafc; }
+  .summary-card .val { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+  .summary-card .lbl { font-size: 8px; color: #94a3b8; }
+  .total-row { display: flex; gap: 16px; background: #1e293b; color: white; border-radius: 6px; padding: 10px 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  .total-item .lbl { font-size: 8px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em; }
+  .total-item .val { font-size: 12px; font-weight: 700; }
+  .prof-block { margin-bottom: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+  .prof-block:first-of-type { border-top: none; padding-top: 0; }
+  .prof-header { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 6px 10px; border-radius: 5px 5px 0 0; border: 1px solid #e2e8f0; border-bottom: none; }
+  .prof-name { font-weight: 700; font-size: 11px; color: #1e293b; }
+  .prof-pct { background: #e0e7ff; color: #3730a3; font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+  .prof-summary { color: #64748b; font-size: 9px; margin-left: auto; }
+  table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; }
+  th { background: #f8fafc; text-align: left; padding: 4px 8px; font-size: 8.5px; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; }
+  td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; font-size: 8.5px; }
+  tr:last-child td { border-bottom: none; }
+  tfoot td { background: #f1f5f9; border-top: 1px solid #e2e8f0; }
+  .section-title { font-weight: 700; font-size: 11px; margin: 20px 0 8px; color: #dc2626; padding-top: 16px; border-top: 1px solid #fee2e2; }
   .nao-encontrados table { border-color: #fca5a5; }
-  .nao-encontrados th { background: #fff5f5; }
-  .total-row { display: flex; gap: 20px; background: #1e293b; color: white; border-radius: 6px; padding: 10px 16px; margin: 16px 0; flex-wrap: wrap; }
-  .total-item .lbl { font-size: 9px; opacity: 0.7; }
-  .total-item .val { font-size: 13px; font-weight: bold; }
-  @page { size: A4 portrait; margin: 0; }
-  @media print { body { padding: 12mm 15mm; } }
+  .nao-encontrados th { background: #fff5f5; border-color: #fca5a5; color: #991b1b; }
+  .nao-encontrados td { border-color: #fee2e2; }
 </style>
 </head>
 <body>
