@@ -509,10 +509,7 @@ export default function ManagerDashboard({
   const [novoMensalista, setNovoMensalista] = useState({
     nome: "", cpf: "", email: "", telefone: "", login: "", senha: "",
     modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3",
-    valorMensalDireto: "",
   });
-  // State for student list group collapsing
-  const [gruposAlunos, setGruposAlunos] = useState({ mensalistas: true, plataforma: true, outros: true });
   const [credenciaisMensalista, setCredenciaisMensalista] = useState<{ login: string; senha: string } | null>(null);
 
   // Histórico financeiro state
@@ -739,28 +736,13 @@ export default function ManagerDashboard({
   });
 
   const criarMensalista = useMutation({
-    mutationFn: async (dados: any) => {
-      let planoId = dados.planoId;
-      if (!planoId && dados.valorMensalDireto?.trim()) {
-        const v = dados.valorMensalDireto.trim();
-        const valorTexto = v.startsWith("R$") ? v : `R$ ${v}`;
-        const planResp = await apiRequest("POST", "/api/planos", {
-          titulo: "Mensalidade",
-          checkins: 0,
-          valorTexto,
-        }).then((r) => r.json());
-        planoId = planResp.id;
-        qc.invalidateQueries({ queryKey: ["/api/planos"] });
-      }
-      const { valorMensalDireto: _v, ...resto } = dados;
-      return apiRequest("POST", "/api/alunos", { ...resto, planoId }).then((r) => r.json());
-    },
+    mutationFn: (dados: any) =>
+      apiRequest("POST", "/api/alunos", dados).then((r) => r.json()),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
-      qc.invalidateQueries({ queryKey: ["/api/planos"] });
       setDialogNovoMensalista(false);
-      setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3", valorMensalDireto: "" });
+      setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3" });
       setCredenciaisMensalista({ login: data.loginGerado, senha: data.senhaGerada });
     },
     onError: () => toast({ title: "Erro ao cadastrar", description: "Verifique os dados e tente novamente.", variant: "destructive" }),
@@ -940,18 +922,20 @@ export default function ManagerDashboard({
     const exigePlanoIntegracao =
       novoAluno.integrationType === "wellhub" || novoAluno.integrationType === "totalpass";
 
-    if (!novoAluno.nome) { toast({ title: "Campo obrigatório", description: "Informe o nome do aluno.", variant: "destructive" }); return; }
-    if (!novoAluno.cpf) { toast({ title: "Campo obrigatório", description: "Informe o CPF.", variant: "destructive" }); return; }
-    if (!novoAluno.login) { toast({ title: "Campo obrigatório", description: "Informe o login.", variant: "destructive" }); return; }
-    if (!novoAluno.senha) { toast({ title: "Campo obrigatório", description: "Informe a senha.", variant: "destructive" }); return; }
-    if (!novoAluno.modalidade) { toast({ title: "Campo obrigatório", description: "Selecione a modalidade.", variant: "destructive" }); return; }
-    if (!novoAluno.integrationType) { toast({ title: "Campo obrigatório", description: "Selecione o tipo de aluno.", variant: "destructive" }); return; }
-    if (!novoAluno.planoId) { toast({ title: "Campo obrigatório", description: "Selecione um plano.", variant: "destructive" }); return; }
-    if (exigePlanoIntegracao && !novoAluno.integrationPlan) { toast({ title: "Campo obrigatório", description: "Selecione o plano da integração.", variant: "destructive" }); return; }
-
-    onCadastrarAluno(novoAluno);
-    setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", integrationType: "", integrationPlan: "", professorId: "" });
-    setDialogNovoAluno(false);
+    if (
+      novoAluno.nome &&
+      novoAluno.cpf &&
+      novoAluno.login &&
+      novoAluno.senha &&
+      novoAluno.modalidade &&
+      novoAluno.planoId &&
+      novoAluno.integrationType &&
+      (!exigePlanoIntegracao || novoAluno.integrationPlan)
+    ) {
+      onCadastrarAluno(novoAluno);
+      setNovoAluno({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", integrationType: "", integrationPlan: "", professorId: "" });
+      setDialogNovoAluno(false);
+    }
   };
 
   // Modalidades únicas de alunos + professores
@@ -2084,7 +2068,7 @@ export default function ManagerDashboard({
               className="w-full h-14 text-lg"
               data-testid="button-novo-mensalista"
               onClick={() => {
-                setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3", valorMensalDireto: "" });
+                setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3" });
                 setDialogNovoMensalista(true);
               }}
             >
@@ -2644,32 +2628,22 @@ export default function ManagerDashboard({
               </div>
               <div className="space-y-1">
                 <Label>Plano <span className="text-destructive">*</span></Label>
-                {planosMensalistas.length > 0 ? (
-                  <Select value={novoMensalista.planoId} onValueChange={(v) => setNovoMensalista({ ...novoMensalista, planoId: v, valorMensalDireto: "" })}>
-                    <SelectTrigger data-testid="select-nm-plano">
-                      <SelectValue placeholder="Selecione um plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {planosMensalistas.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.titulo} — R$ {p.valorTexto}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="space-y-1">
-                    <div className="flex gap-2 items-center">
-                      <span className="text-sm text-muted-foreground shrink-0">R$</span>
-                      <Input
-                        placeholder="Ex: 200,00"
-                        value={novoMensalista.valorMensalDireto}
-                        onChange={(e) => setNovoMensalista({ ...novoMensalista, valorMensalDireto: e.target.value, planoId: "" })}
-                        data-testid="input-nm-valor-direto"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">Valor mensal. Um plano "Mensalidade" será criado automaticamente.</p>
-                  </div>
+                <Select value={novoMensalista.planoId} onValueChange={(v) => setNovoMensalista({ ...novoMensalista, planoId: v })}>
+                  <SelectTrigger data-testid="select-nm-plano">
+                    <SelectValue placeholder="Selecione um plano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {planosMensalistas.length > 0
+                      ? planosMensalistas.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.titulo} — R$ {p.valorTexto}
+                          </SelectItem>
+                        ))
+                      : <SelectItem value="__nenhum__" disabled>Nenhum plano com valor mensal cadastrado</SelectItem>}
+                  </SelectContent>
+                </Select>
+                {planosMensalistas.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Crie um plano com valor mensal (R$) na seção Planos antes de cadastrar mensalistas.</p>
                 )}
               </div>
               <div className="space-y-1">
@@ -2720,9 +2694,8 @@ export default function ManagerDashboard({
               data-testid="button-confirm-novo-mensalista"
               disabled={
                 !novoMensalista.nome || !novoMensalista.cpf || !novoMensalista.login ||
-                !novoMensalista.senha || !novoMensalista.modalidade ||
-                (!novoMensalista.planoId && !novoMensalista.valorMensalDireto?.trim()) ||
-                criarMensalista.isPending
+                !novoMensalista.senha || !novoMensalista.modalidade || !novoMensalista.planoId ||
+                planosMensalistas.length === 0 || criarMensalista.isPending
               }
               onClick={() =>
                 criarMensalista.mutate({
@@ -2733,8 +2706,7 @@ export default function ManagerDashboard({
                   login: novoMensalista.login,
                   senha: novoMensalista.senha,
                   modalidade: novoMensalista.modalidade,
-                  planoId: novoMensalista.planoId || undefined,
-                  valorMensalDireto: novoMensalista.valorMensalDireto || undefined,
+                  planoId: novoMensalista.planoId,
                   professorId: novoMensalista.professorId || null,
                   diaVencimento: novoMensalista.diaVencimento || "10",
                   carenciaDias: parseInt(novoMensalista.carenciaDias || "3", 10),
@@ -3227,16 +3199,16 @@ export default function ManagerDashboard({
             </div>
           ) : (
           <>
-          {(() => {
-            const renderAlunoCard = (aluno: AlunoGestor) => {
+          <div className="space-y-2 p-2">
+            {alunosFiltrados.map((aluno) => {
               const isMensalistaRow = aluno.integrationType === "mensalista";
               const isIntegrationRow = aluno.integrationType === "wellhub" || aluno.integrationType === "totalpass";
+              const metodoLabelRow: Record<string, string> = { cartao: "Cartão", pix: "PIX", dinheiro: "Dinheiro" };
               const ultimoPagamento = isMensalistaRow
                 ? [...allPayments]
                     .filter((p: any) => p.studentId === aluno.id && p.status === "paid")
                     .sort((a: any, b: any) => (a.paymentDate > b.paymentDate ? -1 : 1))[0]
                 : null;
-              const profNome = professores.find(p => p.id === aluno.professorId)?.nome;
               return (
                 <div key={aluno.id} data-testid={`row-student-${aluno.id}`} className="rounded-xl border bg-muted overflow-hidden">
                   <div className="flex items-center justify-between p-3 gap-3">
@@ -3245,11 +3217,12 @@ export default function ManagerDashboard({
                         <span className="text-white font-bold text-sm">{aluno.nome.charAt(0).toUpperCase()}</span>
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{aluno.nome}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium text-sm truncate">{aluno.nome}</p>
+                        </div>
                         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                           <span className="text-xs text-muted-foreground">{aluno.modalidade}</span>
                           {aluno.planoTitulo && <span className="text-xs text-muted-foreground">· {aluno.planoTitulo}</span>}
-                          {profNome && <span className="text-xs text-muted-foreground">· {profNome}</span>}
                           {!isMensalistaRow && aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
                           {!isMensalistaRow && aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
                           {isMensalistaRow && ultimoPagamento && (
@@ -3404,87 +3377,8 @@ export default function ManagerDashboard({
                   </div>
                 </div>
               );
-            };
-
-            const grupoMensalistas = alunosFiltrados.filter(a => a.integrationType === "mensalista");
-            const grupoPlataforma = alunosFiltrados.filter(a => a.integrationType === "wellhub" || a.integrationType === "totalpass");
-            const grupoOutros = alunosFiltrados.filter(a => a.integrationType !== "mensalista" && a.integrationType !== "wellhub" && a.integrationType !== "totalpass");
-
-            const GrupoHeader = ({ label, count, colorClass, expanded, onToggle, testId }: { label: string; count: number; colorClass: string; expanded: boolean; onToggle: () => void; testId: string }) => (
-              <button
-                data-testid={testId}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-muted/60 hover:bg-muted transition-colors mb-1"
-                onClick={onToggle}
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${colorClass}`} />
-                  <span className="text-sm font-semibold">{label}</span>
-                  <span className="text-xs bg-background border rounded-full px-2 py-0.5 font-medium">{count}</span>
-                </div>
-                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "" : "-rotate-90"}`} />
-              </button>
-            );
-
-            return (
-              <div className="space-y-3 p-2">
-                {grupoMensalistas.length > 0 && (
-                  <div>
-                    <GrupoHeader
-                      label="Mensalistas"
-                      count={grupoMensalistas.length}
-                      colorClass="bg-emerald-500"
-                      expanded={gruposAlunos.mensalistas}
-                      onToggle={() => setGruposAlunos(g => ({ ...g, mensalistas: !g.mensalistas }))}
-                      testId="grupo-mensalistas-toggle"
-                    />
-                    {gruposAlunos.mensalistas && (
-                      <div className="space-y-2 pl-1">
-                        {grupoMensalistas.map(renderAlunoCard)}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {grupoPlataforma.length > 0 && (
-                  <div>
-                    <GrupoHeader
-                      label="Plataforma (Wellhub / TotalPass)"
-                      count={grupoPlataforma.length}
-                      colorClass="bg-blue-500"
-                      expanded={gruposAlunos.plataforma}
-                      onToggle={() => setGruposAlunos(g => ({ ...g, plataforma: !g.plataforma }))}
-                      testId="grupo-plataforma-toggle"
-                    />
-                    {gruposAlunos.plataforma && (
-                      <div className="space-y-2 pl-1">
-                        {grupoPlataforma.map(renderAlunoCard)}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {grupoOutros.length > 0 && (
-                  <div>
-                    <GrupoHeader
-                      label="Outros"
-                      count={grupoOutros.length}
-                      colorClass="bg-gray-400"
-                      expanded={gruposAlunos.outros}
-                      onToggle={() => setGruposAlunos(g => ({ ...g, outros: !g.outros }))}
-                      testId="grupo-outros-toggle"
-                    />
-                    {gruposAlunos.outros && (
-                      <div className="space-y-2 pl-1">
-                        {grupoOutros.map(renderAlunoCard)}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {alunosFiltrados.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum aluno encontrado.</p>
-                )}
-              </div>
-            );
-          })()}
-          
+            })}
+          </div>
           {filtroAlunos === "todas" && alunosInativos.length > 0 && (
             <div className="mt-4 pt-4 border-t space-y-2">
               <p className="text-sm font-medium text-muted-foreground mb-2">Inativos</p>

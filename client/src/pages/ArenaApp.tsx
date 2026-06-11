@@ -210,26 +210,15 @@ export default function ArenaApp() {
   });
   const excluirAluno = useMutation({
     mutationFn: (alunoId: string) => apiRequest("DELETE", `/api/alunos/${alunoId}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
-      qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
-      qc.invalidateQueries({ queryKey: ["/api/finance/charges"] });
-    },
-    onError: () => toast({ title: "Erro ao excluir aluno", description: "Tente novamente.", variant: "destructive" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
   });
   const reativarAluno = useMutation({
     mutationFn: (alunoId: string) => apiRequest("PUT", `/api/alunos/${alunoId}/reativar`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
-    onError: () => toast({ title: "Erro ao reativar aluno", variant: "destructive" }),
   });
   const excluirAlunoPermanente = useMutation({
     mutationFn: (alunoId: string) => apiRequest("DELETE", `/api/alunos/${alunoId}/permanente`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
-      qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
-      qc.invalidateQueries({ queryKey: ["/api/finance/charges"] });
-    },
-    onError: () => toast({ title: "Erro ao excluir aluno permanentemente", variant: "destructive" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
   });
 
   // ── Financial queries ─────────────────────────────────────────────────────
