@@ -1806,6 +1806,15 @@ function MensalistaCard({
   const [mValor, setMValor] = useState("");
   const [mComprovante, setMComprovante] = useState<string | null>(null);
   const [mComboOpen, setMComboOpen] = useState(false);
+
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editReg, setEditReg] = useState<Registro | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editValor, setEditValor] = useState("");
+  const [editProfId, setEditProfId] = useState("");
+  const [editComprovante, setEditComprovante] = useState<string | null>(null);
+
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -1852,6 +1861,14 @@ function MensalistaCard({
     enabled: open,
   });
 
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/professores", periodo] });
+    void refetchDetails();
+  };
+
   const addMutation = useMutation({
     mutationFn: async (body: {
       studentId: string; alunoNome: string; professorId: string; valor: string; comprovante?: string | null;
@@ -1862,7 +1879,6 @@ function MensalistaCard({
         const sessRes = await apiRequest("POST", "/api/conferencia/sessao-manual", { dataInicio, dataFim });
         const sessData = await sessRes.json() as { id: string };
         sessaoId = sessData.id;
-        // Refresh session list so the new manual session is visible
         await qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
       }
       const res = await apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/mensalista`, body);
@@ -1874,15 +1890,36 @@ function MensalistaCard({
       return res.json() as Promise<Registro>;
     },
     onSuccess: (novo: Registro) => {
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
-      void refetchDetails();
+      invalidateAll();
       toast({ title: "Mensalista adicionado", description: novo.nomePlataforma });
       setOpen(false);
       reset();
     },
     onError: (err: Error) => toast({ title: "Erro ao adicionar mensalista", description: err.message, variant: "destructive" }),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async (body: { id: string; alunoNome: string; valor: string; professorId: string; comprovante?: string | null }) => {
+      const res = await apiRequest("PUT", `/api/conferencia/registro/${body.id}/mensalista`, {
+        alunoNome: body.alunoNome,
+        valor: body.valor,
+        professorId: body.professorId || null,
+        comprovante: body.comprovante,
+      });
+      const ct = res.headers.get("content-type") ?? "";
+      if (!ct.includes("application/json")) {
+        const txt = await res.text();
+        throw new Error(`Resposta inesperada do servidor (${res.status}): ${txt.slice(0, 120)}`);
+      }
+      return res.json() as Promise<Registro>;
+    },
+    onSuccess: (updated: Registro) => {
+      invalidateAll();
+      toast({ title: "Mensalista atualizado", description: updated.nomePlataforma });
+      setEditOpen(false);
+      setEditReg(null);
+    },
+    onError: (err: Error) => toast({ title: "Erro ao editar mensalista", description: err.message, variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
@@ -1901,9 +1938,7 @@ function MensalistaCard({
           };
         });
       }
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
-      void refetchDetails();
+      invalidateAll();
       toast({ title: "Mensalista removido" });
     },
     onError: () => toast({ title: "Erro ao remover", variant: "destructive" }),
@@ -1994,15 +2029,34 @@ function MensalistaCard({
                             )}
                           </TableCell>
                           <TableCell className="py-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 text-muted-foreground hover:text-destructive"
-                              onClick={() => deleteMutation.mutate(r.id)}
-                              data-testid={`button-delete-mensalista-${r.id}`}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
+                            <div className="flex items-center gap-0.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                  setEditReg(r);
+                                  setEditNome(r.nomePlataforma);
+                                  setEditValor(r.valor);
+                                  setEditProfId(r.professorId ?? "");
+                                  setEditComprovante(r.comprovante ?? null);
+                                  setEditOpen(true);
+                                }}
+                                data-testid={`button-edit-mensalista-${r.id}`}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                                onClick={() => deleteMutation.mutate(r.id)}
+                                disabled={deleteMutation.isPending}
+                                data-testid={`button-delete-mensalista-${r.id}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -2183,6 +2237,144 @@ function MensalistaCard({
               data-testid="button-confirmar-mensalista"
             >
               {addMutation.isPending ? "Salvando…" : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit dialog ── */}
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditReg(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-4 w-4" />
+              Editar Mensalista
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Editar dados do aluno mensalista
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            {/* Nome */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nome do aluno</Label>
+              <Input
+                placeholder="Nome do aluno…"
+                value={editNome}
+                onChange={(e) => setEditNome(e.target.value)}
+                className="h-9 text-sm"
+                data-testid="input-edit-mensalista-nome"
+              />
+            </div>
+
+            {/* Valor */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Valor (R$)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0,00"
+                value={editValor}
+                onChange={(e) => setEditValor(e.target.value)}
+                className="h-9 text-sm"
+                data-testid="input-edit-mensalista-valor"
+              />
+            </div>
+
+            {/* Professor */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Professor responsável (opcional)</Label>
+              <Select value={editProfId || "__none__"} onValueChange={(v) => setEditProfId(v === "__none__" ? "" : v)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Sem professor (100% arena)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem professor (100% arena)</SelectItem>
+                  {confsProfs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` — ${p.percentualComissao}% comissão` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {editProfId && editProfId !== "__none__" && (() => {
+                const prof = confsProfs.find((p) => p.id === editProfId);
+                const pct = parseFloat(prof?.percentualComissao ?? "0");
+                const val = parseFloat(editValor) || 0;
+                if (pct > 0 && val > 0) {
+                  const vp = Math.round(val * pct / 100 * 100) / 100;
+                  const va = Math.round((val - vp) * 100) / 100;
+                  return (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Prof: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtVal(String(vp))}</span>
+                      {" · "}
+                      Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(va))}</span>
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            {/* Comprovante */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Comprovante PIX (opcional)</Label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="edit-comprovante-upload"
+                  className="flex items-center gap-2 cursor-pointer border rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  {editComprovante ? "Imagem carregada ✓" : "Selecionar imagem…"}
+                </label>
+                <input
+                  id="edit-comprovante-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => setEditComprovante(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                {editComprovante && (
+                  <button onClick={() => setEditComprovante(null)} className="text-xs text-destructive hover:underline">remover</button>
+                )}
+              </div>
+              {editComprovante && (
+                <img src={editComprovante} alt="comprovante" className="max-h-28 rounded border object-contain mt-1" />
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setEditOpen(false); setEditReg(null); }}>Cancelar</Button>
+            <Button
+              disabled={
+                !editNome.trim() ||
+                !editValor ||
+                isNaN(parseFloat(editValor)) ||
+                parseFloat(editValor) <= 0 ||
+                editMutation.isPending
+              }
+              onClick={() => {
+                if (!editReg) return;
+                editMutation.mutate({
+                  id: editReg.id,
+                  alunoNome: editNome,
+                  valor: editValor,
+                  professorId: editProfId && editProfId !== "__none__" ? editProfId : "",
+                  comprovante: editComprovante,
+                });
+              }}
+              data-testid="button-salvar-edit-mensalista"
+            >
+              {editMutation.isPending ? "Salvando…" : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2609,7 +2801,17 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
     addAlunoMutation.mutate({ profId, nome });
   };
 
-  const [expandedProf, setExpandedProf] = useState<string | null>(null);
+  const [expandedProf, setExpandedProf] = useState<Set<string>>(new Set());
+  const [expandedSubSection, setExpandedSubSection] = useState<string | null>(null);
+
+  const toggleProf = (id: string) => {
+    setExpandedProf((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); setExpandedSubSection(null); }
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-5">
@@ -2689,7 +2891,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
           <div className="divide-y">
             {professores.map((prof) => {
               const isEditing = editingProf === prof.id;
-              const isExpanded = expandedProf === prof.id;
+              const isExpanded = expandedProf.has(prof.id);
               const pctNum = parseFloat(prof.percentualComissao || "0");
               return (
                 <div key={prof.id} data-testid={`card-prof-${prof.id}`}>
@@ -2775,7 +2977,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                           variant="ghost"
                           size="sm"
                           className="h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
-                          onClick={() => setExpandedProf(isExpanded ? null : prof.id)}
+                          onClick={() => toggleProf(prof.id)}
                           data-testid={`button-expand-prof-${prof.id}`}
                         >
                           <Users className="h-3.5 w-3.5" />
@@ -2817,17 +3019,17 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                       {/* ── Plataforma alunos ── */}
                       <div className="space-y-2">
                         <button
-                          onClick={() => setExpandedProf(expandedProf === platKey ? prof.id : platKey)}
+                          onClick={() => setExpandedSubSection((prev) => prev === platKey ? null : platKey)}
                           className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
                           data-testid={`toggle-plataforma-${prof.id}`}
                         >
-                          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", expandedProf === platKey && "rotate-90")} />
+                          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", expandedSubSection === platKey && "rotate-90")} />
                           Alunos Plataforma
                           <span className="ml-1 text-[10px] font-normal bg-muted px-1.5 py-0.5 rounded-full">
                             {platAlunos.length}
                           </span>
                         </button>
-                        {expandedProf === platKey && (
+                        {expandedSubSection === platKey && (
                           <div className="flex flex-wrap gap-1.5 pl-5">
                             {platAlunos.length === 0 ? (
                               <p className="text-xs text-muted-foreground italic">Nenhum aluno de plataforma</p>
@@ -2854,17 +3056,17 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                       {/* ── Mensalistas ── */}
                       <div className="space-y-2">
                         <button
-                          onClick={() => setExpandedProf(expandedProf === mensKey ? prof.id : mensKey)}
+                          onClick={() => setExpandedSubSection((prev) => prev === mensKey ? null : mensKey)}
                           className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
                           data-testid={`toggle-mensalistas-${prof.id}`}
                         >
-                          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", expandedProf === mensKey && "rotate-90")} />
+                          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", expandedSubSection === mensKey && "rotate-90")} />
                           Mensalistas
                           <span className="ml-1 text-[10px] font-normal bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 px-1.5 py-0.5 rounded-full">
                             {mensAlunos.length}
                           </span>
                         </button>
-                        {expandedProf === mensKey && (
+                        {expandedSubSection === mensKey && (
                           <div className="flex flex-wrap gap-1.5 pl-5">
                             {mensAlunos.length === 0 ? (
                               <p className="text-xs text-muted-foreground italic">Nenhum mensalista cadastrado</p>
