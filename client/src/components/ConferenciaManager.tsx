@@ -1736,18 +1736,18 @@ function MesView({
                 {platformSessoes.map((s) => (
                   <div
                     key={s.id}
-                    className="grid items-center cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-2"
-                    style={{ gridTemplateColumns: "1fr 86px auto auto" }}
+                    className="grid items-center gap-x-4 cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-2"
+                    style={{ gridTemplateColumns: "1fr 86px auto auto auto auto auto" }}
                     onClick={() => onSelectSessao(s.id)}
                     data-testid={`sessao-card-${s.id}`}
                   >
-                    {/* Col 1: name */}
-                    <div className="flex items-center gap-2 min-w-0 pr-2">
+                    {/* Col 1: filename */}
+                    <div className="flex items-center gap-2 min-w-0">
                       <FileSpreadsheet className="h-3.5 w-3.5 text-primary shrink-0" />
                       <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
                     </div>
 
-                    {/* Col 2: platform badge — flex (not inline-flex) fills the full 86px column */}
+                    {/* Col 2: platform badge — flex fills the full 86px column */}
                     <Badge
                       variant="secondary"
                       className="text-xs flex justify-center"
@@ -1755,24 +1755,28 @@ function MesView({
                       {plataformaLabel(s.plataforma)}
                     </Badge>
 
-                    {/* Col 3: counts */}
-                    <div className="flex items-center gap-3 px-4">
-                      <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                        <CheckCircle className="h-3 w-3 shrink-0" /> {s.encontrados} enc.
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                        <AlertCircle className="h-3 w-3 shrink-0" /> {s.possiveis} pos.
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
-                        <XCircle className="h-3 w-3 shrink-0" /> {s.naoEncontrados} não enc.
-                      </span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {s.totalRegistros} reg
-                      </span>
-                    </div>
+                    {/* Col 3: encontrados */}
+                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                      <CheckCircle className="h-3 w-3 shrink-0" /> {s.encontrados} enc.
+                    </span>
 
-                    {/* Col 4: actions */}
-                    <div className="flex items-center gap-0.5 shrink-0">
+                    {/* Col 4: possiveis */}
+                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                      <AlertCircle className="h-3 w-3 shrink-0" /> {s.possiveis} pos.
+                    </span>
+
+                    {/* Col 5: não encontrados */}
+                    <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                      <XCircle className="h-3 w-3 shrink-0" /> {s.naoEncontrados} não enc.
+                    </span>
+
+                    {/* Col 6: total registros */}
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {s.totalRegistros} reg
+                    </span>
+
+                    {/* Col 7: actions */}
+                    <div className="flex items-center gap-0.5 shrink-0 justify-end">
                       <Button
                         variant="ghost"
                         size="icon"
