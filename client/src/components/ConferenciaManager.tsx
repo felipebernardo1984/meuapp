@@ -1747,15 +1747,13 @@ function MesView({
                       <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
                     </div>
 
-                    {/* Col 2: platform badge — fixed width so TotalPass & Wellhub look equal */}
-                    <div className="flex justify-start">
-                      <Badge
-                        variant="secondary"
-                        className="text-xs w-full justify-center"
-                      >
-                        {plataformaLabel(s.plataforma)}
-                      </Badge>
-                    </div>
+                    {/* Col 2: platform badge — flex (not inline-flex) fills the full 86px column */}
+                    <Badge
+                      variant="secondary"
+                      className="text-xs flex justify-center"
+                    >
+                      {plataformaLabel(s.plataforma)}
+                    </Badge>
 
                     {/* Col 3: counts */}
                     <div className="flex items-center gap-3 px-4">
