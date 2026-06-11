@@ -413,41 +413,43 @@ function fmtData(d: string | null | undefined): string {
 }
 
 function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, professorNome: string) {
-  const regs = sessao.registros.filter(
+  const allRegsForProf = sessao.registros.filter(
     (r) => r.status === "confirmado" && (professorKey === "__arena__" ? !r.professorId : r.professorId === professorKey)
   );
-  if (regs.length === 0) return;
+  // Platform records (TotalPass / Wellhub) — mensalistas are excluded from main calc
+  const regs = allRegsForProf.filter((r) => r.categoria !== "mensalista");
+  // Mensalistas: separate comprovante card
+  const mensalistaRegs = allRegsForProf.filter((r) => r.categoria === "mensalista");
 
-  const pct = regs[0]?.percentual ?? "0";
+  if (regs.length === 0 && mensalistaRegs.length === 0) return;
+
+  const pct = (regs[0] ?? mensalistaRegs[0])?.percentual ?? "0";
   const subtotal = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const comissao = regs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-  const arena = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const chks = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+  const arena    = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const chks     = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const dataStr = new Date(sessao.criadoEm).toLocaleDateString("pt-BR");
 
-  // Group by modalidade (mensalistas get their own "Mensalista" section)
+  // Group platform records by modalidade
   const byMod = new Map<string, typeof regs>();
   for (const r of [...regs].sort((a, b) => {
-    const modA = r.categoria === "mensalista" ? "Mensalista" : (a.modalidade ?? "—");
-    const modB = r.categoria === "mensalista" ? "Mensalista" : (b.modalidade ?? "—");
-    const mc = modA.localeCompare(modB, "pt-BR");
+    const mc = (a.modalidade ?? "—").localeCompare(b.modalidade ?? "—", "pt-BR");
     if (mc !== 0) return mc;
     const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
     return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
   })) {
-    const mod = r.categoria === "mensalista" ? "Mensalista" : (r.modalidade ?? "—");
+    const mod = r.modalidade ?? "—";
     if (!byMod.has(mod)) byMod.set(mod, []);
     byMod.get(mod)!.push(r);
   }
 
-  const modBlocks = Array.from(byMod.entries())
+  const modBlocks = regs.length === 0 ? "" : Array.from(byMod.entries())
     .map(([mod, mrs]) => {
-      const modChks = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
-      const modAlunos = new Set(mrs.map(r => r.nomePlataforma)).size;
+      const modChks    = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+      const modAlunos  = new Set(mrs.map(r => r.nomePlataforma)).size;
       const modReceita = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
       const modComissao = mrs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-      const modArena = mrs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
       const modRows = mrs.map((r) => `
         <tr>
           <td>${r.nomePlataforma}</td>
@@ -480,6 +482,42 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       </div>`;
     }).join("");
 
+  // ── Mensalistas block (separate card) ──────────────────────────────────────
+  const mSubtotal  = mensalistaRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const mComissao  = mensalistaRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+  const mArena     = mensalistaRegs.reduce((s, r) => s + Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0")), 0);
+  const mensalistaRows = mensalistaRegs
+    .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
+    .map((r) => {
+      const rv = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
+      return `
+      <tr>
+        <td>${r.nomePlataforma}</td>
+        <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
+        ${professorKey !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td><td style="text-align:right;color:#2563eb">${fmt(rv)}</td>` : ""}
+      </tr>`;
+    }).join("");
+  const mensalistaBlock = mensalistaRegs.length === 0 ? "" : `
+  <div class="mensalista-block">
+    <div class="mensalista-header">
+      <span class="mensalista-badge">Mensalistas Manuais</span>
+      <span class="mensalista-summary">${mensalistaRegs.length} aluno${mensalistaRegs.length !== 1 ? "s" : ""} · ${fmt(mSubtotal)}${professorKey !== "__arena__" ? ` · Comissão: ${fmt(mComissao)} · Arena: ${fmt(mArena)}` : ""}</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Aluno</th>
+        <th style="text-align:right">Mensalidade</th>
+        ${professorKey !== "__arena__" ? `<th style="text-align:right">Comissão</th><th style="text-align:right">Arena</th>` : ""}
+      </tr></thead>
+      <tbody>${mensalistaRows}</tbody>
+      <tfoot><tr>
+        <td><strong>Subtotal Mensalistas</strong></td>
+        <td style="text-align:right"><strong>${fmt(mSubtotal)}</strong></td>
+        ${professorKey !== "__arena__" ? `<td style="text-align:right"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td style="text-align:right"><strong style="color:#2563eb">${fmt(mArena)}</strong></td>` : ""}
+      </tr></tfoot>
+    </table>
+  </div>`;
+
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -506,22 +544,31 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   td { padding:4px 7px;border-bottom:1px solid #eee;font-size:9px; }
   tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
   .total-row { background:#1e293b;color:white;border-radius:5px;padding:8px 14px;margin-top:14px; }
+  /* Mensalistas card */
+  .mensalista-block { margin-top:18px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:6px;overflow:hidden; }
+  .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #8b5cf6; }
+  .mensalista-badge { background:#7c3aed;color:white;font-size:9px;padding:2px 8px;border-radius:20px;font-weight:bold;white-space:nowrap; }
+  .mensalista-summary { color:#5b21b6;font-size:9px;margin-left:auto; }
+  .mensalista-block table { border:none; }
+  .mensalista-block tfoot td { background:#ede9fe; }
   @media print { body { padding:12mm 15mm; } }
 </style>
 </head>
 <body>
   <h1>${professorNome}${professorKey !== "__arena__" ? `<span class="badge">${pct}% comissão</span>` : ""}</h1>
   <div class="subtitle">Comprovante de receita — ${plataformaLabel(sessao.plataforma)} · ${sessao.nomeArquivo} · ${dataStr}</div>
+  ${regs.length > 0 ? `
   <div class="summary-grid">
-    <div class="summary-card"><div class="val">${new Set(regs.map(r => r.nomePlataforma)).size}</div><div class="lbl">Alunos</div></div>
+    <div class="summary-card"><div class="val">${new Set(regs.map(r => r.nomePlataforma)).size}</div><div class="lbl">Alunos Plataforma</div></div>
     <div class="summary-card"><div class="val">${chks}</div><div class="lbl">Check-ins</div></div>
-    <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Total</div></div>
+    <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Plataforma</div></div>
     ${professorKey !== "__arena__" ? `<div class="summary-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(comissao)}</div><div class="lbl">Sua Comissão (${pct}%)</div></div>` : `<div class="summary-card"><div class="val">${fmt(arena)}</div><div class="lbl">Valor Arena</div></div>`}
   </div>
   ${modBlocks}
   <div class="total-row">
-    <strong>${fmt(subtotal)}</strong> total · ${chks} check-in${chks !== 1 ? "s" : ""}${professorKey !== "__arena__" ? ` · Comissão: <strong>${fmt(comissao)}</strong> · Arena: ${fmt(arena)}` : ""}
-  </div>
+    <strong>${fmt(subtotal)}</strong> total plataforma · ${chks} check-in${chks !== 1 ? "s" : ""}${professorKey !== "__arena__" ? ` · Comissão: <strong>${fmt(comissao)}</strong> · Arena: ${fmt(arena)}` : ""}
+  </div>` : ""}
+  ${mensalistaBlock}
 </body>
 </html>`;
 
@@ -539,58 +586,67 @@ function exportComprovanteConsolidado(
   percentualComissao: string,
   mesLabel: string
 ) {
-  // Build per-session sections — only sessions that have records for this professor
+  // Platform records only (exclude mensalistas from platform calc)
   const sections = sessoes
     .map((s) => ({
       sessao: s,
       regs: s.registros.filter(
         (r) =>
           r.status === "confirmado" &&
+          r.categoria !== "mensalista" &&
           (professorId === "__arena__" ? !r.professorId : r.professorId === professorId)
       ),
     }))
     .filter((sec) => sec.regs.length > 0);
 
-  if (sections.length === 0) return;
+  // Mensalistas: all sessions, separate card
+  const allMensalistas = sessoes.flatMap((s) =>
+    s.registros.filter(
+      (r) =>
+        r.status === "confirmado" &&
+        r.categoria === "mensalista" &&
+        (professorId === "__arena__" ? !r.professorId : r.professorId === professorId)
+    )
+  );
+
+  if (sections.length === 0 && allMensalistas.length === 0) return;
 
   const pct = percentualComissao;
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  // Grand totals
+  // Grand totals — platform only
   const allRegs = sections.flatMap((s) => s.regs);
-  const totalAlunos = new Set(allRegs.map((r) => r.nomePlataforma)).size;
-  const totalChks = allRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
-  const totalReceita = allRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalAlunos   = new Set(allRegs.map((r) => r.nomePlataforma)).size;
+  const totalChks     = allRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+  const totalReceita  = allRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalComissao = allRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-  const totalArena = allRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const totalArena    = allRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
 
   // Build one section block per platform/arquivo
   const sectionBlocks = sections
     .map(({ sessao, regs }) => {
-      const secAlunos = new Set(regs.map((r) => r.nomePlataforma)).size;
-      const secChks = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
-      const secReceita = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+      const secAlunos   = new Set(regs.map((r) => r.nomePlataforma)).size;
+      const secChks     = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+      const secReceita  = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
       const secComissao = regs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-      const secArena = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+      const secArena    = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
 
-      // Group by modalidade within this section (mensalistas get their own section)
+      // Group platform records by modalidade (no mensalistas here)
       const byMod = new Map<string, typeof regs>();
       for (const r of [...regs].sort((a, b) => {
-        const modA = a.categoria === "mensalista" ? "Mensalista" : (a.modalidade ?? "—");
-        const modB = b.categoria === "mensalista" ? "Mensalista" : (b.modalidade ?? "—");
-        const mc = modA.localeCompare(modB, "pt-BR");
+        const mc = (a.modalidade ?? "—").localeCompare(b.modalidade ?? "—", "pt-BR");
         if (mc !== 0) return mc;
         const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
         return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
       })) {
-        const mod = r.categoria === "mensalista" ? "Mensalista" : (r.modalidade ?? "—");
+        const mod = r.modalidade ?? "—";
         if (!byMod.has(mod)) byMod.set(mod, []);
         byMod.get(mod)!.push(r);
       }
 
       const secModBlocks = Array.from(byMod.entries()).map(([mod, mrs]) => {
-        const mChks = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
-        const mAlunos = new Set(mrs.map(r => r.nomePlataforma)).size;
+        const mChks    = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+        const mAlunos  = new Set(mrs.map(r => r.nomePlataforma)).size;
         const mReceita = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
         const mComissao = mrs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
         const mRows = mrs.map((r) => `
@@ -643,7 +699,43 @@ function exportComprovanteConsolidado(
         </div>
       </div>`;
     })
-    .join('<div class="page-break"></div>');
+    .join(sections.length > 1 ? '<div class="page-break"></div>' : "");
+
+  // ── Mensalistas block (separate card, outside platform sections) ───────────
+  const mTotal    = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const mComissao = allMensalistas.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+  const mArena    = allMensalistas.reduce((s, r) => s + Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0")), 0);
+  const mensalistaRows = allMensalistas
+    .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
+    .map((r) => {
+      const rv = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
+      return `
+      <tr>
+        <td>${r.nomePlataforma}</td>
+        <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
+        ${professorId !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td><td style="text-align:right;color:#2563eb">${fmt(rv)}</td>` : ""}
+      </tr>`;
+    }).join("");
+  const mensalistasBlock = allMensalistas.length === 0 ? "" : `
+  <div class="mensalista-block">
+    <div class="mensalista-header">
+      <span class="mensalista-badge">Mensalistas Manuais</span>
+      <span class="mensalista-summary">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(mTotal)}${professorId !== "__arena__" ? ` · Comissão: ${fmt(mComissao)} · Arena: ${fmt(mArena)}` : ""}</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Aluno</th>
+        <th style="text-align:right">Mensalidade</th>
+        ${professorId !== "__arena__" ? `<th style="text-align:right">Comissão</th><th style="text-align:right">Arena</th>` : ""}
+      </tr></thead>
+      <tbody>${mensalistaRows}</tbody>
+      <tfoot><tr>
+        <td><strong>Subtotal Mensalistas</strong></td>
+        <td style="text-align:right"><strong>${fmt(mTotal)}</strong></td>
+        ${professorId !== "__arena__" ? `<td style="text-align:right"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td style="text-align:right"><strong style="color:#2563eb">${fmt(mArena)}</strong></td>` : ""}
+      </tr></tfoot>
+    </table>
+  </div>`;
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -659,12 +751,10 @@ function exportComprovanteConsolidado(
   .subtitle { color:#555;font-size:10px;margin-bottom:14px; }
   .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:9px;padding:2px 7px;border-radius:20px;margin-left:6px;font-weight:bold; }
   .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;padding:2px 7px;border-radius:20px;margin-left:6px;font-weight:bold; }
-  /* Grand totals */
   .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
   .grand-card { border:1px solid #ddd;border-radius:5px;padding:8px 12px; }
   .grand-card .val { font-size:13px;font-weight:bold;margin-bottom:2px; }
   .grand-card .lbl { font-size:8px;color:#666; }
-  /* Section */
   .section { margin-bottom:20px; }
   .section-header { display:flex;align-items:baseline;gap:10px;margin-bottom:6px;padding-bottom:5px;border-bottom:2px solid #1e293b; }
   .section-platform { font-size:12px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
@@ -679,8 +769,14 @@ function exportComprovanteConsolidado(
   td { padding:4px 7px;border-bottom:1px solid #eee;font-size:9px; }
   tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
   .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:5px 10px;font-size:9px;color:#334155;margin-top:4px; }
-  /* Grand total bar */
   .grand-total { background:#1e293b;color:white;border-radius:5px;padding:10px 14px;margin-top:20px;font-size:10px; }
+  /* Mensalistas card */
+  .mensalista-block { margin-top:20px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:6px;overflow:hidden; }
+  .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #8b5cf6; }
+  .mensalista-badge { background:#7c3aed;color:white;font-size:9px;padding:2px 8px;border-radius:20px;font-weight:bold;white-space:nowrap; }
+  .mensalista-summary { color:#5b21b6;font-size:9px;margin-left:auto; }
+  .mensalista-block table { border:none; }
+  .mensalista-block tfoot td { background:#ede9fe; }
   .page-break { height:0; }
   @media print {
     body { padding:12mm 15mm; }
@@ -690,20 +786,21 @@ function exportComprovanteConsolidado(
 </head>
 <body>
   <h1>${professorNome}${professorId !== "__arena__" ? `<span class="badge">${pct}% comissão</span>` : ""}<span class="badge-consolidated">Consolidado</span></h1>
-  <div class="subtitle">Comprovante de receita consolidado — ${mesLabel} · ${sections.length} plataforma${sections.length !== 1 ? "s" : ""}</div>
+  <div class="subtitle">Comprovante de receita consolidado — ${mesLabel} · ${sections.length} plataforma${sections.length !== 1 ? "s" : ""}${allMensalistas.length > 0 ? ` · ${allMensalistas.length} mensalista${allMensalistas.length !== 1 ? "s" : ""}` : ""}</div>
 
+  ${sections.length > 0 ? `
   <div class="grand-grid">
-    <div class="grand-card"><div class="val">${totalAlunos}</div><div class="lbl">Alunos únicos</div></div>
+    <div class="grand-card"><div class="val">${totalAlunos}</div><div class="lbl">Alunos Plataforma</div></div>
     <div class="grand-card"><div class="val">${totalChks}</div><div class="lbl">Check-ins totais</div></div>
-    <div class="grand-card"><div class="val">${fmt(totalReceita)}</div><div class="lbl">Receita Total</div></div>
+    <div class="grand-card"><div class="val">${fmt(totalReceita)}</div><div class="lbl">Receita Plataforma</div></div>
     ${professorId !== "__arena__" ? `<div class="grand-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(totalComissao)}</div><div class="lbl">Comissão Total (${pct}%)</div></div>` : `<div class="grand-card"><div class="val">${fmt(totalArena)}</div><div class="lbl">Valor Arena</div></div>`}
   </div>
-
   ${sectionBlocks}
-
   <div class="grand-total">
-    TOTAL GERAL — <strong>${fmt(totalReceita)}</strong> · ${totalChks} check-in${totalChks !== 1 ? "s" : ""}${professorId !== "__arena__" ? ` · Comissão: <strong>${fmt(totalComissao)}</strong> · Arena: ${fmt(totalArena)}` : ""}
-  </div>
+    TOTAL PLATAFORMA — <strong>${fmt(totalReceita)}</strong> · ${totalChks} check-in${totalChks !== 1 ? "s" : ""}${professorId !== "__arena__" ? ` · Comissão: <strong>${fmt(totalComissao)}</strong> · Arena: ${fmt(totalArena)}` : ""}
+  </div>` : ""}
+
+  ${mensalistasBlock}
 </body>
 </html>`;
 
