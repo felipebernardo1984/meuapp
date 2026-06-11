@@ -1424,17 +1424,18 @@ export function registerConferenciaRoutes(app: Express): void {
         })
         .returning();
 
-      // Also add student to professor's student list with tipo="mensalista" (avoid duplicates)
+      // Also add student to professor's student list with tipo="mensalista" (avoid duplicates of same tipo)
       if (profId) {
         const existing = await db
-          .select({ nome: conferenciaProfessorAlunos.nome })
+          .select({ nome: conferenciaProfessorAlunos.nome, tipo: conferenciaProfessorAlunos.tipo })
           .from(conferenciaProfessorAlunos)
           .where(and(
             eq(conferenciaProfessorAlunos.arenaId, arenaId),
             eq(conferenciaProfessorAlunos.professorId, profId)
           ));
         const nomeNorm = alunoNome.trim().toLowerCase();
-        const alreadyExists = existing.some((a) => a.nome.toLowerCase() === nomeNorm);
+        // Only skip insert if a mensalista entry already exists — platform entries are separate
+        const alreadyExists = existing.some((a) => a.nome.toLowerCase() === nomeNorm && a.tipo === "mensalista");
         if (!alreadyExists) {
           await db.insert(conferenciaProfessorAlunos).values({
             arenaId,
@@ -1564,10 +1565,11 @@ export function registerConferenciaRoutes(app: Express): void {
         ));
       }
       if (newProfId) {
-        const existing = await db.select({ nome: conferenciaProfessorAlunos.nome })
+        const existing = await db.select({ nome: conferenciaProfessorAlunos.nome, tipo: conferenciaProfessorAlunos.tipo })
           .from(conferenciaProfessorAlunos)
           .where(and(eq(conferenciaProfessorAlunos.arenaId, arenaId), eq(conferenciaProfessorAlunos.professorId, newProfId)));
-        const alreadyExists = existing.some((a) => a.nome.toLowerCase() === newNome.toLowerCase());
+        // Only skip insert if a mensalista entry already exists — platform entries are separate
+        const alreadyExists = existing.some((a) => a.nome.toLowerCase() === newNome.toLowerCase() && a.tipo === "mensalista");
         if (!alreadyExists) {
           await db.insert(conferenciaProfessorAlunos).values({ arenaId, professorId: newProfId, nome: newNome, tipo: "mensalista" });
         }
