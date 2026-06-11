@@ -526,32 +526,32 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 <style>
   @page { size: A4 portrait; margin: 0; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#111;
-         width:210mm;min-height:297mm;padding:12mm 15mm;margin:0 auto; }
-  h1 { font-size:15px;margin-bottom:2px; }
-  .subtitle { color:#555;font-size:10px;margin-bottom:14px; }
-  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:9px;padding:2px 7px;border-radius:20px;margin-left:6px;font-weight:bold; }
-  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px; }
-  .summary-card { border:1px solid #ddd;border-radius:5px;padding:8px 12px; }
-  .summary-card .val { font-size:13px;font-weight:bold;margin-bottom:2px; }
-  .summary-card .lbl { font-size:8px;color:#666; }
-  .mod-block { margin-bottom:14px;page-break-inside:avoid; }
-  .mod-header { display:flex;align-items:center;gap:10px;background:#f4f4f4;padding:5px 8px;border-radius:4px 4px 0 0;border:1px solid #ddd;border-bottom:none; }
-  .mod-name { font-weight:bold;font-size:10px; }
-  .mod-summary { color:#555;font-size:9px;margin-left:auto; }
+  body { font-family:Arial,sans-serif;font-size:9.5px;color:#111;
+         width:210mm;min-height:297mm;padding:6mm 9mm;margin:0 auto; }
+  h1 { font-size:13px;margin-bottom:1px; }
+  .subtitle { color:#555;font-size:9px;margin-bottom:9px; }
+  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:8.5px;padding:1px 6px;border-radius:20px;margin-left:5px;font-weight:bold; }
+  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:9px; }
+  .summary-card { border:1px solid #ddd;border-radius:4px;padding:5px 8px; }
+  .summary-card .val { font-size:11px;font-weight:bold;margin-bottom:1px; }
+  .summary-card .lbl { font-size:7.5px;color:#666; }
+  .mod-block { margin-bottom:8px;page-break-inside:avoid; }
+  .mod-header { display:flex;align-items:center;gap:8px;background:#f4f4f4;padding:3px 7px;border-radius:3px 3px 0 0;border:1px solid #ddd;border-bottom:none; }
+  .mod-name { font-weight:bold;font-size:9px; }
+  .mod-summary { color:#555;font-size:8.5px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1px solid #ddd; }
-  th { background:#f9f9f9;text-align:left;padding:4px 7px;font-size:9px;border-bottom:1px solid #ddd; }
-  td { padding:4px 7px;border-bottom:1px solid #eee;font-size:9px; }
+  th { background:#f9f9f9;text-align:left;padding:3px 6px;font-size:8.5px;border-bottom:1px solid #ddd; }
+  td { padding:3px 6px;border-bottom:1px solid #eee;font-size:8.5px; }
   tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
-  .total-row { background:#1e293b;color:white;border-radius:5px;padding:8px 14px;margin-top:14px; }
+  .total-row { background:#1e293b;color:white;border-radius:4px;padding:5px 10px;margin-top:8px;font-size:9px; }
   /* Mensalistas card */
-  .mensalista-block { margin-top:18px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:6px;overflow:hidden; }
-  .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #8b5cf6; }
-  .mensalista-badge { background:#7c3aed;color:white;font-size:9px;padding:2px 8px;border-radius:20px;font-weight:bold;white-space:nowrap; }
-  .mensalista-summary { color:#5b21b6;font-size:9px;margin-left:auto; }
+  .mensalista-block { margin-top:10px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:5px;overflow:hidden; }
+  .mensalista-header { background:#f5f3ff;padding:4px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #8b5cf6; }
+  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:1px 7px;border-radius:20px;font-weight:bold;white-space:nowrap; }
+  .mensalista-summary { color:#5b21b6;font-size:8.5px;margin-left:auto; }
   .mensalista-block table { border:none; }
   .mensalista-block tfoot td { background:#ede9fe; }
-  @media print { body { padding:12mm 15mm; } }
+  @media print { body { padding:6mm 9mm; } }
 </style>
 </head>
 <body>
@@ -745,41 +745,41 @@ function exportComprovanteConsolidado(
 <style>
   @page { size: A4 portrait; margin: 0; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#111;
-         width:210mm;min-height:297mm;padding:12mm 15mm;margin:0 auto; }
-  h1 { font-size:15px;margin-bottom:2px; }
-  .subtitle { color:#555;font-size:10px;margin-bottom:14px; }
-  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:9px;padding:2px 7px;border-radius:20px;margin-left:6px;font-weight:bold; }
-  .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;padding:2px 7px;border-radius:20px;margin-left:6px;font-weight:bold; }
-  .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
-  .grand-card { border:1px solid #ddd;border-radius:5px;padding:8px 12px; }
-  .grand-card .val { font-size:13px;font-weight:bold;margin-bottom:2px; }
-  .grand-card .lbl { font-size:8px;color:#666; }
-  .section { margin-bottom:20px; }
-  .section-header { display:flex;align-items:baseline;gap:10px;margin-bottom:6px;padding-bottom:5px;border-bottom:2px solid #1e293b; }
-  .section-platform { font-size:12px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
-  .section-file { font-size:9px;color:#64748b; }
-  .section-summary { display:flex;gap:14px;flex-wrap:wrap;margin-bottom:6px;font-size:9px;color:#475569; }
-  .mod-block { margin-bottom:10px;page-break-inside:avoid; }
-  .mod-header { display:flex;align-items:center;gap:10px;background:#f4f4f4;padding:5px 8px;border-radius:4px 4px 0 0;border:1px solid #ddd;border-bottom:none; }
-  .mod-name { font-weight:bold;font-size:10px; }
-  .mod-summary { color:#555;font-size:9px;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:5px; }
-  th { background:#f9f9f9;text-align:left;padding:4px 7px;font-size:9px;border-bottom:1px solid #ddd; }
-  td { padding:4px 7px;border-bottom:1px solid #eee;font-size:9px; }
+  body { font-family:Arial,sans-serif;font-size:9.5px;color:#111;
+         width:210mm;min-height:297mm;padding:6mm 9mm;margin:0 auto; }
+  h1 { font-size:13px;margin-bottom:1px; }
+  .subtitle { color:#555;font-size:9px;margin-bottom:9px; }
+  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:8.5px;padding:1px 6px;border-radius:20px;margin-left:5px;font-weight:bold; }
+  .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:8.5px;padding:1px 6px;border-radius:20px;margin-left:5px;font-weight:bold; }
+  .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px; }
+  .grand-card { border:1px solid #ddd;border-radius:4px;padding:5px 8px; }
+  .grand-card .val { font-size:11px;font-weight:bold;margin-bottom:1px; }
+  .grand-card .lbl { font-size:7.5px;color:#666; }
+  .section { margin-bottom:12px; }
+  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:4px;padding-bottom:3px;border-bottom:2px solid #1e293b; }
+  .section-platform { font-size:11px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
+  .section-file { font-size:8.5px;color:#64748b; }
+  .section-summary { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px;font-size:8.5px;color:#475569; }
+  .mod-block { margin-bottom:7px;page-break-inside:avoid; }
+  .mod-header { display:flex;align-items:center;gap:8px;background:#f4f4f4;padding:3px 7px;border-radius:3px 3px 0 0;border:1px solid #ddd;border-bottom:none; }
+  .mod-name { font-weight:bold;font-size:9px; }
+  .mod-summary { color:#555;font-size:8.5px;margin-left:auto; }
+  table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:3px; }
+  th { background:#f9f9f9;text-align:left;padding:3px 6px;font-size:8.5px;border-bottom:1px solid #ddd; }
+  td { padding:3px 6px;border-bottom:1px solid #eee;font-size:8.5px; }
   tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
-  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:5px 10px;font-size:9px;color:#334155;margin-top:4px; }
-  .grand-total { background:#1e293b;color:white;border-radius:5px;padding:10px 14px;margin-top:20px;font-size:10px; }
+  .section-total { background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:3px 8px;font-size:8.5px;color:#334155;margin-top:2px; }
+  .grand-total { background:#1e293b;color:white;border-radius:4px;padding:7px 10px;margin-top:12px;font-size:9px; }
   /* Mensalistas card */
-  .mensalista-block { margin-top:20px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:6px;overflow:hidden; }
-  .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #8b5cf6; }
-  .mensalista-badge { background:#7c3aed;color:white;font-size:9px;padding:2px 8px;border-radius:20px;font-weight:bold;white-space:nowrap; }
-  .mensalista-summary { color:#5b21b6;font-size:9px;margin-left:auto; }
+  .mensalista-block { margin-top:12px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:5px;overflow:hidden; }
+  .mensalista-header { background:#f5f3ff;padding:4px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #8b5cf6; }
+  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:1px 7px;border-radius:20px;font-weight:bold;white-space:nowrap; }
+  .mensalista-summary { color:#5b21b6;font-size:8.5px;margin-left:auto; }
   .mensalista-block table { border:none; }
   .mensalista-block tfoot td { background:#ede9fe; }
   .page-break { height:0; }
   @media print {
-    body { padding:12mm 15mm; }
+    body { padding:6mm 9mm; }
     .page-break { page-break-after:always; }
   }
 </style>
@@ -801,6 +801,157 @@ function exportComprovanteConsolidado(
   </div>` : ""}
 
   ${mensalistasBlock}
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+// ── Arena Monthly Report PDF ───────────────────────────────────────────────────
+function exportArenaRelatorio(
+  sessoes: SessaoDetalhe[],
+  allMensalistas: Registro[],
+  mesLabel: string,
+  pctArena: number
+) {
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // Group confirmed platform records by plataforma
+  const byPlat = new Map<string, { label: string; regs: Registro[] }>();
+  for (const s of sessoes) {
+    const platRegs = (s.registros ?? []).filter(
+      (r) => r.status === "confirmado" && r.categoria !== "mensalista"
+    );
+    if (platRegs.length === 0) continue;
+    const key = s.plataforma;
+    if (!byPlat.has(key)) byPlat.set(key, { label: plataformaLabel(key), regs: [] });
+    byPlat.get(key)!.regs.push(...platRegs);
+  }
+
+  const totalPlataforma = Array.from(byPlat.values()).flatMap((p) => p.regs)
+    .reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalGeral = totalPlataforma + totalMensalistas;
+  const valorArena = totalGeral * (pctArena / 100);
+
+  if (totalGeral === 0) return;
+
+  // One block per platform
+  const platBlocks = Array.from(byPlat.entries()).map(([, { label, regs }]) => {
+    const receita = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+    const chks    = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+    const alunos  = new Set(regs.map((r) => r.nomePlataforma)).size;
+    const byMod   = new Map<string, Registro[]>();
+    for (const r of regs) {
+      const mod = r.modalidade ?? "—";
+      if (!byMod.has(mod)) byMod.set(mod, []);
+      byMod.get(mod)!.push(r);
+    }
+    const modRows = Array.from(byMod.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], "pt-BR"))
+      .map(([mod, mrs]) => {
+        const mRec   = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+        const mChks  = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+        const mAl    = new Set(mrs.map((r) => r.nomePlataforma)).size;
+        return `<tr><td>${mod}</td><td style="text-align:center">${mAl}</td><td style="text-align:center">${mChks}</td><td style="text-align:right"><strong>${fmt(mRec)}</strong></td></tr>`;
+      }).join("");
+    return `
+    <div class="section">
+      <div class="section-header">
+        <span class="section-platform">${label.toUpperCase()}</span>
+        <span class="section-meta">${alunos} aluno${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · ${fmt(receita)}</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Modalidade</th>
+          <th style="text-align:center">Alunos</th>
+          <th style="text-align:center">Check-ins</th>
+          <th style="text-align:right">Receita</th>
+        </tr></thead>
+        <tbody>${modRows}</tbody>
+        <tfoot><tr>
+          <td colspan="3"><strong>Subtotal ${label}</strong></td>
+          <td style="text-align:right"><strong>${fmt(receita)}</strong></td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+  }).join("");
+
+  // Mensalistas block
+  const mensalistaRows = [...allMensalistas]
+    .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
+    .map((r) => `<tr><td>${r.nomePlataforma}</td><td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td></tr>`)
+    .join("");
+  const mensalistasBlock = allMensalistas.length === 0 ? "" : `
+  <div class="mensalista-block">
+    <div class="mensalista-header">
+      <span class="mensalista-badge">Mensalistas Manuais</span>
+      <span class="mensalista-meta">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(totalMensalistas)}</span>
+    </div>
+    <table>
+      <thead><tr><th>Aluno</th><th style="text-align:right">Mensalidade</th></tr></thead>
+      <tbody>${mensalistaRows}</tbody>
+      <tfoot><tr><td><strong>Subtotal Mensalistas</strong></td><td style="text-align:right"><strong>${fmt(totalMensalistas)}</strong></td></tr></tfoot>
+    </table>
+  </div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório Arena — ${mesLabel}</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { font-family:Arial,sans-serif;font-size:9.5px;color:#111;width:210mm;min-height:297mm;padding:6mm 9mm;margin:0 auto; }
+  h1 { font-size:13px;margin-bottom:1px; }
+  .subtitle { color:#555;font-size:9px;margin-bottom:10px; }
+  .badge-arena { display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:8.5px;padding:1px 7px;border-radius:20px;margin-left:5px;font-weight:bold; }
+  .kpi-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px; }
+  .kpi-card { border:1px solid #ddd;border-radius:4px;padding:5px 8px; }
+  .kpi-card .val { font-size:12px;font-weight:bold;margin-bottom:1px; }
+  .kpi-card .lbl { font-size:7.5px;color:#666; }
+  .section { margin-bottom:12px;page-break-inside:avoid; }
+  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:4px;padding-bottom:3px;border-bottom:2px solid #1e293b; }
+  .section-platform { font-size:11px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
+  .section-meta { font-size:8.5px;color:#64748b;margin-left:auto; }
+  table { width:100%;border-collapse:collapse;border:1px solid #ddd;margin-bottom:3px; }
+  th { background:#f9f9f9;text-align:left;padding:3px 6px;font-size:8.5px;border-bottom:1px solid #ddd; }
+  td { padding:3px 6px;border-bottom:1px solid #eee;font-size:8.5px; }
+  tfoot td { background:#f0f0f0;border-top:1px solid #ccc; }
+  .mensalista-block { margin-top:12px;page-break-inside:avoid;border:1px solid #8b5cf6;border-radius:5px;overflow:hidden; }
+  .mensalista-header { background:#f5f3ff;padding:4px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #8b5cf6; }
+  .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:1px 7px;border-radius:20px;font-weight:bold; }
+  .mensalista-meta { color:#5b21b6;font-size:8.5px;margin-left:auto; }
+  .mensalista-block table { border:none; }
+  .mensalista-block tfoot td { background:#ede9fe; }
+  .grand-total { background:#1e293b;color:white;border-radius:4px;padding:8px 10px;margin-top:12px;font-size:9.5px; }
+  .arena-repasse { font-size:12px;font-weight:bold;color:#93c5fd;margin-top:4px; }
+  @media print { body { padding:6mm 9mm; } }
+</style>
+</head>
+<body>
+  <h1>Relatório Financeiro<span class="badge-arena">Arena · ${pctArena}%</span></h1>
+  <div class="subtitle">Período: ${mesLabel} · Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card" style="border-color:#93c5fd"><div class="val" style="color:#1d4ed8">${fmt(valorArena)}</div><div class="lbl">Repasse Arena (${pctArena}%)</div></div>
+    <div class="kpi-card"><div class="val">${fmt(totalGeral)}</div><div class="lbl">Total Geral</div></div>
+    <div class="kpi-card"><div class="val">${fmt(totalPlataforma)}</div><div class="lbl">Plataformas</div></div>
+    <div class="kpi-card" style="border-color:#c4b5fd"><div class="val" style="color:#7c3aed">${fmt(totalMensalistas)}</div><div class="lbl">Mensalistas</div></div>
+  </div>
+
+  ${platBlocks}
+  ${mensalistasBlock}
+
+  <div class="grand-total">
+    TOTAL GERAL — <strong>${fmt(totalGeral)}</strong>${byPlat.size > 0 ? ` · Plataformas: ${fmt(totalPlataforma)}` : ""}${allMensalistas.length > 0 ? ` · Mensalistas: ${fmt(totalMensalistas)}` : ""}
+    <div class="arena-repasse">REPASSE ARENA (${pctArena}%) — ${fmt(valorArena)}</div>
+  </div>
 </body>
 </html>`;
 
@@ -1609,6 +1760,11 @@ function MesView({
         {mesSessoes.length > 0 && (
           <MensalistaCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} />
         )}
+
+        {/* Arena financial report card */}
+        {mesSessoes.length > 0 && (
+          <ArenaRelatorioCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} mesLabel={mesLabel} />
+        )}
       </div>
     </div>
   );
@@ -2042,6 +2198,121 @@ function MensalistaCard({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+// ── Arena Relatório Card ──────────────────────────────────────────────────────
+function ArenaRelatorioCard({
+  mesSessoes,
+  arenaId: _arenaId,
+  periodo,
+  mesLabel,
+}: {
+  mesSessoes: Sessao[];
+  arenaId: string;
+  periodo: string;
+  mesLabel: string;
+}) {
+  const [pctArena, setPctArena] = useState("70");
+
+  const { data: allDetails = [] } = useQuery<SessaoDetalhe[]>({
+    queryKey: ["/api/conferencia/arena-relatorio", periodo],
+    queryFn: async () => {
+      const results = await Promise.all(
+        mesSessoes.map((s) => fetch(`/api/conferencia/sessao/${s.id}`).then((r) => r.json()))
+      );
+      return results as SessaoDetalhe[];
+    },
+    enabled: mesSessoes.length > 0,
+  });
+
+  const { data: repasseCfg } = useQuery<RepasseConfig>({
+    queryKey: ["/api/conferencia/repasse-config", periodo],
+    queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
+    enabled: !!periodo,
+  });
+
+  useEffect(() => {
+    if (repasseCfg?.pctArena) setPctArena(repasseCfg.pctArena);
+  }, [repasseCfg]);
+
+  const allPlatformRegs = allDetails.flatMap((d) =>
+    (d?.registros ?? []).filter((r) => r.status === "confirmado" && r.categoria !== "mensalista")
+  );
+  const allMensalistas = allDetails.flatMap((d) =>
+    (d?.registros ?? []).filter((r) => r.categoria === "mensalista")
+  );
+
+  const totalPlataforma  = allPlatformRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalGeral       = totalPlataforma + totalMensalistas;
+  const pct              = parseFloat(pctArena) || 0;
+  const valorArena       = totalGeral * (pct / 100);
+
+  return (
+    <Card className="border border-border">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="shrink-0 h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="text-sm font-semibold">Relatório Arena</CardTitle>
+              {totalGeral > 0 ? (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Total <span className="font-medium text-foreground">{fmtVal(String(totalGeral))}</span>
+                  {" · "}Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(valorArena))}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">Nenhum dado para este mês</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">% Arena:</span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={pctArena}
+                onChange={(e) => setPctArena(e.target.value)}
+                className="w-14 h-7 text-xs border border-border rounded px-2 bg-background text-foreground"
+                data-testid="input-pct-arena-relatorio"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs h-7 shrink-0"
+              disabled={totalGeral === 0}
+              onClick={() => exportArenaRelatorio(allDetails, allMensalistas, mesLabel, pct)}
+              data-testid="button-gerar-relatorio-arena"
+            >
+              <Printer className="h-3.5 w-3.5" /> Relatório
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      {totalGeral > 0 && (
+        <CardContent className="px-4 pb-4 pt-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: `Arena (${pctArena}%)`, val: fmtVal(String(valorArena)), color: "text-blue-600 dark:text-blue-400" },
+              { label: "Total Geral", val: fmtVal(String(totalGeral)), color: "text-foreground" },
+              { label: "Plataformas", val: fmtVal(String(totalPlataforma)), color: "text-emerald-600 dark:text-emerald-400" },
+              { label: "Mensalistas", val: fmtVal(String(totalMensalistas)), color: "text-violet-600 dark:text-violet-400" },
+            ].map((i) => (
+              <div key={i.label} className="bg-muted/40 rounded-md px-2.5 py-1.5 text-center">
+                <div className={cn("font-bold text-sm", i.color)}>{i.val}</div>
+                <div className="text-xs text-muted-foreground">{i.label}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
@@ -3441,7 +3712,8 @@ function RelatorioView({
   const arenaRow = (r: Registro) => Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
   const arenaSum = (regs: Registro[]) => regs.reduce((s, r) => s + arenaRow(r), 0);
 
-  const confirmados = registros.filter((r) => r.status === "confirmado");
+  // Platform records only — mensalistas are excluded from platform totals
+  const confirmados = registros.filter((r) => r.status === "confirmado" && r.categoria !== "mensalista");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalProfessores = confirmados.reduce(
     (s, r) => s + parseFloat(r.valorProfessor || "0"),
@@ -3451,8 +3723,10 @@ function RelatorioView({
   const totalCheckins = confirmados.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const naoEncontrados = registros.filter((r) => r.status === "nao_encontrado");
 
+  // byProf includes mensalistas so they show up on the professor's card
+  const allConfirmados = registros.filter((r) => r.status === "confirmado");
   const byProf = new Map<string, { nome: string; registros: Registro[] }>();
-  for (const r of confirmados) {
+  for (const r of allConfirmados) {
     const key = r.professorId ?? "__arena__";
     if (!byProf.has(key)) {
       byProf.set(key, {
@@ -3525,11 +3799,13 @@ function RelatorioView({
             const mensalistas = g.registros.filter((r) => r.categoria === "mensalista");
             const atribuidos = g.registros.filter((r) => r.categoria !== "comissao" && r.categoria !== "mensalista");
 
-            const subtotal = g.registros.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-            const comissao = g.registros.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-            const arena = arenaSum(g.registros);
-            const chks = g.registros.reduce((s, r) => s + (r.checkins ?? 1), 0);
-            const pct = g.registros[0]?.percentual ?? "0";
+            // Platform-only totals (mensalistas shown separately)
+            const platRegs = g.registros.filter((r) => r.categoria !== "mensalista");
+            const subtotal = platRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+            const comissao = platRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+            const arena = arenaSum(platRegs);
+            const chks = platRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+            const pct = platRegs[0]?.percentual ?? mensalistas[0]?.percentual ?? "0";
 
             const renderLinhas = (rows: Registro[]) =>
               [...rows]
@@ -3629,7 +3905,14 @@ function RelatorioView({
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground">
-                      {new Set(g.registros.map((r) => r.nomePlataforma)).size} aluno{new Set(g.registros.map((r) => r.nomePlataforma)).size !== 1 ? "s" : ""} · {chks} check-in{chks !== 1 ? "s" : ""}
+                      {(() => {
+                        const np = new Set(platRegs.map((r) => r.nomePlataforma)).size;
+                        const nm = mensalistas.length;
+                        const parts = [];
+                        if (np > 0) parts.push(`${np} plataforma`);
+                        if (nm > 0) parts.push(`${nm} mensalista${nm !== 1 ? "s" : ""}`);
+                        return parts.join(" · ");
+                      })()} · {chks} check-in{chks !== 1 ? "s" : ""}
                     </span>
                     <div className="ml-auto flex gap-1.5 flex-wrap">
                       <Button
