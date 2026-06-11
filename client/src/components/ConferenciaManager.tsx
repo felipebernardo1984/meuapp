@@ -2902,16 +2902,16 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex-1 flex items-center gap-3 min-w-0">
-                        <span className="font-medium text-sm text-foreground truncate">{prof.nome}</span>
-                        <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-foreground truncate leading-snug">{prof.nome}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
                           <Badge
                             variant={pctNum > 0 ? "default" : "secondary"}
                             className="text-xs tabular-nums"
                           >
                             {pctNum > 0 ? `${pctNum}%` : "Sem comissão"}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
                             {prof.alunos.length} aluno{prof.alunos.length !== 1 ? "s" : ""}
                           </span>
                         </div>
