@@ -1572,7 +1572,7 @@ function MesView({
       )}
 
       {/* ── Professores (first) ─────────────────────────────────────────── */}
-      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} sessaoIds={platformSessoes.map((s) => s.id)} mesLabel={mesLabel} />
+      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} sessaoIds={mesSessoes.map((s) => s.id)} mesLabel={mesLabel} />
 
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5">
