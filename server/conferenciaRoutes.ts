@@ -573,12 +573,13 @@ export function registerConferenciaRoutes(app: Express): void {
             .insert(conferenciaProfessores)
             .values({ arenaId, nome: p.nome, percentualComissao: p.percentualComissao, periodo })
             .returning();
-          const fromPrev = prevAlunos.filter((a) => a.professorId === p.id);
+          // Only copy platform-type students (not mensalistas — those are period-specific)
+          const fromPrev = prevAlunos.filter((a) => a.professorId === p.id && a.tipo !== "mensalista");
           let newAlunos: typeof prevAlunos = [];
           if (fromPrev.length > 0) {
             newAlunos = await db
               .insert(conferenciaProfessorAlunos)
-              .values(fromPrev.map((a) => ({ arenaId, professorId: newProf.id, nome: a.nome })))
+              .values(fromPrev.map((a) => ({ arenaId, professorId: newProf.id, nome: a.nome, tipo: "plataforma" })))
               .returning();
           }
           result.push({ ...newProf, alunos: newAlunos });
@@ -729,6 +730,29 @@ export function registerConferenciaRoutes(app: Express): void {
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
+
+    // Fetch the aluno before deleting so we can check its tipo
+    const [aluno] = await db
+      .select()
+      .from(conferenciaProfessorAlunos)
+      .where(and(eq(conferenciaProfessorAlunos.id, req.params.id), eq(conferenciaProfessorAlunos.arenaId, arenaId)));
+
+    if (!aluno) return res.status(404).json({ message: "Aluno não encontrado" });
+
+    // If tipo=mensalista, also remove the associated mensalista registro(s)
+    if (aluno.tipo === "mensalista") {
+      await db
+        .delete(conferenciaRegistros)
+        .where(
+          and(
+            eq(conferenciaRegistros.arenaId, arenaId),
+            eq(conferenciaRegistros.professorId, aluno.professorId),
+            eq(conferenciaRegistros.nomePlataforma, aluno.nome),
+            eq(conferenciaRegistros.categoria, "mensalista")
+          )
+        );
+    }
+
     await db
       .delete(conferenciaProfessorAlunos)
       .where(
@@ -1387,7 +1411,7 @@ export function registerConferenciaRoutes(app: Express): void {
         })
         .returning();
 
-      // Also add student to professor's student list (avoid duplicates)
+      // Also add student to professor's student list with tipo="mensalista" (avoid duplicates)
       if (profId) {
         const existing = await db
           .select({ nome: conferenciaProfessorAlunos.nome })
@@ -1403,6 +1427,7 @@ export function registerConferenciaRoutes(app: Express): void {
             arenaId,
             professorId: profId,
             nome: alunoNome.trim(),
+            tipo: "mensalista",
           });
         }
       }

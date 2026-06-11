@@ -567,6 +567,7 @@ export const conferenciaProfessorAlunos = pgTable("conferencia_professor_alunos"
   arenaId: text("arena_id").notNull(),
   professorId: text("professor_id").notNull(),
   nome: text("nome").notNull(),
+  tipo: text("tipo").default("plataforma"),
   criadoEm: timestamp("criado_em").defaultNow(),
 });
 

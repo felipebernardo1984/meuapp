@@ -147,6 +147,7 @@ interface ConfAluno {
   nome: string;
   professorId: string;
   professorNome?: string | null;
+  tipo?: string | null;
 }
 
 interface ConfProfessor {
@@ -1571,7 +1572,7 @@ function MesView({
       )}
 
       {/* ── Professores (first) ─────────────────────────────────────────── */}
-      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} sessaoIds={mesSessoes.map((s) => s.id)} mesLabel={mesLabel} />
+      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} sessaoIds={platformSessoes.map((s) => s.id)} mesLabel={mesLabel} />
 
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5">
@@ -1817,9 +1818,11 @@ function MensalistaCard({
   };
 
   // Fetch all session details to aggregate mensalistas
+  const sessaoIdsKey = mesSessoes.map((s) => s.id).join(",");
   const { data: allDetails = [], refetch: refetchDetails } = useQuery<SessaoDetalhe[]>({
-    queryKey: ["/api/conferencia/mensalistas-card", periodo],
+    queryKey: ["/api/conferencia/mensalistas-card", periodo, sessaoIdsKey],
     queryFn: async () => {
+      if (mesSessoes.length === 0) return [];
       const results = await Promise.all(
         mesSessoes.map((s) => fetch(`/api/conferencia/sessao/${s.id}`).then((r) => r.json()))
       );
@@ -1873,6 +1876,7 @@ function MensalistaCard({
     onSuccess: (novo: Registro) => {
       qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
       qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
       void refetchDetails();
       toast({ title: "Mensalista adicionado", description: novo.nomePlataforma });
       setOpen(false);
@@ -1898,6 +1902,7 @@ function MensalistaCard({
         });
       }
       qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
       void refetchDetails();
       toast({ title: "Mensalista removido" });
     },
@@ -2200,9 +2205,11 @@ function ArenaRelatorioCard({
 }) {
   const [pctArena, setPctArena] = useState("70");
 
+  const arenaRelSessaoKey = mesSessoes.map((s) => s.id).join(",");
   const { data: allDetails = [] } = useQuery<SessaoDetalhe[]>({
-    queryKey: ["/api/conferencia/arena-relatorio", periodo],
+    queryKey: ["/api/conferencia/arena-relatorio", periodo, arenaRelSessaoKey],
     queryFn: async () => {
+      if (mesSessoes.length === 0) return [];
       const results = await Promise.all(
         mesSessoes.map((s) => fetch(`/api/conferencia/sessao/${s.id}`).then((r) => r.json()))
       );
@@ -2566,7 +2573,13 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
 
   const delAlunoMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/professor-alunos/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: profQueryKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: profQueryKey });
+      // Mensalista alunos also have registros — invalidate related caches
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    },
     onError: (err: Error) =>
       toast({
         title: "Erro ao remover aluno",
@@ -2793,29 +2806,88 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                   </div>
 
                   {/* ── Expanded: student management ── */}
-                  {isExpanded && (
-                    <div className="border-t bg-muted/30 px-4 py-4 space-y-3">
-                      {/* Student chips */}
-                      {prof.alunos.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {prof.alunos.map((a) => (
-                            <div
-                              key={a.id}
-                              className="flex items-center gap-1 bg-background border rounded-full pl-3 pr-1.5 py-0.5 text-xs shadow-sm"
-                              data-testid={`tag-aluno-${a.id}`}
-                            >
-                              <span className="text-foreground">{a.nome}</span>
-                              <button
-                                onClick={() => delAlunoMutation.mutate(a.id)}
-                                className="h-4 w-4 flex items-center justify-center rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
-                                data-testid={`button-del-aluno-${a.id}`}
+                  {isExpanded && (() => {
+                    const platAlunos = prof.alunos.filter((a) => a.tipo !== "mensalista");
+                    const mensAlunos = prof.alunos.filter((a) => a.tipo === "mensalista");
+                    const platKey = `plat-${prof.id}`;
+                    const mensKey = `mens-${prof.id}`;
+                    return (
+                    <div className="border-t bg-muted/30 px-4 py-4 space-y-4">
+
+                      {/* ── Plataforma alunos ── */}
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => setExpandedProf(expandedProf === platKey ? prof.id : platKey)}
+                          className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                          data-testid={`toggle-plataforma-${prof.id}`}
+                        >
+                          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", expandedProf === platKey && "rotate-90")} />
+                          Alunos Plataforma
+                          <span className="ml-1 text-[10px] font-normal bg-muted px-1.5 py-0.5 rounded-full">
+                            {platAlunos.length}
+                          </span>
+                        </button>
+                        {expandedProf === platKey && (
+                          <div className="flex flex-wrap gap-1.5 pl-5">
+                            {platAlunos.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">Nenhum aluno de plataforma</p>
+                            ) : platAlunos.map((a) => (
+                              <div
+                                key={a.id}
+                                className="flex items-center gap-1 bg-background border rounded-full pl-3 pr-1.5 py-0.5 text-xs shadow-sm"
+                                data-testid={`tag-aluno-${a.id}`}
                               >
-                                <X className="h-2.5 w-2.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                                <span className="text-foreground">{a.nome}</span>
+                                <button
+                                  onClick={() => delAlunoMutation.mutate(a.id)}
+                                  className="h-4 w-4 flex items-center justify-center rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                                  data-testid={`button-del-aluno-${a.id}`}
+                                >
+                                  <X className="h-2.5 w-2.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Mensalistas ── */}
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => setExpandedProf(expandedProf === mensKey ? prof.id : mensKey)}
+                          className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                          data-testid={`toggle-mensalistas-${prof.id}`}
+                        >
+                          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", expandedProf === mensKey && "rotate-90")} />
+                          Mensalistas
+                          <span className="ml-1 text-[10px] font-normal bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 px-1.5 py-0.5 rounded-full">
+                            {mensAlunos.length}
+                          </span>
+                        </button>
+                        {expandedProf === mensKey && (
+                          <div className="flex flex-wrap gap-1.5 pl-5">
+                            {mensAlunos.length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">Nenhum mensalista cadastrado</p>
+                            ) : mensAlunos.map((a) => (
+                              <div
+                                key={a.id}
+                                className="flex items-center gap-1 bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-full pl-3 pr-1.5 py-0.5 text-xs shadow-sm"
+                                data-testid={`tag-mensalista-${a.id}`}
+                              >
+                                <span className="text-violet-700 dark:text-violet-300">{a.nome}</span>
+                                <button
+                                  onClick={() => delAlunoMutation.mutate(a.id)}
+                                  className="h-4 w-4 flex items-center justify-center rounded-full hover:bg-destructive/20 text-violet-400 hover:text-destructive transition-colors"
+                                  title="Remover mensalista (também remove o registro financeiro)"
+                                  data-testid={`button-del-mensalista-${a.id}`}
+                                >
+                                  <X className="h-2.5 w-2.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Input mode toggle */}
                       <div className="flex items-center gap-1 border rounded-lg p-0.5 w-fit bg-background">
@@ -2890,7 +2962,8 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
                         );
                       })()}
                     </div>
-                  )}
+                  );
+                  })()}
                 </div>
               );
             })}
