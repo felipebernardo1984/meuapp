@@ -1507,8 +1507,444 @@ function MesView({
             )}
           </CardContent>
         </Card>
+
+        {/* Mensalistas manuais card — below the files list */}
+        {mesSessoes.length > 0 && (
+          <MensalistaCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} />
+        )}
       </div>
     </div>
+  );
+}
+
+// ── Mensalista Card ────────────────────────────────────────────────────────────
+
+function MensalistaCard({
+  mesSessoes,
+  arenaId: _arenaId,
+  periodo,
+}: {
+  mesSessoes: Sessao[];
+  arenaId: string;
+  periodo: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [mSessaoId, setMSessaoId] = useState<string>("");
+  const [mAlunoId, setMAlunoId] = useState("");
+  const [mAlunoNome, setMAlunoNome] = useState("");
+  const [mProfId, setMProfId] = useState("");
+  const [mValor, setMValor] = useState("");
+  const [mComprovante, setMComprovante] = useState<string | null>(null);
+  const [mComboOpen, setMComboOpen] = useState(false);
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const multiSession = mesSessoes.length > 1;
+  const effectiveSessaoId = multiSession ? mSessaoId : (mesSessoes[0]?.id ?? "");
+
+  const reset = () => {
+    setMSessaoId(""); setMAlunoId(""); setMAlunoNome(""); setMProfId("");
+    setMValor(""); setMComprovante(null); setMComboOpen(false);
+  };
+
+  // Fetch all session details to aggregate mensalistas
+  const { data: allDetails = [], refetch: refetchDetails } = useQuery<SessaoDetalhe[]>({
+    queryKey: ["/api/conferencia/mensalistas-card", periodo],
+    queryFn: async () => {
+      const results = await Promise.all(
+        mesSessoes.map((s) => fetch(`/api/conferencia/sessao/${s.id}`).then((r) => r.json()))
+      );
+      return results as SessaoDetalhe[];
+    },
+    enabled: mesSessoes.length > 0,
+  });
+
+  const allMensalistas = allDetails.flatMap((d) =>
+    (d?.registros ?? []).filter((r) => r.categoria === "mensalista")
+  );
+
+  const totalValor = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalProf  = allMensalistas.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+  const totalArena = Math.max(0, totalValor - totalProf);
+
+  // Professor list (for dialog)
+  const { data: confsProfs = [] } = useQuery<ConfProfessor[]>({
+    queryKey: ["/api/conferencia/professores", periodo],
+    queryFn: () => fetch(`/api/conferencia/professores?periodo=${periodo}`).then((r) => r.json()),
+  });
+
+  // Arena students (autocomplete, only fetched when dialog is open)
+  const { data: arenaStudents = [] } = useQuery<{ id: string; nome: string }[]>({
+    queryKey: ["/api/students"],
+    queryFn: () => fetch("/api/students").then((r) => r.json()),
+    enabled: open,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (body: {
+      studentId: string; alunoNome: string; professorId: string; valor: string; comprovante?: string | null;
+    }) => {
+      const res = await apiRequest("POST", `/api/conferencia/sessao/${effectiveSessaoId}/mensalista`, body);
+      const ct = res.headers.get("content-type") ?? "";
+      if (!ct.includes("application/json")) {
+        const txt = await res.text();
+        throw new Error(`Resposta inesperada do servidor (${res.status}): ${txt.slice(0, 120)}`);
+      }
+      return res.json() as Promise<Registro>;
+    },
+    onSuccess: (novo: Registro) => {
+      qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", effectiveSessaoId], (old) => {
+        if (!old) return old;
+        const profNome = confsProfs.find((p) => p.id === novo.professorId)?.nome ?? null;
+        const newRegs = [...old.registros, { ...novo, professorNome: profNome }];
+        return {
+          ...old, registros: newRegs,
+          encontrados: newRegs.filter((r) => r.status === "confirmado").length,
+          possiveis:   newRegs.filter((r) => r.status === "pendente").length,
+          naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
+        };
+      });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      void refetchDetails();
+      toast({ title: "Mensalista adicionado", description: novo.nomePlataforma });
+      setOpen(false);
+      reset();
+    },
+    onError: (err: Error) => toast({ title: "Erro ao adicionar mensalista", description: err.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest("DELETE", `/api/conferencia/registro/${id}`).then((r) => r.json()),
+    onSuccess: (_: unknown, id: string) => {
+      for (const s of mesSessoes) {
+        qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", s.id], (old) => {
+          if (!old) return old;
+          const newRegs = old.registros.filter((r) => r.id !== id);
+          return {
+            ...old, registros: newRegs,
+            encontrados: newRegs.filter((r) => r.status === "confirmado").length,
+            possiveis:   newRegs.filter((r) => r.status === "pendente").length,
+            naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
+          };
+        });
+      }
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      void refetchDetails();
+      toast({ title: "Mensalista removido" });
+    },
+    onError: () => toast({ title: "Erro ao remover", variant: "destructive" }),
+  });
+
+  return (
+    <>
+      <Card className="border border-border">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="shrink-0 h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                <Users className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold">Mensalistas Manuais</CardTitle>
+                {allMensalistas.length > 0 ? (
+                  <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                    <span className="font-medium text-foreground">
+                      {allMensalistas.length} aluno{allMensalistas.length !== 1 ? "s" : ""}
+                    </span>
+                    <span className="text-muted-foreground/50">·</span>
+                    <span className="font-medium text-foreground">{fmtVal(String(totalValor))}</span>
+                    {totalProf > 0 && (
+                      <>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span>Prof: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtVal(String(totalProf))}</span></span>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span>Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(totalArena))}</span></span>
+                      </>
+                    )}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-0.5">Nenhum mensalista adicionado</p>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs h-7 shrink-0"
+              onClick={() => setOpen(true)}
+              data-testid="button-add-mensalista"
+            >
+              <UserPlus className="h-3.5 w-3.5" /> Adicionar
+            </Button>
+          </div>
+        </CardHeader>
+
+        {allMensalistas.length > 0 && (
+          <CardContent className="px-4 pb-4 pt-0">
+            <div className="border rounded overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="text-xs py-2">Aluno</TableHead>
+                    {multiSession && <TableHead className="text-xs py-2">Arquivo</TableHead>}
+                    <TableHead className="text-xs py-2 text-right">Total</TableHead>
+                    <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
+                    <TableHead className="text-xs py-2 text-right">Arena</TableHead>
+                    <TableHead className="text-xs py-2 text-center w-12">Comp.</TableHead>
+                    <TableHead className="w-8" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...allMensalistas]
+                    .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
+                    .map((r) => {
+                      const parentDetail = allDetails.find((d) =>
+                        d?.registros?.some((rr) => rr.id === r.id)
+                      );
+                      const sessaoNome = multiSession
+                        ? (mesSessoes.find((s) => s.id === parentDetail?.id)?.nomeArquivo ?? "—")
+                        : null;
+                      const arenaVal = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
+                      return (
+                        <TableRow key={r.id} className="text-xs">
+                          <TableCell className="py-2 font-medium max-w-[140px]">
+                            <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
+                          </TableCell>
+                          {multiSession && (
+                            <TableCell className="py-2 max-w-[110px]">
+                              <span className="block truncate text-muted-foreground text-[11px]" title={sessaoNome ?? ""}>{sessaoNome}</span>
+                            </TableCell>
+                          )}
+                          <TableCell className="py-2 text-right font-mono tabular-nums">{fmtVal(r.valor)}</TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmtVal(r.valorProfessor)}</TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">{fmtVal(String(arenaVal))}</TableCell>
+                          <TableCell className="py-2 text-center">
+                            {r.comprovante ? (
+                              <button
+                                onClick={() => window.open(r.comprovante!, "_blank")}
+                                className="inline-flex items-center justify-center text-primary hover:text-primary/80"
+                                title="Ver comprovante"
+                              >
+                                <ImageIcon className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <span className="text-muted-foreground/40">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                              onClick={() => deleteMutation.mutate(r.id)}
+                              data-testid={`button-delete-mensalista-${r.id}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* ── Add dialog ── */}
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Adicionar Mensalista
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Adicionar aluno mensalista manualmente à conferência
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            {/* Session picker — only when multiple files in the month */}
+            {multiSession && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Arquivo de referência</Label>
+                <Select value={mSessaoId} onValueChange={setMSessaoId}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Selecione o arquivo…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mesSessoes.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.nomeArquivo}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Nome */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nome do aluno</Label>
+              <div className="relative">
+                <Input
+                  placeholder="Digite o nome…"
+                  value={mAlunoNome}
+                  onChange={(e) => {
+                    setMAlunoNome(e.target.value);
+                    setMAlunoId("");
+                    setMComboOpen(e.target.value.trim().length > 0);
+                  }}
+                  onFocus={() => { if (mAlunoNome.trim()) setMComboOpen(true); }}
+                  onBlur={() => setTimeout(() => setMComboOpen(false), 150)}
+                  className="h-9 text-sm"
+                  data-testid="input-mensalista-nome"
+                  autoComplete="off"
+                />
+                {mComboOpen && (() => {
+                  const matches = [...arenaStudents]
+                    .filter((s) => s.nome.toLowerCase().includes(mAlunoNome.toLowerCase().trim()))
+                    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
+                    .slice(0, 8);
+                  if (matches.length === 0) return null;
+                  return (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md shadow-md bg-popover overflow-hidden">
+                      {matches.map((s) => (
+                        <button
+                          key={s.id}
+                          className="w-full px-3 py-2 text-sm text-left hover:bg-muted/60 transition-colors"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setMAlunoId(s.id);
+                            setMAlunoNome(s.nome);
+                            setMComboOpen(false);
+                          }}
+                        >
+                          {s.nome}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              {mAlunoId && (
+                <p className="text-[11px] text-muted-foreground">✓ Vinculado ao cadastro da arena</p>
+              )}
+            </div>
+
+            {/* Valor */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Valor (R$)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0,00"
+                value={mValor}
+                onChange={(e) => setMValor(e.target.value)}
+                className="h-9 text-sm"
+                data-testid="input-mensalista-valor"
+              />
+            </div>
+
+            {/* Professor */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Professor responsável (opcional)</Label>
+              <Select value={mProfId} onValueChange={setMProfId}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Sem professor (100% arena)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem professor (100% arena)</SelectItem>
+                  {confsProfs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` — ${p.percentualComissao}% comissão` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {mProfId && mProfId !== "__none__" && (() => {
+                const prof = confsProfs.find((p) => p.id === mProfId);
+                const pct = parseFloat(prof?.percentualComissao ?? "0");
+                const val = parseFloat(mValor) || 0;
+                if (pct > 0 && val > 0) {
+                  const vp = Math.round(val * pct / 100 * 100) / 100;
+                  const va = Math.round((val - vp) * 100) / 100;
+                  return (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Prof: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtVal(String(vp))}</span>
+                      {" · "}
+                      Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(va))}</span>
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            {/* Comprovante */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Comprovante PIX (opcional)</Label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="comprovante-upload-card"
+                  className="flex items-center gap-2 cursor-pointer border rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  {mComprovante ? "Imagem carregada ✓" : "Selecionar imagem…"}
+                </label>
+                <input
+                  id="comprovante-upload-card"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => setMComprovante(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                {mComprovante && (
+                  <button onClick={() => setMComprovante(null)} className="text-xs text-destructive hover:underline">remover</button>
+                )}
+              </div>
+              {mComprovante && (
+                <img src={mComprovante} alt="comprovante" className="max-h-28 rounded border object-contain mt-1" />
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setOpen(false); reset(); }}>Cancelar</Button>
+            <Button
+              disabled={
+                !mAlunoNome.trim() ||
+                !mValor ||
+                isNaN(parseFloat(mValor)) ||
+                parseFloat(mValor) <= 0 ||
+                (multiSession && !mSessaoId) ||
+                addMutation.isPending
+              }
+              onClick={() =>
+                addMutation.mutate({
+                  studentId: mAlunoId,
+                  alunoNome: mAlunoNome,
+                  professorId: mProfId && mProfId !== "__none__" ? mProfId : "",
+                  valor: mValor,
+                  comprovante: mComprovante,
+                })
+              }
+              data-testid="button-confirmar-mensalista"
+            >
+              {addMutation.isPending ? "Salvando…" : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -2139,15 +2575,6 @@ function SessaoView({
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  // Mensalista dialog state
-  const [mensalistaOpen, setMensalistaOpen] = useState(false);
-  const [mAlunoId, setMAlunoId] = useState("");
-  const [mAlunoNome, setMAlunoNome] = useState("");
-  const [mProfId, setMProfId] = useState("");
-  const [mValor, setMValor] = useState("");
-  const [mComprovante, setMComprovante] = useState<string | null>(null);
-  const [mAlunoComboOpen, setMAlunoComboOpen] = useState(false);
-  const [mSearchQuery, setMSearchQuery] = useState("");
 
   const { data: sessao, isLoading } = useQuery<SessaoDetalhe>({
     queryKey: ["/api/conferencia/sessao", sessaoId],
@@ -2232,61 +2659,6 @@ function SessaoView({
     onError: () => toast({ title: "Erro ao atualizar", variant: "destructive" }),
   });
 
-  const { data: arenaStudents = [] } = useQuery<{ id: string; nome: string }[]>({
-    queryKey: ["/api/students"],
-    queryFn: () => fetch("/api/students").then((r) => r.json()),
-    enabled: mensalistaOpen,
-  });
-
-  const addMensalistaMutation = useMutation({
-    mutationFn: async (body: { studentId: string; alunoNome: string; professorId: string; valor: string; comprovante?: string | null }) => {
-      const res = await apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/mensalista`, body);
-      const ct = res.headers.get("content-type") ?? "";
-      if (!ct.includes("application/json")) {
-        const txt = await res.text();
-        throw new Error(`Resposta inesperada do servidor (${res.status}): ${txt.slice(0, 120)}`);
-      }
-      return res.json() as Promise<Registro>;
-    },
-    onSuccess: (novo: Registro) => {
-      qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", sessaoId], (old) => {
-        if (!old) return old;
-        const profNome = confsProfs.find((p) => p.id === novo.professorId)?.nome ?? null;
-        const newRegs = [...old.registros, { ...novo, professorNome: profNome }];
-        return {
-          ...old,
-          registros: newRegs,
-          encontrados: newRegs.filter((r) => r.status === "confirmado").length,
-          possiveis: newRegs.filter((r) => r.status === "pendente").length,
-          naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
-        };
-      });
-      toast({ title: "Mensalista adicionado", description: novo.nomePlataforma });
-      setMensalistaOpen(false);
-      setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null); setMAlunoComboOpen(false); setMSearchQuery("");
-    },
-    onError: (err: Error) => toast({ title: "Erro ao adicionar mensalista", description: err.message, variant: "destructive" }),
-  });
-
-  const deleteMensalistaMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiRequest("DELETE", `/api/conferencia/registro/${id}`).then((r) => r.json()),
-    onSuccess: (_: unknown, id: string) => {
-      qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", sessaoId], (old) => {
-        if (!old) return old;
-        const newRegs = old.registros.filter((r) => r.id !== id);
-        return {
-          ...old,
-          registros: newRegs,
-          encontrados: newRegs.filter((r) => r.status === "confirmado").length,
-          possiveis: newRegs.filter((r) => r.status === "pendente").length,
-          naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
-        };
-      });
-      toast({ title: "Mensalista removido" });
-    },
-    onError: () => toast({ title: "Erro ao remover", variant: "destructive" }),
-  });
 
   if (isLoading || !sessao) {
     return (
@@ -2908,184 +3280,6 @@ function SessaoView({
       {/* ── Relatório Tab ── */}
       {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} arenaId={arenaId} periodo={periodo} confsProfs={confsProfs} />}
 
-      {/* ── Mensalista button (below files) ── */}
-      {tab === "relatorio" && (
-        <div className="mt-3 flex justify-start">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={() => setMensalistaOpen(true)}
-            data-testid="button-add-mensalista-sessao"
-          >
-            <UserPlus className="h-3.5 w-3.5" /> Adicionar Mensalista
-          </Button>
-        </div>
-      )}
-
-      {/* ── Mensalista Dialog ── */}
-      <Dialog open={mensalistaOpen} onOpenChange={(v) => { setMensalistaOpen(v); if (!v) { setMAlunoId(""); setMAlunoNome(""); setMProfId(""); setMValor(""); setMComprovante(null); } }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              Adicionar Mensalista
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Adicionar aluno mensalista manualmente à conferência
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-1">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Nome do aluno</Label>
-              <div className="relative">
-                <Input
-                  placeholder="Digite o nome…"
-                  value={mAlunoNome}
-                  onChange={(e) => {
-                    setMAlunoNome(e.target.value);
-                    setMAlunoId("");
-                    setMAlunoComboOpen(e.target.value.trim().length > 0);
-                  }}
-                  onFocus={() => { if (mAlunoNome.trim()) setMAlunoComboOpen(true); }}
-                  onBlur={() => setTimeout(() => setMAlunoComboOpen(false), 150)}
-                  className="h-9 text-sm"
-                  data-testid="input-mensalista-nome"
-                  autoComplete="off"
-                />
-                {mAlunoComboOpen && (() => {
-                  const matches = [...arenaStudents]
-                    .filter((s) => s.nome.toLowerCase().includes(mAlunoNome.toLowerCase().trim()))
-                    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-                    .slice(0, 8);
-                  if (matches.length === 0) return null;
-                  return (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md shadow-md bg-popover overflow-hidden">
-                      {matches.map((s) => (
-                        <button
-                          key={s.id}
-                          className="w-full px-3 py-2 text-sm text-left hover:bg-muted/60 transition-colors"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setMAlunoId(s.id);
-                            setMAlunoNome(s.nome);
-                            setMAlunoComboOpen(false);
-                          }}
-                        >
-                          {s.nome}
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-              {mAlunoId && (
-                <p className="text-[11px] text-muted-foreground">✓ Vinculado ao cadastro da arena</p>
-              )}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Valor (R$)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0,00"
-                value={mValor}
-                onChange={(e) => setMValor(e.target.value)}
-                className="h-9 text-sm"
-                data-testid="input-mensalista-valor"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Professor responsável (opcional)</Label>
-              <Select value={mProfId} onValueChange={setMProfId} data-testid="select-mensalista-prof">
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Sem professor (100% arena)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sem professor (100% arena)</SelectItem>
-                  {confsProfs.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` — ${p.percentualComissao}% comissão` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {mProfId && mProfId !== "__none__" && (() => {
-                const prof = confsProfs.find((p) => p.id === mProfId);
-                const pct = parseFloat(prof?.percentualComissao ?? "0");
-                const val = parseFloat(mValor) || 0;
-                if (pct > 0 && val > 0) {
-                  const vpPreview = Math.round(val * pct / 100 * 100) / 100;
-                  const vaPreview = Math.round((val - vpPreview) * 100) / 100;
-                  return (
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      Prof: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtVal(String(vpPreview))}</span>
-                      {" · "}
-                      Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(vaPreview))}</span>
-                    </p>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Comprovante PIX (opcional)</Label>
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="comprovante-upload"
-                  className="flex items-center gap-2 cursor-pointer border rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
-                >
-                  <ImageIcon className="h-3.5 w-3.5" />
-                  {mComprovante ? "Imagem carregada ✓" : "Selecionar imagem…"}
-                </label>
-                <input
-                  id="comprovante-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => setMComprovante(reader.result as string);
-                    reader.readAsDataURL(file);
-                  }}
-                />
-                {mComprovante && (
-                  <button onClick={() => setMComprovante(null)} className="text-xs text-destructive hover:underline">remover</button>
-                )}
-              </div>
-              {mComprovante && (
-                <img src={mComprovante} alt="comprovante" className="max-h-28 rounded border object-contain mt-1" />
-              )}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setMensalistaOpen(false)}>Cancelar</Button>
-            <Button
-              disabled={!mAlunoNome.trim() || !mValor || isNaN(parseFloat(mValor)) || parseFloat(mValor) <= 0 || addMensalistaMutation.isPending}
-              onClick={() => {
-                addMensalistaMutation.mutate({
-                  studentId: mAlunoId,
-                  alunoNome: mAlunoNome,
-                  professorId: mProfId && mProfId !== "__none__" ? mProfId : "",
-                  valor: mValor,
-                  comprovante: mComprovante,
-                });
-              }}
-              data-testid="button-confirmar-mensalista"
-            >
-              {addMensalistaMutation.isPending ? "Salvando…" : "Adicionar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {linkDialog && (
         <LinkAlunoDialog
