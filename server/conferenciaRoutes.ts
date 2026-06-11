@@ -1414,6 +1414,54 @@ export function registerConferenciaRoutes(app: Express): void {
     }
   });
 
+  // POST /api/conferencia/sessao-manual — create or retrieve a manual (no-file) session for a period
+  app.post("/api/conferencia/sessao-manual", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+
+    const { dataInicio, dataFim } = req.body as { dataInicio: string; dataFim?: string };
+    if (!dataInicio?.trim()) return res.status(400).json({ message: "dataInicio é obrigatório" });
+
+    try {
+      // Reuse existing manual session for the same period to avoid duplicates
+      const existing = await db
+        .select()
+        .from(conferenciaSessoes)
+        .where(
+          and(
+            eq(conferenciaSessoes.arenaId, arenaId),
+            eq(conferenciaSessoes.plataforma, "manual"),
+            eq(conferenciaSessoes.periodoInicio, dataInicio)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) return res.json(existing[0]);
+
+      const [nova] = await db
+        .insert(conferenciaSessoes)
+        .values({
+          arenaId,
+          plataforma: "manual",
+          nomeArquivo: "Mensalistas Manuais",
+          totalRegistros: 0,
+          encontrados: 0,
+          possiveis: 0,
+          naoEncontrados: 0,
+          periodoInicio: dataInicio,
+          periodoFim: dataFim ?? dataInicio,
+        })
+        .returning();
+
+      res.json(nova);
+    } catch (err) {
+      console.error("[sessao-manual POST]", err);
+      res.status(500).json({ message: String(err instanceof Error ? err.message : err) });
+    }
+  });
+
   // DELETE /api/conferencia/registro/:id — remove a mensalista entry
   app.delete("/api/conferencia/registro/:id", async (req, res) => {
     const arenaId = req.session.arenaId;

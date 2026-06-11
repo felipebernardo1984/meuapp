@@ -173,6 +173,7 @@ function fmtVal(v: string | null | undefined): string {
 function plataformaLabel(p: string): string {
   if (p === "totalpass") return "TotalPass";
   if (p === "wellhub") return "Wellhub";
+  if (p === "manual") return "Mensalistas";
   return p.charAt(0).toUpperCase() + p.slice(1);
 }
 
@@ -1324,10 +1325,15 @@ function LandingView({
             Meses conferidos
           </p>
           {mesGroups.map((g) => {
-            const totalEncontrados = g.sessoes.reduce((s, ss) => s + ss.encontrados, 0);
-            const totalPossiveis   = g.sessoes.reduce((s, ss) => s + ss.possiveis, 0);
-            const totalNao         = g.sessoes.reduce((s, ss) => s + ss.naoEncontrados, 0);
-            const plataformas = Array.from(new Set(g.sessoes.map((ss) => plataformaLabel(ss.plataforma)))).join(" + ");
+            const platformSessoes = g.sessoes.filter((ss) => ss.plataforma !== "manual");
+            const hasMensalistas = g.sessoes.some((ss) => ss.plataforma === "manual");
+            const totalEncontrados = platformSessoes.reduce((s, ss) => s + ss.encontrados, 0);
+            const totalPossiveis   = platformSessoes.reduce((s, ss) => s + ss.possiveis, 0);
+            const totalNao         = platformSessoes.reduce((s, ss) => s + ss.naoEncontrados, 0);
+            const plataformas = [
+              ...Array.from(new Set(platformSessoes.map((ss) => plataformaLabel(ss.plataforma)))),
+              ...(hasMensalistas ? ["Mensalistas"] : []),
+            ].join(" + ");
             return (
               <Card
                 key={`${g.mes.ano}-${g.mes.mes}`}
@@ -1344,9 +1350,11 @@ function LandingView({
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-sm">{g.label}</p>
                         <Badge variant="secondary" className="text-xs">{plataformas}</Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {g.sessoes.length} arquivo{g.sessoes.length !== 1 ? "s" : ""}
-                        </Badge>
+                        {platformSessoes.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            {platformSessoes.length} arquivo{platformSessoes.length !== 1 ? "s" : ""}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                         <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
@@ -1414,6 +1422,7 @@ function MesView({
   });
 
   const mesSessoes = sessoes.filter((s) => s.periodoInicio?.startsWith(monthKey));
+  const platformSessoes = mesSessoes.filter((s) => s.plataforma !== "manual");
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/sessao/${id}`),
@@ -1682,15 +1691,15 @@ function MesView({
               </div>
             )}
 
-            {/* Sessions for this month — inside the same card */}
+            {/* Sessions for this month — inside the same card (manual sessions excluded) */}
             {isLoading ? (
               <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
-            ) : mesSessoes.length > 0 ? (
+            ) : platformSessoes.length > 0 ? (
               <div className="space-y-2 border-t pt-4">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Arquivos enviados — {mesLabel}
                 </p>
-                {mesSessoes.map((s) => (
+                {platformSessoes.map((s) => (
                   <div
                     key={s.id}
                     className="cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all"
@@ -1756,12 +1765,16 @@ function MesView({
           </CardContent>
         </Card>
 
-        {/* Mensalistas manuais card — below the files list */}
-        {mesSessoes.length > 0 && (
-          <MensalistaCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} />
-        )}
+        {/* Mensalistas manuais card — always shown */}
+        <MensalistaCard
+          mesSessoes={mesSessoes}
+          arenaId={arenaId}
+          periodo={monthKey}
+          dataInicio={dataInicio}
+          dataFim={dataFim}
+        />
 
-        {/* Arena financial report card */}
+        {/* Arena financial report card — shown when there is data */}
         {mesSessoes.length > 0 && (
           <ArenaRelatorioCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} mesLabel={mesLabel} />
         )}
@@ -1776,13 +1789,16 @@ function MensalistaCard({
   mesSessoes,
   arenaId: _arenaId,
   periodo,
+  dataInicio,
+  dataFim,
 }: {
   mesSessoes: Sessao[];
   arenaId: string;
   periodo: string;
+  dataInicio: string;
+  dataFim: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [mSessaoId, setMSessaoId] = useState<string>("");
   const [mAlunoId, setMAlunoId] = useState("");
   const [mAlunoNome, setMAlunoNome] = useState("");
   const [mProfId, setMProfId] = useState("");
@@ -1792,11 +1808,11 @@ function MensalistaCard({
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const multiSession = mesSessoes.length > 1;
-  const effectiveSessaoId = multiSession ? mSessaoId : (mesSessoes[0]?.id ?? "");
+  // Always use/create the dedicated manual session for mensalistas
+  const manualSessao = mesSessoes.find((s) => s.plataforma === "manual");
 
   const reset = () => {
-    setMSessaoId(""); setMAlunoId(""); setMAlunoNome(""); setMProfId("");
+    setMAlunoId(""); setMAlunoNome(""); setMProfId("");
     setMValor(""); setMComprovante(null); setMComboOpen(false);
   };
 
@@ -1837,7 +1853,16 @@ function MensalistaCard({
     mutationFn: async (body: {
       studentId: string; alunoNome: string; professorId: string; valor: string; comprovante?: string | null;
     }) => {
-      const res = await apiRequest("POST", `/api/conferencia/sessao/${effectiveSessaoId}/mensalista`, body);
+      // Ensure we have a manual session — create one if needed
+      let sessaoId = manualSessao?.id;
+      if (!sessaoId) {
+        const sessRes = await apiRequest("POST", "/api/conferencia/sessao-manual", { dataInicio, dataFim });
+        const sessData = await sessRes.json() as { id: string };
+        sessaoId = sessData.id;
+        // Refresh session list so the new manual session is visible
+        await qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      }
+      const res = await apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/mensalista`, body);
       const ct = res.headers.get("content-type") ?? "";
       if (!ct.includes("application/json")) {
         const txt = await res.text();
@@ -1846,17 +1871,7 @@ function MensalistaCard({
       return res.json() as Promise<Registro>;
     },
     onSuccess: (novo: Registro) => {
-      qc.setQueryData<SessaoDetalhe>(["/api/conferencia/sessao", effectiveSessaoId], (old) => {
-        if (!old) return old;
-        const profNome = confsProfs.find((p) => p.id === novo.professorId)?.nome ?? null;
-        const newRegs = [...old.registros, { ...novo, professorNome: profNome }];
-        return {
-          ...old, registros: newRegs,
-          encontrados: newRegs.filter((r) => r.status === "confirmado").length,
-          possiveis:   newRegs.filter((r) => r.status === "pendente").length,
-          naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
-        };
-      });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
       qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
       void refetchDetails();
       toast({ title: "Mensalista adicionado", description: novo.nomePlataforma });
@@ -1940,7 +1955,6 @@ function MensalistaCard({
                 <TableHeader>
                   <TableRow className="bg-muted/40">
                     <TableHead className="text-xs py-2">Aluno</TableHead>
-                    {multiSession && <TableHead className="text-xs py-2">Arquivo</TableHead>}
                     <TableHead className="text-xs py-2 text-right">Total</TableHead>
                     <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
                     <TableHead className="text-xs py-2 text-right">Arena</TableHead>
@@ -1952,23 +1966,12 @@ function MensalistaCard({
                   {[...allMensalistas]
                     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
                     .map((r) => {
-                      const parentDetail = allDetails.find((d) =>
-                        d?.registros?.some((rr) => rr.id === r.id)
-                      );
-                      const sessaoNome = multiSession
-                        ? (mesSessoes.find((s) => s.id === parentDetail?.id)?.nomeArquivo ?? "—")
-                        : null;
                       const arenaVal = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
                       return (
                         <TableRow key={r.id} className="text-xs">
                           <TableCell className="py-2 font-medium max-w-[140px]">
                             <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
                           </TableCell>
-                          {multiSession && (
-                            <TableCell className="py-2 max-w-[110px]">
-                              <span className="block truncate text-muted-foreground text-[11px]" title={sessaoNome ?? ""}>{sessaoNome}</span>
-                            </TableCell>
-                          )}
                           <TableCell className="py-2 text-right font-mono tabular-nums">{fmtVal(r.valor)}</TableCell>
                           <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmtVal(r.valorProfessor)}</TableCell>
                           <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">{fmtVal(String(arenaVal))}</TableCell>
@@ -2020,23 +2023,6 @@ function MensalistaCard({
           </DialogHeader>
 
           <div className="space-y-4 py-1">
-            {/* Session picker — only when multiple files in the month */}
-            {multiSession && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Arquivo de referência</Label>
-                <Select value={mSessaoId} onValueChange={setMSessaoId}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Selecione o arquivo…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mesSessoes.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.nomeArquivo}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
             {/* Nome */}
             <div className="space-y-1.5">
               <Label className="text-xs">Nome do aluno</Label>
@@ -2178,7 +2164,6 @@ function MensalistaCard({
                 !mValor ||
                 isNaN(parseFloat(mValor)) ||
                 parseFloat(mValor) <= 0 ||
-                (multiSession && !mSessaoId) ||
                 addMutation.isPending
               }
               onClick={() =>
