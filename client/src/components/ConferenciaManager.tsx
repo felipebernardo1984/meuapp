@@ -1273,7 +1273,38 @@ function LandingView({
     queryKey: ["/api/conferencia/sessoes"],
   });
 
-  const mesGroups = groupByMonth(sessoes);
+  const { data: profPeriodos = [] } = useQuery<string[]>({
+    queryKey: ["/api/conferencia/periodos-professores"],
+  });
+
+  // Filter out month groups that are ONLY empty manual sessions (no real data)
+  const rawGroups = groupByMonth(sessoes);
+  const sessoesGroups = rawGroups.filter((g) => {
+    const hasRealFile = g.sessoes.some((s) => s.plataforma !== "manual");
+    if (hasRealFile) return true;
+    // manual-only: keep only if it has at least one registro (encontrados+possiveis+nao > 0)
+    return g.sessoes.some((s) => s.plataforma === "manual" && (s.encontrados + s.possiveis + s.naoEncontrados) > 0);
+  });
+
+  // Professor-only months: periods with professors but no session data
+  const professorOnlyKeys = profPeriodos.filter(
+    (p) => !sessoesGroups.some((g) => `${g.mes.ano}-${String(g.mes.mes).padStart(2, "0")}` === p)
+  );
+  const professorOnlyGroups: MesGroup[] = professorOnlyKeys
+    .map((p) => {
+      const d = new Date(p + "-01T12:00:00");
+      if (isNaN(d.getTime())) return null;
+      return {
+        mes: { ano: d.getFullYear(), mes: d.getMonth() + 1 },
+        label: `${MESES_PT[d.getMonth()]} ${d.getFullYear()}`,
+        sessoes: [],
+      } as MesGroup;
+    })
+    .filter(Boolean) as MesGroup[];
+
+  const mesGroups = [...sessoesGroups, ...professorOnlyGroups].sort(
+    (a, b) => b.mes.ano - a.mes.ano || b.mes.mes - a.mes.mes
+  );
 
   return (
     <div className="space-y-6">
@@ -1328,10 +1359,11 @@ function LandingView({
           {mesGroups.map((g) => {
             const platformSessoes = g.sessoes.filter((ss) => ss.plataforma !== "manual");
             const hasMensalistas = g.sessoes.some((ss) => ss.plataforma === "manual");
+            const isProfessorOnly = g.sessoes.length === 0;
             const totalEncontrados = platformSessoes.reduce((s, ss) => s + ss.encontrados, 0);
             const totalPossiveis   = platformSessoes.reduce((s, ss) => s + ss.possiveis, 0);
             const totalNao         = platformSessoes.reduce((s, ss) => s + ss.naoEncontrados, 0);
-            const plataformas = [
+            const plataformas = isProfessorOnly ? "Professores" : [
               ...Array.from(new Set(platformSessoes.map((ss) => plataformaLabel(ss.plataforma)))),
               ...(hasMensalistas ? ["Mensalistas"] : []),
             ].join(" + ");
@@ -1357,21 +1389,23 @@ function LandingView({
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle className="h-3 w-3" /> {totalEncontrados} confirmados
-                        </span>
-                        {totalPossiveis > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                            <AlertCircle className="h-3 w-3" /> {totalPossiveis} possíveis
+                      {!isProfessorOnly && (
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle className="h-3 w-3" /> {totalEncontrados} confirmados
                           </span>
-                        )}
-                        {totalNao > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                            <XCircle className="h-3 w-3" /> {totalNao} não encontrados
-                          </span>
-                        )}
-                      </div>
+                          {totalPossiveis > 0 && (
+                            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                              <AlertCircle className="h-3 w-3" /> {totalPossiveis} possíveis
+                            </span>
+                          )}
+                          {totalNao > 0 && (
+                            <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                              <XCircle className="h-3 w-3" /> {totalNao} não encontrados
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                   </div>
@@ -2671,6 +2705,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
       apiRequest("POST", "/api/conferencia/professores", { ...data, periodo }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: profQueryKey });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/periodos-professores"] });
       setNovoProfNome("");
       setNovoProfPct("0");
       toast({ title: "Professor adicionado!" });
@@ -2714,6 +2749,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/professores/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: profQueryKey });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/periodos-professores"] });
       toast({ title: "Professor removido" });
     },
     onError: (err: Error) =>

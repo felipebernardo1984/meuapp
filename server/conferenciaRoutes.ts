@@ -1111,6 +1111,19 @@ export function registerConferenciaRoutes(app: Express): void {
     res.json(sessoes);
   });
 
+  // GET /api/conferencia/periodos-professores — distinct periodo keys that have at least one professor
+  app.get("/api/conferencia/periodos-professores", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const rows = await db
+      .selectDistinct({ periodo: conferenciaProfessores.periodo })
+      .from(conferenciaProfessores)
+      .where(eq(conferenciaProfessores.arenaId, arenaId));
+    res.json(rows.map((r) => r.periodo).filter(Boolean));
+  });
+
   app.get("/api/conferencia/sessao/:id", async (req, res) => {
     const arenaId = req.session.arenaId;
     if (!arenaId || req.session.userType !== "gestor") {
@@ -1601,14 +1614,22 @@ export function registerConferenciaRoutes(app: Express): void {
       .select()
       .from(conferenciaRegistros)
       .where(and(eq(conferenciaRegistros.sessaoId, registro.sessaoId), eq(conferenciaRegistros.arenaId, arenaId)));
-    await db
-      .update(conferenciaSessoes)
-      .set({
-        encontrados: allRegsAfterDel.filter((r) => r.status === "confirmado").length,
-        possiveis: allRegsAfterDel.filter((r) => r.status === "pendente").length,
-        naoEncontrados: allRegsAfterDel.filter((r) => r.status === "nao_encontrado").length,
-      })
-      .where(eq(conferenciaSessoes.id, registro.sessaoId));
+
+    if (allRegsAfterDel.length === 0) {
+      // Session is now empty — delete it so the month disappears from "Meses Conferidos"
+      await db
+        .delete(conferenciaSessoes)
+        .where(and(eq(conferenciaSessoes.id, registro.sessaoId), eq(conferenciaSessoes.arenaId, arenaId)));
+    } else {
+      await db
+        .update(conferenciaSessoes)
+        .set({
+          encontrados: allRegsAfterDel.filter((r) => r.status === "confirmado").length,
+          possiveis: allRegsAfterDel.filter((r) => r.status === "pendente").length,
+          naoEncontrados: allRegsAfterDel.filter((r) => r.status === "nao_encontrado").length,
+        })
+        .where(eq(conferenciaSessoes.id, registro.sessaoId));
+    }
 
     res.json({ ok: true });
   });
