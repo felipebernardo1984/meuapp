@@ -1835,6 +1835,9 @@ function MesView({
           </CardContent>
         </Card>
 
+        {/* Divider */}
+        <div className="border-t border-border" />
+
         {/* Mensalistas manuais card — always shown */}
         <MensalistaCard
           mesSessoes={mesSessoes}
@@ -1846,7 +1849,10 @@ function MesView({
 
         {/* Arena financial report card — shown when there is data */}
         {mesSessoes.length > 0 && (
-          <ArenaRelatorioCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} mesLabel={mesLabel} />
+          <>
+            <div className="border-t border-border" />
+            <ArenaRelatorioCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} mesLabel={mesLabel} />
+          </>
         )}
       </div>
     </div>
@@ -2023,7 +2029,7 @@ function MensalistaCard({
                 <Users className="h-4 w-4 text-violet-600 dark:text-violet-400" />
               </div>
               <div className="min-w-0">
-                <CardTitle className="text-sm font-semibold">Mensalistas Manuais</CardTitle>
+                <CardTitle className="text-sm font-semibold">Mensalistas</CardTitle>
                 {allMensalistas.length > 0 ? (
                   <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                     <span className="font-medium text-foreground">
@@ -2543,7 +2549,7 @@ function ArenaRelatorioCard({
               onClick={() => exportArenaRelatorio(allDetails, allMensalistas, mesLabel, pct)}
               data-testid="button-gerar-relatorio-arena"
             >
-              <Printer className="h-3 w-3" /> Relatório
+              <Printer className="h-3.5 w-3.5" /> Relatório
             </Button>
           </div>
         </div>
