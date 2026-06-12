@@ -1366,6 +1366,16 @@ function LandingView({
               ...Array.from(new Set(platformSessoes.map((ss) => plataformaLabel(ss.plataforma)))),
               ...(hasMensalistas ? ["Mensalistas"] : []),
             ].join(" + ");
+            const isWellhubOnly = platformSessoes.every((ss) => ss.plataforma === "wellhub");
+            const isTotalpassOnly = platformSessoes.every((ss) => ss.plataforma === "totalpass");
+            const platformBadgeClass = isProfessorOnly
+              ? "bg-secondary text-secondary-foreground"
+              : isWellhubOnly
+              ? "bg-green-500 text-white"
+              : isTotalpassOnly
+              ? "bg-teal-500 text-white"
+              : "bg-green-500 text-white";
+
             return (
               <Card
                 key={`${g.mes.ano}-${g.mes.mes}`}
@@ -1378,34 +1388,42 @@ function LandingView({
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <CalendarDays className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-sm">{g.label}</p>
-                        <Badge variant="secondary" className="text-xs">{plataformas}</Badge>
-                        {platformSessoes.length > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            {platformSessoes.length} arquivo{platformSessoes.length !== 1 ? "s" : ""}
-                          </Badge>
-                        )}
-                      </div>
-                      {!isProfessorOnly && (
-                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle className="h-3 w-3" /> {totalEncontrados} confirmados
+
+                    {/* Month label */}
+                    <p className="font-semibold text-sm shrink-0">{g.label}</p>
+
+                    {/* Platform badge */}
+                    <Badge className={cn("text-xs shrink-0 border-0", platformBadgeClass)}>
+                      {plataformas}
+                    </Badge>
+
+                    {/* File count */}
+                    {platformSessoes.length > 0 && (
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {platformSessoes.length} arquivo{platformSessoes.length !== 1 ? "s" : ""}
+                      </span>
+                    )}
+
+                    {/* Stats — inline, same row */}
+                    {!isProfessorOnly && (
+                      <>
+                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0">
+                          <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {totalEncontrados} confirmados
+                        </span>
+                        {totalPossiveis > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap shrink-0">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {totalPossiveis} possíveis
                           </span>
-                          {totalPossiveis > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                              <AlertCircle className="h-3 w-3" /> {totalPossiveis} possíveis
-                            </span>
-                          )}
-                          {totalNao > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                              <XCircle className="h-3 w-3" /> {totalNao} não encontrados
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                        )}
+                        {totalNao > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap shrink-0">
+                            <XCircle className="h-3.5 w-3.5 shrink-0" /> {totalNao} não encontrados
+                          </span>
+                        )}
+                      </>
+                    )}
+
+                    <div className="flex-1" />
                     <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                   </div>
                 </CardContent>
