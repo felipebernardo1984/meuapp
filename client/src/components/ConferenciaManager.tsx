@@ -1751,13 +1751,27 @@ function MesView({
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                   Arquivos enviados — {mesLabel}
                 </p>
-                <div className="rounded-lg border border-border overflow-hidden">
+                {/* Table header */}
+              <div
+                className="grid items-center gap-x-3 px-3 py-1.5 bg-muted/40 border border-border rounded-t-lg"
+                style={{ gridTemplateColumns: "32px 1fr 96px 90px 80px 132px 60px 64px" }}
+              >
+                <div />
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Arquivo</span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Plataforma</span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Enc.</span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Pos.</span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Não enc.</span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Reg.</span>
+                <div />
+              </div>
+              <div className="rounded-b-lg border-x border-b border-border overflow-hidden">
                 {platformSessoes.map((s, idx) => (
                   <div key={s.id}>
                   {idx > 0 && <div className="border-t border-border" />}
                   <div
-                    className="grid items-center gap-x-3 cursor-pointer bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-3.5"
-                    style={{ gridTemplateColumns: "32px 1fr 90px auto auto auto auto auto" }}
+                    className="grid items-center gap-x-3 cursor-pointer bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-3"
+                    style={{ gridTemplateColumns: "32px 1fr 96px 90px 80px 132px 60px 64px" }}
                     onClick={() => onSelectSessao(s.id)}
                     data-testid={`sessao-card-${s.id}`}
                   >
@@ -1770,38 +1784,48 @@ function MesView({
                     <span className="font-medium text-sm truncate min-w-0">{s.nomeArquivo}</span>
 
                     {/* Col 3: platform badge */}
-                    <Badge
-                      className={cn(
-                        "text-xs justify-center border-0",
-                        s.plataforma === "totalpass"
-                          ? "bg-teal-500 hover:bg-teal-500 text-white"
-                          : s.plataforma === "wellhub"
-                          ? "bg-green-500 hover:bg-green-500 text-white"
-                          : "bg-secondary text-secondary-foreground"
-                      )}
-                    >
-                      {plataformaLabel(s.plataforma)}
-                    </Badge>
+                    <div className="flex justify-center">
+                      <Badge
+                        className={cn(
+                          "text-xs justify-center border-0 w-full max-w-[88px]",
+                          s.plataforma === "totalpass"
+                            ? "bg-teal-500 hover:bg-teal-500 text-white"
+                            : s.plataforma === "wellhub"
+                            ? "bg-green-500 hover:bg-green-500 text-white"
+                            : "bg-secondary text-secondary-foreground"
+                        )}
+                      >
+                        {plataformaLabel(s.plataforma)}
+                      </Badge>
+                    </div>
 
                     {/* Col 4: encontrados */}
-                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40">
-                      <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {s.encontrados} enc.
-                    </span>
+                    <div className="flex justify-center">
+                      <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40">
+                        <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {s.encontrados} enc.
+                      </span>
+                    </div>
 
                     {/* Col 5: possiveis */}
-                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap border border-amber-200 dark:border-amber-800 rounded-full px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {s.possiveis} pos.
-                    </span>
+                    <div className="flex justify-center">
+                      <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap border border-amber-200 dark:border-amber-800 rounded-full px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {s.possiveis} pos.
+                      </span>
+                    </div>
 
                     {/* Col 6: não encontrados */}
-                    <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap border border-red-200 dark:border-red-800 rounded-full px-2 py-0.5 bg-red-50 dark:bg-red-950/40">
-                      <XCircle className="h-3.5 w-3.5 shrink-0" /> {s.naoEncontrados} não enc.
-                    </span>
+                    <div className="flex justify-center">
+                      <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap border border-red-200 dark:border-red-800 rounded-full px-2 py-0.5 bg-red-50 dark:bg-red-950/40">
+                        <XCircle className="h-3.5 w-3.5 shrink-0" /> {s.naoEncontrados} não enc.
+                      </span>
+                    </div>
 
                     {/* Col 7: total registros */}
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {s.totalRegistros} reg
-                    </span>
+                    <div className="flex justify-center">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {s.totalRegistros} reg
+                      </span>
+                    </div>
 
                     {/* Col 8: actions */}
                     <div className="flex items-center gap-0.5 justify-end">
@@ -1822,7 +1846,7 @@ function MesView({
                   </div>
                   </div>
                 ))}
-                </div>
+              </div>
               </div>
             ) : !isUploading && (
               <div className="border-t pt-4">
