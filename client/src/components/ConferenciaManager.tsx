@@ -1384,47 +1384,55 @@ function LandingView({
                 data-testid={`mes-card-${g.mes.ano}-${g.mes.mes}`}
               >
                 <CardContent className="px-5 py-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <div
+                    className="grid items-center gap-x-4"
+                    style={{ gridTemplateColumns: "40px 120px 200px 80px 1fr 1fr 1fr 20px" }}
+                  >
+                    {/* Col 1: ícone */}
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <CalendarDays className="h-5 w-5 text-primary" />
                     </div>
 
-                    {/* Month label */}
-                    <p className="font-semibold text-sm shrink-0">{g.label}</p>
+                    {/* Col 2: mês/ano */}
+                    <p className="font-semibold text-sm truncate">{g.label}</p>
 
-                    {/* Platform badge */}
-                    <Badge className={cn("text-xs shrink-0 border-0", platformBadgeClass)}>
-                      {plataformas}
-                    </Badge>
+                    {/* Col 3: badge plataforma */}
+                    <div>
+                      <Badge className={cn("text-xs border-0", platformBadgeClass)}>
+                        {plataformas}
+                      </Badge>
+                    </div>
 
-                    {/* File count */}
-                    {platformSessoes.length > 0 && (
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {platformSessoes.length} arquivo{platformSessoes.length !== 1 ? "s" : ""}
+                    {/* Col 4: qtd arquivos */}
+                    <span className="text-xs text-muted-foreground">
+                      {platformSessoes.length > 0
+                        ? `${platformSessoes.length} arquivo${platformSessoes.length !== 1 ? "s" : ""}`
+                        : ""}
+                    </span>
+
+                    {/* Col 5: confirmados */}
+                    {!isProfessorOnly ? (
+                      <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {totalEncontrados} confirmados
                       </span>
-                    )}
+                    ) : <span />}
 
-                    {/* Stats — inline, same row */}
-                    {!isProfessorOnly && (
-                      <>
-                        <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0">
-                          <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {totalEncontrados} confirmados
-                        </span>
-                        {totalPossiveis > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap shrink-0">
-                            <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {totalPossiveis} possíveis
-                          </span>
-                        )}
-                        {totalNao > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap shrink-0">
-                            <XCircle className="h-3.5 w-3.5 shrink-0" /> {totalNao} não encontrados
-                          </span>
-                        )}
-                      </>
-                    )}
+                    {/* Col 6: possíveis */}
+                    {!isProfessorOnly && totalPossiveis > 0 ? (
+                      <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {totalPossiveis} possíveis
+                      </span>
+                    ) : <span />}
 
-                    <div className="flex-1" />
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    {/* Col 7: não encontrados */}
+                    {!isProfessorOnly && totalNao > 0 ? (
+                      <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
+                        <XCircle className="h-3.5 w-3.5 shrink-0" /> {totalNao} não encontrados
+                      </span>
+                    ) : <span />}
+
+                    {/* Col 8: seta */}
+                    <ChevronRight className="h-4 w-4 text-muted-foreground justify-self-end" />
                   </div>
                 </CardContent>
               </Card>
