@@ -52,3 +52,4 @@ stack = "FULLSTACK_JS"
 [userenv.shared]
 SEVEN_SPORTS_RESPONSAVEL_NAME = "Felipe Bernardo"
 NODE_ENV = "development"
+PORT = "5000"
