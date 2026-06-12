@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-06-12T01:33:09.289Z",
+  "createdAt": "2026-06-12T02:20:04.956Z",
   "arenas": [
     {
       "id": "fb5ed36a-2f2d-4b94-bc69-a7c200eae966",
@@ -77,10 +77,10 @@
       "planoTitulo": "2x por semana",
       "planoCheckins": 12,
       "planoValorTexto": null,
-      "checkinsRealizados": 2,
+      "checkinsRealizados": 3,
       "statusMensalidade": "Em dia",
       "aprovado": true,
-      "ultimoCheckin": "02/01/2025",
+      "ultimoCheckin": "12/06/2026",
       "photoUrl": null,
       "integrationType": "none",
       "integrationPlan": null,
@@ -90,6 +90,34 @@
       "ativo": true,
       "desativadoEm": null,
       "criadoEm": "2026-06-12T01:08:54.983Z"
+    },
+    {
+      "id": "e9e91689-134c-489c-8f55-5c23ed159bc9",
+      "arenaId": "fb5ed36a-2f2d-4b94-bc69-a7c200eae966",
+      "nome": "Felipe Bernardo",
+      "login": "00000",
+      "senha": "0000000",
+      "cpf": "0000000",
+      "email": "0000000",
+      "telefone": "00000000",
+      "modalidade": "Vôlei de Praia",
+      "planoId": "3c01bfac-9fe1-4d17-b398-14afe966d092",
+      "planoTitulo": "Mensalista",
+      "planoCheckins": 0,
+      "planoValorTexto": "R$ 140,00",
+      "checkinsRealizados": 0,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "11/06/2026",
+      "photoUrl": null,
+      "integrationType": "mensalista",
+      "integrationPlan": null,
+      "professorId": "9c6364ec-ecfe-4cda-8922-2c7ad0001f54",
+      "diaVencimento": null,
+      "carenciaDias": 3,
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-06-12T01:51:45.613Z"
     }
   ],
   "checkins": [
@@ -110,9 +138,35 @@
       "hora": "18:30",
       "tipo": "pendente",
       "professorId": null
+    },
+    {
+      "id": "4d62001b-28b9-4f88-9256-a0d5fdda3d63",
+      "arenaId": "fb5ed36a-2f2d-4b94-bc69-a7c200eae966",
+      "studentId": "8f3abf94-207e-4553-9087-515b7d3d4d0d",
+      "data": "12/06/2026",
+      "hora": "02:00",
+      "tipo": "aula",
+      "professorId": "9c6364ec-ecfe-4cda-8922-2c7ad0001f54"
     }
   ],
-  "payments": [],
+  "payments": [
+    {
+      "id": "0e44b81e-cb07-427a-becc-124d7b5061fc",
+      "tenantId": "fb5ed36a-2f2d-4b94-bc69-a7c200eae966",
+      "studentId": "e9e91689-134c-489c-8f55-5c23ed159bc9",
+      "planId": "3c01bfac-9fe1-4d17-b398-14afe966d092",
+      "description": "Mensalidade 2026-06",
+      "amount": "140.00",
+      "referenceMonth": "2026-06",
+      "dueDate": "2026-06-10",
+      "paymentDate": "11/06/2026",
+      "status": "paid",
+      "paymentMethod": "dinheiro",
+      "pagamentoToken": null,
+      "createdAt": "2026-06-12T01:51:45.652Z",
+      "createdBy": "sistema"
+    }
+  ],
   "charges": [],
   "despesas": [],
   "turmas": [],

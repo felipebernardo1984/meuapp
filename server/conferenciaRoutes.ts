@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import * as XLSX from "xlsx";
 import { db } from "./db";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import {
   conferenciaSessoes,
   conferenciaRegistros,
@@ -1108,7 +1108,23 @@ export function registerConferenciaRoutes(app: Express): void {
       .from(conferenciaSessoes)
       .where(eq(conferenciaSessoes.arenaId, arenaId))
       .orderBy(desc(conferenciaSessoes.criadoEm));
-    res.json(sessoes);
+
+    // For manual sessions, verify they actually have registros (don't trust stored counters)
+    const result = [];
+    for (const s of sessoes) {
+      if (s.plataforma !== "manual") {
+        result.push(s);
+        continue;
+      }
+      const [row] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(conferenciaRegistros)
+        .where(and(eq(conferenciaRegistros.sessaoId, s.id), eq(conferenciaRegistros.arenaId, arenaId)));
+      if (Number(row?.count ?? 0) > 0) {
+        result.push(s);
+      }
+    }
+    res.json(result);
   });
 
   // GET /api/conferencia/periodos-professores — distinct periodo keys that have at least one professor

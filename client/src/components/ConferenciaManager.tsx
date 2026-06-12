@@ -1278,12 +1278,8 @@ function LandingView({
 
   // Filter out month groups that are ONLY empty manual sessions (no real data)
   const rawGroups = groupByMonth(sessoes);
-  const sessoesGroups = rawGroups.filter((g) => {
-    const hasRealFile = g.sessoes.some((s) => s.plataforma !== "manual");
-    if (hasRealFile) return true;
-    // manual-only: keep only if it has at least one registro (encontrados+possiveis+nao > 0)
-    return g.sessoes.some((s) => s.plataforma === "manual" && (s.encontrados + s.possiveis + s.naoEncontrados) > 0);
-  });
+  // Server already filters out empty manual sessions — trust the response
+  const sessoesGroups = rawGroups;
 
   // Professor-only months: periods with professors but no session data
   const professorOnlyKeys = profPeriodos.filter(
