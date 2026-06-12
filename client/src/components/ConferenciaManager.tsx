@@ -1379,51 +1379,68 @@ function LandingView({
                 onClick={() => onEntrarMes(g.mes)}
                 data-testid={`mes-card-${g.mes.ano}-${g.mes.mes}`}
               >
-                <CardContent className="px-5 py-4">
+                <CardContent className="px-4 py-3 sm:px-5 sm:py-4">
+                  {/* ── Mobile layout ── */}
+                  <div className="flex items-center gap-3 sm:hidden">
+                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm">{g.label}</p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <Badge className={cn("text-xs border-0", platformBadgeClass)}>
+                          {plataformas}
+                        </Badge>
+                        {!isProfessorOnly && (
+                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle className="h-3 w-3 shrink-0" /> {totalEncontrados}
+                          </span>
+                        )}
+                        {!isProfessorOnly && totalPossiveis > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-3 w-3 shrink-0" /> {totalPossiveis}
+                          </span>
+                        )}
+                        {!isProfessorOnly && totalNao > 0 && (
+                          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                            <XCircle className="h-3 w-3 shrink-0" /> {totalNao}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </div>
+
+                  {/* ── Desktop layout ── */}
                   <div
-                    className="grid items-center gap-x-4"
+                    className="hidden sm:grid items-center gap-x-4"
                     style={{ gridTemplateColumns: "40px 120px 220px auto auto auto 1fr 20px" }}
                   >
-                    {/* Col 1: ícone */}
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <CalendarDays className="h-5 w-5 text-primary" />
                     </div>
-
-                    {/* Col 2: mês/ano */}
                     <p className="font-semibold text-sm truncate">{g.label}</p>
-
-                    {/* Col 3: badge plataforma */}
                     <div>
                       <Badge className={cn("text-xs border-0", platformBadgeClass)}>
                         {plataformas}
                       </Badge>
                     </div>
-
-                    {/* Col 4: confirmados */}
                     {!isProfessorOnly ? (
                       <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                         <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {totalEncontrados} confirmados
                       </span>
                     ) : <span />}
-
-                    {/* Col 5: possíveis */}
                     {!isProfessorOnly && totalPossiveis > 0 ? (
                       <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">
                         <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {totalPossiveis} possíveis
                       </span>
                     ) : <span />}
-
-                    {/* Col 6: não encontrados */}
                     {!isProfessorOnly && totalNao > 0 ? (
                       <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
                         <XCircle className="h-3.5 w-3.5 shrink-0" /> {totalNao} não encontrados
                       </span>
                     ) : <span />}
-
-                    {/* Col 7: espaçador */}
                     <span />
-
-                    {/* Col 8: seta */}
                     <ChevronRight className="h-4 w-4 text-muted-foreground justify-self-end" />
                   </div>
                 </CardContent>
