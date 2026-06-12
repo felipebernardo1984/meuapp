@@ -1386,7 +1386,7 @@ function LandingView({
                 <CardContent className="px-5 py-4">
                   <div
                     className="grid items-center gap-x-4"
-                    style={{ gridTemplateColumns: "40px 120px 200px 80px 1fr 1fr 1fr 20px" }}
+                    style={{ gridTemplateColumns: "40px 120px auto 1fr 1fr 1fr 20px" }}
                   >
                     {/* Col 1: ícone */}
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -1403,35 +1403,28 @@ function LandingView({
                       </Badge>
                     </div>
 
-                    {/* Col 4: qtd arquivos */}
-                    <span className="text-xs text-muted-foreground">
-                      {platformSessoes.length > 0
-                        ? `${platformSessoes.length} arquivo${platformSessoes.length !== 1 ? "s" : ""}`
-                        : ""}
-                    </span>
-
-                    {/* Col 5: confirmados */}
+                    {/* Col 4: confirmados */}
                     {!isProfessorOnly ? (
                       <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                         <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {totalEncontrados} confirmados
                       </span>
                     ) : <span />}
 
-                    {/* Col 6: possíveis */}
+                    {/* Col 5: possíveis */}
                     {!isProfessorOnly && totalPossiveis > 0 ? (
                       <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">
                         <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {totalPossiveis} possíveis
                       </span>
                     ) : <span />}
 
-                    {/* Col 7: não encontrados */}
+                    {/* Col 6: não encontrados */}
                     {!isProfessorOnly && totalNao > 0 ? (
                       <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
                         <XCircle className="h-3.5 w-3.5 shrink-0" /> {totalNao} não encontrados
                       </span>
                     ) : <span />}
 
-                    {/* Col 8: seta */}
+                    {/* Col 7: seta */}
                     <ChevronRight className="h-4 w-4 text-muted-foreground justify-self-end" />
                   </div>
                 </CardContent>
