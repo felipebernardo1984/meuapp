@@ -1836,7 +1836,7 @@ function MesView({
         </Card>
 
         {/* Divider */}
-        <div className="border-t border-border" />
+        <div className="my-4 border-t border-border" />
 
         {/* Mensalistas manuais card — always shown */}
         <MensalistaCard
@@ -1850,7 +1850,7 @@ function MesView({
         {/* Arena financial report card — shown when there is data */}
         {mesSessoes.length > 0 && (
           <>
-            <div className="border-t border-border" />
+            <div className="my-4 border-t border-border" />
             <ArenaRelatorioCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} mesLabel={mesLabel} />
           </>
         )}
