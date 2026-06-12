@@ -577,7 +577,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   if (!w) return;
   w.document.write(html);
   w.document.close();
-  w.onload = () => w.print();
+  w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
 }
 
 function exportComprovanteConsolidado(
@@ -805,7 +805,7 @@ function exportComprovanteConsolidado(
   if (!w) return;
   w.document.write(html);
   w.document.close();
-  w.onload = () => w.print();
+  w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
 }
 
 // ── Arena Monthly Report PDF ───────────────────────────────────────────────────
@@ -958,7 +958,7 @@ function exportArenaRelatorio(
   if (!w) return;
   w.document.write(html);
   w.document.close();
-  w.onload = () => w.print();
+  w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
 }
 
 function exportToPDF(sessao: SessaoDetalhe) {
@@ -1382,7 +1382,7 @@ function LandingView({
                 <CardContent className="px-5 py-4">
                   <div
                     className="grid items-center gap-x-4"
-                    style={{ gridTemplateColumns: "40px 120px auto auto auto auto 1fr 20px" }}
+                    style={{ gridTemplateColumns: "40px 120px 220px auto auto auto 1fr 20px" }}
                   >
                     {/* Col 1: ícone */}
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
