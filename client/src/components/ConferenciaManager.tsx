@@ -1747,14 +1747,16 @@ function MesView({
             {isLoading ? (
               <div className="text-center py-6 text-muted-foreground text-sm">Carregando…</div>
             ) : platformSessoes.length > 0 ? (
-              <div className="space-y-1.5 border-t pt-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                   Arquivos enviados — {mesLabel}
                 </p>
-                {platformSessoes.map((s) => (
+                <div className="rounded-lg border border-border overflow-hidden">
+                {platformSessoes.map((s, idx) => (
+                  <div key={s.id}>
+                  {idx > 0 && <div className="border-t border-border" />}
                   <div
-                    key={s.id}
-                    className="grid items-center gap-x-3 cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-3"
+                    className="grid items-center gap-x-3 cursor-pointer bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-3.5"
                     style={{ gridTemplateColumns: "32px 1fr 90px auto auto auto auto auto" }}
                     onClick={() => onSelectSessao(s.id)}
                     data-testid={`sessao-card-${s.id}`}
@@ -1818,7 +1820,9 @@ function MesView({
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
+                  </div>
                 ))}
+                </div>
               </div>
             ) : !isUploading && (
               <div className="border-t pt-4">
