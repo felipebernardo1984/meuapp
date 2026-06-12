@@ -1386,7 +1386,7 @@ function LandingView({
                 <CardContent className="px-5 py-4">
                   <div
                     className="grid items-center gap-x-4"
-                    style={{ gridTemplateColumns: "40px 120px auto 1fr 1fr 1fr 20px" }}
+                    style={{ gridTemplateColumns: "40px 120px auto auto auto auto 1fr 20px" }}
                   >
                     {/* Col 1: ícone */}
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -1424,7 +1424,10 @@ function LandingView({
                       </span>
                     ) : <span />}
 
-                    {/* Col 7: seta */}
+                    {/* Col 7: espaçador */}
+                    <span />
+
+                    {/* Col 8: seta */}
                     <ChevronRight className="h-4 w-4 text-muted-foreground justify-self-end" />
                   </div>
                 </CardContent>
