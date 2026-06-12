@@ -1736,47 +1736,51 @@ function MesView({
                 {platformSessoes.map((s) => (
                   <div
                     key={s.id}
-                    className="grid items-center gap-x-4 cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-2"
-                    style={{ gridTemplateColumns: "1fr 86px auto auto auto auto auto" }}
+                    className="flex items-center gap-3 cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-2.5"
                     onClick={() => onSelectSessao(s.id)}
                     data-testid={`sessao-card-${s.id}`}
                   >
-                    {/* Col 1: filename */}
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileSpreadsheet className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="font-medium text-sm truncate">{s.nomeArquivo}</span>
+                    {/* Icon box */}
+                    <div className="shrink-0 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileSpreadsheet className="h-4 w-4 text-primary" />
                     </div>
 
-                    {/* Col 2: platform badge — flex fills the full 86px column */}
+                    {/* Filename */}
+                    <span className="font-medium text-sm truncate flex-1 min-w-0">{s.nomeArquivo}</span>
+
+                    {/* Platform badge */}
                     <Badge
-                      variant="secondary"
-                      className="text-xs flex justify-center"
+                      className={cn(
+                        "text-xs shrink-0 border-0",
+                        s.plataforma === "totalpass"
+                          ? "bg-teal-500 hover:bg-teal-500 text-white"
+                          : s.plataforma === "wellhub"
+                          ? "bg-green-500 hover:bg-green-500 text-white"
+                          : "bg-secondary text-secondary-foreground"
+                      )}
                     >
                       {plataformaLabel(s.plataforma)}
                     </Badge>
 
-                    {/* Col 3: encontrados */}
-                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                      <CheckCircle className="h-3 w-3 shrink-0" /> {s.encontrados} enc.
+                    {/* Stats */}
+                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 shrink-0">
+                      <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {s.encontrados} enc.
                     </span>
 
-                    {/* Col 4: possiveis */}
-                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                      <AlertCircle className="h-3 w-3 shrink-0" /> {s.possiveis} pos.
+                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap border border-amber-200 dark:border-amber-800 rounded-full px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 shrink-0">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {s.possiveis} pos.
                     </span>
 
-                    {/* Col 5: não encontrados */}
-                    <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap">
-                      <XCircle className="h-3 w-3 shrink-0" /> {s.naoEncontrados} não enc.
+                    <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap border border-red-200 dark:border-red-800 rounded-full px-2 py-0.5 bg-red-50 dark:bg-red-950/40 shrink-0">
+                      <XCircle className="h-3.5 w-3.5 shrink-0" /> {s.naoEncontrados} não enc.
                     </span>
 
-                    {/* Col 6: total registros */}
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                       {s.totalRegistros} reg
                     </span>
 
-                    {/* Col 7: actions */}
-                    <div className="flex items-center gap-0.5 shrink-0 justify-end">
+                    {/* Actions */}
+                    <div className="flex items-center gap-0.5 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1787,7 +1791,7 @@ function MesView({
                         }}
                         data-testid={`button-delete-sessao-${s.id}`}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
