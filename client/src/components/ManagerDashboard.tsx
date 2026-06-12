@@ -3212,28 +3212,28 @@ export default function ManagerDashboard({
               return (
                 <div key={aluno.id} data-testid={`row-student-${aluno.id}`} className="rounded-xl border bg-muted overflow-hidden">
                   <div className="flex items-center justify-between p-3 gap-3">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
                         <span className="text-white font-bold text-sm">{aluno.nome.charAt(0).toUpperCase()}</span>
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium text-sm truncate">{aluno.nome}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                          <span className="text-xs text-muted-foreground">{aluno.modalidade}</span>
-                          {aluno.planoTitulo && <span className="text-xs text-muted-foreground">· {aluno.planoTitulo}</span>}
-                          {!isMensalistaRow && aluno.plano > 0 && <span className="text-xs text-muted-foreground">· {aluno.checkinsRealizados}/{aluno.plano}</span>}
-                          {!isMensalistaRow && aluno.ultimoCheckin && <span className="text-xs text-muted-foreground">· {aluno.ultimoCheckin}</span>}
-                          {isMensalistaRow && ultimoPagamento && (
-                            <>
-                              {ultimoPagamento.amount && <span className="text-xs text-muted-foreground">· R$ {ultimoPagamento.amount}</span>}
-                              {ultimoPagamento.paymentDate && <span className="text-xs text-muted-foreground">· {ultimoPagamento.paymentDate}</span>}
-                            </>
-                          )}
-                          {isMensalistaRow && !ultimoPagamento && (
-                            <span className="text-xs text-muted-foreground">· sem pagamento registrado</span>
-                          )}
+                      <div className="min-w-0 flex-1">
+                        {/* Linha 1: nome completo */}
+                        <p className="font-medium text-sm leading-snug">{aluno.nome}</p>
+                        {/* Linha 2: tabela de colunas fixas */}
+                        <div
+                          className="grid mt-1 gap-x-3 text-xs text-muted-foreground"
+                          style={{ gridTemplateColumns: "1fr 110px 80px 90px" }}
+                        >
+                          <span className="truncate">{aluno.modalidade || "—"}</span>
+                          <span className="truncate">{aluno.planoTitulo || "Sem plano"}</span>
+                          {isMensalistaRow
+                            ? <span className="truncate">{ultimoPagamento?.amount ? `R$ ${ultimoPagamento.amount}` : "—"}</span>
+                            : <span className="truncate">{aluno.plano > 0 ? `${aluno.checkinsRealizados}/${aluno.plano} chk` : "—"}</span>
+                          }
+                          {isMensalistaRow
+                            ? <span className="truncate">{ultimoPagamento?.paymentDate || "—"}</span>
+                            : <span className="truncate">{aluno.ultimoCheckin || "—"}</span>
+                          }
                         </div>
                       </div>
                     </div>
