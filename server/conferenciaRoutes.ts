@@ -1446,6 +1446,21 @@ export function registerConferenciaRoutes(app: Express): void {
         }
       }
 
+      // Recompute session counters after inserting the mensalista
+      const allRegsAfterIns = await db
+        .select()
+        .from(conferenciaRegistros)
+        .where(and(eq(conferenciaRegistros.sessaoId, sessao.id), eq(conferenciaRegistros.arenaId, arenaId)));
+
+      await db
+        .update(conferenciaSessoes)
+        .set({
+          encontrados: allRegsAfterIns.filter((r) => r.status === "confirmado").length,
+          possiveis: allRegsAfterIns.filter((r) => r.status === "pendente").length,
+          naoEncontrados: allRegsAfterIns.filter((r) => r.status === "nao_encontrado").length,
+        })
+        .where(eq(conferenciaSessoes.id, sessao.id));
+
       res.json({ ...novo, professorNome: profNome });
     } catch (err) {
       console.error("[mensalista POST]", err);
