@@ -1754,22 +1754,23 @@ function MesView({
                 {platformSessoes.map((s) => (
                   <div
                     key={s.id}
-                    className="flex items-center gap-3 cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-2.5"
+                    className="grid items-center gap-x-3 cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-2"
+                    style={{ gridTemplateColumns: "32px 1fr 90px auto auto auto auto auto" }}
                     onClick={() => onSelectSessao(s.id)}
                     data-testid={`sessao-card-${s.id}`}
                   >
-                    {/* Icon box */}
-                    <div className="shrink-0 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    {/* Col 1: icon box */}
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                       <FileSpreadsheet className="h-4 w-4 text-primary" />
                     </div>
 
-                    {/* Filename */}
-                    <span className="font-medium text-sm truncate flex-1 min-w-0">{s.nomeArquivo}</span>
+                    {/* Col 2: filename */}
+                    <span className="font-medium text-sm truncate min-w-0">{s.nomeArquivo}</span>
 
-                    {/* Platform badge */}
+                    {/* Col 3: platform badge */}
                     <Badge
                       className={cn(
-                        "text-xs shrink-0 border-0",
+                        "text-xs justify-center border-0",
                         s.plataforma === "totalpass"
                           ? "bg-teal-500 hover:bg-teal-500 text-white"
                           : s.plataforma === "wellhub"
@@ -1780,25 +1781,28 @@ function MesView({
                       {plataformaLabel(s.plataforma)}
                     </Badge>
 
-                    {/* Stats */}
-                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 shrink-0">
+                    {/* Col 4: encontrados */}
+                    <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40">
                       <CheckCircle className="h-3.5 w-3.5 shrink-0" /> {s.encontrados} enc.
                     </span>
 
-                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap border border-amber-200 dark:border-amber-800 rounded-full px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 shrink-0">
+                    {/* Col 5: possiveis */}
+                    <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap border border-amber-200 dark:border-amber-800 rounded-full px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40">
                       <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {s.possiveis} pos.
                     </span>
 
-                    <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap border border-red-200 dark:border-red-800 rounded-full px-2 py-0.5 bg-red-50 dark:bg-red-950/40 shrink-0">
+                    {/* Col 6: não encontrados */}
+                    <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 whitespace-nowrap border border-red-200 dark:border-red-800 rounded-full px-2 py-0.5 bg-red-50 dark:bg-red-950/40">
                       <XCircle className="h-3.5 w-3.5 shrink-0" /> {s.naoEncontrados} não enc.
                     </span>
 
-                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    {/* Col 7: total registros */}
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {s.totalRegistros} reg
                     </span>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-0.5 shrink-0">
+                    {/* Col 8: actions */}
+                    <div className="flex items-center gap-0.5 justify-end">
                       <Button
                         variant="ghost"
                         size="icon"
