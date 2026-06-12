@@ -2513,7 +2513,7 @@ function ArenaRelatorioCard({
               onClick={() => exportArenaRelatorio(allDetails, allMensalistas, mesLabel, pct)}
               data-testid="button-gerar-relatorio-arena"
             >
-              <Printer className="h-3.5 w-3.5" /> Relatório
+              <Printer className="h-3 w-3" /> Relatório
             </Button>
           </div>
         </div>
