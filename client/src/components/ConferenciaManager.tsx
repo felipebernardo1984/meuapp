@@ -1351,7 +1351,7 @@ function LandingView({
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground text-sm">Carregando…</div>
       ) : mesGroups.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
             Meses conferidos
           </p>
@@ -1383,8 +1383,8 @@ function LandingView({
                 onClick={() => onEntrarMes(g.mes)}
                 data-testid={`mes-card-${g.mes.ano}-${g.mes.mes}`}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
+                <CardContent className="px-5 py-4">
+                  <div className="flex items-center gap-4">
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <CalendarDays className="h-5 w-5 text-primary" />
                     </div>
@@ -1754,7 +1754,7 @@ function MesView({
                 {platformSessoes.map((s) => (
                   <div
                     key={s.id}
-                    className="grid items-center gap-x-3 cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-2"
+                    className="grid items-center gap-x-3 cursor-pointer rounded-lg border border-border bg-muted/20 hover:bg-muted/40 hover:shadow-sm transition-all px-3 py-3"
                     style={{ gridTemplateColumns: "32px 1fr 90px auto auto auto auto auto" }}
                     onClick={() => onSelectSessao(s.id)}
                     data-testid={`sessao-card-${s.id}`}
