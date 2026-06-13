@@ -910,8 +910,8 @@ export function registerConferenciaRoutes(app: Express): void {
       .insert(conferenciaProfessorAlunos)
       .values({ arenaId, professorId: req.params.id, nome: nome.trim() })
       .returning();
+    await autoRematchArena(arenaId).catch(() => {});
     res.json(aluno);
-    autoRematchArena(arenaId).catch(() => {});
   });
 
   // POST /api/conferencia/professores/:id/alunos/lote — bulk add
@@ -952,7 +952,7 @@ export function registerConferenciaRoutes(app: Express): void {
           .values(batch.map((nome) => ({ arenaId, professorId, nome })));
         total += batch.length;
       }
-      autoRematchArena(arenaId).catch(() => {});
+      await autoRematchArena(arenaId).catch(() => {});
       return res.json({ adicionados: total, ignorados });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao inserir alunos";

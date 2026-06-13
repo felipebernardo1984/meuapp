@@ -3314,6 +3314,8 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
       ),
     onSuccess: (data: { adicionados: number; ignorados?: number }, vars) => {
       qc.invalidateQueries({ queryKey: profQueryKey });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
       setListaTexto((prev) => ({ ...prev, [vars.profId]: "" }));
       const ignorados = data.ignorados ?? 0;
       const desc = ignorados > 0 ? `${ignorados} já existia${ignorados !== 1 ? "m" : ""} e foi${ignorados !== 1 ? "ram" : ""} ignorado${ignorados !== 1 ? "s" : ""}` : undefined;
