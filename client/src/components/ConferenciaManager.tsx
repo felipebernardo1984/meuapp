@@ -3951,14 +3951,26 @@ function SessaoView({
                             Confirmar
                           </Button>
                         )}
+                        {r.status === "pendente" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 w-full"
+                            onClick={() => setLinkDialog(r)}
+                            disabled={updateMutation.isPending || linkProfMutation.isPending}
+                            data-testid={`button-atribuir-${r.id}`}
+                          >
+                            Atribuir
+                          </Button>
+                        )}
                         {r.status === "nao_encontrado" && (
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-6 px-2 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 w-full"
-                            onClick={() => handleDestinar(r.id, r.professorId)}
-                            disabled={updateMutation.isPending}
-                            data-testid={`button-atribuir-${r.id}`}
+                            onClick={() => setLinkDialog(r)}
+                            disabled={updateMutation.isPending || linkProfMutation.isPending}
+                            data-testid={`button-atribuir-naoenc-${r.id}`}
                           >
                             Atribuir
                           </Button>
