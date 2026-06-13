@@ -2843,7 +2843,7 @@ function ArenaRelatorioCard({
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-xs h-7 shrink-0"
+              className="gap-1.5 text-xs h-7 w-24 justify-center shrink-0"
               disabled={totalGeral === 0}
               onClick={() => exportArenaRelatorioSimples(allDetails, allMensalistas, mesLabel, pct)}
               data-testid="button-gerar-relatorio-simples"
@@ -2853,7 +2853,7 @@ function ArenaRelatorioCard({
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-xs h-7 shrink-0"
+              className="gap-1.5 text-xs h-7 w-24 justify-center shrink-0"
               disabled={totalGeral === 0}
               onClick={() => exportArenaRelatorio(allDetails, allMensalistas, mesLabel, pct)}
               data-testid="button-gerar-relatorio-arena"
