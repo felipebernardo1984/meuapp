@@ -573,11 +573,11 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   tr:last-child td { border-bottom:none; }
   tfoot tr td { background:#e2e8f0;border-top:2px solid #94a3b8;font-size:8.5px;font-weight:700;color:#000; }
   .grand-total { background:#1e293b;color:white;border-radius:8px;padding:12px 16px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;font-size:9.5px; }
-  .gt-left .gt-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
+  .gt-left .gt-lbl { font-size:7px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
   .gt-left .gt-val { font-size:16px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
-  .gt-right .gt-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
-  .gt-right .gt-val { font-size:15px;font-weight:900;color:#a5f3fc; }
+  .gt-right .gt-lbl { font-size:7px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
+  .gt-right .gt-val { font-size:15px;font-weight:900;color:#fff; }
   .mensalista-block { margin-top:16px;border:1.5px solid #7c3aed;border-radius:6px;overflow:hidden; }
   .mensalista-header { background:#7c3aed;padding:7px 12px;display:flex;align-items:center;gap:8px; }
   .mensalista-badge { color:white;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em; }
@@ -613,7 +613,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       <div class="gt-left"><div class="gt-lbl">Total Plataforma</div><div class="gt-val">${fmt(subtotal)}</div></div>
       ${professorKey !== "__arena__"
         ? `<div class="gt-right"><div class="gt-lbl">Sua Comissão (${pct}%)</div><div class="gt-val">${fmt(comissao)}</div></div>`
-        : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val" style="color:#88a8e9">${fmt(arena)}</div></div>`}
+        : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val">${fmt(arena)}</div></div>`}
     </div>` : ""}
   ${mensalistaBlock}
   <div class="footer" style="padding:0 20px 16px">Seven Sports &nbsp;·&nbsp; Comprovante gerado automaticamente</div>
@@ -847,11 +847,11 @@ function exportComprovanteConsolidado(
   tfoot tr td { background:#e2e8f0;border-top:2px solid #94a3b8;font-size:8.5px;font-weight:700;color:#000; }
   .section-total { background:#e2e8f0;border:1.5px solid #cbd5e1;border-radius:4px;padding:4px 10px;font-size:8.5px;color:#1e293b;font-weight:600;margin-top:4px; }
   .grand-total { background:#1e293b;color:white;border-radius:8px;padding:12px 16px;margin-top:16px;display:flex;align-items:center;justify-content:space-between; }
-  .gt-left .gt-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
+  .gt-left .gt-lbl { font-size:7px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
   .gt-left .gt-val { font-size:16px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
-  .gt-right .gt-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
-  .gt-right .gt-val { font-size:15px;font-weight:900;color:#a5f3fc; }
+  .gt-right .gt-lbl { font-size:7px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
+  .gt-right .gt-val { font-size:15px;font-weight:900;color:#fff; }
   .mensalista-block { margin-top:16px;border:1.5px solid #7c3aed;border-radius:6px;overflow:hidden; }
   .mensalista-header { background:#7c3aed;padding:7px 12px;display:flex;align-items:center;gap:8px; }
   .mensalista-badge { color:white;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em; }
@@ -888,7 +888,7 @@ function exportComprovanteConsolidado(
       <div class="gt-left"><div class="gt-lbl">Total Plataforma</div><div class="gt-val">${fmt(totalReceita)}</div></div>
       ${professorId !== "__arena__"
         ? `<div class="gt-right"><div class="gt-lbl">Comissão Total (${pct}%)</div><div class="gt-val">${fmt(totalComissao)}</div></div>`
-        : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val" style="color:#88a8e9">${fmt(totalArena)}</div></div>`}
+        : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val">${fmt(totalArena)}</div></div>`}
     </div>` : ""}
     ${mensalistasBlock}
     <div class="footer">Seven Sports &nbsp;·&nbsp; Comprovante gerado automaticamente</div>
@@ -1084,9 +1084,9 @@ function exportArenaRelatorioSimples(
 
   /* ── Grand total ── */
   .grand-total { background:#1e293b;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
-  .gt-label { font-size:7.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
-  .gt-val { font-size:22px;font-weight:900;color:white; }
-  .gt-arena-val { font-size:20px;font-weight:900;color:#88a8e9; }
+  .gt-label { font-size:7.5px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
+  .gt-val { font-size:22px;font-weight:900;color:#fff; }
+  .gt-arena-val { font-size:20px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
 
   /* ── Footer ── */
@@ -1133,7 +1133,7 @@ function exportArenaRelatorioSimples(
       ${pctArena === 100
         ? `<div>
              <div class="gt-label">Total Geral · Repasse Arena (100%)</div>
-             <div class="gt-val" style="color:#88a8e9">${fmt(totalGeral)}</div>
+             <div class="gt-val">${fmt(totalGeral)}</div>
            </div>`
         : `<div>
              <div class="gt-label">Total Geral</div>
@@ -1316,13 +1316,13 @@ function exportArenaRelatorio(
 
   /* ── Grand total ── */
   .grand-total { background:#1e293b;color:white;border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
-  .gt-left .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
+  .gt-left .gt-lbl { font-size:7.5px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
   .gt-left .gt-val { font-size:20px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
-  .gt-right .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
-  .gt-right .gt-val { font-size:18px;font-weight:900;color:#88a8e9; }
-  .gt-full .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
-  .gt-full .gt-val { font-size:20px;font-weight:900;color:#88a8e9; }
+  .gt-right .gt-lbl { font-size:7.5px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
+  .gt-right .gt-val { font-size:18px;font-weight:900;color:#fff; }
+  .gt-full .gt-lbl { font-size:7.5px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
+  .gt-full .gt-val { font-size:20px;font-weight:900;color:#fff; }
 
   /* ── Footer ── */
   .footer { margin-top:10px;font-size:7.5px;color:#888;text-align:right; }
