@@ -1364,6 +1364,40 @@ export function registerConferenciaRoutes(app: Express): void {
         console.log(`[Conferência] ${reconfirmCount} registros re-confirmados (modalidade dominante)`);
       }
 
+      // ── Passo 2: Pré-atribuir professor nos possíveis não-dominantes ───────────
+      // Builds a professor-modality distribution from confirmed records in this
+      // session. For each non-dominant possível record of divergent students,
+      // pre-assigns the professor who is predominant in that modality.
+      // Status stays "pendente" — gestor still confirms manually as usual.
+      const profModalCountUp = new Map<string, Map<string, number>>(); // mod → profId → count
+      for (const r of registrosToInsert) {
+        if (r.status !== "confirmado" || !r.professorId || !r.modalidade) continue;
+        const modKey = (r.modalidade as string).trim().toLowerCase();
+        if (!profModalCountUp.has(modKey)) profModalCountUp.set(modKey, new Map());
+        const pc = profModalCountUp.get(modKey)!;
+        pc.set(r.professorId as string, (pc.get(r.professorId as string) || 0) + ((r.checkins as number) || 1));
+      }
+      const modalProfUp = new Map<string, string>(); // mod → best professorId
+      for (const [mod, pc] of profModalCountUp) {
+        let best = 0;
+        let bestId: string | null = null;
+        for (const [pid, cnt] of pc) { if (cnt > best) { best = cnt; bestId = pid; } }
+        if (bestId) modalProfUp.set(mod, bestId);
+      }
+      let reassignCount = 0;
+      for (const r of registrosToInsert) {
+        if (!downgradedUp.has(r) || r.status !== "pendente") continue;
+        const modKey = (r.modalidade as string || "").trim().toLowerCase();
+        const suggestedProf = modalProfUp.get(modKey);
+        if (suggestedProf && suggestedProf !== (r.professorId as string | null)) {
+          r.professorId = suggestedProf;
+          reassignCount++;
+        }
+      }
+      if (reassignCount > 0) {
+        console.log(`[Conferência] ${reassignCount} registros possíveis pré-atribuídos ao professor da modalidade`);
+      }
+
       const [sessao] = await db
         .insert(conferenciaSessoes)
         .values({
@@ -1733,6 +1767,46 @@ export function registerConferenciaRoutes(app: Express): void {
       }
     }
     if (reconfirmOpsR.length > 0) await Promise.all(reconfirmOpsR);
+
+    // ── Passo 2 (rematch): Pré-atribuir professor nos possíveis não-dominantes ──
+    const profModalCountR = new Map<string, Map<string, number>>();
+    for (const r of allRegsForMM) {
+      if (!r.professorId || !r.modalidade) continue;
+      const normName = normalizeNome(r.nomePlataforma);
+      const isDivergent = divergentesR.has(normName);
+      const modKey = r.modalidade.trim().toLowerCase();
+      const isEffectivelyConfirmed =
+        r.status === "confirmado" &&
+        (!isDivergent || dominantModR.get(normName) === modKey);
+      if (!isEffectivelyConfirmed) continue;
+      if (!profModalCountR.has(modKey)) profModalCountR.set(modKey, new Map());
+      const pc = profModalCountR.get(modKey)!;
+      pc.set(r.professorId, (pc.get(r.professorId) || 0) + (r.checkins || 1));
+    }
+    const modalProfR = new Map<string, string>();
+    for (const [mod, pc] of profModalCountR) {
+      let best = 0;
+      let bestId: string | null = null;
+      for (const [pid, cnt] of pc) { if (cnt > best) { best = cnt; bestId = pid; } }
+      if (bestId) modalProfR.set(mod, bestId);
+    }
+    const reassignOpsR: Array<Promise<unknown>> = [];
+    for (const r of allRegsForMM) {
+      if (r.status !== "confirmado") continue;
+      const normName = normalizeNome(r.nomePlataforma);
+      if (!divergentesR.has(normName)) continue;
+      const dominant = dominantModR.get(normName);
+      const modKey = (r.modalidade || "").trim().toLowerCase();
+      if (modKey === dominant) continue; // dominant was re-confirmed by Passo 1
+      const suggestedProf = modalProfR.get(modKey);
+      if (suggestedProf && suggestedProf !== r.professorId) {
+        reassignOpsR.push(
+          db.update(conferenciaRegistros).set({ professorId: suggestedProf })
+            .where(eq(conferenciaRegistros.id, r.id))
+        );
+      }
+    }
+    if (reassignOpsR.length > 0) await Promise.all(reassignOpsR);
 
     const finalRegs = await db
       .select()
