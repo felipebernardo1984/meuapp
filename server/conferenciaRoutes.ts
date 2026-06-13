@@ -581,20 +581,17 @@ export async function autoRematchArena(arenaId: string): Promise<void> {
       if (naoEnc.length === 0) continue;
 
       const periodo = sessao.periodoInicio ? sessao.periodoInicio.substring(0, 7) : null;
-      let profsDb = await db
+      const profsDb = await db
         .select()
         .from(conferenciaProfessores)
         .where(
           periodo
-            ? and(eq(conferenciaProfessores.arenaId, arenaId), eq(conferenciaProfessores.periodo, periodo))
+            ? and(
+                eq(conferenciaProfessores.arenaId, arenaId),
+                or(eq(conferenciaProfessores.periodo, periodo), isNull(conferenciaProfessores.periodo))
+              )
             : eq(conferenciaProfessores.arenaId, arenaId)
         );
-      if (profsDb.length === 0 && periodo) {
-        profsDb = await db
-          .select()
-          .from(conferenciaProfessores)
-          .where(eq(conferenciaProfessores.arenaId, arenaId));
-      }
       const profIds = new Set(profsDb.map((p) => p.id));
       const scopedAlunos = alunosDb.filter((a) => profIds.has(a.professorId));
 
@@ -1616,22 +1613,17 @@ export function registerConferenciaRoutes(app: Express): void {
     // Derive period from session so rematch uses the same professor scope as upload
     const periodoRematch = sessao.periodoInicio ? sessao.periodoInicio.substring(0, 7) : null;
 
-    let profsDb = await db
+    const profsDb = await db
       .select()
       .from(conferenciaProfessores)
       .where(
         periodoRematch
-          ? and(eq(conferenciaProfessores.arenaId, arenaId), eq(conferenciaProfessores.periodo, periodoRematch))
+          ? and(
+              eq(conferenciaProfessores.arenaId, arenaId),
+              or(eq(conferenciaProfessores.periodo, periodoRematch), isNull(conferenciaProfessores.periodo))
+            )
           : eq(conferenciaProfessores.arenaId, arenaId)
       );
-
-    // Fallback: if period-filtered yields nothing, use all arena professors
-    if (profsDb.length === 0 && periodoRematch) {
-      profsDb = await db
-        .select()
-        .from(conferenciaProfessores)
-        .where(eq(conferenciaProfessores.arenaId, arenaId));
-    }
 
     const profMap = new Map(profsDb.map((p) => [p.id, p]));
     const profIds = new Set(profsDb.map((p) => p.id));
