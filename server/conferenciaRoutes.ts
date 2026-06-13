@@ -421,6 +421,75 @@ function isArenaOnly(modalidade: string): boolean {
   return ARENA_ONLY_KEYWORDS.some((k) => norm.includes(normalizeNome(k)));
 }
 
+/**
+ * Collective modality+value map builder.
+ * Analyzes ALL records in a session to determine, per modalidade:
+ *   - valorPadrao: the maximum (standard class) value found for that modalidade
+ *   - threshold: valorPadrao × 0.80 — records BELOW this are in the "day use" cluster
+ *
+ * Only creates an entry when the modalidade actually has records below the threshold,
+ * so clean files (single price tier) never trigger false detection.
+ */
+function buildModalidadeMap(
+  records: Array<{ modalidade: string | null | undefined; valor: string | null | undefined }>
+): Map<string, { valorPadrao: number; threshold: number }> {
+  const byModal = new Map<string, number[]>();
+  for (const r of records) {
+    const mod = (r.modalidade || "").trim();
+    if (!mod) continue;
+    const v = parseFloat(r.valor || "0");
+    if (v <= 0) continue;
+    if (!byModal.has(mod)) byModal.set(mod, []);
+    byModal.get(mod)!.push(v);
+  }
+
+  const result = new Map<string, { valorPadrao: number; threshold: number }>();
+  for (const [mod, vals] of byModal) {
+    if (vals.length < 3) continue; // need at least 3 records for a reliable cluster
+    const maxVal = Math.max(...vals);
+    const threshold = maxVal * 0.80;
+    // Only register a cluster if records below the threshold actually exist
+    if (vals.some((v) => v < threshold)) {
+      result.set(mod, { valorPadrao: maxVal, threshold });
+    }
+  }
+  return result;
+}
+
+/**
+ * Detects students with unexpectedly high check-in counts for a modalidade.
+ * Used for the "Letícia case": TotalPass groups all sports under "BeachSports",
+ * so a student doing 2 sports may appear with 2× the typical count per modalidade.
+ * Returns normalized names of flagged students.
+ * Minimum 3 students per modalidade for a reliable median.
+ */
+function buildMultiModalidadeAlertas(
+  records: Array<{ nomePlataforma: string; modalidade: string | null | undefined; checkins: number | null | undefined }>
+): Set<string> {
+  const byModal = new Map<string, Map<string, number>>();
+  for (const r of records) {
+    const mod = (r.modalidade || "").trim();
+    if (!mod) continue;
+    const normName = normalizeNome(r.nomePlataforma);
+    if (!byModal.has(mod)) byModal.set(mod, new Map());
+    const m = byModal.get(mod)!;
+    m.set(normName, (m.get(normName) || 0) + (r.checkins || 1));
+  }
+
+  const alertas = new Set<string>();
+  for (const [, studentCounts] of byModal) {
+    const counts = Array.from(studentCounts.values());
+    if (counts.length < 3) continue;
+    const sorted = [...counts].sort((a, b) => a - b);
+    const mediana = sorted[Math.floor(sorted.length / 2)];
+    if (mediana <= 0) continue;
+    for (const [normName, count] of studentCounts) {
+      if (count > mediana * 1.8) alertas.add(normName);
+    }
+  }
+  return alertas;
+}
+
 // ── Shared matching logic (used by both upload and rematch) ───────────────────
 
 type AlunoConfRow = { id: string; nome: string; professorId: string; arenaId: string; tipo?: string | null; criadoEm?: Date | null };
@@ -993,6 +1062,23 @@ export function registerConferenciaRoutes(app: Express): void {
 
       let encontrados = 0, possiveis = 0, naoEncontrados = 0;
 
+      // Build collective modality+value map from all file rows BEFORE matching.
+      // This lets us detect day use entries by comparing each record's value
+      // against the dominant (max) value for its modality across the whole file.
+      const modalidadeMapUpload = buildModalidadeMap(
+        filteredRows.map((row) => ({
+          modalidade: cols.modalidadeIdx >= 0 ? String(row[headers[cols.modalidadeIdx]] ?? "").trim() : "",
+          valor: String(Math.round(parseValor(cols.valueIdx >= 0 ? row[headers[cols.valueIdx]] : 0) * 100) / 100),
+        }))
+      );
+      if (modalidadeMapUpload.size > 0) {
+        console.log(
+          `[Conferência] Mapa coletivo: ${Array.from(modalidadeMapUpload.entries())
+            .map(([m, v]) => `${m} padrao=${v.valorPadrao} threshold=${v.threshold.toFixed(2)}`)
+            .join(" | ")}`
+        );
+      }
+
       const registrosToInsert = filteredRows
         .map((row) => {
           const nomePlataforma = cleanName(
@@ -1058,6 +1144,20 @@ export function registerConferenciaRoutes(app: Express): void {
             }
           } else {
             naoEncontrados++;
+          }
+
+          // ── Collective day use detection (upload) ──────────────────────────
+          // If this record's value is in the low cluster for its modality
+          // (below 80% of the dominant value across the whole file), override to dayuse.
+          if (categoria === "comissao" && modalidade) {
+            const mapEntry = modalidadeMapUpload.get(modalidade);
+            if (mapEntry && parseFloat(valor) < mapEntry.threshold) {
+              categoria = "dayuse";
+              professorId = null;
+              percentual = "0";
+              valorProfessor = "0";
+              valorArena = valor;
+            }
           }
 
           return {
@@ -1197,12 +1297,31 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(eq(teachers.arenaId, arenaId));
     const teacherMapDetail = new Map(teachersDbDetail.map((t) => [t.id, t]));
 
-    const enriched = registros.map((r) => ({
-      ...r,
-      professorNome: r.professorId
-        ? (profMap.get(r.professorId)?.nome ?? teacherMapDetail.get(r.professorId)?.nome ?? null)
-        : null,
-    }));
+    // Build collective hints from all session records
+    const modalidadeMapGet = buildModalidadeMap(
+      registros.map((r) => ({ modalidade: r.modalidade, valor: r.valor }))
+    );
+    const multiModalAlertas = buildMultiModalidadeAlertas(
+      registros.map((r) => ({ nomePlataforma: r.nomePlataforma, modalidade: r.modalidade, checkins: r.checkins }))
+    );
+
+    const enriched = registros.map((r) => {
+      const mapEntry = r.modalidade ? modalidadeMapGet.get(r.modalidade) : undefined;
+      let clusterHint: string = "desconhecido";
+      if (mapEntry) {
+        const v = parseFloat(r.valor || "0");
+        clusterHint = v < mapEntry.threshold ? "dayuse" : "padrao";
+      }
+      const multiModalidadeAlerta = multiModalAlertas.has(normalizeNome(r.nomePlataforma));
+      return {
+        ...r,
+        professorNome: r.professorId
+          ? (profMap.get(r.professorId)?.nome ?? teacherMapDetail.get(r.professorId)?.nome ?? null)
+          : null,
+        clusterHint,
+        multiModalidadeAlerta,
+      };
+    });
 
     res.json({ ...sessao, registros: enriched });
   });
@@ -1335,37 +1454,31 @@ export function registerConferenciaRoutes(app: Express): void {
       )
     );
 
-    // ── Detect aula vs day use: same student, different values in same session ──
+    // ── Collective day use detection (rematch) ────────────────────────────────
+    // Build the modality+value map from ALL session records (re-matched + existing).
+    // Any record with categoria=comissao whose value falls below 80% of the dominant
+    // value for its modality is reclassified as dayuse (no professor commission).
     const freshRegs = await db
       .select()
       .from(conferenciaRegistros)
       .where(eq(conferenciaRegistros.sessaoId, sessao.id));
 
-    const byNome = new Map<string, typeof freshRegs>();
-    for (const r of freshRegs) {
-      if (r.status === "ignorado") continue;
-      const key = normalizeNome(r.nomePlataforma);
-      if (!byNome.has(key)) byNome.set(key, []);
-      byNome.get(key)!.push(r);
-    }
+    const modalidadeMapRematch = buildModalidadeMap(
+      freshRegs.map((r) => ({ modalidade: r.modalidade, valor: r.valor }))
+    );
 
     const dayuseOps: Array<Promise<unknown>> = [];
-    for (const [, group] of byNome) {
-      if (!group.some((r) => r.professorId)) continue;
-      const vals = group.map((r) => parseFloat(r.valor || "0")).filter((v) => v > 0);
-      if (vals.length < 2) continue;
-      const minVal = Math.min(...vals), maxVal = Math.max(...vals);
-      if (maxVal <= minVal * 1.10) continue;
-      for (const r of group) {
-        const v = parseFloat(r.valor || "0");
-        if (v > minVal * 1.10 && r.professorId) {
-          dayuseOps.push(
-            db.update(conferenciaRegistros).set({
-              categoria: "dayuse", professorId: null,
-              percentual: "0", valorProfessor: "0", valorArena: r.valor,
-            }).where(eq(conferenciaRegistros.id, r.id))
-          );
-        }
+    for (const r of freshRegs) {
+      if (r.status === "ignorado" || r.categoria === "dayuse") continue;
+      if (!r.professorId || r.categoria !== "comissao") continue;
+      const mapEntry = r.modalidade ? modalidadeMapRematch.get(r.modalidade) : undefined;
+      if (mapEntry && parseFloat(r.valor || "0") < mapEntry.threshold) {
+        dayuseOps.push(
+          db.update(conferenciaRegistros).set({
+            categoria: "dayuse", professorId: null,
+            percentual: "0", valorProfessor: "0", valorArena: r.valor,
+          }).where(eq(conferenciaRegistros.id, r.id))
+        );
       }
     }
     if (dayuseOps.length > 0) await Promise.all(dayuseOps);

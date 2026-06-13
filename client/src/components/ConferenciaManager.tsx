@@ -135,6 +135,8 @@ interface Registro {
   valorArena: string;
   observacao: string | null;
   comprovante?: string | null;
+  clusterHint?: string | null;
+  multiModalidadeAlerta?: boolean;
 }
 
 interface SessaoDetalhe extends Sessao {
@@ -3778,6 +3780,16 @@ function SessaoView({
                             <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
                               {r.similaridade}%
                             </span>
+                          )}
+                          {r.status === "pendente" && r.clusterHint === "dayuse" && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 shrink-0" title="O valor deste registro está abaixo do padrão da modalidade — pode ser day use">
+                              Suspeito day use
+                            </Badge>
+                          )}
+                          {r.multiModalidadeAlerta && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 shrink-0" title="Este aluno tem mais check-ins que o esperado para esta modalidade — pode estar inscrito em 2 modalidades agrupadas (ex: BeachSports no TotalPass)">
+                              Multi-modalidade?
+                            </Badge>
                           )}
                         </div>
 
