@@ -4364,13 +4364,12 @@ function SessaoView({
                         {(() => {
                           const currentDest = r.professorId ?? "arena";
                           const selectedDest = rowDestino[r.id] ?? currentDest;
-                          const destinoChanged = r.status === "confirmado" && selectedDest !== currentDest;
-                          const isConfirmadoUnchanged = r.status === "confirmado" && !destinoChanged;
+                          const isConfirmadoUnchanged = r.status === "confirmado" && selectedDest === currentDest;
                           return (
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full"
                               onClick={() => {
                                 if (isConfirmadoUnchanged) return;
                                 if (r.status === "confirmado") {
@@ -4379,7 +4378,7 @@ function SessaoView({
                                   handleConfirmar(r);
                                 }
                               }}
-                              disabled={updateMutation.isPending || isConfirmadoUnchanged}
+                              disabled={updateMutation.isPending}
                               data-testid={`button-confirmar-${r.id}`}
                             >
                               Confirmar
