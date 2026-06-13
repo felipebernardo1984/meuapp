@@ -437,11 +437,9 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const dataStr = new Date(sessao.criadoEm).toLocaleDateString("pt-BR");
 
-  // Group platform records by modalidade
+  // Group platform records by modalidade; sort rows within each group by name
   const byMod = new Map<string, typeof regs>();
   for (const r of [...regs].sort((a, b) => {
-    const mc = (a.modalidade ?? "—").localeCompare(b.modalidade ?? "—", "pt-BR");
-    if (mc !== 0) return mc;
     const nc = a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR");
     return nc !== 0 ? nc : parseDataSort(a.data).localeCompare(parseDataSort(b.data));
   })) {
@@ -449,8 +447,14 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
     if (!byMod.has(mod)) byMod.set(mod, []);
     byMod.get(mod)!.push(r);
   }
+  // Sort modality sections by total value desc — main activity (aula) appears first
+  const sortedByMod = Array.from(byMod.entries()).sort((a, b) => {
+    const totA = a[1].reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+    const totB = b[1].reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+    return totB - totA;
+  });
 
-  const modBlocks = regs.length === 0 ? "" : Array.from(byMod.entries())
+  const modBlocks = regs.length === 0 ? "" : sortedByMod
     .map(([mod, mrs]) => {
       const modChks    = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
       const modAlunos  = new Set(mrs.map(r => r.nomePlataforma)).size;
@@ -4636,15 +4640,11 @@ function RelatorioView({
                 })
                 .map((r) => (
                   <TableRow key={r.id} className="text-xs">
-                    <TableCell className="py-2 font-medium">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
-                        {r.modalidade && (
-                          <span className="text-[10px] text-muted-foreground shrink-0 bg-muted px-1 py-0.5 rounded">
-                            {r.modalidade}
-                          </span>
-                        )}
-                      </div>
+                    <TableCell className="py-2 font-medium max-w-[160px]">
+                      <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
+                    </TableCell>
+                    <TableCell className="py-2 w-28 text-[11px] text-muted-foreground whitespace-nowrap">
+                      {r.modalidade || "—"}
                     </TableCell>
                     <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
                       {fmtData(r.data)}
@@ -4669,13 +4669,18 @@ function RelatorioView({
                 if (!byMod.has(mod)) byMod.set(mod, []);
                 byMod.get(mod)!.push(r);
               }
-              const mods = Array.from(byMod.entries()).sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
+              // sort by total value desc — main modality (highest receita) appears first
+              const mods = Array.from(byMod.entries()).sort((a, b) => {
+                const totA = a[1].reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+                const totB = b[1].reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+                return totB - totA;
+              });
               const multiMod = mods.length > 1;
 
-              const tableHeader = (hideModalidade = false) => (
+              const tableHeader = () => (
                 <TableRow className="bg-muted/40">
                   <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
-                  {!hideModalidade && <TableHead className="text-xs py-2">Modalidade</TableHead>}
+                  <TableHead className="text-xs py-2 w-28">Modalidade</TableHead>
                   <TableHead className="text-xs py-2">Data/Hora</TableHead>
                   <TableHead className="text-xs py-2 text-right">Total</TableHead>
                   <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
@@ -4687,7 +4692,7 @@ function RelatorioView({
                 return (
                   <div className="border rounded overflow-hidden">
                     <Table>
-                      <TableHeader>{tableHeader(true)}</TableHeader>
+                      <TableHeader>{tableHeader()}</TableHeader>
                       <TableBody>{renderLinhas(rows)}</TableBody>
                     </Table>
                   </div>
@@ -4698,6 +4703,7 @@ function RelatorioView({
                 <div className="space-y-2">
                   {mods.map(([mod, modRows]) => {
                     const isDayUse = modRows.some((r) => r.categoria === "dayuse");
+                    const modTotal = modRows.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
                     return (
                       <div key={mod} className="border rounded overflow-hidden">
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/60 border-b">
@@ -4708,11 +4714,11 @@ function RelatorioView({
                             </Badge>
                           )}
                           <span className="text-[10px] text-muted-foreground ml-auto">
-                            {modRows.length} aluno{modRows.length !== 1 ? "s" : ""}
+                            {modRows.length} aluno{modRows.length !== 1 ? "s" : ""} · {fmtVal(String(modTotal))}
                           </span>
                         </div>
                         <Table>
-                          <TableHeader>{tableHeader(true)}</TableHeader>
+                          <TableHeader>{tableHeader()}</TableHeader>
                           <TableBody>{renderLinhas(modRows)}</TableBody>
                         </Table>
                       </div>
