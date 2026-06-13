@@ -3616,7 +3616,7 @@ function SessaoView({
                 <strong>{naoEncontradosCount}</strong> sem correspondência — destinar receita para:
               </p>
               <Select value={destinarPara} onValueChange={setDestinarPara}>
-                <SelectTrigger className="h-8 w-52 text-xs bg-white dark:bg-background" data-testid="select-destinar-bulk">
+                <SelectTrigger className="h-8 w-[200px] text-xs bg-white dark:bg-background" data-testid="select-destinar-bulk">
                   <SelectValue placeholder="Selecionar destino…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -3628,7 +3628,7 @@ function SessaoView({
                   ))}
                 </SelectContent>
               </Select>
-              <Button size="sm" onClick={handleBulkDestinar} disabled={!destinarPara || updateMutation.isPending} data-testid="button-bulk-destinar">
+              <Button size="sm" className="w-[110px] shrink-0" onClick={handleBulkDestinar} disabled={!destinarPara || updateMutation.isPending} data-testid="button-bulk-destinar">
                 Aplicar a todos
               </Button>
             </div>
@@ -3668,7 +3668,7 @@ function SessaoView({
                   </Select>
                 )}
                 <Select value={redirectAProf} onValueChange={setRedirectAProf} data-testid="select-redirect-prof">
-                  <SelectTrigger className="h-8 w-44 text-xs bg-white dark:bg-background">
+                  <SelectTrigger className="h-8 w-[200px] text-xs bg-white dark:bg-background">
                     <SelectValue placeholder="Selecionar professor…" />
                   </SelectTrigger>
                   <SelectContent>
@@ -3679,7 +3679,7 @@ function SessaoView({
                     ))}
                   </SelectContent>
                 </Select>
-                <Button size="sm" onClick={handleBulkRedirectArena} disabled={!redirectAProf || updateMutation.isPending} data-testid="button-bulk-redirect-arena">
+                <Button size="sm" className="w-[110px] shrink-0" onClick={handleBulkRedirectArena} disabled={!redirectAProf || updateMutation.isPending} data-testid="button-bulk-redirect-arena">
                   Redirecionar
                 </Button>
               </div>
