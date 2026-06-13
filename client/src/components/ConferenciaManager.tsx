@@ -563,7 +563,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   .mod-name { font-weight:700;font-size:9.5px;color:#1e293b; }
   .mod-summary { color:#64748b;font-size:8.5px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1.5px solid #e2e8f0;table-layout:fixed; }
-  th { background:#e8ecf0;color:#1e293b;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #cbd5e1;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  th { background:#e8ecf0;color:#1e293b;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #cbd5e1;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;white-space:nowrap; }
   th.col-nome { text-align:left; }
   td { padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
@@ -837,7 +837,7 @@ function exportComprovanteConsolidado(
   .mod-name { font-weight:700;font-size:9.5px;color:#1e293b; }
   .mod-summary { color:#64748b;font-size:8.5px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1.5px solid #e2e8f0;table-layout:fixed; }
-  th { background:#e8ecf0;color:#1e293b;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #cbd5e1;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  th { background:#e8ecf0;color:#1e293b;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #cbd5e1;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;white-space:nowrap; }
   th.col-nome { text-align:left; }
   td { padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
@@ -1296,7 +1296,7 @@ function exportArenaRelatorio(
   .section-platform { font-size:12px;font-weight:900;color:#1e293b;letter-spacing:0.06em;text-transform:uppercase; }
   .section-meta { font-size:8px;color:#64748b;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1.5px solid #e2e8f0;table-layout:fixed; }
-  th { background:#e8ecf0;color:#1e293b;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #cbd5e1;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  th { background:#e8ecf0;color:#1e293b;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #cbd5e1;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;white-space:nowrap; }
   th.col-nome { text-align:left; }
   td { padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
@@ -1533,7 +1533,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
   .prof-pct { background:#e2e8f0;color:#1e293b;font-size:9px;padding:2px 8px;border-radius:20px;font-weight:600; }
   .prof-summary { color:#64748b;font-size:8.5px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1.5px solid #e2e8f0;table-layout:fixed; }
-  th { background:#e8ecf0;color:#1e293b;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #cbd5e1;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  th { background:#e8ecf0;color:#1e293b;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #cbd5e1;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;white-space:nowrap; }
   th.col-nome { text-align:left; }
   td { padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
