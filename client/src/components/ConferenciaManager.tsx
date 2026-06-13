@@ -3828,22 +3828,25 @@ function SessaoView({
     new Map(registros.filter((r) => r.professorNome).map((r) => [r.professorId, r.professorNome])).entries()
   ).map(([id, nome]) => ({ id: id!, nome: nome! }));
 
+  const searchActive = buscaNome.trim().length > 0;
+
   const filtered = registros
     .filter((r) => {
+      if (searchActive) {
+        if (filtroProfessor && r.professorId !== filtroProfessor) return false;
+        return r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase());
+      }
       if (filtroNaoAtribuido) {
         const baseOk = r.status === "confirmado" && r.categoria === "arena" && !r.professorId;
         if (!baseOk) return false;
-        if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
         return true;
       }
       if (filtroDivergente) {
         if (!r.divergente || r.status !== "pendente") return false;
-        if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
         return true;
       }
       if (filtroStatus && r.status !== filtroStatus) return false;
       if (filtroProfessor && r.professorId !== filtroProfessor) return false;
-      if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
       return true;
     })
     .sort((a, b) => {
@@ -4177,6 +4180,11 @@ function SessaoView({
                 className="pl-8 h-8 text-sm"
                 data-testid="input-busca-nome"
               />
+              {searchActive && (
+                <p className="absolute -bottom-4 left-0 text-[10px] text-muted-foreground whitespace-nowrap">
+                  Buscando em todos os cards
+                </p>
+              )}
             </div>
             {filteredProfs.length > 0 && (
               <Select value={filtroProfessor} onValueChange={(v) => setFiltroProfessor(v === "__all__" ? "" : v)}>
