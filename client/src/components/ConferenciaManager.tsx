@@ -137,6 +137,7 @@ interface Registro {
   comprovante?: string | null;
   clusterHint?: string | null;
   multiModalidadeAlerta?: boolean;
+  modalidadeDivergente?: boolean;
 }
 
 interface SessaoDetalhe extends Sessao {
@@ -3789,6 +3790,11 @@ function SessaoView({
                           {r.multiModalidadeAlerta && (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 shrink-0" title="Este aluno tem mais check-ins que o esperado para esta modalidade — pode estar inscrito em 2 modalidades agrupadas (ex: BeachSports no TotalPass)">
                               Multi-modalidade?
+                            </Badge>
+                          )}
+                          {r.status === "pendente" && r.modalidadeDivergente && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 shrink-0" title="A modalidade deste registro difere da modalidade típica do professor sugerido nesta sessão">
+                              Modalidade divergente
                             </Badge>
                           )}
                         </div>

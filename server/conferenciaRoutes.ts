@@ -1182,6 +1182,30 @@ export function registerConferenciaRoutes(app: Express): void {
         })
         .filter(Boolean) as Array<Record<string, unknown>>;
 
+      // ── Multi-modality detection (upload) ─────────────────────────────────
+      // Wellhub exports list each modality separately per student.
+      // If the same student appears with 2+ distinct modalities in this session,
+      // downgrade their "confirmado" records to "pendente" so the gestor can
+      // manually confirm which professor belongs to each modality.
+      // The professor suggestion is kept as a pre-fill — no automatic reassignment.
+      const modalidadesByNomeUp = new Map<string, Set<string>>();
+      for (const r of registrosToInsert) {
+        if (!r.modalidade || !r.nomePlataforma) continue;
+        const normName = normalizeNome(r.nomePlataforma as string);
+        if (!modalidadesByNomeUp.has(normName)) modalidadesByNomeUp.set(normName, new Set());
+        modalidadesByNomeUp.get(normName)!.add((r.modalidade as string).trim().toLowerCase());
+      }
+      for (const r of registrosToInsert) {
+        if (r.status !== "confirmado") continue;
+        const normName = normalizeNome(r.nomePlataforma as string);
+        const mods = modalidadesByNomeUp.get(normName);
+        if (mods && mods.size >= 2) {
+          r.status = "pendente";
+          encontrados--;
+          possiveis++;
+        }
+      }
+
       const [sessao] = await db
         .insert(conferenciaSessoes)
         .values({
@@ -1305,6 +1329,25 @@ export function registerConferenciaRoutes(app: Express): void {
       registros.map((r) => ({ nomePlataforma: r.nomePlataforma, modalidade: r.modalidade, checkins: r.checkins }))
     );
 
+    // Build each professor's dominant modality from their confirmed records in this session.
+    // Used to flag "Modalidade divergente" on pendente suggestions where the suggested
+    // professor's typical modality doesn't match the file modality — purely informational.
+    const profModCounts = new Map<string, Map<string, number>>();
+    for (const r of registros) {
+      if (r.status !== "confirmado" || !r.professorId || !r.modalidade) continue;
+      if (!profModCounts.has(r.professorId)) profModCounts.set(r.professorId, new Map());
+      const m = profModCounts.get(r.professorId)!;
+      m.set(r.modalidade, (m.get(r.modalidade) || 0) + 1);
+    }
+    const professorDominantMod = new Map<string, string>();
+    for (const [profId, modCounts] of profModCounts) {
+      let maxCount = 0, dominant = "";
+      for (const [mod, count] of modCounts) {
+        if (count > maxCount) { maxCount = count; dominant = mod; }
+      }
+      if (dominant) professorDominantMod.set(profId, dominant);
+    }
+
     const enriched = registros.map((r) => {
       const mapEntry = r.modalidade ? modalidadeMapGet.get(r.modalidade) : undefined;
       let clusterHint: string = "desconhecido";
@@ -1313,6 +1356,17 @@ export function registerConferenciaRoutes(app: Express): void {
         clusterHint = v < mapEntry.threshold ? "dayuse" : "padrao";
       }
       const multiModalidadeAlerta = multiModalAlertas.has(normalizeNome(r.nomePlataforma));
+
+      // Modalidade divergente: pendente record whose suggested professor's
+      // dominant modality in this session differs from the file's modality.
+      let modalidadeDivergente = false;
+      if (r.status === "pendente" && r.professorId && r.modalidade) {
+        const dominant = professorDominantMod.get(r.professorId);
+        if (dominant && normalizeNome(dominant) !== normalizeNome(r.modalidade)) {
+          modalidadeDivergente = true;
+        }
+      }
+
       return {
         ...r,
         professorNome: r.professorId
@@ -1320,6 +1374,7 @@ export function registerConferenciaRoutes(app: Express): void {
           : null,
         clusterHint,
         multiModalidadeAlerta,
+        modalidadeDivergente,
       };
     });
 
@@ -1482,6 +1537,35 @@ export function registerConferenciaRoutes(app: Express): void {
       }
     }
     if (dayuseOps.length > 0) await Promise.all(dayuseOps);
+
+    // ── Multi-modality detection (rematch) ────────────────────────────────────
+    // Same rule as upload: if a student appears with 2+ distinct modalities in
+    // this session, their newly-confirmed records are downgraded to pendente.
+    const allRegsForMM = await db
+      .select()
+      .from(conferenciaRegistros)
+      .where(eq(conferenciaRegistros.sessaoId, sessao.id));
+
+    const modalidadesByNomeR = new Map<string, Set<string>>();
+    for (const r of allRegsForMM) {
+      if (!r.modalidade || r.status === "ignorado") continue;
+      const normName = normalizeNome(r.nomePlataforma);
+      if (!modalidadesByNomeR.has(normName)) modalidadesByNomeR.set(normName, new Set());
+      modalidadesByNomeR.get(normName)!.add(r.modalidade.trim().toLowerCase());
+    }
+    const multiModalOpsR: Array<Promise<unknown>> = [];
+    for (const r of allRegsForMM) {
+      if (r.status !== "confirmado") continue;
+      const normName = normalizeNome(r.nomePlataforma);
+      const mods = modalidadesByNomeR.get(normName);
+      if (mods && mods.size >= 2) {
+        multiModalOpsR.push(
+          db.update(conferenciaRegistros).set({ status: "pendente" })
+            .where(eq(conferenciaRegistros.id, r.id))
+        );
+      }
+    }
+    if (multiModalOpsR.length > 0) await Promise.all(multiModalOpsR);
 
     const finalRegs = await db
       .select()
