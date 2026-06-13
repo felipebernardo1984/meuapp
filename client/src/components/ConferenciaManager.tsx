@@ -946,8 +946,8 @@ function exportArenaRelatorioSimples(
   }
 
   const PLAT_COLORS: Record<string, { bg: string; accent: string }> = {
-    totalpass: { bg: "#374151", accent: "#e2e8f0" },
-    wellhub:   { bg: "#be185d", accent: "#fce7f3" },
+    totalpass: { bg: "#e5e7eb", accent: "#f3f4f6" },
+    wellhub:   { bg: "#fce7f3", accent: "#fdf4ff" },
   };
 
   // Grand KPIs across all platforms
@@ -1060,19 +1060,19 @@ function exportArenaRelatorioSimples(
   /* ── Platform cards ── */
   .plat-card { border-radius:10px;padding:16px 18px;margin-bottom:10px; }
   .plat-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px; }
-  .plat-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:white; }
-  .plat-periodo { font-size:7.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em; }
+  .plat-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#1e293b; }
+  .plat-periodo { font-size:7.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em; }
   .plat-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px; }
-  .stat { background:rgba(255,255,255,0.06);border-radius:6px;padding:8px 10px; }
-  .stat .stat-val { font-size:16px;font-weight:800;color:white; }
-  .stat .stat-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px; }
+  .stat { background:rgba(0,0,0,0.05);border-radius:6px;padding:8px 10px; }
+  .stat .stat-val { font-size:16px;font-weight:800;color:#1e293b; }
+  .stat .stat-lbl { font-size:7px;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;margin-top:2px; }
 
   /* ── Repasse ── */
-  .plat-repasse { border-top:1px solid rgba(255,255,255,0.12);padding-top:10px; }
+  .plat-repasse { border-top:1px solid rgba(0,0,0,0.1);padding-top:10px; }
   .repasse-split { display:flex;justify-content:space-between;align-items:flex-end; }
-  .repasse-label { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px; }
-  .repasse-total { font-size:13px;font-weight:700;color:rgba(255,255,255,0.7); }
-  .repasse-val { font-size:20px;font-weight:900; }
+  .repasse-label { font-size:7.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px; }
+  .repasse-total { font-size:13px;font-weight:700;color:#475569; }
+  .repasse-val { font-size:20px;font-weight:900;color:#1e293b; }
 
   /* ── Mensalistas ── */
   .mensalistas-block { border-radius:10px;overflow:hidden;margin-bottom:10px;border:1.5px solid #ddd6fe; }
