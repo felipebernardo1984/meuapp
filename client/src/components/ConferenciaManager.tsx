@@ -1437,8 +1437,10 @@ function LandingView({
               ? "bg-secondary text-secondary-foreground"
               : isTotalpassOnly
               ? "bg-black text-white"
-              : "text-white";
-            const platformBadgeStyle = (!isProfessorOnly && !isTotalpassOnly)
+              : isWellhubOnly
+              ? "text-white"
+              : "bg-green-500 text-white";
+            const platformBadgeStyle = isWellhubOnly
               ? { backgroundColor: "#ff2c97" }
               : undefined;
 
