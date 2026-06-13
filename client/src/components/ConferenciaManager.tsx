@@ -899,13 +899,50 @@ function exportArenaRelatorioSimples(
     wellhub:   { bg: "#14532d", accent: "#86efac" },
   };
 
+  // Grand KPIs across all platforms
+  const totalVisitantes = Array.from(byPlat.values()).reduce((s, { regs }) => s + new Set(regs.map(r => r.nomePlataforma)).size, 0);
+  const totalCheckins   = Array.from(byPlat.values()).reduce((s, { regs }) => s + regs.reduce((ss, r) => ss + (r.checkins ?? 1), 0), 0);
+
   const platCards = Array.from(byPlat.entries()).map(([key, { label, regs, periodoInicio, periodoFim }]) => {
-    const receita = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-    const chks    = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
-    const alunos  = new Set(regs.map((r) => r.nomePlataforma)).size;
-    const vArena  = receita * (pctArena / 100);
-    const periodo = fmtPeriod(periodoInicio, periodoFim);
-    const col = PLAT_COLORS[key] ?? { bg: "#1e3a5f", accent: "#a5f3fc" };
+    const receita  = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+    const chks     = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+    const visitantes = new Set(regs.map((r) => r.nomePlataforma)).size;
+    const vArena   = receita * (pctArena / 100);
+    const periodo  = fmtPeriod(periodoInicio, periodoFim);
+    const col      = PLAT_COLORS[key] ?? { bg: "#1e3a5f", accent: "#a5f3fc" };
+
+    // Breakdown by modalidade
+    const byMod = new Map<string, number>();
+    for (const r of regs) {
+      const mod = r.modalidade ?? "—";
+      byMod.set(mod, (byMod.get(mod) ?? 0) + parseFloat(r.valor || "0"));
+    }
+    const modRows = Array.from(byMod.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([mod, val]) => `
+        <div class="mod-row">
+          <span class="mod-name">${mod}</span>
+          <span class="mod-val">${fmt(val)}</span>
+        </div>`).join("");
+
+    const repasseSection = pctArena === 100
+      ? `<div class="plat-repasse" style="border-color:${col.accent}30">
+           <span class="repasse-label">Total / Repasse Arena (100%)</span>
+           <span class="repasse-val" style="color:${col.accent}">${fmt(receita)}</span>
+         </div>`
+      : `<div class="plat-repasse" style="border-color:${col.accent}30">
+           <div class="repasse-split">
+             <div>
+               <div class="repasse-label">Total Plataforma</div>
+               <div class="repasse-total">${fmt(receita)}</div>
+             </div>
+             <div style="text-align:right">
+               <div class="repasse-label">Repasse Arena (${pctArena}%)</div>
+               <div class="repasse-val" style="color:${col.accent}">${fmt(vArena)}</div>
+             </div>
+           </div>
+         </div>`;
+
     return `
     <div class="plat-card" style="background:${col.bg}">
       <div class="plat-top">
@@ -914,7 +951,7 @@ function exportArenaRelatorioSimples(
       </div>
       <div class="plat-stats">
         <div class="stat">
-          <div class="stat-val">${alunos}</div>
+          <div class="stat-val">${visitantes}</div>
           <div class="stat-lbl">Visitantes</div>
         </div>
         <div class="stat">
@@ -923,21 +960,19 @@ function exportArenaRelatorioSimples(
         </div>
         <div class="stat">
           <div class="stat-val">${fmt(receita)}</div>
-          <div class="stat-lbl">Total Plataforma</div>
+          <div class="stat-lbl">Receita</div>
         </div>
       </div>
-      <div class="plat-repasse" style="border-color:${col.accent}30">
-        <span class="repasse-label">Repasse Arena (${pctArena}%)</span>
-        <span class="repasse-val" style="color:${col.accent}">${fmt(vArena)}</span>
-      </div>
+      ${byMod.size > 1 ? `<div class="mod-breakdown">${modRows}</div>` : ""}
+      ${repasseSection}
     </div>`;
   }).join("");
 
   const mensalistaRows = [...allMensalistas]
     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
-    .map((r) => {
+    .map((r, i) => {
       const mes = r.data ? new Date(r.data.replace(/(\d{2})\/(\d{2})\/(\d{4})/, "$3-$2-$1") + "T12:00:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : mesLabel;
-      return `<div class="mens-row">
+      return `<div class="mens-row" style="${i % 2 === 1 ? "background:#faf5ff" : ""}">
         <span class="mens-nome">${r.nomePlataforma}</span>
         <span class="mens-mes">${mes}</span>
         <span class="mens-val">${fmt(parseFloat(r.valor || "0"))}</span>
@@ -948,7 +983,7 @@ function exportArenaRelatorioSimples(
   <div class="mensalistas-block">
     <div class="mens-header">
       <span class="mens-title">Mensalistas</span>
-      <span class="mens-count">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""}</span>
+      <span class="mens-count">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(totalMensalistas)}</span>
     </div>
     <div class="mens-list">${mensalistaRows}</div>
     <div class="mens-footer">
@@ -963,76 +998,128 @@ function exportArenaRelatorioSimples(
 <meta charset="UTF-8">
 <title>Relatório Simples — ${mesLabel}</title>
 <style>
-  @page { size: A4 portrait; margin: 14mm 14mm; }
+  @page { size: A4 portrait; margin: 0; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:11px;color:#0f172a;background:#fff; }
+  body { font-family:Arial,sans-serif;font-size:11px;color:#0f172a;background:#f8fafc; }
 
-  .doc-header { margin-bottom:18px;padding-bottom:12px;border-bottom:3px solid #0f172a; }
-  .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em; }
-  .doc-header .sub { font-size:9px;color:#64748b;margin-top:4px; }
+  /* ── Header ── */
+  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:18px 20px 16px;color:white; }
+  .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px; }
+  .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white; }
+  .doc-header .sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-top:5px; }
 
-  .plat-card { border-radius:10px;padding:16px 18px;margin-bottom:12px; }
-  .plat-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px; }
-  .plat-name { font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:white; }
-  .plat-periodo { font-size:8px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em; }
-  .plat-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px; }
-  .stat .stat-val { font-size:17px;font-weight:800;color:white; }
-  .stat .stat-lbl { font-size:8px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px; }
-  .plat-repasse { border-top:1px solid;padding-top:10px;display:flex;align-items:center;justify-content:space-between; }
-  .repasse-label { font-size:9px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em; }
+  /* ── KPI strip ── */
+  .kpi-strip { display:grid;grid-template-columns:${pctArena === 100 ? "repeat(3,1fr)" : "repeat(4,1fr)"};gap:0;background:#fff;border-bottom:1px solid #e2e8f0; }
+  .kpi { padding:12px 14px;border-right:1px solid #e2e8f0; }
+  .kpi:last-child { border-right:none; }
+  .kpi-val { font-size:16px;font-weight:900;color:#0f172a;line-height:1; }
+  .kpi-label { font-size:7.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-top:3px; }
+  .kpi-accent { width:24px;height:3px;border-radius:2px;margin-bottom:6px; }
+
+  /* ── Body ── */
+  .body { padding:14px 16px; }
+
+  /* ── Platform cards ── */
+  .plat-card { border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .plat-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px; }
+  .plat-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:white; }
+  .plat-periodo { font-size:7.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em; }
+  .plat-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px; }
+  .stat { background:rgba(255,255,255,0.06);border-radius:6px;padding:8px 10px; }
+  .stat .stat-val { font-size:16px;font-weight:800;color:white; }
+  .stat .stat-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px; }
+
+  /* ── Mod breakdown inside card ── */
+  .mod-breakdown { margin-bottom:10px;display:flex;flex-direction:column;gap:3px; }
+  .mod-row { display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);border-radius:4px;padding:4px 8px; }
+  .mod-name { font-size:8px;color:rgba(255,255,255,0.6); }
+  .mod-val { font-size:8px;font-weight:700;color:rgba(255,255,255,0.85); }
+
+  /* ── Repasse ── */
+  .plat-repasse { border-top:1px solid rgba(255,255,255,0.12);padding-top:10px; }
+  .repasse-split { display:flex;justify-content:space-between;align-items:flex-end; }
+  .repasse-label { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px; }
+  .repasse-total { font-size:13px;font-weight:700;color:rgba(255,255,255,0.7); }
   .repasse-val { font-size:20px;font-weight:900; }
 
-  .mensalistas-block { margin-top:16px;border:1.5px solid #ddd6fe;border-radius:10px;overflow:hidden; }
-  .mens-header { background:#7c3aed;padding:10px 14px;display:flex;align-items:center;justify-content:space-between; }
+  /* ── Mensalistas ── */
+  .mensalistas-block { border-radius:10px;overflow:hidden;margin-bottom:10px;border:1.5px solid #ddd6fe; }
+  .mens-header { background:linear-gradient(90deg,#7c3aed,#6d28d9);padding:10px 14px;display:flex;align-items:center;justify-content:space-between; }
   .mens-title { font-size:11px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:0.06em; }
-  .mens-count { font-size:9px;color:#ede9fe; }
-  .mens-list { padding:4px 0; }
+  .mens-count { font-size:8.5px;color:#ede9fe; }
+  .mens-list { background:#fff; }
   .mens-row { display:flex;align-items:center;padding:6px 14px;gap:8px; }
-  .mens-row:nth-child(even) { background:#faf5ff; }
-  .mens-nome { flex:1;font-size:9.5px;font-weight:600;color:#1e293b; }
-  .mens-mes { font-size:8.5px;color:#94a3b8;width:100px;text-align:center; }
-  .mens-val { font-size:9.5px;font-weight:700;color:#7c3aed;width:80px;text-align:right; }
-  .mens-footer { background:#ede9fe;padding:7px 14px;display:flex;justify-content:space-between;font-size:9.5px;font-weight:700;color:#6d28d9;border-top:1.5px solid #ddd6fe; }
+  .mens-nome { flex:1;font-size:9px;font-weight:600;color:#1e293b; }
+  .mens-mes { font-size:8px;color:#94a3b8;width:90px;text-align:center; }
+  .mens-val { font-size:9px;font-weight:700;color:#7c3aed;width:70px;text-align:right; }
+  .mens-footer { background:#ede9fe;padding:7px 14px;display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:#6d28d9;border-top:1.5px solid #ddd6fe; }
 
-  .grand-total { margin-top:18px;background:#0f172a;border-radius:10px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between; }
-  .gt-left .gt-label { font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em; }
-  .gt-left .gt-val { font-size:24px;font-weight:900;color:white;margin-top:3px; }
+  /* ── Grand total ── */
+  .grand-total { background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
+  .gt-label { font-size:7.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
+  .gt-val { font-size:22px;font-weight:900;color:white; }
+  .gt-arena-val { font-size:20px;font-weight:900;color:#93c5fd; }
   .gt-right { text-align:right; }
-  .gt-right .gt-arena-label { font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em; }
-  .gt-right .gt-arena-val { font-size:20px;font-weight:900;color:#93c5fd;margin-top:3px; }
-  .gt-full .gt-label { font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em; }
-  .gt-full .gt-val { font-size:24px;font-weight:900;color:#93c5fd;margin-top:3px; }
 
-  .footer { margin-top:14px;font-size:8px;color:#94a3b8;text-align:right; }
+  /* ── Footer ── */
+  .footer { margin-top:10px;font-size:7.5px;color:#94a3b8;text-align:right;padding:0 2px; }
 </style>
 </head>
 <body>
   <div class="doc-header">
+    <div class="doc-header-brand">Seven Sports</div>
     <h1>Relatório da Arena</h1>
-    <div class="sub">Período: ${mesLabel} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" })} &nbsp;·&nbsp; ${pctArena}% Arena</div>
+    <div class="sub">Período: ${mesLabel} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" })} &nbsp;·&nbsp; ${pctArena}% repasse arena</div>
   </div>
 
-  ${platCards}
-
-  ${mensalistasSection}
-
-  <div class="grand-total">
-    ${pctArena === 100
-      ? `<div class="gt-full">
-          <div class="gt-label">Total Geral · Repasse Arena (100%)</div>
-          <div class="gt-val">${fmt(totalGeral)}</div>
-        </div>`
-      : `<div class="gt-left">
-          <div class="gt-label">Total Geral</div>
-          <div class="gt-val">${fmt(totalGeral)}</div>
-        </div>
-        <div class="gt-right">
-          <div class="gt-arena-label">Repasse Arena (${pctArena}%)</div>
-          <div class="gt-arena-val">${fmt(valorArena)}</div>
-        </div>`
-    }
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#6366f1"></div>
+      <div class="kpi-val">${fmt(totalGeral)}</div>
+      <div class="kpi-label">Total Geral</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#0ea5e9"></div>
+      <div class="kpi-val">${totalVisitantes}</div>
+      <div class="kpi-label">Visitantes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#f59e0b"></div>
+      <div class="kpi-val">${totalCheckins}</div>
+      <div class="kpi-label">Check-ins</div>
+    </div>
+    ${pctArena !== 100 ? `
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#10b981"></div>
+      <div class="kpi-val">${fmt(valorArena)}</div>
+      <div class="kpi-label">Repasse Arena (${pctArena}%)</div>
+    </div>` : ""}
   </div>
-  <div class="footer">Seven Sports &nbsp;·&nbsp; Relatório gerado automaticamente</div>
+
+  <div class="body">
+    ${platCards}
+
+    ${mensalistasSection}
+
+    <div class="grand-total">
+      ${pctArena === 100
+        ? `<div>
+             <div class="gt-label">Total Geral · Repasse Arena (100%)</div>
+             <div class="gt-val" style="color:#93c5fd">${fmt(totalGeral)}</div>
+           </div>`
+        : `<div>
+             <div class="gt-label">Total Geral</div>
+             <div class="gt-val">${fmt(totalGeral)}</div>
+           </div>
+           <div class="gt-right">
+             <div class="gt-label">Repasse Arena (${pctArena}%)</div>
+             <div class="gt-arena-val">${fmt(valorArena)}</div>
+           </div>`
+      }
+    </div>
+
+    <div class="footer">Seven Sports &nbsp;·&nbsp; Relatório gerado automaticamente</div>
+  </div>
 </body>
 </html>`;
 
