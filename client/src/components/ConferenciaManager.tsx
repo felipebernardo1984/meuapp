@@ -548,7 +548,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
@@ -817,7 +817,7 @@ function exportComprovanteConsolidado(
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
@@ -1041,7 +1041,7 @@ function exportArenaRelatorioSimples(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:16px 18px 14px;color:white;border-radius:0 0 10px 10px;margin-bottom:0; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:16px 18px 14px;color:white;text-align:center;border-radius:0;margin-bottom:0; }
   .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white; }
   .doc-header .sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-top:5px; }
@@ -1277,7 +1277,7 @@ function exportArenaRelatorio(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
@@ -1520,7 +1520,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
