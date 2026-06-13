@@ -477,11 +477,11 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
         </div>
         <table>
           <colgroup>
-            <col style="width:${hasComissao ? "35%" : "45%"}">
-            <col style="width:${hasComissao ? "20%" : "25%"}">
-            <col style="width:10%">
-            <col style="width:${hasComissao ? "17%" : "20%"}">
-            ${hasComissao ? `<col style="width:18%">` : ""}
+            <col style="width:${hasComissao ? "42%" : "52%"}">
+            <col style="width:${hasComissao ? "17%" : "22%"}">
+            <col style="width:8%">
+            <col style="width:${hasComissao ? "16%" : "18%"}">
+            ${hasComissao ? `<col style="width:17%">` : ""}
           </colgroup>
           <thead><tr>
             <th class="col-nome">Nome na Plataforma</th>
@@ -1461,11 +1461,11 @@ function exportToPDF(sessao: SessaoDetalhe) {
         </div>
         <table>
           <colgroup>
-            <col style="width:30%">
-            <col style="width:22%">
-            <col style="width:8%">
+            <col style="width:38%">
+            <col style="width:17%">
+            <col style="width:7%">
             <col style="width:13%">
-            <col style="width:13%">
+            <col style="width:12%">
             <col style="width:13%">
           </colgroup>
           <thead>
@@ -4681,17 +4681,17 @@ function RelatorioView({
                 <TableRow className="bg-muted/40">
                   <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
                   <TableHead className="text-xs py-2 w-28">Modalidade</TableHead>
-                  <TableHead className="text-xs py-2">Data/Hora</TableHead>
-                  <TableHead className="text-xs py-2 text-right">Total</TableHead>
-                  <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
-                  <TableHead className="text-xs py-2 text-right">Arena</TableHead>
+                  <TableHead className="text-xs py-2 w-40">Data/Hora</TableHead>
+                  <TableHead className="text-xs py-2 text-right w-28">Total</TableHead>
+                  <TableHead className="text-xs py-2 text-right w-24">Prof.</TableHead>
+                  <TableHead className="text-xs py-2 text-right w-20">Arena</TableHead>
                 </TableRow>
               );
 
               if (!multiMod) {
                 return (
                   <div className="border rounded overflow-hidden">
-                    <Table>
+                    <Table className="table-fixed w-full">
                       <TableHeader>{tableHeader()}</TableHeader>
                       <TableBody>{renderLinhas(rows)}</TableBody>
                     </Table>
@@ -4717,7 +4717,7 @@ function RelatorioView({
                             {modRows.length} aluno{modRows.length !== 1 ? "s" : ""} · {fmtVal(String(modTotal))}
                           </span>
                         </div>
-                        <Table>
+                        <Table className="table-fixed w-full">
                           <TableHeader>{tableHeader()}</TableHeader>
                           <TableBody>{renderLinhas(modRows)}</TableBody>
                         </Table>
