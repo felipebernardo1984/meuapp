@@ -507,7 +507,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       <tr>
         <td class="col-nome">${r.nomePlataforma}</td>
         <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
-        ${professorKey !== "__arena__" ? `<td class="col-center" style="color:#059669">${fmt(rowVProf(r))}</td><td class="col-center" style="color:#2563eb">${fmt(rowVArena(r))}</td>` : ""}
+        ${professorKey !== "__arena__" ? `<td class="col-center" style="color:#059669">${fmt(rowVProf(r))}</td><td class="col-center" style="color:#88a8e9">${fmt(rowVArena(r))}</td>` : ""}
       </tr>`;
     }).join("");
   const mensalistaBlock = mensalistaRegs.length === 0 ? "" : `
@@ -531,7 +531,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       <tfoot><tr>
         <td class="col-nome"><strong>Subtotal Mensalistas</strong></td>
         <td class="col-center"><strong>${fmt(mSubtotal)}</strong></td>
-        ${professorKey !== "__arena__" ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td class="col-center"><strong style="color:#2563eb">${fmt(mArena)}</strong></td>` : ""}
+        ${professorKey !== "__arena__" ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td class="col-center"><strong style="color:#88a8e9">${fmt(mArena)}</strong></td>` : ""}
       </tr></tfoot>
     </table>
   </div>`;
@@ -548,7 +548,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
+  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
@@ -613,7 +613,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       <div class="gt-left"><div class="gt-lbl">Total Plataforma</div><div class="gt-val">${fmt(subtotal)}</div></div>
       ${professorKey !== "__arena__"
         ? `<div class="gt-right"><div class="gt-lbl">Sua Comissão (${pct}%)</div><div class="gt-val">${fmt(comissao)}</div></div>`
-        : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val" style="color:#93c5fd">${fmt(arena)}</div></div>`}
+        : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val" style="color:#88a8e9">${fmt(arena)}</div></div>`}
     </div>` : ""}
   ${mensalistaBlock}
   <div class="footer" style="padding:0 20px 16px">Seven Sports &nbsp;·&nbsp; Comprovante gerado automaticamente</div>
@@ -775,7 +775,7 @@ function exportComprovanteConsolidado(
       <tr>
         <td class="col-nome">${r.nomePlataforma}</td>
         <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
-        ${hasCom2 ? `<td class="col-center" style="color:#059669">${fmt(rVProf(r))}</td><td class="col-center" style="color:#2563eb">${fmt(rVArena(r))}</td>` : ""}
+        ${hasCom2 ? `<td class="col-center" style="color:#059669">${fmt(rVProf(r))}</td><td class="col-center" style="color:#88a8e9">${fmt(rVArena(r))}</td>` : ""}
       </tr>`;
     }).join("");
   const mensalistasBlock = allMensalistas.length === 0 ? "" : `
@@ -799,7 +799,7 @@ function exportComprovanteConsolidado(
       <tfoot><tr>
         <td class="col-nome"><strong>Subtotal Mensalistas</strong></td>
         <td class="col-center"><strong>${fmt(mTotal)}</strong></td>
-        ${hasCom2 ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td class="col-center"><strong style="color:#2563eb">${fmt(mArena)}</strong></td>` : ""}
+        ${hasCom2 ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td class="col-center"><strong style="color:#88a8e9">${fmt(mArena)}</strong></td>` : ""}
       </tr></tfoot>
     </table>
   </div>`;
@@ -816,7 +816,7 @@ function exportComprovanteConsolidado(
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
+  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
@@ -888,7 +888,7 @@ function exportComprovanteConsolidado(
       <div class="gt-left"><div class="gt-lbl">Total Plataforma</div><div class="gt-val">${fmt(totalReceita)}</div></div>
       ${professorId !== "__arena__"
         ? `<div class="gt-right"><div class="gt-lbl">Comissão Total (${pct}%)</div><div class="gt-val">${fmt(totalComissao)}</div></div>`
-        : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val" style="color:#93c5fd">${fmt(totalArena)}</div></div>`}
+        : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val" style="color:#88a8e9">${fmt(totalArena)}</div></div>`}
     </div>` : ""}
     ${mensalistasBlock}
     <div class="footer">Seven Sports &nbsp;·&nbsp; Comprovante gerado automaticamente</div>
@@ -957,7 +957,7 @@ function exportArenaRelatorioSimples(
     const visitantes = new Set(regs.map((r) => r.nomePlataforma)).size;
     const vArena   = receita * (pctArena / 100);
     const periodo  = fmtPeriod(periodoInicio, periodoFim);
-    const col      = PLAT_COLORS[key] ?? { bg: "#1d4ed8", accent: "#bfdbfe" };
+    const col      = PLAT_COLORS[key] ?? { bg: "#88a8e9", accent: "#c8d8f4" };
 
     const repasseSection = pctArena === 100
       ? `<div class="plat-repasse" style="border-color:${col.accent}30">
@@ -1038,7 +1038,7 @@ function exportArenaRelatorioSimples(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:16px 18px 18px;color:white;text-align:center;border-radius:0;margin-bottom:0; }
+  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:16px 18px 18px;color:white;text-align:center;border-radius:0;margin-bottom:0; }
   .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white; }
   .doc-header .sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-top:5px;margin-bottom:14px; }
@@ -1086,7 +1086,7 @@ function exportArenaRelatorioSimples(
   .grand-total { background:#1e293b;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
   .gt-label { font-size:7.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
   .gt-val { font-size:22px;font-weight:900;color:white; }
-  .gt-arena-val { font-size:20px;font-weight:900;color:#93c5fd; }
+  .gt-arena-val { font-size:20px;font-weight:900;color:#88a8e9; }
   .gt-right { text-align:right; }
 
   /* ── Footer ── */
@@ -1133,7 +1133,7 @@ function exportArenaRelatorioSimples(
       ${pctArena === 100
         ? `<div>
              <div class="gt-label">Total Geral · Repasse Arena (100%)</div>
-             <div class="gt-val" style="color:#93c5fd">${fmt(totalGeral)}</div>
+             <div class="gt-val" style="color:#88a8e9">${fmt(totalGeral)}</div>
            </div>`
         : `<div>
              <div class="gt-label">Total Geral</div>
@@ -1272,7 +1272,7 @@ function exportArenaRelatorio(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
+  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:14px; }
@@ -1320,9 +1320,9 @@ function exportArenaRelatorio(
   .gt-left .gt-val { font-size:20px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
   .gt-right .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
-  .gt-right .gt-val { font-size:18px;font-weight:900;color:#93c5fd; }
+  .gt-right .gt-val { font-size:18px;font-weight:900;color:#88a8e9; }
   .gt-full .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
-  .gt-full .gt-val { font-size:20px;font-weight:900;color:#93c5fd; }
+  .gt-full .gt-val { font-size:20px;font-weight:900;color:#88a8e9; }
 
   /* ── Footer ── */
   .footer { margin-top:10px;font-size:7.5px;color:#888;text-align:right; }
@@ -1513,7 +1513,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
+  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
