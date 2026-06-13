@@ -3565,19 +3565,6 @@ function SessaoView({
             <p className="text-[11px] text-amber-600/80 dark:text-amber-500/80 mt-1">{fmtVal(String(pendenteValor))}</p>
           </CardContent>
         </Card>
-        {divergenteCount > 0 && (
-          <Card
-            className={cn("flex-1 min-w-0 border shadow-none bg-purple-50/60 dark:bg-purple-950/30 border-purple-200/70 dark:border-purple-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroDivergente && "ring-2 ring-purple-500/60")}
-            onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(""); setFiltroDivergente((v) => !v); }}
-            data-testid="kpi-divergentes"
-          >
-            <CardContent className="p-3">
-              <p className="text-[10px] font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wider mb-1">Divergentes</p>
-              <p className="text-base font-bold text-purple-700 dark:text-purple-400 leading-none">{divergenteCount}</p>
-              <p className="text-[11px] text-purple-600/80 dark:text-purple-500/80 mt-1">{fmtVal(String(divergenteValor))}</p>
-            </CardContent>
-          </Card>
-        )}
         <Card
           className={cn("flex-1 min-w-0 border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
           onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado"); }}
