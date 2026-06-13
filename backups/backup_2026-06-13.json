@@ -1,14 +1,134 @@
 {
-  "createdAt": "2026-06-13T09:44:05.517Z",
-  "arenas": [],
-  "plans": [],
-  "teachers": [],
-  "students": [],
-  "checkins": [],
+  "createdAt": "2026-06-13T14:52:55.501Z",
+  "arenas": [
+    {
+      "id": "faf7de7b-11af-4277-8906-ff108854486c",
+      "name": "Arena Padrão",
+      "subscriptionPlan": "premium",
+      "gestorLogin": "333",
+      "gestorSenha": "333",
+      "gestorNome": null,
+      "gestorCpf": null,
+      "gestorEmail": null,
+      "gestorTelefone": null,
+      "subscriptionStartDate": "13/06/2026",
+      "subscriptionValue": "R$ 199,00",
+      "subscriptionStatus": "Ativo",
+      "nextBillingDate": "20/06/2026",
+      "statusConta": "ativo",
+      "trialExpiraEm": null,
+      "endereco": null,
+      "urlAgenda": null,
+      "createdAt": "2026-06-13T09:44:06.352Z",
+      "updatedAt": "2026-06-13T09:44:06.352Z"
+    }
+  ],
+  "plans": [
+    {
+      "id": "39b024b9-bbe8-4cfa-977d-24131f3f66f2",
+      "arenaId": "faf7de7b-11af-4277-8906-ff108854486c",
+      "titulo": "1x por semana",
+      "checkins": 8,
+      "valorTexto": null
+    },
+    {
+      "id": "c68023d5-5155-4c7e-a0fd-26cd47d0b3b5",
+      "arenaId": "faf7de7b-11af-4277-8906-ff108854486c",
+      "titulo": "2x por semana",
+      "checkins": 12,
+      "valorTexto": null
+    },
+    {
+      "id": "da0f1920-0e6f-4b96-840b-57b7b235ba2b",
+      "arenaId": "faf7de7b-11af-4277-8906-ff108854486c",
+      "titulo": "Mensalista",
+      "checkins": 0,
+      "valorTexto": "R$ 140,00"
+    }
+  ],
+  "teachers": [
+    {
+      "id": "29064fc5-ca2b-4679-ad13-81533b6871aa",
+      "arenaId": "faf7de7b-11af-4277-8906-ff108854486c",
+      "nome": "Felipe Bernardo",
+      "login": "222",
+      "senha": "222",
+      "cpf": null,
+      "email": null,
+      "telefone": null,
+      "modalidade": "Vôlei de Praia",
+      "percentualComissao": "0.00",
+      "photoUrl": null,
+      "cor": "#1565C0"
+    }
+  ],
+  "students": [
+    {
+      "id": "b3a190c2-a2e4-4851-8a8f-92cb761c2c33",
+      "arenaId": "faf7de7b-11af-4277-8906-ff108854486c",
+      "nome": "Maria Santos",
+      "login": "111",
+      "senha": "111",
+      "cpf": "987.654.321-00",
+      "email": null,
+      "telefone": null,
+      "modalidade": "Vôlei de Praia",
+      "planoId": "c68023d5-5155-4c7e-a0fd-26cd47d0b3b5",
+      "planoTitulo": "2x por semana",
+      "planoCheckins": 12,
+      "planoValorTexto": null,
+      "checkinsRealizados": 2,
+      "statusMensalidade": "Em dia",
+      "aprovado": true,
+      "ultimoCheckin": "02/01/2025",
+      "photoUrl": null,
+      "integrationType": "none",
+      "integrationPlan": null,
+      "professorId": null,
+      "diaVencimento": null,
+      "carenciaDias": 3,
+      "ativo": true,
+      "desativadoEm": null,
+      "criadoEm": "2026-06-13T09:44:06.410Z"
+    }
+  ],
+  "checkins": [
+    {
+      "id": "abae1bd4-e72f-4a67-9b04-5bfe4380d00a",
+      "arenaId": "faf7de7b-11af-4277-8906-ff108854486c",
+      "studentId": "b3a190c2-a2e4-4851-8a8f-92cb761c2c33",
+      "data": "01/01/2025",
+      "hora": "19:30",
+      "tipo": "pendente",
+      "professorId": null
+    },
+    {
+      "id": "0b73c790-1f4c-4ba6-8800-f517fa05f4cf",
+      "arenaId": "faf7de7b-11af-4277-8906-ff108854486c",
+      "studentId": "b3a190c2-a2e4-4851-8a8f-92cb761c2c33",
+      "data": "02/01/2025",
+      "hora": "18:30",
+      "tipo": "pendente",
+      "professorId": null
+    }
+  ],
   "payments": [],
   "charges": [],
   "despesas": [],
   "turmas": [],
   "turmaAlunos": [],
-  "recursos": []
+  "recursos": [
+    {
+      "id": "53d197e0-a6c0-40b5-96bb-e271927b7ddb",
+      "arenaId": "faf7de7b-11af-4277-8906-ff108854486c",
+      "nome": "Quadra 1",
+      "tipo": "sala",
+      "ativo": true,
+      "valorAluguel": null,
+      "valorDayuse": null,
+      "duracaoMinima": 1,
+      "valorHoraAdicional": null,
+      "criadoEm": "2026-06-13T09:44:06.424Z"
+    }
+  ]
 }
