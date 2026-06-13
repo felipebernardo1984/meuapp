@@ -1392,7 +1392,15 @@ export function registerConferenciaRoutes(app: Express): void {
         const modKey = (r.modalidade as string || "").trim().toLowerCase();
         const suggestedProf = modalProfUp.get(modKey);
         if (suggestedProf && suggestedProf !== (r.professorId as string | null)) {
+          const profUp = profMap.get(suggestedProf);
+          const pctUp = parseFloat(profUp?.percentualComissao ?? "0");
+          const valUp = parseFloat(r.valor as string || "0");
+          const vpUp = Math.round(valUp * pctUp / 100 * 100) / 100;
           r.professorId = suggestedProf;
+          r.percentual = String(pctUp);
+          r.valorProfessor = String(vpUp);
+          r.valorArena = String(Math.round((valUp - vpUp) * 100) / 100);
+          r.categoria = pctUp > 0 ? "comissao" : "arena";
           reassignCount++;
         }
       }
@@ -1414,7 +1422,15 @@ export function registerConferenciaRoutes(app: Express): void {
         const modKey = (r.modalidade as string).trim().toLowerCase();
         const suggestedProf = modalProfUp.get(modKey);
         if (suggestedProf && suggestedProf !== (r.professorId as string | null)) {
+          const prof3 = profMap.get(suggestedProf);
+          const pct3 = parseFloat(prof3?.percentualComissao ?? "0");
+          const val3 = parseFloat(r.valor as string || "0");
+          const vp3 = Math.round(val3 * pct3 / 100 * 100) / 100;
           r.professorId = suggestedProf;
+          r.percentual = String(pct3);
+          r.valorProfessor = String(vp3);
+          r.valorArena = String(Math.round((val3 - vp3) * 100) / 100);
+          r.categoria = pct3 > 0 ? "comissao" : "arena";
           passo3Count++;
         }
       }
@@ -1824,9 +1840,18 @@ export function registerConferenciaRoutes(app: Express): void {
       if (modKey === dominant) continue; // dominant was re-confirmed by Passo 1
       const suggestedProf = modalProfR.get(modKey);
       if (suggestedProf && suggestedProf !== r.professorId) {
+        const profR2 = profMap.get(suggestedProf) ?? teacherMapR.get(suggestedProf);
+        const pctR2 = parseFloat(profR2?.percentualComissao ?? "0");
+        const valR2 = parseFloat(r.valor || "0");
+        const vpR2 = Math.round(valR2 * pctR2 / 100 * 100) / 100;
         reassignOpsR.push(
-          db.update(conferenciaRegistros).set({ professorId: suggestedProf })
-            .where(eq(conferenciaRegistros.id, r.id))
+          db.update(conferenciaRegistros).set({
+            professorId: suggestedProf,
+            percentual: String(pctR2),
+            valorProfessor: String(vpR2),
+            valorArena: String(Math.round((valR2 - vpR2) * 100) / 100),
+            categoria: pctR2 > 0 ? "comissao" : "arena",
+          }).where(eq(conferenciaRegistros.id, r.id))
         );
       }
     }
@@ -1843,9 +1868,18 @@ export function registerConferenciaRoutes(app: Express): void {
       const modKey = r.modalidade.trim().toLowerCase();
       const suggestedProf = modalProfR.get(modKey);
       if (suggestedProf && suggestedProf !== r.professorId) {
+        const profR3 = profMap.get(suggestedProf) ?? teacherMapR.get(suggestedProf);
+        const pctR3 = parseFloat(profR3?.percentualComissao ?? "0");
+        const valR3 = parseFloat(r.valor || "0");
+        const vpR3 = Math.round(valR3 * pctR3 / 100 * 100) / 100;
         passo3OpsR.push(
-          db.update(conferenciaRegistros).set({ professorId: suggestedProf })
-            .where(eq(conferenciaRegistros.id, r.id))
+          db.update(conferenciaRegistros).set({
+            professorId: suggestedProf,
+            percentual: String(pctR3),
+            valorProfessor: String(vpR3),
+            valorArena: String(Math.round((valR3 - vpR3) * 100) / 100),
+            categoria: pctR3 > 0 ? "comissao" : "arena",
+          }).where(eq(conferenciaRegistros.id, r.id))
         );
       }
     }

@@ -4389,7 +4389,7 @@ function SessaoView({
                             </Button>
                           );
                         })()}
-                        {(r.status === "pendente" || r.status === "nao_encontrado") && (
+                        {(r.status === "pendente" || r.status === "nao_encontrado" || (r.status === "confirmado" && !r.professorId)) && (
                           <Button
                             size="sm"
                             variant="ghost"
