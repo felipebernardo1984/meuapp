@@ -3225,6 +3225,7 @@ function SessaoView({
 }) {
   const [tab, setTab] = useState<"conferencia" | "relatorio">("conferencia");
   const [filtroStatus, setFiltroStatus] = useState("");
+  const [filtroNaoAtribuido, setFiltroNaoAtribuido] = useState(false);
   const [filtroProfessor, setFiltroProfessor] = useState("");
   const [buscaNome, setBuscaNome] = useState("");
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
@@ -3340,6 +3341,12 @@ function SessaoView({
 
   const filtered = registros
     .filter((r) => {
+      if (filtroNaoAtribuido) {
+        const baseOk = r.status === "confirmado" && r.categoria === "arena" && !r.professorId;
+        if (!baseOk) return false;
+        if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
+        return true;
+      }
       if (filtroStatus && r.status !== filtroStatus) return false;
       if (filtroProfessor && r.professorId !== filtroProfessor) return false;
       if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
@@ -3438,6 +3445,7 @@ function SessaoView({
   const arenaRecords = registros.filter(
     (r) => r.status === "confirmado" && r.categoria === "arena" && !r.professorId
   );
+  const naoAtribuidoValor = arenaRecords.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const arenaModalidades = Array.from(new Set(arenaRecords.map((r) => r.modalidade).filter(Boolean))) as string[];
 
   const handleBulkRedirectArena = () => {
@@ -3520,10 +3528,10 @@ function SessaoView({
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-px -m-px overflow-visible">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-px -m-px overflow-visible">
         <Card
-          className={cn("border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none", filtroStatus === "" && "ring-2 ring-primary/50")}
-          onClick={() => setFiltroStatus("")}
+          className={cn("border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "" && "ring-2 ring-primary/50")}
+          onClick={() => { setFiltroStatus(""); setFiltroNaoAtribuido(false); }}
           data-testid="kpi-total"
         >
           <CardContent className="p-4">
@@ -3533,8 +3541,8 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroStatus === "confirmado" && "ring-2 ring-emerald-500/60")}
-          onClick={() => setFiltroStatus(filtroStatus === "confirmado" ? "" : "confirmado")}
+          className={cn("border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "confirmado" && "ring-2 ring-emerald-500/60")}
+          onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(filtroStatus === "confirmado" ? "" : "confirmado"); }}
           data-testid="kpi-confirmados"
         >
           <CardContent className="p-4">
@@ -3544,8 +3552,8 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroStatus === "pendente" && "ring-2 ring-amber-500/60")}
-          onClick={() => setFiltroStatus(filtroStatus === "pendente" ? "" : "pendente")}
+          className={cn("border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "pendente" && "ring-2 ring-amber-500/60")}
+          onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(filtroStatus === "pendente" ? "" : "pendente"); }}
           data-testid="kpi-possiveis"
         >
           <CardContent className="p-4">
@@ -3555,14 +3563,25 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none cursor-pointer transition-all hover:shadow-sm select-none", naoEncontradosCount > 0 ? "bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40" : "bg-muted/30", filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
-          onClick={() => setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado")}
+          className={cn("border shadow-none cursor-pointer transition-all hover:shadow-sm select-none", naoEncontradosCount > 0 ? "bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40" : "bg-muted/30", !filtroNaoAtribuido && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
+          onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado"); }}
           data-testid="kpi-nao-encontrados"
         >
           <CardContent className="p-4">
             <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-1.5", naoEncontradosCount > 0 ? "text-red-700 dark:text-red-400" : "text-muted-foreground")}>Não encontrados</p>
             <p className={cn("text-lg font-bold leading-none", naoEncontradosCount > 0 ? "text-red-700 dark:text-red-400" : "text-foreground")}>{sessao.naoEncontrados}</p>
             <p className={cn("text-xs mt-1", naoEncontradosCount > 0 ? "text-red-600/80 dark:text-red-500/80" : "text-muted-foreground")}>{fmtVal(String(naoEncontradoValor))}</p>
+          </CardContent>
+        </Card>
+        <Card
+          className={cn("border shadow-none cursor-pointer transition-all hover:shadow-sm select-none", arenaRecords.length > 0 ? "bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40" : "bg-muted/30", filtroNaoAtribuido && "ring-2 ring-blue-500/60")}
+          onClick={() => { setFiltroStatus(""); setFiltroNaoAtribuido((v) => !v); }}
+          data-testid="kpi-nao-atribuido"
+        >
+          <CardContent className="p-4">
+            <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-1.5", arenaRecords.length > 0 ? "text-blue-700 dark:text-blue-400" : "text-muted-foreground")}>Não atribuído</p>
+            <p className={cn("text-lg font-bold leading-none", arenaRecords.length > 0 ? "text-blue-700 dark:text-blue-400" : "text-foreground")}>{arenaRecords.length}</p>
+            <p className={cn("text-xs mt-1", arenaRecords.length > 0 ? "text-blue-600/80 dark:text-blue-500/80" : "text-muted-foreground")}>{fmtVal(String(naoAtribuidoValor))}</p>
           </CardContent>
         </Card>
       </div>
@@ -3795,6 +3814,11 @@ function SessaoView({
                           {r.status === "pendente" && r.modalidadeDivergente && (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 shrink-0" title="A modalidade deste registro difere da modalidade típica do professor sugerido nesta sessão">
                               Modalidade divergente
+                            </Badge>
+                          )}
+                          {r.status === "confirmado" && !r.studentId && !r.alunoNomeMatch && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-slate-100 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400 shrink-0" title="Registro destinado manualmente — sem aluno correspondente na arena">
+                              Sem correspondência
                             </Badge>
                           )}
                         </div>
