@@ -4361,23 +4361,31 @@ function SessaoView({
                     {/* ── Right action panel ── */}
                     {r.status !== "ignorado" && (
                       <div className="flex flex-col items-center justify-center gap-1 px-2.5 min-w-[80px] border-l border-border/60 bg-muted/10 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full"
-                          onClick={() => {
-                            if (r.status === "confirmado") {
-                              const dest = rowDestino[r.id] ?? (r.professorId ?? "arena");
-                              setConfirmDialog({ registro: r, novoDestino: dest });
-                            } else {
-                              handleConfirmar(r);
-                            }
-                          }}
-                          disabled={updateMutation.isPending}
-                          data-testid={`button-confirmar-${r.id}`}
-                        >
-                          Confirmar
-                        </Button>
+                        {(() => {
+                          const currentDest = r.professorId ?? "arena";
+                          const selectedDest = rowDestino[r.id] ?? currentDest;
+                          const destinoChanged = r.status === "confirmado" && selectedDest !== currentDest;
+                          const isConfirmadoUnchanged = r.status === "confirmado" && !destinoChanged;
+                          return (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full disabled:opacity-30 disabled:cursor-not-allowed"
+                              onClick={() => {
+                                if (isConfirmadoUnchanged) return;
+                                if (r.status === "confirmado") {
+                                  setConfirmDialog({ registro: r, novoDestino: selectedDest });
+                                } else {
+                                  handleConfirmar(r);
+                                }
+                              }}
+                              disabled={updateMutation.isPending || isConfirmadoUnchanged}
+                              data-testid={`button-confirmar-${r.id}`}
+                            >
+                              Confirmar
+                            </Button>
+                          );
+                        })()}
                         {(r.status === "pendente" || r.status === "nao_encontrado") && (
                           <Button
                             size="sm"
