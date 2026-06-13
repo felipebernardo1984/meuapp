@@ -2027,7 +2027,27 @@ export function registerConferenciaRoutes(app: Express): void {
             inArray(conferenciaRegistros.status, ["pendente", "nao_encontrado"])
           )
         );
-      const toLink = sameNameRegs.filter(r => normalizeNome(r.nomePlataforma) === normNomePlat);
+
+      // All pending records with the same name
+      const sameName = sameNameRegs.filter(r => normalizeNome(r.nomePlataforma) === normNomePlat);
+
+      // Smart modality-aware cascade:
+      // If the student has pending records across multiple distinct modalities,
+      // restrict the cascade to only records that share the same modality as the
+      // record being confirmed — so each modality can be assigned to a different
+      // professor independently.
+      // When all pending records share one modality (or have no modality info),
+      // fall back to the original bulk behaviour.
+      const distinctModalities = new Set(
+        sameName.map(r => r.modalidade ?? "").filter(Boolean)
+      );
+      const currentModality = registro.modalidade;
+      const useModalityFilter = Boolean(currentModality) && distinctModalities.size > 1;
+
+      const toLink = useModalityFilter
+        ? sameName.filter(r => r.modalidade === currentModality)
+        : sameName;
+
       if (toLink.length > 0) {
         const updPct = parseFloat(String(updated.percentual || "0")) / 100;
         await Promise.all(toLink.map(r => {
