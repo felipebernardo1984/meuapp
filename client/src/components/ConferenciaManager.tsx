@@ -469,7 +469,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       <div class="mod-block">
         <div class="mod-header">
           <span class="mod-name">${mod}</span>
-          <span class="mod-summary">${modAlunos} aluno${modAlunos !== 1 ? "s" : ""} · ${modChks} check-in${modChks !== 1 ? "s" : ""} · ${fmt(modReceita)}${hasComissao ? ` · Comissão: ${fmt(modComissao)}` : ""}</span>
+          <span class="mod-summary">${modAlunos} visitante${modAlunos !== 1 ? "s" : ""} · ${modChks} check-in${modChks !== 1 ? "s" : ""} · ${fmt(modReceita)}${hasComissao ? ` · Comissão: ${fmt(modComissao)}` : ""}</span>
         </div>
         <table>
           <colgroup>
@@ -583,7 +583,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   <div class="subtitle">Comprovante de receita — ${plataformaLabel(sessao.plataforma)} · ${sessao.nomeArquivo} · ${dataStr}</div>
   ${regs.length > 0 ? `
   <div class="summary-grid">
-    <div class="summary-card"><div class="val">${new Set(regs.map(r => r.nomePlataforma)).size}</div><div class="lbl">Alunos Plataforma</div></div>
+    <div class="summary-card"><div class="val">${new Set(regs.map(r => r.nomePlataforma)).size}</div><div class="lbl">Visitantes</div></div>
     <div class="summary-card"><div class="val">${chks}</div><div class="lbl">Check-ins</div></div>
     <div class="summary-card"><div class="val">${fmt(subtotal)}</div><div class="lbl">Receita Plataforma</div></div>
     ${professorKey !== "__arena__" ? `<div class="summary-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(comissao)}</div><div class="lbl">Sua Comissão (${pct}%)</div></div>` : `<div class="summary-card"><div class="val">${fmt(arena)}</div><div class="lbl">Valor Arena</div></div>`}
@@ -691,7 +691,7 @@ function exportComprovanteConsolidado(
         <div class="mod-block">
           <div class="mod-header">
             <span class="mod-name">${mod}</span>
-            <span class="mod-summary">${mAlunos} aluno${mAlunos !== 1 ? "s" : ""} · ${mChks} check-in${mChks !== 1 ? "s" : ""} · ${fmt(mReceita)}${hasCom ? ` · Comissão: ${fmt(mComissao)}` : ""}</span>
+            <span class="mod-summary">${mAlunos} visitante${mAlunos !== 1 ? "s" : ""} · ${mChks} check-in${mChks !== 1 ? "s" : ""} · ${fmt(mReceita)}${hasCom ? ` · Comissão: ${fmt(mComissao)}` : ""}</span>
           </div>
           <table>
             <colgroup>
@@ -915,7 +915,7 @@ function exportArenaRelatorioSimples(
       <div class="plat-stats">
         <div class="stat">
           <div class="stat-val">${alunos}</div>
-          <div class="stat-lbl">Visitas</div>
+          <div class="stat-lbl">Visitantes</div>
         </div>
         <div class="stat">
           <div class="stat-val">${chks}</div>
@@ -1095,7 +1095,7 @@ function exportArenaRelatorio(
     <div class="section">
       <div class="section-header">
         <span class="section-platform">${label.toUpperCase()}</span>
-        <span class="section-meta">${alunos} visita${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · ${fmt(receita)}</span>
+        <span class="section-meta">${alunos} visitante${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · ${fmt(receita)}</span>
       </div>
       <table>
         <colgroup>
@@ -1106,7 +1106,7 @@ function exportArenaRelatorio(
         </colgroup>
         <thead><tr>
           <th class="col-nome">Modalidade</th>
-          <th class="col-center">Visitas</th>
+          <th class="col-center">Visitantes</th>
           <th class="col-center">Check-ins</th>
           <th class="col-center">Receita</th>
         </tr></thead>
@@ -1618,9 +1618,9 @@ function LandingView({
             const platformSessoes = g.sessoes.filter((ss) => ss.plataforma !== "manual");
             const hasMensalistas = g.sessoes.some((ss) => ss.plataforma === "manual");
             const isProfessorOnly = g.sessoes.length === 0;
-            const totalEncontrados = platformSessoes.reduce((s, ss) => s + ss.encontrados, 0);
-            const totalPossiveis   = platformSessoes.reduce((s, ss) => s + ss.possiveis, 0);
-            const totalNao         = platformSessoes.reduce((s, ss) => s + ss.naoEncontrados, 0);
+            const totalEncontrados = platformSessoes.reduce((s, ss) => s + (ss.encontrados ?? 0), 0);
+            const totalPossiveis   = platformSessoes.reduce((s, ss) => s + (ss.possiveis ?? 0), 0);
+            const totalNao         = platformSessoes.reduce((s, ss) => s + (ss.naoEncontrados ?? 0), 0);
             const plataformas = isProfessorOnly ? "Professores" : [
               ...Array.from(new Set(platformSessoes.map((ss) => plataformaLabel(ss.plataforma)))),
               ...(hasMensalistas ? ["Mensalistas"] : []),
@@ -4243,6 +4243,7 @@ function RelatorioView({
   sessaoId,
   arenaId,
   periodo,
+  confsProfs,
 }: {
   registros: Registro[];
   plataforma: string;
@@ -4258,17 +4259,20 @@ function RelatorioView({
     enabled: !!periodo,
   });
 
-  // Arena = valor - valorProfessor (o que sobra após comissão do professor)
-  const arenaRow = (r: Registro) => Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
-  const arenaSum = (regs: Registro[]) => regs.reduce((s, r) => s + arenaRow(r), 0);
+  // Always recalculate prof/arena split from current % — never trust DB snapshots
+  const getPctNum = (profId: string | null | undefined) => {
+    if (!profId) return 0;
+    const p = confsProfs.find((c) => c.id === profId);
+    return parseFloat(p?.percentualComissao ?? "0");
+  };
+  const profRowVal = (r: Registro) => Math.round(parseFloat(r.valor || "0") * getPctNum(r.professorId) / 100 * 100) / 100;
+  const arenaRow   = (r: Registro) => Math.max(0, parseFloat(r.valor || "0") - profRowVal(r));
+  const arenaSum   = (regs: Registro[]) => regs.reduce((s, r) => s + arenaRow(r), 0);
 
   // Platform records only — mensalistas are excluded from platform totals
   const confirmados = registros.filter((r) => r.status === "confirmado" && r.categoria !== "mensalista");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-  const totalProfessores = confirmados.reduce(
-    (s, r) => s + parseFloat(r.valorProfessor || "0"),
-    0
-  );
+  const totalProfessores = confirmados.reduce((s, r) => s + profRowVal(r), 0);
   const totalArena = Math.max(0, totalRecebido - totalProfessores);
   const totalCheckins = confirmados.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const naoEncontrados = registros.filter((r) => r.status === "nao_encontrado");
@@ -4352,10 +4356,10 @@ function RelatorioView({
             // Platform-only totals (mensalistas shown separately)
             const platRegs = g.registros.filter((r) => r.categoria !== "mensalista");
             const subtotal = platRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-            const comissao = platRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+            const comissao = platRegs.reduce((s, r) => s + profRowVal(r), 0);
             const arena = arenaSum(platRegs);
             const chks = platRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
-            const pct = platRegs[0]?.percentual ?? mensalistas[0]?.percentual ?? "0";
+            const pct = key !== "__arena__" ? (confsProfs.find((p) => p.id === key)?.percentualComissao ?? "0") : "0";
 
             const renderLinhas = (rows: Registro[]) =>
               [...rows]
@@ -4375,7 +4379,7 @@ function RelatorioView({
                       {fmtVal(r.valor)}
                     </TableCell>
                     <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                      {fmtVal(r.valorProfessor)}
+                      {fmtVal(String(profRowVal(r)))}
                     </TableCell>
                     <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
                       {fmtVal(String(arenaRow(r)))}
