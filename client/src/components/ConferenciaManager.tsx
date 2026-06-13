@@ -1716,6 +1716,7 @@ function LandingView({
 
   const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
     queryKey: ["/api/conferencia/sessoes"],
+    staleTime: 0,
   });
 
   const { data: profPeriodos = [] } = useQuery<string[]>({
@@ -1937,6 +1938,7 @@ function MesView({
 
   const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
     queryKey: ["/api/conferencia/sessoes"],
+    staleTime: 0,
   });
 
   const mesSessoes = sessoes.filter((s) => s.periodoInicio?.startsWith(monthKey));
@@ -2395,6 +2397,7 @@ function MensalistaCard({
       return results as SessaoDetalhe[];
     },
     enabled: mesSessoes.length > 0,
+    staleTime: 0,
   });
 
   const allMensalistas = allDetails.flatMap((d) =>
@@ -2969,6 +2972,7 @@ function ArenaRelatorioCard({
       return results as SessaoDetalhe[];
     },
     enabled: mesSessoes.length > 0,
+    staleTime: 0,
   });
 
   const { data: repasseCfg } = useQuery<RepasseConfig>({

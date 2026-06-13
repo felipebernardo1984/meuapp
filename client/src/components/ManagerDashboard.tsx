@@ -756,6 +756,7 @@ export default function ManagerDashboard({
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
       setDialogNovoMensalista(false);
       setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3" });
       setCredenciaisMensalista({ login: data.loginGerado, senha: data.senhaGerada });

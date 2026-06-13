@@ -537,6 +537,107 @@ function runMatchAluno(
   return { aluno: null, arenaStudent: null, score: Math.max(bestScore, bestArenaScore), status: "nao_encontrado" };
 }
 
+// ── Auto-rematch: called after a student is added/updated ─────────────────────
+// Finds all sessions for the arena that still have nao_encontrado records
+// and re-runs the name-matching logic on them. Fire-and-forget safe.
+
+export async function autoRematchArena(arenaId: string): Promise<void> {
+  try {
+    const sessoes = await db
+      .select()
+      .from(conferenciaSessoes)
+      .where(eq(conferenciaSessoes.arenaId, arenaId));
+    if (sessoes.length === 0) return;
+
+    const alunosDb = await db
+      .select()
+      .from(conferenciaProfessorAlunos)
+      .where(eq(conferenciaProfessorAlunos.arenaId, arenaId));
+
+    const aliasesDb = await db
+      .select()
+      .from(conferenciaAliases)
+      .where(eq(conferenciaAliases.arenaId, arenaId));
+
+    const arenaStudentsDb = await db
+      .select({ id: students.id, nome: students.nome, professorId: students.professorId })
+      .from(students)
+      .where(and(eq(students.arenaId, arenaId), eq(students.ativo, true)));
+
+    const aliasToAlunoId = new Map(
+      aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
+    );
+
+    for (const sessao of sessoes) {
+      const naoEnc = await db
+        .select()
+        .from(conferenciaRegistros)
+        .where(
+          and(
+            eq(conferenciaRegistros.sessaoId, sessao.id),
+            eq(conferenciaRegistros.status, "nao_encontrado")
+          )
+        );
+      if (naoEnc.length === 0) continue;
+
+      const periodo = sessao.periodoInicio ? sessao.periodoInicio.substring(0, 7) : null;
+      let profsDb = await db
+        .select()
+        .from(conferenciaProfessores)
+        .where(
+          periodo
+            ? and(eq(conferenciaProfessores.arenaId, arenaId), eq(conferenciaProfessores.periodo, periodo))
+            : eq(conferenciaProfessores.arenaId, arenaId)
+        );
+      if (profsDb.length === 0 && periodo) {
+        profsDb = await db
+          .select()
+          .from(conferenciaProfessores)
+          .where(eq(conferenciaProfessores.arenaId, arenaId));
+      }
+      const profIds = new Set(profsDb.map((p) => p.id));
+      const scopedAlunos = alunosDb.filter((a) => profIds.has(a.professorId));
+
+      const updates = naoEnc
+        .map((r) => {
+          const match = runMatchAluno(r.nomePlataforma, scopedAlunos, aliasesDb, arenaStudentsDb, aliasToAlunoId);
+          if (match.status === "nao_encontrado") return null;
+          return {
+            id: r.id,
+            studentId: match.aluno?.id ?? match.arenaStudent?.id ?? null,
+            alunoNomeMatch: match.aluno?.nome ?? match.arenaStudent?.nome ?? null,
+            status: match.status as string,
+            similaridade: match.score,
+          };
+        })
+        .filter(Boolean) as Array<{ id: string; studentId: string | null; alunoNomeMatch: string | null; status: string; similaridade: number }>;
+
+      if (updates.length === 0) continue;
+
+      await Promise.all(
+        updates.map((u) =>
+          db.update(conferenciaRegistros)
+            .set({ studentId: u.studentId, alunoNomeMatch: u.alunoNomeMatch, status: u.status, similaridade: u.similaridade })
+            .where(eq(conferenciaRegistros.id, u.id))
+        )
+      );
+
+      const allRegs = await db
+        .select()
+        .from(conferenciaRegistros)
+        .where(eq(conferenciaRegistros.sessaoId, sessao.id));
+
+      await db.update(conferenciaSessoes).set({
+        encontrados: allRegs.filter((r) => r.status === "confirmado").length,
+        possiveis:   allRegs.filter((r) => r.status === "pendente").length,
+        naoEncontrados: allRegs.filter((r) => r.status === "nao_encontrado").length,
+      }).where(eq(conferenciaSessoes.id, sessao.id));
+    }
+  } catch (err) {
+    console.error("[autoRematchArena] Erro:", err);
+  }
+}
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 export function registerConferenciaRoutes(app: Express): void {

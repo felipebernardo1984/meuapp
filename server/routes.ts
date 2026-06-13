@@ -12,7 +12,7 @@ import { getWhatsappSettings, saveWhatsappSettings } from "./whatsappSettings";
 import { sendWhatsappMessage } from "./whatsappApi";
 import { getAutomationConfig, saveAutomationConfig, getPendingDispatches, markDispatchSent, markAllDispatchesSent, runWhatsappAutomation } from "./whatsappAutomation";
 import { calcularComissao, calcularComissaoMensalidade, getResumoPorProfessor } from "./commissionService";
-import { registerConferenciaRoutes } from "./conferenciaRoutes";
+import { registerConferenciaRoutes, autoRematchArena } from "./conferenciaRoutes";
 import { listBackups, getArenaBackupPreview, restoreArenaFromBackup, runDatabaseBackup, BACKUP_DIR } from "./backupService";
 import fs from "fs";
 import path from "path";
@@ -530,6 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     res.json({ ...student, loginGerado: login, senhaGerada: senha, historico: [] });
+    autoRematchArena(arenaId).catch(() => {});
   });
 
   app.put("/api/alunos/:id", async (req, res) => {
@@ -563,6 +564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try { await financeService.recalcularReceitaAluno(arenaId, req.params.id); } catch (_e) {}
     }
     res.json(student);
+    autoRematchArena(arenaId).catch(() => {});
   });
 
   app.put("/api/alunos/:id/plano", async (req, res) => {
