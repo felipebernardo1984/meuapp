@@ -3531,7 +3531,7 @@ function SessaoView({
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="flex flex-nowrap gap-2 p-px -m-px overflow-x-auto">
+      <div className="flex flex-nowrap gap-2 p-1 -m-1 overflow-visible">
         <Card
           className={cn("flex-1 min-w-0 border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "" && "ring-2 ring-primary/50")}
           onClick={() => { setFiltroStatus(""); setFiltroNaoAtribuido(false); }}
