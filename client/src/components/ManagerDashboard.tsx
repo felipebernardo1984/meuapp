@@ -574,42 +574,57 @@ export default function ManagerDashboard({
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Comprovante de Pagamento</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; background: #f4f6f8; display: flex; justify-content: center; padding: 40px 20px; }
-  .card { background: white; border-radius: 12px; padding: 40px; max-width: 460px; width: 100%; box-shadow: 0 2px 16px rgba(0,0,0,0.10); }
-  .header { text-align: center; margin-bottom: 28px; }
-  .logo { font-size: 24px; font-weight: 800; color: #1e3a5f; letter-spacing: 2px; }
-  .arena { font-size: 14px; color: #6b7280; margin-top: 4px; }
-  .badge { display: inline-flex; align-items: center; gap: 6px; background: #d1fae5; color: #065f46; padding: 6px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; margin: 16px 0 8px; }
-  .amount { font-size: 40px; font-weight: 800; color: #111827; text-align: center; margin: 4px 0 28px; }
-  hr { border: none; border-top: 1px solid #e5e7eb; margin: 12px 0; }
-  .row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; font-size: 14px; }
-  .label { color: #6b7280; }
-  .value { font-weight: 600; color: #111827; text-align: right; max-width: 260px; word-break: break-word; }
-  .footer { margin-top: 28px; text-align: center; font-size: 11px; color: #9ca3af; }
-  .recibo { font-size: 11px; color: #d1d5db; text-align: center; margin-top: 6px; }
-  @media print { body { background: white; padding: 0; } .card { box-shadow: none; border-radius: 0; max-width: 100%; } }
+  @page { size: A4 portrait; margin: 20mm 20mm; }
+  * { box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
+  body { font-family:Arial,sans-serif;background:#f1f5f9;display:flex;justify-content:center;padding:40px 20px; }
+  .page { background:#fff;border-radius:12px;max-width:480px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12); }
+  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:28px 32px 24px;text-align:center; }
+  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:8px; }
+  .doc-title { font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.02em;margin-bottom:4px; }
+  .doc-arena { font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:16px; }
+  .badge { display:inline-flex;align-items:center;gap:6px;background:#d1fae5;color:#065f46;padding:6px 18px;border-radius:999px;font-size:12px;font-weight:700; }
+  .amount-wrap { background:#fff;padding:20px 32px 0;text-align:center; }
+  .amount-lbl { font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px; }
+  .amount { font-size:44px;font-weight:900;color:#0f172a;line-height:1; }
+  .body { padding:20px 32px 28px; }
+  hr { border:none;border-top:1.5px solid #e2e8f0;margin:12px 0; }
+  .row { display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;font-size:13px; }
+  .lbl { color:#64748b;font-weight:500; }
+  .val { font-weight:700;color:#0f172a;text-align:right;max-width:260px;word-break:break-word; }
+  .footer-wrap { background:#f8fafc;border-top:1.5px solid #e2e8f0;padding:12px 32px;text-align:center; }
+  .footer { font-size:10px;color:#94a3b8; }
+  .recibo { font-size:9px;color:#cbd5e1;margin-top:3px; }
+  @media print { body { background:#fff;padding:0; } .page { box-shadow:none;border-radius:0;max-width:100%; } }
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="header">
-    <div class="logo">SEVEN SPORTS</div>
-    ${arenaName ? `<div class="arena">${arenaName}</div>` : ""}
-    <div class="badge">✓ Pagamento Confirmado</div>
+<div class="page">
+  <div class="doc-header">
+    <div class="doc-brand">Seven Sports</div>
+    <div class="doc-title">Comprovante de Pagamento</div>
+    ${arenaName ? `<div class="doc-arena">${arenaName}</div>` : `<div class="doc-arena">&nbsp;</div>`}
+    <div class="badge">&#10003; Pagamento Confirmado</div>
+  </div>
+  <div class="amount-wrap">
+    <div class="amount-lbl">Valor pago</div>
     <div class="amount">R$&nbsp;${params.amount}</div>
   </div>
-  <hr />
-  <div class="row"><span class="label">Aluno</span><span class="value">${params.alunoNome}</span></div>
-  ${params.planoTitulo ? `<div class="row"><span class="label">Plano</span><span class="value">${params.planoTitulo}</span></div>` : ""}
-  <div class="row"><span class="label">Referência</span><span class="value">${mesFormatado}</span></div>
-  <div class="row"><span class="label">Data do pagamento</span><span class="value">${params.paymentDate ?? dataEmissao}</span></div>
-  <div class="row"><span class="label">Forma de pagamento</span><span class="value">${metodo}</span></div>
-  <hr />
-  <div class="footer">Documento emitido em ${dataEmissao}</div>
-  <div class="recibo">${recibo}</div>
+  <div class="body">
+    <hr />
+    <div class="row"><span class="lbl">Aluno</span><span class="val">${params.alunoNome}</span></div>
+    ${params.planoTitulo ? `<div class="row"><span class="lbl">Plano</span><span class="val">${params.planoTitulo}</span></div>` : ""}
+    <div class="row"><span class="lbl">Referência</span><span class="val">${mesFormatado}</span></div>
+    <div class="row"><span class="lbl">Data do pagamento</span><span class="val">${params.paymentDate ?? dataEmissao}</span></div>
+    <div class="row"><span class="lbl">Forma de pagamento</span><span class="val">${metodo}</span></div>
+    <hr />
+  </div>
+  <div class="footer-wrap">
+    <div class="footer">Documento emitido em ${dataEmissao}</div>
+    ${recibo ? `<div class="recibo">${recibo}</div>` : ""}
+  </div>
 </div>
 <script>window.onload = () => { window.print(); }</script>
 </body>
