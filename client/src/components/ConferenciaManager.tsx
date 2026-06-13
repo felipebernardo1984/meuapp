@@ -1727,32 +1727,24 @@ function MesView({
               </div>
             )}
 
-            {/* Processing / done / error status */}
-            {uploadingFiles.length > 0 && (
+            {/* Processing / error status — only show while in progress or on error */}
+            {uploadingFiles.some((f) => f.status === "processing" || f.status === "error") && (
               <div className="space-y-1.5">
-                {uploadingFiles.map((f) => (
+                {uploadingFiles.filter((f) => f.status === "processing" || f.status === "error").map((f) => (
                   <div
                     key={f.name}
                     className={cn(
                       "flex items-center gap-2 rounded-md px-3 py-2 text-xs",
                       f.status === "processing" && "bg-muted",
-                      f.status === "done" && "bg-emerald-50 dark:bg-emerald-950/40",
                       f.status === "error" && "bg-red-50 dark:bg-red-950/40"
                     )}
                   >
                     {f.status === "processing" && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}
-                    {f.status === "done" && <CheckCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
                     {f.status === "error" && <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
                     <span className="truncate flex-1">{f.name}</span>
                     <Badge variant="secondary" className="text-xs shrink-0">{plataformaLabel(f.platform || "outro")}</Badge>
                     {f.status === "error" && f.error && (
                       <span className="text-red-600 shrink-0 max-w-[200px] truncate">{f.error}</span>
-                    )}
-                    {f.status === "done" && f.debug && (
-                      <span className="text-emerald-700 dark:text-emerald-400 shrink-0 text-xs">
-                        nome: <strong>{f.debug.nameCol ?? "?"}</strong> · valor:{" "}
-                        <strong>{f.debug.valueCol ?? "?"}</strong>
-                      </span>
                     )}
                   </div>
                 ))}
