@@ -3563,25 +3563,25 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none cursor-pointer transition-all hover:shadow-sm select-none", naoEncontradosCount > 0 ? "bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40" : "bg-muted/30", !filtroNaoAtribuido && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
+          className={cn("border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
           onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado"); }}
           data-testid="kpi-nao-encontrados"
         >
           <CardContent className="p-4">
-            <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-1.5", naoEncontradosCount > 0 ? "text-red-700 dark:text-red-400" : "text-muted-foreground")}>Não encontrados</p>
-            <p className={cn("text-lg font-bold leading-none", naoEncontradosCount > 0 ? "text-red-700 dark:text-red-400" : "text-foreground")}>{sessao.naoEncontrados}</p>
-            <p className={cn("text-xs mt-1", naoEncontradosCount > 0 ? "text-red-600/80 dark:text-red-500/80" : "text-muted-foreground")}>{fmtVal(String(naoEncontradoValor))}</p>
+            <p className="text-[11px] font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1.5">Não encontrados</p>
+            <p className="text-lg font-bold text-red-700 dark:text-red-400 leading-none">{sessao.naoEncontrados}</p>
+            <p className="text-xs text-red-600/80 dark:text-red-500/80 mt-1">{fmtVal(String(naoEncontradoValor))}</p>
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none cursor-pointer transition-all hover:shadow-sm select-none", arenaRecords.length > 0 ? "bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40" : "bg-muted/30", filtroNaoAtribuido && "ring-2 ring-blue-500/60")}
+          className={cn("border shadow-none bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroNaoAtribuido && "ring-2 ring-blue-500/60")}
           onClick={() => { setFiltroStatus(""); setFiltroNaoAtribuido((v) => !v); }}
           data-testid="kpi-nao-atribuido"
         >
           <CardContent className="p-4">
-            <p className={cn("text-[11px] font-semibold uppercase tracking-wider mb-1.5", arenaRecords.length > 0 ? "text-blue-700 dark:text-blue-400" : "text-muted-foreground")}>Não atribuído</p>
-            <p className={cn("text-lg font-bold leading-none", arenaRecords.length > 0 ? "text-blue-700 dark:text-blue-400" : "text-foreground")}>{arenaRecords.length}</p>
-            <p className={cn("text-xs mt-1", arenaRecords.length > 0 ? "text-blue-600/80 dark:text-blue-500/80" : "text-muted-foreground")}>{fmtVal(String(naoAtribuidoValor))}</p>
+            <p className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1.5">Não atribuído</p>
+            <p className="text-lg font-bold text-blue-700 dark:text-blue-400 leading-none">{arenaRecords.length}</p>
+            <p className="text-xs text-blue-600/80 dark:text-blue-500/80 mt-1">{fmtVal(String(naoAtribuidoValor))}</p>
           </CardContent>
         </Card>
       </div>
