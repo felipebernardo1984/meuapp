@@ -1758,7 +1758,37 @@ export function registerConferenciaRoutes(app: Express): void {
     }
 
     if (professorId !== undefined && studentId === undefined) {
-      updates.professorId = professorId || null;
+      const newProfId = professorId ? String(professorId) : null;
+      updates.professorId = newProfId;
+      if (newProfId) {
+        // Recalculate commission based on the new professor's percentage
+        const prof = profMap.get(newProfId);
+        if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
+          const pct2 = parseFloat(prof.percentualComissao) / 100;
+          const vp = Math.round(valorNum * pct2 * 100) / 100;
+          updates.percentual = String(prof.percentualComissao);
+          updates.valorProfessor = String(vp);
+          updates.valorArena = String(Math.round((valorNum - vp) * 100) / 100);
+          updates.categoria = "comissao";
+        } else {
+          // Fallback: check main teachers table
+          const teacher = teacherMapForPut.get(newProfId);
+          if (teacher?.percentualComissao && parseFloat(teacher.percentualComissao) > 0) {
+            const pct2 = parseFloat(teacher.percentualComissao) / 100;
+            const vp = Math.round(valorNum * pct2 * 100) / 100;
+            updates.percentual = String(teacher.percentualComissao);
+            updates.valorProfessor = String(vp);
+            updates.valorArena = String(Math.round((valorNum - vp) * 100) / 100);
+            updates.categoria = "comissao";
+          }
+        }
+      } else {
+        // Professor removed — reset all commission to arena
+        updates.percentual = "0";
+        updates.valorProfessor = "0";
+        updates.valorArena = String(valorNum);
+        updates.categoria = "arena";
+      }
     }
 
     const [updated] = await db
