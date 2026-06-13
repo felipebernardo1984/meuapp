@@ -62,8 +62,6 @@ import {
   X,
   Printer,
   CalendarDays,
-  RotateCcw,
-  RotateCw,
   Link2,
   Settings2,
   ImageIcon,
@@ -3234,8 +3232,6 @@ function SessaoView({
   const [redirectAProf, setRedirectAProf] = useState("");
   const [showArenaList, setShowArenaList] = useState(false);
   const [manuallyLinked, setManuallyLinked] = useState<Set<string>>(new Set());
-  const [histPast, setHistPast] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
-  const [histFuture, setHistFuture] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
   const prevProfSignature = useRef<string | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -3384,42 +3380,8 @@ function SessaoView({
   const totalProfessorAgg = confirmedRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
   const totalArenaDisplay = confirmedRegs.reduce((s, r) => s + calcDisplayValores(r).vArena, 0);
 
-  const snapReg = (r: Registro) => ({
-    status: r.status,
-    studentId: r.studentId,
-    professorId: r.professorId,
-    percentual: r.percentual,
-    categoria: r.categoria,
-    alunoNomeMatch: r.alunoNomeMatch,
-    valorProfessor: r.valorProfessor,
-    valorArena: r.valorArena,
-  });
-
   const doUpdate = (id: string, data: Record<string, unknown>) => {
-    const cur = registros.find(r => r.id === id);
-    if (cur) {
-      setHistPast(prev => [...prev.slice(-49), { id, snap: snapReg(cur) }]);
-      setHistFuture([]);
-    }
     updateMutation.mutate({ id, data });
-  };
-
-  const handleUndo = () => {
-    const last = histPast.at(-1);
-    if (!last) return;
-    const cur = registros.find(r => r.id === last.id);
-    if (cur) setHistFuture(prev => [...prev, { id: last.id, snap: snapReg(cur) }]);
-    setHistPast(prev => prev.slice(0, -1));
-    updateMutation.mutate({ id: last.id, data: last.snap });
-  };
-
-  const handleRedo = () => {
-    const nxt = histFuture.at(-1);
-    if (!nxt) return;
-    const cur = registros.find(r => r.id === nxt.id);
-    if (cur) setHistPast(prev => [...prev, { id: nxt.id, snap: snapReg(cur) }]);
-    setHistFuture(prev => prev.slice(0, -1));
-    updateMutation.mutate({ id: nxt.id, data: nxt.snap });
   };
 
   const handleConfirmar = (r: Registro) => {
@@ -3505,28 +3467,6 @@ function SessaoView({
               Atualizando…
             </span>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleUndo}
-            disabled={histPast.length === 0 || updateMutation.isPending}
-            className="h-8 w-8 p-0"
-            title="Desfazer última ação"
-            data-testid="button-undo"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRedo}
-            disabled={histFuture.length === 0 || updateMutation.isPending}
-            className="h-8 w-8 p-0"
-            title="Refazer"
-            data-testid="button-redo"
-          >
-            <RotateCw className="h-3.5 w-3.5" />
-          </Button>
         </div>
       </div>
 

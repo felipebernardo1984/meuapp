@@ -2032,15 +2032,24 @@ export function registerConferenciaRoutes(app: Express): void {
       const sameName = sameNameRegs.filter(r => normalizeNome(r.nomePlataforma) === normNomePlat);
 
       // Smart modality-aware cascade:
-      // Use the stored `divergente` flag on the registro being confirmed.
-      // divergente=true means this student appears in 2+ distinct modalities in
-      // the session (e.g. "Vôlei de praia" AND "Beachtennis" for Leticia).
-      // In that case we restrict the cascade to only pending records with the
-      // same modality — so each activity can be assigned to a different
-      // professor independently.
-      // divergente=false (or no modality info) → original bulk behaviour.
+      // `divergente` is NOT stored in the DB — it's computed dynamically.
+      // We recompute it here using ALL records of this session (including
+      // already-confirmed ones) so that confirming the first record of a
+      // multi-modality student still correctly restricts the cascade.
+      const allSessionRecs = await db
+        .select()
+        .from(conferenciaRegistros)
+        .where(
+          and(
+            eq(conferenciaRegistros.sessaoId, registro.sessaoId),
+            eq(conferenciaRegistros.arenaId, arenaId)
+          )
+        );
+      const divergentesSet = buildDivergentesSet(allSessionRecs);
+      const isStudentDivergente = divergentesSet.has(normalizeNome(registro.nomePlataforma));
+
       const currentModality = registro.modalidade;
-      const useModalityFilter = Boolean(registro.divergente) && Boolean(currentModality);
+      const useModalityFilter = isStudentDivergente && Boolean(currentModality);
 
       const toLink = useModalityFilter
         ? sameName.filter(r => r.modalidade === currentModality)
