@@ -1225,68 +1225,141 @@ function exportArenaRelatorio(
     </table>
   </div>`;
 
+  // Total visitantes across platforms
+  const totalVisitantes = Array.from(byPlat.values()).reduce((s, { regs }) => s + new Set(regs.map(r => r.nomePlataforma)).size, 0);
+  const totalCheckinsAll = Array.from(byPlat.values()).reduce((s, { regs }) => s + regs.reduce((ss, r) => ss + (r.checkins ?? 1), 0), 0);
+
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Relatório Arena — ${mesLabel}</title>
 <style>
-  @page { size: A4 portrait; margin: 16mm 14mm; }
+  @page { size: A4 portrait; margin: 14mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#111; }
-  h1 { font-size:16px;font-weight:700;margin-bottom:2px; }
-  .subtitle { color:#64748b;font-size:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0; }
-  .badge-arena { display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
-  .kpi-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
-  .kpi-card { border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;background:#f8fafc; }
-  .kpi-card .val { font-size:13px;font-weight:700;margin-bottom:2px; }
-  .kpi-card .lbl { font-size:8px;color:#94a3b8; }
-  .section { margin-bottom:22px;padding-top:16px;border-top:1px solid #e2e8f0; }
-  .section:first-of-type { border-top:none;padding-top:0; }
-  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #1e293b; }
-  .section-platform { font-size:11px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
-  .section-meta { font-size:8.5px;color:#64748b;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #cbd5e1;table-layout:fixed; }
-  th { background:#334155;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #1e293b;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
+  .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
+  @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
+
+  /* ── Header ── */
+  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
+  .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
+  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
+
+  /* ── KPI strip ── */
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #e2e8f0;background:#fff; }
+  .kpi { padding:12px 16px;border-right:1px solid #e2e8f0; }
+  .kpi:last-child { border-right:none; }
+  .kpi-accent { width:20px;height:3px;border-radius:2px;margin-bottom:5px; }
+  .kpi-val { font-size:14px;font-weight:900;color:#000;line-height:1; }
+  .kpi-lbl { font-size:7.5px;color:#555;text-transform:uppercase;letter-spacing:0.07em;margin-top:3px;font-weight:600; }
+
+  /* ── Body ── */
+  .body { padding:18px 20px; }
+
+  /* ── Sections ── */
+  .section { margin-bottom:20px; }
+  .section-header { display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:#0f172a;border-radius:6px 6px 0 0; }
+  .section-platform { font-size:12px;font-weight:900;color:#fff;letter-spacing:0.06em;text-transform:uppercase; }
+  .section-meta { font-size:8px;color:rgba(255,255,255,0.6);margin-left:auto; }
+  table { width:100%;border-collapse:collapse;border:1.5px solid #999;table-layout:fixed; }
+  th { background:#1e293b;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #000;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
   th.col-nome { text-align:left; }
-  td { padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:8.5px;text-align:center;vertical-align:middle;color:#1e293b; }
+  td { padding:5px 8px;border-bottom:1px solid #ccc;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
   .col-nome { text-align:left !important; }
   .col-center { text-align:center; }
-  tbody tr:nth-child(even) { background:#f8fafc; }
+  tbody tr:nth-child(even) { background:#f0f4f8; }
   tr:last-child td { border-bottom:none; }
-  tfoot tr td { background:#e2e8f0;border-top:2px solid #94a3b8;font-size:8.5px;font-weight:600;color:#1e293b; }
-  .mensalista-block { margin-top:20px;border:1px solid #c4b5fd;border-radius:6px;overflow:hidden; }
-  .mensalista-header { background:#7c3aed;padding:6px 10px;display:flex;align-items:center;gap:8px; }
-  .mensalista-badge { color:white;font-size:9px;font-weight:700; }
-  .mensalista-meta { color:#ede9fe;font-size:8.5px;margin-left:auto; }
-  .mensalista-block table { border-color:#c4b5fd; }
+  tfoot tr td { background:#dde4ed;border-top:2px solid #666;font-size:8.5px;font-weight:700;color:#000; }
+
+  /* ── Mensalistas ── */
+  .mensalista-block { margin-bottom:20px;border:1.5px solid #7c3aed;border-radius:6px;overflow:hidden; }
+  .mensalista-header { background:#7c3aed;padding:8px 12px;display:flex;align-items:center;gap:8px; }
+  .mensalista-badge { color:white;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em; }
+  .mensalista-meta { color:#fff;font-size:8.5px;margin-left:auto; }
+  .mensalista-block table { border-color:#7c3aed; }
   .mensalista-block th { background:#6d28d9; }
-  .mensalista-block tbody tr:nth-child(even) { background:#faf5ff; }
-  .mensalista-block td { border-color:#ede9fe; }
-  .mensalista-block tfoot tr td { background:#ede9fe;border-top:2px solid #c4b5fd;color:#6d28d9; }
-  .grand-total { background:#1e293b;color:white;border-radius:6px;padding:10px 14px;margin-top:20px;font-size:10px; }
-  .arena-repasse { font-size:13px;font-weight:bold;color:#93c5fd;margin-top:5px; }
+  .mensalista-block tbody tr:nth-child(even) { background:#f3eeff; }
+  .mensalista-block td { border-color:#ccc;color:#000; }
+  .mensalista-block tfoot tr td { background:#e9d5ff;border-top:2px solid #7c3aed;color:#000;font-weight:700; }
+
+  /* ── Grand total ── */
+  .grand-total { background:linear-gradient(135deg,#0f172a,#1e3a5f);color:white;border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
+  .gt-left .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
+  .gt-left .gt-val { font-size:20px;font-weight:900;color:#fff; }
+  .gt-right { text-align:right; }
+  .gt-right .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
+  .gt-right .gt-val { font-size:18px;font-weight:900;color:#93c5fd; }
+  .gt-full .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
+  .gt-full .gt-val { font-size:20px;font-weight:900;color:#93c5fd; }
+
+  /* ── Footer ── */
+  .footer { margin-top:10px;font-size:7.5px;color:#888;text-align:right; }
 </style>
 </head>
 <body>
-  <h1>Relatório Financeiro<span class="badge-arena">Arena · ${pctArena}%</span></h1>
-  <div class="subtitle">Período: ${mesLabel} · Gerado em ${new Date().toLocaleDateString("pt-BR")}</div>
-
-  <div class="kpi-grid">
-    <div class="kpi-card" style="border-color:#93c5fd"><div class="val" style="color:#1d4ed8">${fmt(valorArena)}</div><div class="lbl">Repasse Arena (${pctArena}%)</div></div>
-    <div class="kpi-card"><div class="val">${fmt(totalGeral)}</div><div class="lbl">Total Geral</div></div>
-    <div class="kpi-card"><div class="val">${fmt(totalPlataforma)}</div><div class="lbl">Plataformas</div></div>
-    <div class="kpi-card" style="border-color:#c4b5fd"><div class="val" style="color:#7c3aed">${fmt(totalMensalistas)}</div><div class="lbl">Mensalistas</div></div>
+<div class="page">
+  <div class="doc-header">
+    <div class="doc-brand">Seven Sports</div>
+    <h1>Relatório Financeiro</h1>
+    <div class="doc-sub">Período: ${mesLabel} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" })} &nbsp;·&nbsp; ${pctArena}% repasse arena</div>
   </div>
 
-  ${platBlocks}
-  ${mensalistasBlock}
-
-  <div class="grand-total">
-    TOTAL GERAL — <strong>${fmt(totalGeral)}</strong>${byPlat.size > 0 ? ` · Plataformas: ${fmt(totalPlataforma)}` : ""}${allMensalistas.length > 0 ? ` · Mensalistas: ${fmt(totalMensalistas)}` : ""}
-    <div class="arena-repasse">REPASSE ARENA (${pctArena}%) — ${fmt(valorArena)}</div>
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#6366f1"></div>
+      <div class="kpi-val">${fmt(totalGeral)}</div>
+      <div class="kpi-lbl">Total Geral</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#0ea5e9"></div>
+      <div class="kpi-val">${totalVisitantes}</div>
+      <div class="kpi-lbl">Visitantes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#f59e0b"></div>
+      <div class="kpi-val">${totalCheckinsAll}</div>
+      <div class="kpi-lbl">Check-ins</div>
+    </div>
+    ${pctArena !== 100 ? `
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#10b981"></div>
+      <div class="kpi-val">${fmt(valorArena)}</div>
+      <div class="kpi-lbl">Repasse Arena (${pctArena}%)</div>
+    </div>` : `
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#7c3aed"></div>
+      <div class="kpi-val">${fmt(totalMensalistas)}</div>
+      <div class="kpi-lbl">Mensalistas</div>
+    </div>`}
   </div>
+
+  <div class="body">
+    ${platBlocks}
+    ${mensalistasBlock}
+
+    <div class="grand-total">
+      ${pctArena === 100
+        ? `<div class="gt-full">
+             <div class="gt-lbl">Total Geral · Repasse Arena (100%)</div>
+             <div class="gt-val">${fmt(totalGeral)}</div>
+           </div>`
+        : `<div class="gt-left">
+             <div class="gt-lbl">Total Geral</div>
+             <div class="gt-val">${fmt(totalGeral)}</div>
+           </div>
+           <div class="gt-right">
+             <div class="gt-lbl">Repasse Arena (${pctArena}%)</div>
+             <div class="gt-val">${fmt(valorArena)}</div>
+           </div>`
+      }
+    </div>
+    <div class="footer">Seven Sports &nbsp;·&nbsp; Relatório gerado automaticamente</div>
+  </div>
+</div>
 </body>
 </html>`;
 
