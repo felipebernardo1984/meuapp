@@ -1191,11 +1191,9 @@ export function registerConferenciaRoutes(app: Express): void {
         .filter(Boolean) as Array<Record<string, unknown>>;
 
       // ── Multi-modality detection (upload) ─────────────────────────────────
-      // Wellhub exports list each modality separately per student.
-      // A modality is considered "real" only if the student has ≥3 check-ins in it.
-      // A single accidental dayuse check-in (count 1 or 2) does NOT trigger a downgrade.
-      // If a student has 2+ real modalities, their "confirmado" records are downgraded
-      // to "pendente" so the gestor can assign each modality to the correct professor.
+      // If a student has 2+ distinct modalities across all their records, every
+      // "confirmado" record is downgraded to "pendente" so the gestor can assign
+      // each modality to the correct professor.
       const checkinsByNomeModUp = new Map<string, Map<string, number>>();
       for (const r of registrosToInsert) {
         if (!r.modalidade || !r.nomePlataforma) continue;
@@ -1207,8 +1205,12 @@ export function registerConferenciaRoutes(app: Express): void {
       }
       const divergentesUp = new Set<string>();
       for (const [normName, modCounts] of checkinsByNomeModUp) {
-        if (modCounts.size >= 2) divergentesUp.add(normName);
+        if (modCounts.size >= 2) {
+          divergentesUp.add(normName);
+          console.log(`[Conferência] Divergente detectado: "${normName}" — ${Array.from(modCounts.entries()).map(([m, c]) => `${m}(${c})`).join(", ")}`);
+        }
       }
+      let downgradeCount = 0;
       for (const r of registrosToInsert) {
         if (r.status !== "confirmado") continue;
         const normName = normalizeNome(r.nomePlataforma as string);
@@ -1216,7 +1218,11 @@ export function registerConferenciaRoutes(app: Express): void {
           r.status = "pendente";
           encontrados--;
           possiveis++;
+          downgradeCount++;
         }
+      }
+      if (downgradeCount > 0) {
+        console.log(`[Conferência] ${downgradeCount} registros confirmados rebaixados para pendente (divergente)`);
       }
 
       const [sessao] = await db
