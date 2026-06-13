@@ -3331,6 +3331,9 @@ function SessaoView({
       apiRequest("POST", `/api/conferencia/sessao/${sessaoId}/rematch`).then((r) => r.json()),
     onSuccess: (result: { updated: number; dayuseDetected: number; encontrados: number; possiveis: number; naoEncontrados: number }) => {
       qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", sessaoId] });
+      qc.setQueryData<Sessao[]>(["/api/conferencia/sessoes"], (old) =>
+        old ? old.map((s) => s.id === sessaoId ? { ...s, encontrados: result.encontrados, possiveis: result.possiveis, naoEncontrados: result.naoEncontrados } : s) : old
+      );
       const msg = result.updated === 0
         ? "Nenhum registro pendente para atualizar"
         : `${result.updated} registro${result.updated !== 1 ? "s" : ""} atualizado${result.updated !== 1 ? "s" : ""}${result.dayuseDetected > 0 ? ` · ${result.dayuseDetected} day use detectado${result.dayuseDetected !== 1 ? "s" : ""}` : ""}`;
@@ -3352,6 +3355,7 @@ function SessaoView({
       apiRequest("PUT", `/api/conferencia/registro/${id}`, data).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", sessaoId] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
     },
     onError: () => toast({ title: "Erro ao vincular", variant: "destructive" }),
   });
@@ -3377,11 +3381,21 @@ function SessaoView({
             ? { ...updated, professorNome: confsProfs.find((p) => p.id === updated.professorId)?.nome ?? r.professorNome }
             : r
         );
+        const newEncontrados    = newRegs.filter((r) => r.status === "confirmado").length;
+        const newPossiveis      = newRegs.filter((r) => r.status === "pendente").length;
+        const newNaoEncontrados = newRegs.filter((r) => r.status === "nao_encontrado").length;
+        qc.setQueryData<Sessao[]>(["/api/conferencia/sessoes"], (oldList) =>
+          oldList ? oldList.map((s) =>
+            s.id === sessaoId
+              ? { ...s, encontrados: newEncontrados, possiveis: newPossiveis, naoEncontrados: newNaoEncontrados }
+              : s
+          ) : oldList
+        );
         return {
           ...old,
-          encontrados: newRegs.filter((r) => r.status === "confirmado").length,
-          possiveis: newRegs.filter((r) => r.status === "pendente").length,
-          naoEncontrados: newRegs.filter((r) => r.status === "nao_encontrado").length,
+          encontrados: newEncontrados,
+          possiveis: newPossiveis,
+          naoEncontrados: newNaoEncontrados,
           registros: newRegs,
         };
       });
