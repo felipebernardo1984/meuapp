@@ -548,7 +548,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-header { background:#e2e8f0;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
   .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
   .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
   .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
@@ -817,7 +817,7 @@ function exportComprovanteConsolidado(
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-header { background:#e2e8f0;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
   .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
   .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
   .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
@@ -1040,7 +1040,7 @@ function exportArenaRelatorioSimples(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-header { background:#e2e8f0;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
   .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
   .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
   .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
@@ -1275,7 +1275,7 @@ function exportArenaRelatorio(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-header { background:#e2e8f0;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
   .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
   .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
   .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
@@ -1517,7 +1517,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-header { background:#e2e8f0;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
   .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
   .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
   .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
