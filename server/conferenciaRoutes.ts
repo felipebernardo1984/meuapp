@@ -457,37 +457,31 @@ function buildModalidadeMap(
 }
 
 /**
- * Detects students with unexpectedly high check-in counts for a modalidade.
- * Used for the "Letícia case": TotalPass groups all sports under "BeachSports",
- * so a student doing 2 sports may appear with 2× the typical count per modalidade.
- * Returns normalized names of flagged students.
- * Minimum 3 students per modalidade for a reliable median.
+ * Builds a set of normalized student names that genuinely appear with 2+ distinct
+ * modalities in the session, each with ≥3 check-ins.
+ * A single accidental dayuse check-in (count=1 or 2) does NOT qualify as a real modality.
  */
-function buildMultiModalidadeAlertas(
+function buildDivergentesSet(
   records: Array<{ nomePlataforma: string; modalidade: string | null | undefined; checkins: number | null | undefined }>
 ): Set<string> {
-  const byModal = new Map<string, Map<string, number>>();
+  const checkinsByNomeMod = new Map<string, Map<string, number>>();
   for (const r of records) {
-    const mod = (r.modalidade || "").trim();
+    const mod = (r.modalidade || "").trim().toLowerCase();
     if (!mod) continue;
     const normName = normalizeNome(r.nomePlataforma);
-    if (!byModal.has(mod)) byModal.set(mod, new Map());
-    const m = byModal.get(mod)!;
-    m.set(normName, (m.get(normName) || 0) + (r.checkins || 1));
+    if (!checkinsByNomeMod.has(normName)) checkinsByNomeMod.set(normName, new Map());
+    const m = checkinsByNomeMod.get(normName)!;
+    m.set(mod, (m.get(mod) || 0) + (r.checkins || 1));
   }
-
-  const alertas = new Set<string>();
-  for (const [, studentCounts] of byModal) {
-    const counts = Array.from(studentCounts.values());
-    if (counts.length < 3) continue;
-    const sorted = [...counts].sort((a, b) => a - b);
-    const mediana = sorted[Math.floor(sorted.length / 2)];
-    if (mediana <= 0) continue;
-    for (const [normName, count] of studentCounts) {
-      if (count > mediana * 1.8) alertas.add(normName);
+  const divergentes = new Set<string>();
+  for (const [normName, modCounts] of checkinsByNomeMod) {
+    let significativas = 0;
+    for (const [, count] of modCounts) {
+      if (count >= 3) significativas++;
     }
+    if (significativas >= 2) divergentes.add(normName);
   }
-  return alertas;
+  return divergentes;
 }
 
 // ── Shared matching logic (used by both upload and rematch) ───────────────────
@@ -1184,22 +1178,29 @@ export function registerConferenciaRoutes(app: Express): void {
 
       // ── Multi-modality detection (upload) ─────────────────────────────────
       // Wellhub exports list each modality separately per student.
-      // If the same student appears with 2+ distinct modalities in this session,
-      // downgrade their "confirmado" records to "pendente" so the gestor can
-      // manually confirm which professor belongs to each modality.
-      // The professor suggestion is kept as a pre-fill — no automatic reassignment.
-      const modalidadesByNomeUp = new Map<string, Set<string>>();
+      // A modality is considered "real" only if the student has ≥3 check-ins in it.
+      // A single accidental dayuse check-in (count 1 or 2) does NOT trigger a downgrade.
+      // If a student has 2+ real modalities, their "confirmado" records are downgraded
+      // to "pendente" so the gestor can assign each modality to the correct professor.
+      const checkinsByNomeModUp = new Map<string, Map<string, number>>();
       for (const r of registrosToInsert) {
         if (!r.modalidade || !r.nomePlataforma) continue;
         const normName = normalizeNome(r.nomePlataforma as string);
-        if (!modalidadesByNomeUp.has(normName)) modalidadesByNomeUp.set(normName, new Set());
-        modalidadesByNomeUp.get(normName)!.add((r.modalidade as string).trim().toLowerCase());
+        const modKey = (r.modalidade as string).trim().toLowerCase();
+        if (!checkinsByNomeModUp.has(normName)) checkinsByNomeModUp.set(normName, new Map());
+        const m = checkinsByNomeModUp.get(normName)!;
+        m.set(modKey, (m.get(modKey) || 0) + ((r.checkins as number) || 1));
+      }
+      const divergentesUp = new Set<string>();
+      for (const [normName, modCounts] of checkinsByNomeModUp) {
+        let significativas = 0;
+        for (const [, count] of modCounts) { if (count >= 3) significativas++; }
+        if (significativas >= 2) divergentesUp.add(normName);
       }
       for (const r of registrosToInsert) {
         if (r.status !== "confirmado") continue;
         const normName = normalizeNome(r.nomePlataforma as string);
-        const mods = modalidadesByNomeUp.get(normName);
-        if (mods && mods.size >= 2) {
+        if (divergentesUp.has(normName)) {
           r.status = "pendente";
           encontrados--;
           possiveis++;
@@ -1325,28 +1326,13 @@ export function registerConferenciaRoutes(app: Express): void {
     const modalidadeMapGet = buildModalidadeMap(
       registros.map((r) => ({ modalidade: r.modalidade, valor: r.valor }))
     );
-    const multiModalAlertas = buildMultiModalidadeAlertas(
-      registros.map((r) => ({ nomePlataforma: r.nomePlataforma, modalidade: r.modalidade, checkins: r.checkins }))
-    );
 
-    // Build each professor's dominant modality from their confirmed records in this session.
-    // Used to flag "Modalidade divergente" on pendente suggestions where the suggested
-    // professor's typical modality doesn't match the file modality — purely informational.
-    const profModCounts = new Map<string, Map<string, number>>();
-    for (const r of registros) {
-      if (r.status !== "confirmado" || !r.professorId || !r.modalidade) continue;
-      if (!profModCounts.has(r.professorId)) profModCounts.set(r.professorId, new Map());
-      const m = profModCounts.get(r.professorId)!;
-      m.set(r.modalidade, (m.get(r.modalidade) || 0) + 1);
-    }
-    const professorDominantMod = new Map<string, string>();
-    for (const [profId, modCounts] of profModCounts) {
-      let maxCount = 0, dominant = "";
-      for (const [mod, count] of modCounts) {
-        if (count > maxCount) { maxCount = count; dominant = mod; }
-      }
-      if (dominant) professorDominantMod.set(profId, dominant);
-    }
+    // Build "divergente" set: students with 2+ real modalities (≥3 check-ins each)
+    const divergentesGet = buildDivergentesSet(
+      registros
+        .filter((r) => r.status !== "ignorado")
+        .map((r) => ({ nomePlataforma: r.nomePlataforma, modalidade: r.modalidade, checkins: r.checkins }))
+    );
 
     const enriched = registros.map((r) => {
       const mapEntry = r.modalidade ? modalidadeMapGet.get(r.modalidade) : undefined;
@@ -1355,17 +1341,7 @@ export function registerConferenciaRoutes(app: Express): void {
         const v = parseFloat(r.valor || "0");
         clusterHint = v < mapEntry.threshold ? "dayuse" : "padrao";
       }
-      const multiModalidadeAlerta = multiModalAlertas.has(normalizeNome(r.nomePlataforma));
-
-      // Modalidade divergente: pendente record whose suggested professor's
-      // dominant modality in this session differs from the file's modality.
-      let modalidadeDivergente = false;
-      if (r.status === "pendente" && r.professorId && r.modalidade) {
-        const dominant = professorDominantMod.get(r.professorId);
-        if (dominant && normalizeNome(dominant) !== normalizeNome(r.modalidade)) {
-          modalidadeDivergente = true;
-        }
-      }
+      const divergente = divergentesGet.has(normalizeNome(r.nomePlataforma));
 
       return {
         ...r,
@@ -1373,8 +1349,7 @@ export function registerConferenciaRoutes(app: Express): void {
           ? (profMap.get(r.professorId)?.nome ?? teacherMapDetail.get(r.professorId)?.nome ?? null)
           : null,
         clusterHint,
-        multiModalidadeAlerta,
-        modalidadeDivergente,
+        divergente,
       };
     });
 
@@ -1539,26 +1514,33 @@ export function registerConferenciaRoutes(app: Express): void {
     if (dayuseOps.length > 0) await Promise.all(dayuseOps);
 
     // ── Multi-modality detection (rematch) ────────────────────────────────────
-    // Same rule as upload: if a student appears with 2+ distinct modalities in
-    // this session, their newly-confirmed records are downgraded to pendente.
+    // Same rule as upload: a modality is "real" only if the student has ≥3 check-ins in it.
+    // Students with 2+ real modalities have their confirmado records downgraded to pendente.
     const allRegsForMM = await db
       .select()
       .from(conferenciaRegistros)
       .where(eq(conferenciaRegistros.sessaoId, sessao.id));
 
-    const modalidadesByNomeR = new Map<string, Set<string>>();
+    const checkinsByNomeModR = new Map<string, Map<string, number>>();
     for (const r of allRegsForMM) {
       if (!r.modalidade || r.status === "ignorado") continue;
       const normName = normalizeNome(r.nomePlataforma);
-      if (!modalidadesByNomeR.has(normName)) modalidadesByNomeR.set(normName, new Set());
-      modalidadesByNomeR.get(normName)!.add(r.modalidade.trim().toLowerCase());
+      const modKey = r.modalidade.trim().toLowerCase();
+      if (!checkinsByNomeModR.has(normName)) checkinsByNomeModR.set(normName, new Map());
+      const m = checkinsByNomeModR.get(normName)!;
+      m.set(modKey, (m.get(modKey) || 0) + (r.checkins || 1));
+    }
+    const divergentesR = new Set<string>();
+    for (const [normName, modCounts] of checkinsByNomeModR) {
+      let significativas = 0;
+      for (const [, count] of modCounts) { if (count >= 3) significativas++; }
+      if (significativas >= 2) divergentesR.add(normName);
     }
     const multiModalOpsR: Array<Promise<unknown>> = [];
     for (const r of allRegsForMM) {
       if (r.status !== "confirmado") continue;
       const normName = normalizeNome(r.nomePlataforma);
-      const mods = modalidadesByNomeR.get(normName);
-      if (mods && mods.size >= 2) {
+      if (divergentesR.has(normName)) {
         multiModalOpsR.push(
           db.update(conferenciaRegistros).set({ status: "pendente" })
             .where(eq(conferenciaRegistros.id, r.id))

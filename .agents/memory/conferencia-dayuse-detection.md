@@ -13,14 +13,21 @@ Day use detection uses a **collective modality+value map** built from all record
 - Applied in **upload handler** (before `.map()` loop, per row) and in **rematch handler** (post-update pass over freshRegs).
 - **Do NOT touch** the `isArenaOnly` / keyword path — it's a separate first-pass filter for known arena-only modality names.
 
-## Multi-modal: Letícia case (Wellhub — explicit modality per row)
-When the same student name appears with 2+ distinct modalities in a session, their "confirmado" records are **downgraded to "pendente"** so the gestor can manually confirm which professor belongs to each modality. Professor suggestion is kept as a pre-fill — no automatic reassignment. Applied in both upload (post-process on `registrosToInsert`) and rematch (post-dayuse pass on `allRegsForMM`).
+## Multi-modal: Letícia case (genuine 2-modality students)
+When the same student name appears with 2+ distinct modalities **each with ≥ 3 check-ins**, their "confirmado" records are **downgraded to "pendente"** so the gestor can manually confirm which professor belongs to each modality. Professor suggestion is kept as a pre-fill — no automatic reassignment.
 
-## Multi-modal alert badge (TotalPass — all sports = "BeachSports")
-`buildMultiModalidadeAlertas(records)` — detects students with > 1.8× the median check-in count for their modality. Used for TotalPass "BeachSports" which groups multiple sports. Adds `multiModalidadeAlerta: true` to enriched records for display in the UI (yellow badge). Requires ≥ 3 students per modality for reliable median.
+**Threshold rule (≥3 check-ins):** A modality only counts as "real" if the student has ≥3 check-ins in it. A single accidental dayuse check-in (count 1 or 2) does NOT qualify as a second modality and does NOT trigger a downgrade. This prevents the "Brenda case" where 1 wrong dayuse check-in pushed 11 correct check-ins to possíveis.
 
-## Modalidade divergente (Beatriz case)
-When a pendente record's suggested professor has a different dominant modality (from their confirmed students in this session) than the file's modality → `modalidadeDivergente: true`. Red badge "Modalidade divergente" shown as informational hint only. Computed at GET time from session data, no schema changes.
+**Why 3:** Platform contracts limit total check-ins (8–12 or 10–14/month). A genuine second-modality student will always have ≥3 check-ins in it; an accidental dayuse entry will typically be 1–2.
+
+Applied via `buildDivergentesSet()` in both upload and rematch handlers.
+
+## "Divergente" badge (purple)
+`buildDivergentesSet(records)` — returns a Set of normalized student names that have 2+ modalities with ≥3 check-ins each. Used to show the purple "Divergente" badge in the UI. Computed at GET time from session data, no schema changes. Also computed in upload and rematch to drive the downgrade.
+
+**Removed (deprecated):**
+- `buildMultiModalidadeAlertas` (count-based, > 1.8× median) — removed because it caused false positives for active students who simply check in often. The yellow "Multi-modalidade?" badge is gone.
+- Professor-based "Modalidade divergente" badge (red) — removed to avoid confusion with the file-based "Divergente" concept.
 
 ## GET endpoint enrichment
-`clusterHint` ("padrao" | "dayuse" | "desconhecido") and `multiModalidadeAlerta` (boolean) are computed dynamically at GET time and added to enriched records — no DB schema changes needed.
+`clusterHint` ("padrao" | "dayuse" | "desconhecido") and `divergente` (boolean) are computed dynamically at GET time and added to enriched records — no DB schema changes needed.
