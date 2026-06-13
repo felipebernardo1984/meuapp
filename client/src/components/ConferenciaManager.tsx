@@ -962,20 +962,6 @@ function exportArenaRelatorioSimples(
     const periodo  = fmtPeriod(periodoInicio, periodoFim);
     const col      = PLAT_COLORS[key] ?? { bg: "#1e3a5f", accent: "#a5f3fc" };
 
-    // Breakdown by modalidade
-    const byMod = new Map<string, number>();
-    for (const r of regs) {
-      const mod = r.modalidade ?? "—";
-      byMod.set(mod, (byMod.get(mod) ?? 0) + parseFloat(r.valor || "0"));
-    }
-    const modRows = Array.from(byMod.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([mod, val]) => `
-        <div class="mod-row">
-          <span class="mod-name">${mod}</span>
-          <span class="mod-val">${fmt(val)}</span>
-        </div>`).join("");
-
     const repasseSection = pctArena === 100
       ? `<div class="plat-repasse" style="border-color:${col.accent}30">
            <span class="repasse-label">Total / Repasse Arena (100%)</span>
@@ -1014,7 +1000,6 @@ function exportArenaRelatorioSimples(
           <div class="stat-lbl">Receita</div>
         </div>
       </div>
-      ${byMod.size > 1 ? `<div class="mod-breakdown">${modRows}</div>` : ""}
       ${repasseSection}
     </div>`;
   }).join("");
@@ -1081,12 +1066,6 @@ function exportArenaRelatorioSimples(
   .stat { background:rgba(255,255,255,0.06);border-radius:6px;padding:8px 10px; }
   .stat .stat-val { font-size:16px;font-weight:800;color:white; }
   .stat .stat-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px; }
-
-  /* ── Mod breakdown inside card ── */
-  .mod-breakdown { margin-bottom:10px;display:flex;flex-direction:column;gap:3px; }
-  .mod-row { display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);border-radius:4px;padding:4px 8px; }
-  .mod-name { font-size:8px;color:rgba(255,255,255,0.6); }
-  .mod-val { font-size:8px;font-weight:700;color:rgba(255,255,255,0.85); }
 
   /* ── Repasse ── */
   .plat-repasse { border-top:1px solid rgba(255,255,255,0.12);padding-top:10px; }
