@@ -544,7 +544,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 <title>Comprovante — ${professorNome}</title>
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
-  * { margin:0;padding:0;box-sizing:border-box; }
+  * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
@@ -813,7 +813,7 @@ function exportComprovanteConsolidado(
 <title>Comprovante Consolidado — ${professorNome}</title>
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
-  * { margin:0;padding:0;box-sizing:border-box; }
+  * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
@@ -1035,7 +1035,7 @@ function exportArenaRelatorioSimples(
 <title>Relatório Simples — ${mesLabel}</title>
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
-  * { margin:0;padding:0;box-sizing:border-box; }
+  * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
   body { font-family:Arial,sans-serif;font-size:11px;color:#0f172a;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
@@ -1271,7 +1271,7 @@ function exportArenaRelatorio(
 <title>Relatório Arena — ${mesLabel}</title>
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
-  * { margin:0;padding:0;box-sizing:border-box; }
+  * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
@@ -1516,7 +1516,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
 <title>Conferência — ${plataformaLabel(sessao.plataforma)} — ${dataStr}</title>
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
-  * { margin:0;padding:0;box-sizing:border-box; }
+  * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
