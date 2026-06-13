@@ -3869,7 +3869,7 @@ function SessaoView({
                         )}
 
                         {/* ── Destinar / Realocar inline ── */}
-                        {(r.status === "nao_encontrado" || r.status === "confirmado") && confsProfs.length > 0 && (
+                        {r.status !== "ignorado" && (
                           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                             <span className="text-xs text-muted-foreground">
                               {r.status === "confirmado" ? "Realocar para:" : "Destinar para:"}
@@ -3918,73 +3918,6 @@ function SessaoView({
                       </div>
                     </div>
 
-                    {/* Right action panel */}
-                    <div className="flex flex-col items-center justify-center gap-1 px-2.5 min-w-[80px] border-l border-border/60 bg-muted/10 shrink-0">
-                      {r.status === "pendente" && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full"
-                            onClick={() => handleConfirmar(r)}
-                            data-testid={`button-confirmar-${r.id}`}
-                          >
-                            Confirmar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-xs w-full"
-                            onClick={() => setLinkDialog(r)}
-                            data-testid={`button-alterar-${r.id}`}
-                          >
-                            Alterar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-xs text-destructive hover:bg-red-50 dark:hover:bg-red-950/40 w-full"
-                            onClick={() => handleIgnorar(r)}
-                            data-testid={`button-ignorar-${r.id}`}
-                          >
-                            Excluir
-                          </Button>
-                        </>
-                      )}
-                      {r.status === "nao_encontrado" && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-xs w-full"
-                            onClick={() => setLinkDialog(r)}
-                            data-testid={`button-vincular-${r.id}`}
-                          >
-                            Vincular
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-xs text-destructive hover:bg-red-50 dark:hover:bg-red-950/40 w-full"
-                            onClick={() => handleIgnorar(r)}
-                            data-testid={`button-ignorar-${r.id}`}
-                          >
-                            Excluir
-                          </Button>
-                        </>
-                      )}
-                      {r.status === "confirmado" && manuallyLinked.has(r.id) && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-xs w-full"
-                          onClick={() => setLinkDialog(r)}
-                          data-testid={`button-editar-vinculo-${r.id}`}
-                        >
-                          Editar
-                        </Button>
-                      )}
-                    </div>
                   </div>
                 );
               })}
