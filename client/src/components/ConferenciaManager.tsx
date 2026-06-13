@@ -4636,8 +4636,15 @@ function RelatorioView({
                 })
                 .map((r) => (
                   <TableRow key={r.id} className="text-xs">
-                    <TableCell className="py-2 font-medium max-w-[160px]">
-                      <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
+                    <TableCell className="py-2 font-medium">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
+                        {r.modalidade && (
+                          <span className="text-[10px] text-muted-foreground shrink-0 bg-muted px-1 py-0.5 rounded">
+                            {r.modalidade}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
                       {fmtData(r.data)}
@@ -4938,8 +4945,8 @@ function RelatorioView({
                         <TableHead className="text-xs py-1.5 text-center">Alunos</TableHead>
                         <TableHead className="text-xs py-1.5 text-center">Chk</TableHead>
                         <TableHead className="text-xs py-1.5 text-right">Receita</TableHead>
-                        <TableHead className="text-xs py-1.5 text-right">A Pagar (Prof.)</TableHead>
-                        <TableHead className="text-xs py-1.5 text-right">Fica (Arena)</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right text-emerald-700 dark:text-emerald-400">Professor</TableHead>
+                        <TableHead className="text-xs py-1.5 text-right text-blue-700 dark:text-blue-400">Arena</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
