@@ -545,7 +545,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
   .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
@@ -813,7 +813,7 @@ function exportComprovanteConsolidado(
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
   .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
@@ -1033,7 +1033,7 @@ function exportArenaRelatorioSimples(
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
-  body { font-family:Arial,sans-serif;font-size:11px;color:#0f172a;background:#f1f5f9; }
+  body { font-family:Arial,sans-serif;font-size:11px;color:#0f172a;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
@@ -1267,7 +1267,7 @@ function exportArenaRelatorio(
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
@@ -1510,7 +1510,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
 <style>
   @page { size: A4 portrait; margin: 14mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
   .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
