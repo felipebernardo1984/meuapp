@@ -452,33 +452,41 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       const modAlunos  = new Set(mrs.map(r => r.nomePlataforma)).size;
       const modReceita = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
       const modComissao = mrs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+      const hasComissao = professorKey !== "__arena__";
       const modRows = mrs.map((r) => `
         <tr>
-          <td>${r.nomePlataforma}</td>
-          <td style="text-align:center">${fmtData(r.data)}</td>
-          <td style="text-align:center">${r.checkins ?? 1}</td>
-          <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
-          ${professorKey !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+          <td class="col-nome">${r.nomePlataforma}</td>
+          <td class="col-center">${fmtData(r.data)}</td>
+          <td class="col-center">${r.checkins ?? 1}</td>
+          <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
+          ${hasComissao ? `<td class="col-center" style="color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
         </tr>`).join("");
       return `
       <div class="mod-block">
         <div class="mod-header">
           <span class="mod-name">${mod}</span>
-          <span class="mod-summary">${modAlunos} aluno${modAlunos !== 1 ? "s" : ""} · ${modChks} check-in${modChks !== 1 ? "s" : ""} · ${fmt(modReceita)}${professorKey !== "__arena__" ? ` · Comissão: ${fmt(modComissao)}` : ""}</span>
+          <span class="mod-summary">${modAlunos} aluno${modAlunos !== 1 ? "s" : ""} · ${modChks} check-in${modChks !== 1 ? "s" : ""} · ${fmt(modReceita)}${hasComissao ? ` · Comissão: ${fmt(modComissao)}` : ""}</span>
         </div>
         <table>
+          <colgroup>
+            <col style="width:${hasComissao ? "35%" : "45%"}">
+            <col style="width:${hasComissao ? "20%" : "25%"}">
+            <col style="width:10%">
+            <col style="width:${hasComissao ? "17%" : "20%"}">
+            ${hasComissao ? `<col style="width:18%">` : ""}
+          </colgroup>
           <thead><tr>
-            <th>Nome na Plataforma</th>
-            <th style="text-align:center">Data/Horário</th>
-            <th style="text-align:center">Check-ins</th>
-            <th style="text-align:right">Valor</th>
-            ${professorKey !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
+            <th class="col-nome">Nome na Plataforma</th>
+            <th class="col-center">Data/Horário</th>
+            <th class="col-center">Check-ins</th>
+            <th class="col-center">Valor</th>
+            ${hasComissao ? `<th class="col-center">Comissão</th>` : ""}
           </tr></thead>
           <tbody>${modRows}</tbody>
           <tfoot><tr>
-            <td colspan="3"><strong>Subtotal ${mod}</strong></td>
-            <td style="text-align:right"><strong>${fmt(modReceita)}</strong></td>
-            ${professorKey !== "__arena__" ? `<td style="text-align:right"><strong style="color:#059669">${fmt(modComissao)}</strong></td>` : ""}
+            <td colspan="3" class="col-nome"><strong>Subtotal ${mod}</strong></td>
+            <td class="col-center"><strong>${fmt(modReceita)}</strong></td>
+            ${hasComissao ? `<td class="col-center"><strong style="color:#059669">${fmt(modComissao)}</strong></td>` : ""}
           </tr></tfoot>
         </table>
       </div>`;
@@ -494,9 +502,9 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       const rv = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
       return `
       <tr>
-        <td>${r.nomePlataforma}</td>
-        <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
-        ${professorKey !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td><td style="text-align:right;color:#2563eb">${fmt(rv)}</td>` : ""}
+        <td class="col-nome">${r.nomePlataforma}</td>
+        <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
+        ${professorKey !== "__arena__" ? `<td class="col-center" style="color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td><td class="col-center" style="color:#2563eb">${fmt(rv)}</td>` : ""}
       </tr>`;
     }).join("");
   const mensalistaBlock = mensalistaRegs.length === 0 ? "" : `
@@ -506,16 +514,21 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       <span class="mensalista-summary">${mensalistaRegs.length} aluno${mensalistaRegs.length !== 1 ? "s" : ""} · ${fmt(mSubtotal)}${professorKey !== "__arena__" ? ` · Comissão: ${fmt(mComissao)} · Arena: ${fmt(mArena)}` : ""}</span>
     </div>
     <table>
+      <colgroup>
+        <col style="width:${professorKey !== "__arena__" ? "46%" : "65%"}">
+        <col style="width:${professorKey !== "__arena__" ? "18%" : "35%"}">
+        ${professorKey !== "__arena__" ? `<col style="width:18%"><col style="width:18%">` : ""}
+      </colgroup>
       <thead><tr>
-        <th>Aluno</th>
-        <th style="text-align:right">Mensalidade</th>
-        ${professorKey !== "__arena__" ? `<th style="text-align:right">Comissão</th><th style="text-align:right">Arena</th>` : ""}
+        <th class="col-nome">Aluno</th>
+        <th class="col-center">Mensalidade</th>
+        ${professorKey !== "__arena__" ? `<th class="col-center">Comissão</th><th class="col-center">Arena</th>` : ""}
       </tr></thead>
       <tbody>${mensalistaRows}</tbody>
       <tfoot><tr>
-        <td><strong>Subtotal Mensalistas</strong></td>
-        <td style="text-align:right"><strong>${fmt(mSubtotal)}</strong></td>
-        ${professorKey !== "__arena__" ? `<td style="text-align:right"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td style="text-align:right"><strong style="color:#2563eb">${fmt(mArena)}</strong></td>` : ""}
+        <td class="col-nome"><strong>Subtotal Mensalistas</strong></td>
+        <td class="col-center"><strong>${fmt(mSubtotal)}</strong></td>
+        ${professorKey !== "__arena__" ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td class="col-center"><strong style="color:#2563eb">${fmt(mArena)}</strong></td>` : ""}
       </tr></tfoot>
     </table>
   </div>`;
@@ -540,11 +553,13 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   .mod-header { display:flex;align-items:center;gap:8px;background:#f1f5f9;padding:5px 9px;border-radius:4px 4px 0 0;border:1px solid #e2e8f0;border-bottom:none; }
   .mod-name { font-weight:700;font-size:9.5px;color:#1e293b; }
   .mod-summary { color:#64748b;font-size:8.5px;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #e2e8f0; }
-  th { background:#f8fafc;text-align:left;padding:4px 8px;font-size:8.5px;border-bottom:1px solid #e2e8f0;color:#475569;font-weight:600; }
-  td { padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:8.5px; }
+  table { width:100%;border-collapse:collapse;border:1px solid #e2e8f0;table-layout:fixed; }
+  th { background:#f8fafc;padding:5px 8px;font-size:8.5px;border-bottom:1px solid #e2e8f0;color:#475569;font-weight:700;text-align:center; }
+  td { padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:8.5px;text-align:center;vertical-align:middle; }
+  .col-nome { text-align:left !important; }
+  .col-center { text-align:center; }
   tr:last-child td { border-bottom:none; }
-  tfoot td { background:#f1f5f9;border-top:1px solid #e2e8f0; }
+  tfoot td { background:#f1f5f9;border-top:1px solid #e2e8f0;font-size:8.5px; }
   .total-row { background:#1e293b;color:white;border-radius:6px;padding:8px 12px;margin-top:18px;font-size:9.5px; }
   .mensalista-block { margin-top:18px;border:1px solid #c4b5fd;border-radius:6px;overflow:hidden; }
   .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #c4b5fd; }
@@ -650,33 +665,41 @@ function exportComprovanteConsolidado(
         const mAlunos  = new Set(mrs.map(r => r.nomePlataforma)).size;
         const mReceita = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
         const mComissao = mrs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+        const hasCom = professorId !== "__arena__";
         const mRows = mrs.map((r) => `
           <tr>
-            <td>${r.nomePlataforma}</td>
-            <td style="text-align:center">${fmtData(r.data)}</td>
-            <td style="text-align:center">${r.checkins ?? 1}</td>
-            <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
-            ${professorId !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+            <td class="col-nome">${r.nomePlataforma}</td>
+            <td class="col-center">${fmtData(r.data)}</td>
+            <td class="col-center">${r.checkins ?? 1}</td>
+            <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
+            ${hasCom ? `<td class="col-center" style="color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
           </tr>`).join("");
         return `
         <div class="mod-block">
           <div class="mod-header">
             <span class="mod-name">${mod}</span>
-            <span class="mod-summary">${mAlunos} aluno${mAlunos !== 1 ? "s" : ""} · ${mChks} check-in${mChks !== 1 ? "s" : ""} · ${fmt(mReceita)}${professorId !== "__arena__" ? ` · Comissão: ${fmt(mComissao)}` : ""}</span>
+            <span class="mod-summary">${mAlunos} aluno${mAlunos !== 1 ? "s" : ""} · ${mChks} check-in${mChks !== 1 ? "s" : ""} · ${fmt(mReceita)}${hasCom ? ` · Comissão: ${fmt(mComissao)}` : ""}</span>
           </div>
           <table>
+            <colgroup>
+              <col style="width:${hasCom ? "35%" : "45%"}">
+              <col style="width:${hasCom ? "20%" : "25%"}">
+              <col style="width:10%">
+              <col style="width:${hasCom ? "17%" : "20%"}">
+              ${hasCom ? `<col style="width:18%">` : ""}
+            </colgroup>
             <thead><tr>
-              <th>Nome na Plataforma</th>
-              <th style="text-align:center">Data/Horário</th>
-              <th style="text-align:center">Check-ins</th>
-              <th style="text-align:right">Valor</th>
-              ${professorId !== "__arena__" ? `<th style="text-align:right">Comissão</th>` : ""}
+              <th class="col-nome">Nome na Plataforma</th>
+              <th class="col-center">Data/Horário</th>
+              <th class="col-center">Check-ins</th>
+              <th class="col-center">Valor</th>
+              ${hasCom ? `<th class="col-center">Comissão</th>` : ""}
             </tr></thead>
             <tbody>${mRows}</tbody>
             <tfoot><tr>
-              <td colspan="3"><strong>Subtotal ${mod}</strong></td>
-              <td style="text-align:right"><strong>${fmt(mReceita)}</strong></td>
-              ${professorId !== "__arena__" ? `<td style="text-align:right"><strong style="color:#059669">${fmt(mComissao)}</strong></td>` : ""}
+              <td colspan="3" class="col-nome"><strong>Subtotal ${mod}</strong></td>
+              <td class="col-center"><strong>${fmt(mReceita)}</strong></td>
+              ${hasCom ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td>` : ""}
             </tr></tfoot>
           </table>
         </div>`;
@@ -706,34 +729,40 @@ function exportComprovanteConsolidado(
   const mTotal    = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const mComissao = allMensalistas.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
   const mArena    = allMensalistas.reduce((s, r) => s + Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0")), 0);
+  const hasCom2 = professorId !== "__arena__";
   const mensalistaRows = allMensalistas
     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
     .map((r) => {
       const rv = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
       return `
       <tr>
-        <td>${r.nomePlataforma}</td>
-        <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
-        ${professorId !== "__arena__" ? `<td style="text-align:right;color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td><td style="text-align:right;color:#2563eb">${fmt(rv)}</td>` : ""}
+        <td class="col-nome">${r.nomePlataforma}</td>
+        <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
+        ${hasCom2 ? `<td class="col-center" style="color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td><td class="col-center" style="color:#2563eb">${fmt(rv)}</td>` : ""}
       </tr>`;
     }).join("");
   const mensalistasBlock = allMensalistas.length === 0 ? "" : `
   <div class="mensalista-block">
     <div class="mensalista-header">
       <span class="mensalista-badge">Mensalistas Manuais</span>
-      <span class="mensalista-summary">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(mTotal)}${professorId !== "__arena__" ? ` · Comissão: ${fmt(mComissao)} · Arena: ${fmt(mArena)}` : ""}</span>
+      <span class="mensalista-summary">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(mTotal)}${hasCom2 ? ` · Comissão: ${fmt(mComissao)} · Arena: ${fmt(mArena)}` : ""}</span>
     </div>
     <table>
+      <colgroup>
+        <col style="width:${hasCom2 ? "46%" : "65%"}">
+        <col style="width:${hasCom2 ? "18%" : "35%"}">
+        ${hasCom2 ? `<col style="width:18%"><col style="width:18%">` : ""}
+      </colgroup>
       <thead><tr>
-        <th>Aluno</th>
-        <th style="text-align:right">Mensalidade</th>
-        ${professorId !== "__arena__" ? `<th style="text-align:right">Comissão</th><th style="text-align:right">Arena</th>` : ""}
+        <th class="col-nome">Aluno</th>
+        <th class="col-center">Mensalidade</th>
+        ${hasCom2 ? `<th class="col-center">Comissão</th><th class="col-center">Arena</th>` : ""}
       </tr></thead>
       <tbody>${mensalistaRows}</tbody>
       <tfoot><tr>
-        <td><strong>Subtotal Mensalistas</strong></td>
-        <td style="text-align:right"><strong>${fmt(mTotal)}</strong></td>
-        ${professorId !== "__arena__" ? `<td style="text-align:right"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td style="text-align:right"><strong style="color:#2563eb">${fmt(mArena)}</strong></td>` : ""}
+        <td class="col-nome"><strong>Subtotal Mensalistas</strong></td>
+        <td class="col-center"><strong>${fmt(mTotal)}</strong></td>
+        ${hasCom2 ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td class="col-center"><strong style="color:#2563eb">${fmt(mArena)}</strong></td>` : ""}
       </tr></tfoot>
     </table>
   </div>`;
@@ -854,7 +883,7 @@ function exportArenaRelatorio(
         const mRec   = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
         const mChks  = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
         const mAl    = new Set(mrs.map((r) => r.nomePlataforma)).size;
-        return `<tr><td>${mod}</td><td style="text-align:center">${mAl}</td><td style="text-align:center">${mChks}</td><td style="text-align:right"><strong>${fmt(mRec)}</strong></td></tr>`;
+        return `<tr><td class="col-nome">${mod}</td><td class="col-center">${mAl}</td><td class="col-center">${mChks}</td><td class="col-center"><strong>${fmt(mRec)}</strong></td></tr>`;
       }).join("");
     return `
     <div class="section">
@@ -863,16 +892,22 @@ function exportArenaRelatorio(
         <span class="section-meta">${alunos} aluno${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · ${fmt(receita)}</span>
       </div>
       <table>
+        <colgroup>
+          <col style="width:40%">
+          <col style="width:20%">
+          <col style="width:20%">
+          <col style="width:20%">
+        </colgroup>
         <thead><tr>
-          <th>Modalidade</th>
-          <th style="text-align:center">Alunos</th>
-          <th style="text-align:center">Check-ins</th>
-          <th style="text-align:right">Receita</th>
+          <th class="col-nome">Modalidade</th>
+          <th class="col-center">Alunos</th>
+          <th class="col-center">Check-ins</th>
+          <th class="col-center">Receita</th>
         </tr></thead>
         <tbody>${modRows}</tbody>
         <tfoot><tr>
-          <td colspan="3"><strong>Subtotal ${label}</strong></td>
-          <td style="text-align:right"><strong>${fmt(receita)}</strong></td>
+          <td colspan="3" class="col-nome"><strong>Subtotal ${label}</strong></td>
+          <td class="col-center"><strong>${fmt(receita)}</strong></td>
         </tr></tfoot>
       </table>
     </div>`;
@@ -881,7 +916,7 @@ function exportArenaRelatorio(
   // Mensalistas block
   const mensalistaRows = [...allMensalistas]
     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
-    .map((r) => `<tr><td>${r.nomePlataforma}</td><td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td></tr>`)
+    .map((r) => `<tr><td class="col-nome">${r.nomePlataforma}</td><td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td></tr>`)
     .join("");
   const mensalistasBlock = allMensalistas.length === 0 ? "" : `
   <div class="mensalista-block">
@@ -890,9 +925,10 @@ function exportArenaRelatorio(
       <span class="mensalista-meta">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(totalMensalistas)}</span>
     </div>
     <table>
-      <thead><tr><th>Aluno</th><th style="text-align:right">Mensalidade</th></tr></thead>
+      <colgroup><col style="width:65%"><col style="width:35%"></colgroup>
+      <thead><tr><th class="col-nome">Aluno</th><th class="col-center">Mensalidade</th></tr></thead>
       <tbody>${mensalistaRows}</tbody>
-      <tfoot><tr><td><strong>Subtotal Mensalistas</strong></td><td style="text-align:right"><strong>${fmt(totalMensalistas)}</strong></td></tr></tfoot>
+      <tfoot><tr><td class="col-nome"><strong>Subtotal Mensalistas</strong></td><td class="col-center"><strong>${fmt(totalMensalistas)}</strong></td></tr></tfoot>
     </table>
   </div>`;
 
@@ -917,11 +953,13 @@ function exportArenaRelatorio(
   .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #1e293b; }
   .section-platform { font-size:11px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
   .section-meta { font-size:8.5px;color:#64748b;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #e2e8f0; }
-  th { background:#f8fafc;text-align:left;padding:4px 8px;font-size:8.5px;border-bottom:1px solid #e2e8f0;color:#475569;font-weight:600; }
-  td { padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:8.5px; }
+  table { width:100%;border-collapse:collapse;border:1px solid #e2e8f0;table-layout:fixed; }
+  th { background:#f8fafc;padding:5px 8px;font-size:8.5px;border-bottom:1px solid #e2e8f0;color:#475569;font-weight:700;text-align:center; }
+  td { padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:8.5px;text-align:center;vertical-align:middle; }
+  .col-nome { text-align:left !important; }
+  .col-center { text-align:center; }
   tr:last-child td { border-bottom:none; }
-  tfoot td { background:#f1f5f9;border-top:1px solid #e2e8f0; }
+  tfoot td { background:#f1f5f9;border-top:1px solid #e2e8f0;font-size:8.5px; }
   .mensalista-block { margin-top:20px;border:1px solid #c4b5fd;border-radius:6px;overflow:hidden; }
   .mensalista-header { background:#f5f3ff;padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #c4b5fd; }
   .mensalista-badge { background:#7c3aed;color:white;font-size:8.5px;padding:2px 8px;border-radius:20px;font-weight:bold; }
@@ -997,12 +1035,12 @@ function exportToPDF(sessao: SessaoDetalhe) {
         .map(
           (r) => `
         <tr>
-          <td>${r.nomePlataforma}</td>
-          <td>${r.modalidade ?? "—"}</td>
-          <td style="text-align:center">${r.checkins ?? 1}</td>
-          <td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td>
-          <td style="text-align:right">${fmt(parseFloat(r.valorProfessor || "0"))}</td>
-          <td style="text-align:right">${fmt(parseFloat(r.valorArena || "0"))}</td>
+          <td class="col-nome">${r.nomePlataforma}</td>
+          <td class="col-center">${r.modalidade ?? "—"}</td>
+          <td class="col-center">${r.checkins ?? 1}</td>
+          <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
+          <td class="col-center">${fmt(parseFloat(r.valorProfessor || "0"))}</td>
+          <td class="col-center">${fmt(parseFloat(r.valorArena || "0"))}</td>
         </tr>`
         )
         .join("");
@@ -1016,23 +1054,31 @@ function exportToPDF(sessao: SessaoDetalhe) {
           <span class="prof-summary">${new Set(g.registros.map((r: Registro) => r.nomePlataforma)).size} aluno${new Set(g.registros.map((r: Registro) => r.nomePlataforma)).size !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""}</span>
         </div>
         <table>
+          <colgroup>
+            <col style="width:30%">
+            <col style="width:22%">
+            <col style="width:8%">
+            <col style="width:13%">
+            <col style="width:13%">
+            <col style="width:13%">
+          </colgroup>
           <thead>
             <tr>
-              <th>Nome na Plataforma</th>
-              <th>Aluno Correspondido</th>
-              <th style="text-align:center">Check-ins</th>
-              <th style="text-align:right">Valor Total</th>
-              <th style="text-align:right">Prof.</th>
-              <th style="text-align:right">Arena</th>
+              <th class="col-nome">Nome na Plataforma</th>
+              <th class="col-center">Modalidade</th>
+              <th class="col-center">Check-ins</th>
+              <th class="col-center">Valor Total</th>
+              <th class="col-center">Prof.</th>
+              <th class="col-center">Arena</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
           <tfoot>
             <tr>
-              <td colspan="3"><strong>Subtotal ${g.nome}</strong></td>
-              <td style="text-align:right"><strong>${fmt(subtotal)}</strong></td>
-              <td style="text-align:right"><strong>${fmt(comissao)}</strong></td>
-              <td style="text-align:right"><strong>${fmt(arena)}</strong></td>
+              <td colspan="3" class="col-nome"><strong>Subtotal ${g.nome}</strong></td>
+              <td class="col-center"><strong>${fmt(subtotal)}</strong></td>
+              <td class="col-center"><strong>${fmt(comissao)}</strong></td>
+              <td class="col-center"><strong>${fmt(arena)}</strong></td>
             </tr>
           </tfoot>
         </table>
@@ -1045,11 +1091,12 @@ function exportToPDF(sessao: SessaoDetalhe) {
       ? `<div class="nao-encontrados">
         <div class="section-title">Não Encontrados (${naoEncontrados.length})</div>
         <table>
-          <thead><tr><th>Nome na Plataforma</th><th style="text-align:right">Valor</th><th style="text-align:center">Check-ins</th></tr></thead>
+          <colgroup><col style="width:60%"><col style="width:20%"><col style="width:20%"></colgroup>
+          <thead><tr><th class="col-nome">Nome na Plataforma</th><th class="col-center">Valor</th><th class="col-center">Check-ins</th></tr></thead>
           <tbody>${naoEncontrados
             .map(
               (r) =>
-                `<tr><td>${r.nomePlataforma}</td><td style="text-align:right">${fmt(parseFloat(r.valor || "0"))}</td><td style="text-align:center">${r.checkins ?? 1}</td></tr>`
+                `<tr><td class="col-nome">${r.nomePlataforma}</td><td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td><td class="col-center">${r.checkins ?? 1}</td></tr>`
             )
             .join("")}</tbody>
         </table>
@@ -1080,11 +1127,13 @@ function exportToPDF(sessao: SessaoDetalhe) {
   .prof-name { font-weight: 700; font-size: 11px; color: #1e293b; }
   .prof-pct { background: #e0e7ff; color: #3730a3; font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
   .prof-summary { color: #64748b; font-size: 9px; margin-left: auto; }
-  table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; }
-  th { background: #f8fafc; text-align: left; padding: 4px 8px; font-size: 8.5px; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; }
-  td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; font-size: 8.5px; }
+  table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; table-layout: fixed; }
+  th { background: #f8fafc; padding: 5px 8px; font-size: 8.5px; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 700; text-align: center; }
+  td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; font-size: 8.5px; text-align: center; vertical-align: middle; }
+  .col-nome { text-align: left !important; }
   tr:last-child td { border-bottom: none; }
-  tfoot td { background: #f1f5f9; border-top: 1px solid #e2e8f0; }
+  tfoot td { background: #f1f5f9; border-top: 1px solid #e2e8f0; font-size: 8.5px; }
+  .col-center { text-align: center; }
   .section-title { font-weight: 700; font-size: 11px; margin: 20px 0 8px; color: #dc2626; padding-top: 16px; border-top: 1px solid #fee2e2; }
   .nao-encontrados table { border-color: #fca5a5; }
   .nao-encontrados th { background: #fff5f5; border-color: #fca5a5; color: #991b1b; }
