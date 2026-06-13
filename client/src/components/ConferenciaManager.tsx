@@ -915,7 +915,7 @@ function exportArenaRelatorioSimples(
       <div class="plat-stats">
         <div class="stat">
           <div class="stat-val">${alunos}</div>
-          <div class="stat-lbl">Participantes</div>
+          <div class="stat-lbl">Visitas</div>
         </div>
         <div class="stat">
           <div class="stat-val">${chks}</div>
@@ -1000,6 +1000,8 @@ function exportArenaRelatorioSimples(
   .gt-right { text-align:right; }
   .gt-right .gt-arena-label { font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em; }
   .gt-right .gt-arena-val { font-size:20px;font-weight:900;color:#93c5fd;margin-top:3px; }
+  .gt-full .gt-label { font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em; }
+  .gt-full .gt-val { font-size:24px;font-weight:900;color:#93c5fd;margin-top:3px; }
 
   .footer { margin-top:14px;font-size:8px;color:#94a3b8;text-align:right; }
 </style>
@@ -1015,14 +1017,20 @@ function exportArenaRelatorioSimples(
   ${mensalistasSection}
 
   <div class="grand-total">
-    <div class="gt-left">
-      <div class="gt-label">Total Geral</div>
-      <div class="gt-val">${fmt(totalGeral)}</div>
-    </div>
-    <div class="gt-right">
-      <div class="gt-arena-label">Repasse Arena (${pctArena}%)</div>
-      <div class="gt-arena-val">${fmt(valorArena)}</div>
-    </div>
+    ${pctArena === 100
+      ? `<div class="gt-full">
+          <div class="gt-label">Total Geral · Repasse Arena (100%)</div>
+          <div class="gt-val">${fmt(totalGeral)}</div>
+        </div>`
+      : `<div class="gt-left">
+          <div class="gt-label">Total Geral</div>
+          <div class="gt-val">${fmt(totalGeral)}</div>
+        </div>
+        <div class="gt-right">
+          <div class="gt-arena-label">Repasse Arena (${pctArena}%)</div>
+          <div class="gt-arena-val">${fmt(valorArena)}</div>
+        </div>`
+    }
   </div>
   <div class="footer">Seven Sports &nbsp;·&nbsp; Relatório gerado automaticamente</div>
 </body>
@@ -1087,7 +1095,7 @@ function exportArenaRelatorio(
     <div class="section">
       <div class="section-header">
         <span class="section-platform">${label.toUpperCase()}</span>
-        <span class="section-meta">${alunos} aluno${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · ${fmt(receita)}</span>
+        <span class="section-meta">${alunos} visita${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · ${fmt(receita)}</span>
       </div>
       <table>
         <colgroup>
@@ -1098,7 +1106,7 @@ function exportArenaRelatorio(
         </colgroup>
         <thead><tr>
           <th class="col-nome">Modalidade</th>
-          <th class="col-center">Alunos</th>
+          <th class="col-center">Visitas</th>
           <th class="col-center">Check-ins</th>
           <th class="col-center">Receita</th>
         </tr></thead>
