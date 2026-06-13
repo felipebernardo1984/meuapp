@@ -3225,6 +3225,7 @@ function SessaoView({
   const [tab, setTab] = useState<"conferencia" | "relatorio">("conferencia");
   const [filtroStatus, setFiltroStatus] = useState("");
   const [filtroNaoAtribuido, setFiltroNaoAtribuido] = useState(false);
+  const [filtroDivergente, setFiltroDivergente] = useState(false);
   const [filtroProfessor, setFiltroProfessor] = useState("");
   const [buscaNome, setBuscaNome] = useState("");
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
@@ -3346,6 +3347,11 @@ function SessaoView({
         if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
         return true;
       }
+      if (filtroDivergente) {
+        if (!r.divergente || r.status !== "pendente") return false;
+        if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
+        return true;
+      }
       if (filtroStatus && r.status !== filtroStatus) return false;
       if (filtroProfessor && r.professorId !== filtroProfessor) return false;
       if (buscaNome && !r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase())) return false;
@@ -3362,6 +3368,9 @@ function SessaoView({
   const naoEncontradoValor = registros.filter((r) => r.status === "nao_encontrado").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalValor = confirmedValor + pendenteValor + naoEncontradoValor;
   const naoEncontradosCount = registros.filter((r) => r.status === "nao_encontrado").length;
+  const divergenteRegs = registros.filter((r) => r.status === "pendente" && r.divergente);
+  const divergenteCount = divergenteRegs.length;
+  const divergenteValor = divergenteRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
 
   // Arena = valor - valorProfessor (o que sobra após comissão do professor)
   const calcDisplayValores = (r: Registro) => {
@@ -3535,8 +3544,8 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "confirmado" && "ring-2 ring-emerald-500/60")}
-          onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(filtroStatus === "confirmado" ? "" : "confirmado"); }}
+          className={cn("border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "confirmado" && "ring-2 ring-emerald-500/60")}
+          onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "confirmado" ? "" : "confirmado"); }}
           data-testid="kpi-confirmados"
         >
           <CardContent className="p-4">
@@ -3546,8 +3555,8 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "pendente" && "ring-2 ring-amber-500/60")}
-          onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(filtroStatus === "pendente" ? "" : "pendente"); }}
+          className={cn("border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "pendente" && "ring-2 ring-amber-500/60")}
+          onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "pendente" ? "" : "pendente"); }}
           data-testid="kpi-possiveis"
         >
           <CardContent className="p-4">
@@ -3556,9 +3565,22 @@ function SessaoView({
             <p className="text-xs text-amber-600/80 dark:text-amber-500/80 mt-1">{fmtVal(String(pendenteValor))}</p>
           </CardContent>
         </Card>
+        {divergenteCount > 0 && (
+          <Card
+            className={cn("border shadow-none bg-purple-50/60 dark:bg-purple-950/30 border-purple-200/70 dark:border-purple-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroDivergente && "ring-2 ring-purple-500/60")}
+            onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(""); setFiltroDivergente((v) => !v); }}
+            data-testid="kpi-divergentes"
+          >
+            <CardContent className="p-4">
+              <p className="text-[11px] font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wider mb-1.5">Divergentes</p>
+              <p className="text-lg font-bold text-purple-700 dark:text-purple-400 leading-none">{divergenteCount}</p>
+              <p className="text-xs text-purple-600/80 dark:text-purple-500/80 mt-1">{fmtVal(String(divergenteValor))}</p>
+            </CardContent>
+          </Card>
+        )}
         <Card
-          className={cn("border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
-          onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado"); }}
+          className={cn("border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
+          onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado"); }}
           data-testid="kpi-nao-encontrados"
         >
           <CardContent className="p-4">
@@ -3569,7 +3591,7 @@ function SessaoView({
         </Card>
         <Card
           className={cn("border shadow-none bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroNaoAtribuido && "ring-2 ring-blue-500/60")}
-          onClick={() => { setFiltroStatus(""); setFiltroNaoAtribuido((v) => !v); }}
+          onClick={() => { setFiltroStatus(""); setFiltroDivergente(false); setFiltroNaoAtribuido((v) => !v); }}
           data-testid="kpi-nao-atribuido"
         >
           <CardContent className="p-4">
@@ -3604,9 +3626,9 @@ function SessaoView({
 
           {/* Bulk destinar bar — não encontrados */}
           {naoEncontradosCount > 0 && (
-            <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
-              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <p className="text-sm text-amber-800 dark:text-amber-300 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/60">
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
+              <p className="text-sm text-red-800 dark:text-red-300 flex-1 min-w-0">
                 <strong>{naoEncontradosCount}</strong> sem correspondência — destinar receita para:
               </p>
               <Select value={destinarPara} onValueChange={setDestinarPara}>
