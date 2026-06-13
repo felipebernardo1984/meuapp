@@ -3934,6 +3934,35 @@ function SessaoView({
                       </div>
                     </div>
 
+                    {/* ── Right action panel ── */}
+                    {(r.status === "pendente" || r.status === "nao_encontrado") && (
+                      <div className="flex flex-col items-center justify-center gap-1 px-2.5 min-w-[80px] border-l border-border/60 bg-muted/10 shrink-0">
+                        {r.status === "pendente" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full"
+                            onClick={() => handleConfirmar(r)}
+                            disabled={updateMutation.isPending}
+                            data-testid={`button-confirmar-${r.id}`}
+                          >
+                            Confirmar
+                          </Button>
+                        )}
+                        {r.status === "nao_encontrado" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 w-full"
+                            onClick={() => handleDestinar(r.id, r.professorId)}
+                            disabled={updateMutation.isPending}
+                            data-testid={`button-atribuir-${r.id}`}
+                          >
+                            Atribuir
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
