@@ -1311,6 +1311,8 @@ export function registerConferenciaRoutes(app: Express): void {
           console.log(`[Conferência] Divergente detectado: "${normName}" — ${Array.from(modCounts.entries()).map(([m, c]) => `${m}(${c})`).join(", ")}`);
         }
       }
+      // Track which records are downgraded so Passo 1 only re-confirms those
+      const downgradedUp = new Set<(typeof registrosToInsert)[0]>();
       let downgradeCount = 0;
       for (const r of registrosToInsert) {
         if (r.status !== "confirmado") continue;
@@ -1320,10 +1322,46 @@ export function registerConferenciaRoutes(app: Express): void {
           encontrados--;
           possiveis++;
           downgradeCount++;
+          downgradedUp.add(r);
         }
       }
       if (downgradeCount > 0) {
         console.log(`[Conferência] ${downgradeCount} registros confirmados rebaixados para pendente (divergente)`);
+      }
+
+      // ── Passo 1: Auto-confirmar modalidade dominante (divergentes) ────────────
+      // For each divergent student, the modality with the most check-ins is
+      // re-confirmed. Only records that were just downgraded from confirmado are
+      // eligible (preserves genuinely-pending low-score matches).
+      // Tie → all stay pendente (no change from current behavior).
+      const dominantModUp = new Map<string, string>();
+      for (const [normName, modCounts] of checkinsByNomeModUp) {
+        if (!divergentesUp.has(normName)) continue;
+        let maxCount = 0;
+        let dominant: string | null = null;
+        let tie = false;
+        for (const [mod, count] of modCounts) {
+          if (count > maxCount) { maxCount = count; dominant = mod; tie = false; }
+          else if (count === maxCount) { tie = true; }
+        }
+        if (!tie && dominant) dominantModUp.set(normName, dominant);
+      }
+      let reconfirmCount = 0;
+      for (const r of registrosToInsert) {
+        if (!downgradedUp.has(r)) continue;
+        const normName = normalizeNome(r.nomePlataforma as string);
+        const dominant = dominantModUp.get(normName);
+        if (!dominant) continue;
+        const recMod = (r.modalidade as string || "").trim().toLowerCase();
+        if (recMod === dominant) {
+          r.status = "confirmado";
+          encontrados++;
+          possiveis--;
+          reconfirmCount++;
+        }
+      }
+      if (reconfirmCount > 0) {
+        console.log(`[Conferência] ${reconfirmCount} registros re-confirmados (modalidade dominante)`);
       }
 
       const [sessao] = await db
@@ -1665,6 +1703,36 @@ export function registerConferenciaRoutes(app: Express): void {
       }
     }
     if (multiModalOpsR.length > 0) await Promise.all(multiModalOpsR);
+
+    // ── Passo 1 (rematch): Auto-confirmar modalidade dominante (divergentes) ───
+    const dominantModR = new Map<string, string>();
+    for (const [normName, modCounts] of checkinsByNomeModR) {
+      if (!divergentesR.has(normName)) continue;
+      let maxCount = 0;
+      let dominant: string | null = null;
+      let tie = false;
+      for (const [mod, count] of modCounts) {
+        if (count > maxCount) { maxCount = count; dominant = mod; tie = false; }
+        else if (count === maxCount) { tie = true; }
+      }
+      if (!tie && dominant) dominantModR.set(normName, dominant);
+    }
+    const reconfirmOpsR: Array<Promise<unknown>> = [];
+    for (const r of allRegsForMM) {
+      if (r.status !== "confirmado") continue; // was confirmado before downgrade
+      const normName = normalizeNome(r.nomePlataforma);
+      if (!divergentesR.has(normName)) continue;
+      const dominant = dominantModR.get(normName);
+      if (!dominant) continue;
+      const recMod = (r.modalidade || "").trim().toLowerCase();
+      if (recMod === dominant) {
+        reconfirmOpsR.push(
+          db.update(conferenciaRegistros).set({ status: "confirmado" })
+            .where(eq(conferenciaRegistros.id, r.id))
+        );
+      }
+    }
+    if (reconfirmOpsR.length > 0) await Promise.all(reconfirmOpsR);
 
     const finalRegs = await db
       .select()
