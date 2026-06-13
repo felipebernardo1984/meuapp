@@ -4378,7 +4378,8 @@ function SessaoView({
                               className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full"
                               onClick={() => {
                                 if (isConfirmadoUnchanged) return;
-                                if (r.status === "confirmado") {
+                                if (r.status === "confirmado" && r.professorId) {
+                                  // Only ask for confirmation when CHANGING an existing professor
                                   setConfirmDialog({ registro: r, novoDestino: selectedDest });
                                 } else {
                                   handleConfirmar(r);
