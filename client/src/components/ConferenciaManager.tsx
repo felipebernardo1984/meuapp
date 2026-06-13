@@ -548,16 +548,15 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;text-align:center;border-radius:0; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
-  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #e2e8f0;background:#fff; }
-  .kpi { padding:10px 14px;border-right:1px solid #e2e8f0; }
-  .kpi:last-child { border-right:none; }
-  .kpi-accent { width:18px;height:3px;border-radius:2px;margin-bottom:4px; }
-  .kpi-val { font-size:13px;font-weight:900;color:#000;line-height:1; }
-  .kpi-lbl { font-size:7.5px;color:#555;text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
+  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px; }
+  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
+  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(255,255,255,0.4); }
+  .kpi-val { font-size:13px;font-weight:900;color:#fff;line-height:1; }
+  .kpi-lbl { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .mod-block { margin-bottom:18px; }
   .mod-header { display:flex;align-items:center;gap:8px;background:#f1f5f9;padding:6px 10px;border-radius:4px 4px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
@@ -597,25 +596,25 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
     <div class="doc-brand">Seven Sports</div>
     <h1>${professorNome}${professorKey !== "__arena__" ? ` &mdash; ${pct}% comissão` : ""}</h1>
     <div class="doc-sub">Comprovante de receita &nbsp;·&nbsp; ${plataformaLabel(sessao.plataforma)} &nbsp;·&nbsp; ${sessao.nomeArquivo} &nbsp;·&nbsp; ${dataStr}</div>
-  </div>
-  ${regs.length > 0 ? `
-  <div class="kpi-strip">
-    <div class="kpi"><div class="kpi-accent" style="background:#0ea5e9"></div><div class="kpi-val">${new Set(regs.map(r => r.nomePlataforma)).size}</div><div class="kpi-lbl">Visitantes</div></div>
-    <div class="kpi"><div class="kpi-accent" style="background:#f59e0b"></div><div class="kpi-val">${chks}</div><div class="kpi-lbl">Check-ins</div></div>
-    <div class="kpi"><div class="kpi-accent" style="background:#6366f1"></div><div class="kpi-val">${fmt(subtotal)}</div><div class="kpi-lbl">Receita Plataforma</div></div>
-    ${professorKey !== "__arena__"
-      ? `<div class="kpi"><div class="kpi-accent" style="background:#10b981"></div><div class="kpi-val">${fmt(comissao)}</div><div class="kpi-lbl">Comissão (${pct}%)</div></div>`
-      : `<div class="kpi"><div class="kpi-accent" style="background:#2563eb"></div><div class="kpi-val">${fmt(arena)}</div><div class="kpi-lbl">Valor Arena</div></div>`}
+    ${regs.length > 0 ? `
+    <div class="kpi-strip">
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${new Set(regs.map(r => r.nomePlataforma)).size}</div><div class="kpi-lbl">Visitantes</div></div>
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${chks}</div><div class="kpi-lbl">Check-ins</div></div>
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(subtotal)}</div><div class="kpi-lbl">Receita Plataforma</div></div>
+      ${professorKey !== "__arena__"
+        ? `<div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(comissao)}</div><div class="kpi-lbl">Comissão (${pct}%)</div></div>`
+        : `<div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(arena)}</div><div class="kpi-lbl">Valor Arena</div></div>`}
+    </div>` : ""}
   </div>
   <div class="body">
+    ${regs.length > 0 ? `
     ${modBlocks}
     <div class="grand-total">
       <div class="gt-left"><div class="gt-lbl">Total Plataforma</div><div class="gt-val">${fmt(subtotal)}</div></div>
       ${professorKey !== "__arena__"
         ? `<div class="gt-right"><div class="gt-lbl">Sua Comissão (${pct}%)</div><div class="gt-val">${fmt(comissao)}</div></div>`
         : `<div class="gt-right"><div class="gt-lbl">Valor Arena</div><div class="gt-val" style="color:#93c5fd">${fmt(arena)}</div></div>`}
-    </div>
-  </div>` : `<div class="body">`}
+    </div>` : ""}
   ${mensalistaBlock}
   <div class="footer" style="padding:0 20px 16px">Seven Sports &nbsp;·&nbsp; Comprovante gerado automaticamente</div>
 </div>
@@ -817,16 +816,15 @@ function exportComprovanteConsolidado(
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;text-align:center;border-radius:0; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
-  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #e2e8f0;background:#fff; }
-  .kpi { padding:10px 14px;border-right:1px solid #e2e8f0; }
-  .kpi:last-child { border-right:none; }
-  .kpi-accent { width:18px;height:3px;border-radius:2px;margin-bottom:4px; }
-  .kpi-val { font-size:13px;font-weight:900;color:#000;line-height:1; }
-  .kpi-lbl { font-size:7.5px;color:#555;text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
+  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px; }
+  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
+  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(255,255,255,0.4); }
+  .kpi-val { font-size:13px;font-weight:900;color:#fff;line-height:1; }
+  .kpi-lbl { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .section { margin-bottom:22px; }
   .section-header { display:flex;align-items:center;gap:8px;margin-bottom:0;padding:8px 12px;background:#f1f5f9;border-radius:6px 6px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
@@ -872,17 +870,16 @@ function exportComprovanteConsolidado(
     <div class="doc-brand">Seven Sports</div>
     <h1>${professorNome}${professorId !== "__arena__" ? ` &mdash; ${pct}% comissão` : ""} &mdash; Consolidado</h1>
     <div class="doc-sub">Comprovante consolidado &nbsp;·&nbsp; ${mesLabel} &nbsp;·&nbsp; ${sections.length} plataforma${sections.length !== 1 ? "s" : ""}${allMensalistas.length > 0 ? ` &nbsp;·&nbsp; ${allMensalistas.length} mensalista${allMensalistas.length !== 1 ? "s" : ""}` : ""}</div>
+    ${sections.length > 0 ? `
+    <div class="kpi-strip">
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${totalAlunos}</div><div class="kpi-lbl">Visitantes</div></div>
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${totalChks}</div><div class="kpi-lbl">Check-ins</div></div>
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(totalReceita)}</div><div class="kpi-lbl">Receita Plataforma</div></div>
+      ${professorId !== "__arena__"
+        ? `<div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(totalComissao)}</div><div class="kpi-lbl">Comissão (${pct}%)</div></div>`
+        : `<div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(totalArena)}</div><div class="kpi-lbl">Valor Arena</div></div>`}
+    </div>` : ""}
   </div>
-
-  ${sections.length > 0 ? `
-  <div class="kpi-strip">
-    <div class="kpi"><div class="kpi-accent" style="background:#0ea5e9"></div><div class="kpi-val">${totalAlunos}</div><div class="kpi-lbl">Visitantes</div></div>
-    <div class="kpi"><div class="kpi-accent" style="background:#f59e0b"></div><div class="kpi-val">${totalChks}</div><div class="kpi-lbl">Check-ins</div></div>
-    <div class="kpi"><div class="kpi-accent" style="background:#6366f1"></div><div class="kpi-val">${fmt(totalReceita)}</div><div class="kpi-lbl">Receita Plataforma</div></div>
-    ${professorId !== "__arena__"
-      ? `<div class="kpi"><div class="kpi-accent" style="background:#10b981"></div><div class="kpi-val">${fmt(totalComissao)}</div><div class="kpi-lbl">Comissão (${pct}%)</div></div>`
-      : `<div class="kpi"><div class="kpi-accent" style="background:#2563eb"></div><div class="kpi-val">${fmt(totalArena)}</div><div class="kpi-lbl">Valor Arena</div></div>`}
-  </div>` : ""}
 
   <div class="body">
     ${sectionBlocks}
@@ -1516,16 +1513,15 @@ function exportToPDF(sessao: SessaoDetalhe) {
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;text-align:center;border-radius:0; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
-  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #e2e8f0;background:#fff; }
-  .kpi { padding:10px 14px;border-right:1px solid #e2e8f0; }
-  .kpi:last-child { border-right:none; }
-  .kpi-accent { width:18px;height:3px;border-radius:2px;margin-bottom:4px; }
-  .kpi-val { font-size:13px;font-weight:900;color:#000;line-height:1; }
-  .kpi-lbl { font-size:7.5px;color:#555;text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
+  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px; }
+  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
+  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(255,255,255,0.4); }
+  .kpi-val { font-size:13px;font-weight:900;color:#fff;line-height:1; }
+  .kpi-lbl { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .prof-block { margin-bottom:20px; }
   .prof-header { display:flex;align-items:center;gap:10px;background:#f1f5f9;padding:7px 10px;border-radius:5px 5px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
@@ -1555,13 +1551,12 @@ function exportToPDF(sessao: SessaoDetalhe) {
     <div class="doc-brand">Seven Sports</div>
     <h1>Conferência — ${plataformaLabel(sessao.plataforma)}</h1>
     <div class="doc-sub">${sessao.nomeArquivo} &nbsp;·&nbsp; Gerado em ${dataStr} &nbsp;·&nbsp; ${sessao.totalRegistros} registros &nbsp;·&nbsp; ${confirmados.length} confirmados</div>
-  </div>
-
-  <div class="kpi-strip">
-    <div class="kpi"><div class="kpi-accent" style="background:#6366f1"></div><div class="kpi-val">${fmt(totalRecebido)}</div><div class="kpi-lbl">Total Recebido</div></div>
-    <div class="kpi"><div class="kpi-accent" style="background:#10b981"></div><div class="kpi-val">${fmt(totalArena)}</div><div class="kpi-lbl">Valor Arena</div></div>
-    <div class="kpi"><div class="kpi-accent" style="background:#f59e0b"></div><div class="kpi-val">${totalCheckins}</div><div class="kpi-lbl">Check-ins</div></div>
-    <div class="kpi"><div class="kpi-accent" style="background:#dc2626"></div><div class="kpi-val">${naoEncontrados.length}</div><div class="kpi-lbl">Não encontrados</div></div>
+    <div class="kpi-strip">
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(totalRecebido)}</div><div class="kpi-lbl">Total Recebido</div></div>
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(totalArena)}</div><div class="kpi-lbl">Valor Arena</div></div>
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${totalCheckins}</div><div class="kpi-lbl">Check-ins</div></div>
+      <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${naoEncontrados.length}</div><div class="kpi-lbl">Não encontrados</div></div>
+    </div>
   </div>
 
   <div class="body">
