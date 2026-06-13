@@ -3805,7 +3805,7 @@ function SessaoView({
                     <div className={cn("w-1 shrink-0", si.dot)} />
 
                     {/* Main content */}
-                    <div className="flex-1 min-w-0 p-3 flex items-start gap-3">
+                    <div className="flex-1 min-w-0 p-3.5 flex items-start gap-3 min-h-[80px]">
                       <div className="flex-1 min-w-0">
                         {/* ── Nome na plataforma + badges ── */}
                         <div className="flex items-center gap-2 flex-wrap">
@@ -3846,7 +3846,7 @@ function SessaoView({
 
                         {/* ── Aluno correspondido + professor + check-ins ── */}
                         {r.alunoNomeMatch && (
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <span className="text-xs text-muted-foreground">→</span>
                             <span className="text-xs font-medium text-foreground">{r.alunoNomeMatch}</span>
                             {profNome && (
@@ -3876,7 +3876,7 @@ function SessaoView({
 
                         {/* ── Data e horário ── */}
                         {r.data && r.data !== "undefined" && (
-                          <div className="flex items-center gap-1 mt-0.5">
+                          <div className="flex items-center gap-1 mt-1">
                             <CalendarDays className="h-3 w-3 text-muted-foreground/70 shrink-0" />
                             <span className="text-[11px] text-muted-foreground tabular-nums">{fmtData(r.data)}</span>
                           </div>
