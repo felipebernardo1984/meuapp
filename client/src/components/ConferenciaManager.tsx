@@ -1435,11 +1435,12 @@ function LandingView({
             const isTotalpassOnly = platformSessoes.every((ss) => ss.plataforma === "totalpass");
             const platformBadgeClass = isProfessorOnly
               ? "bg-secondary text-secondary-foreground"
-              : isWellhubOnly
-              ? "bg-green-500 text-white"
               : isTotalpassOnly
               ? "bg-black text-white"
-              : "bg-green-500 text-white";
+              : "text-white";
+            const platformBadgeStyle = (!isProfessorOnly && !isTotalpassOnly)
+              ? { backgroundColor: "#ff2c97" }
+              : undefined;
 
             return (
               <Card
@@ -1457,7 +1458,7 @@ function LandingView({
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm">{g.label}</p>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                        <Badge className={cn("text-xs border-0", platformBadgeClass)}>
+                        <Badge className={cn("text-xs border-0", platformBadgeClass)} style={platformBadgeStyle}>
                           {plataformas}
                         </Badge>
                         {!isProfessorOnly && (
@@ -1490,7 +1491,7 @@ function LandingView({
                     </div>
                     <p className="font-semibold text-sm truncate">{g.label}</p>
                     <div>
-                      <Badge className={cn("text-xs border-0", platformBadgeClass)}>
+                      <Badge className={cn("text-xs border-0", platformBadgeClass)} style={platformBadgeStyle}>
                         {plataformas}
                       </Badge>
                     </div>
@@ -1868,9 +1869,10 @@ function MesView({
                           s.plataforma === "totalpass"
                             ? "bg-black hover:bg-black text-white"
                             : s.plataforma === "wellhub"
-                            ? "bg-green-500 hover:bg-green-500 text-white"
+                            ? "text-white"
                             : "bg-secondary text-secondary-foreground"
                         )}
+                        style={s.plataforma === "wellhub" ? { backgroundColor: "#ff2c97" } : undefined}
                       >
                         {plataformaLabel(s.plataforma)}
                       </Badge>
