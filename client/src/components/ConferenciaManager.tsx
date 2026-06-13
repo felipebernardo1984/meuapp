@@ -1041,18 +1041,17 @@ function exportArenaRelatorioSimples(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:16px 18px 14px;color:white;text-align:center;border-radius:0;margin-bottom:0; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:16px 18px 18px;color:white;text-align:center;border-radius:0;margin-bottom:0; }
   .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white; }
-  .doc-header .sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-top:5px; }
+  .doc-header .sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-top:5px;margin-bottom:14px; }
 
-  /* ── KPI strip ── */
-  .kpi-strip { display:grid;grid-template-columns:${pctArena === 100 ? "repeat(3,1fr)" : "repeat(4,1fr)"};gap:0;background:#fff;border-bottom:1px solid #e2e8f0; }
-  .kpi { padding:12px 14px;border-right:1px solid #e2e8f0; }
-  .kpi:last-child { border-right:none; }
-  .kpi-val { font-size:16px;font-weight:900;color:#0f172a;line-height:1; }
-  .kpi-label { font-size:7.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-top:3px; }
-  .kpi-accent { width:24px;height:3px;border-radius:2px;margin-bottom:6px; }
+  /* ── KPI strip (inside header) ── */
+  .kpi-strip { display:grid;grid-template-columns:${pctArena === 100 ? "repeat(3,1fr)" : "repeat(4,1fr)"};gap:8px;margin-top:14px; }
+  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
+  .kpi-val { font-size:16px;font-weight:900;color:#fff;line-height:1; }
+  .kpi-label { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px; }
+  .kpi-accent { width:20px;height:2px;border-radius:2px;margin-bottom:6px;background:rgba(255,255,255,0.4); }
 
   /* ── Body ── */
   .body { padding:14px 16px; }
@@ -1103,30 +1102,29 @@ function exportArenaRelatorioSimples(
     <div class="doc-header-brand">Seven Sports</div>
     <h1>Relatório da Arena</h1>
     <div class="sub">Período: ${mesLabel} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" })} &nbsp;·&nbsp; ${pctArena}% repasse arena</div>
-  </div>
-
-  <div class="kpi-strip">
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#6366f1"></div>
-      <div class="kpi-val">${fmt(totalGeral)}</div>
-      <div class="kpi-label">Total Geral</div>
+    <div class="kpi-strip">
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${fmt(totalGeral)}</div>
+        <div class="kpi-label">Total Geral</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${totalVisitantes}</div>
+        <div class="kpi-label">Visitantes</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${totalCheckins}</div>
+        <div class="kpi-label">Check-ins</div>
+      </div>
+      ${pctArena !== 100 ? `
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${fmt(valorArena)}</div>
+        <div class="kpi-label">Repasse Arena (${pctArena}%)</div>
+      </div>` : ""}
     </div>
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#0ea5e9"></div>
-      <div class="kpi-val">${totalVisitantes}</div>
-      <div class="kpi-label">Visitantes</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#f59e0b"></div>
-      <div class="kpi-val">${totalCheckins}</div>
-      <div class="kpi-label">Check-ins</div>
-    </div>
-    ${pctArena !== 100 ? `
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#10b981"></div>
-      <div class="kpi-val">${fmt(valorArena)}</div>
-      <div class="kpi-label">Repasse Arena (${pctArena}%)</div>
-    </div>` : ""}
   </div>
 
   <div class="body">
@@ -1277,18 +1275,17 @@ function exportArenaRelatorio(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;text-align:center;border-radius:0; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
-  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
+  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:14px; }
 
-  /* ── KPI strip ── */
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #e2e8f0;background:#fff; }
-  .kpi { padding:12px 16px;border-right:1px solid #e2e8f0; }
-  .kpi:last-child { border-right:none; }
-  .kpi-accent { width:20px;height:3px;border-radius:2px;margin-bottom:5px; }
-  .kpi-val { font-size:14px;font-weight:900;color:#000;line-height:1; }
-  .kpi-lbl { font-size:7.5px;color:#555;text-transform:uppercase;letter-spacing:0.07em;margin-top:3px;font-weight:600; }
+  /* ── KPI strip (inside header) ── */
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px; }
+  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
+  .kpi-accent { width:20px;height:2px;border-radius:2px;margin-bottom:6px;background:rgba(255,255,255,0.4); }
+  .kpi-val { font-size:14px;font-weight:900;color:#fff;line-height:1; }
+  .kpi-lbl { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-top:3px;font-weight:600; }
 
   /* ── Body ── */
   .body { padding:18px 20px; }
@@ -1340,35 +1337,34 @@ function exportArenaRelatorio(
     <div class="doc-brand">Seven Sports</div>
     <h1>Relatório Financeiro</h1>
     <div class="doc-sub">Período: ${mesLabel} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" })} &nbsp;·&nbsp; ${pctArena}% repasse arena</div>
-  </div>
-
-  <div class="kpi-strip">
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#6366f1"></div>
-      <div class="kpi-val">${fmt(totalGeral)}</div>
-      <div class="kpi-lbl">Total Geral</div>
+    <div class="kpi-strip">
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${fmt(totalGeral)}</div>
+        <div class="kpi-lbl">Total Geral</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${totalVisitantes}</div>
+        <div class="kpi-lbl">Visitantes</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${totalCheckinsAll}</div>
+        <div class="kpi-lbl">Check-ins</div>
+      </div>
+      ${pctArena !== 100 ? `
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${fmt(valorArena)}</div>
+        <div class="kpi-lbl">Repasse Arena (${pctArena}%)</div>
+      </div>` : `
+      <div class="kpi">
+        <div class="kpi-accent"></div>
+        <div class="kpi-val">${fmt(totalMensalistas)}</div>
+        <div class="kpi-lbl">Mensalistas</div>
+      </div>`}
     </div>
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#0ea5e9"></div>
-      <div class="kpi-val">${totalVisitantes}</div>
-      <div class="kpi-lbl">Visitantes</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#f59e0b"></div>
-      <div class="kpi-val">${totalCheckinsAll}</div>
-      <div class="kpi-lbl">Check-ins</div>
-    </div>
-    ${pctArena !== 100 ? `
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#10b981"></div>
-      <div class="kpi-val">${fmt(valorArena)}</div>
-      <div class="kpi-lbl">Repasse Arena (${pctArena}%)</div>
-    </div>` : `
-    <div class="kpi">
-      <div class="kpi-accent" style="background:#7c3aed"></div>
-      <div class="kpi-val">${fmt(totalMensalistas)}</div>
-      <div class="kpi-lbl">Mensalistas</div>
-    </div>`}
   </div>
 
   <div class="body">
