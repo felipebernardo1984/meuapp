@@ -544,38 +544,38 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 <style>
   @page { size: A4 portrait; margin: 16mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#111; }
-  h1 { font-size:16px;font-weight:700;margin-bottom:2px; }
-  .subtitle { color:#64748b;font-size:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0; }
-  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#000; }
+  h1 { font-size:16px;font-weight:700;margin-bottom:2px;color:#000; }
+  .subtitle { color:#000;font-size:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #000; }
+  .badge { display:inline-block;background:#c7d2fe;color:#1e1b4b;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
   .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
-  .summary-card { border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;background:#f8fafc; }
-  .summary-card .val { font-size:13px;font-weight:700;margin-bottom:2px; }
-  .summary-card .lbl { font-size:8px;color:#94a3b8; }
+  .summary-card { border:1.5px solid #999;border-radius:6px;padding:8px 12px;background:#fff; }
+  .summary-card .val { font-size:13px;font-weight:700;margin-bottom:2px;color:#000; }
+  .summary-card .lbl { font-size:8px;color:#333;font-weight:600; }
   .mod-block { margin-bottom:20px; }
   .mod-header { display:flex;align-items:center;gap:8px;background:#1e293b;padding:6px 10px;border-radius:4px 4px 0 0; }
   .mod-name { font-weight:700;font-size:9.5px;color:#fff; }
-  .mod-summary { color:#94a3b8;font-size:8.5px;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #cbd5e1;table-layout:fixed; }
-  th { background:#334155;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #1e293b;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  .mod-summary { color:#dde;font-size:8.5px;margin-left:auto; }
+  table { width:100%;border-collapse:collapse;border:1.5px solid #999;table-layout:fixed; }
+  th { background:#1e293b;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #000;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
   th.col-nome { text-align:left; }
-  td { padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:8.5px;text-align:center;vertical-align:middle;color:#1e293b; }
+  td { padding:5px 8px;border-bottom:1px solid #ccc;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
   .col-nome { text-align:left !important; }
   .col-center { text-align:center; }
-  tbody tr:nth-child(even) { background:#f8fafc; }
+  tbody tr:nth-child(even) { background:#f0f4f8; }
   tr:last-child td { border-bottom:none; }
-  tfoot tr td { background:#e2e8f0;border-top:2px solid #94a3b8;font-size:8.5px;font-weight:600;color:#1e293b; }
+  tfoot tr td { background:#dde4ed;border-top:2px solid #666;font-size:8.5px;font-weight:700;color:#000; }
   .total-row { background:#1e293b;color:white;border-radius:6px;padding:8px 12px;margin-top:18px;font-size:9.5px; }
-  .mensalista-block { margin-top:18px;border:1px solid #c4b5fd;border-radius:6px;overflow:hidden; }
+  .mensalista-block { margin-top:18px;border:1.5px solid #7c3aed;border-radius:6px;overflow:hidden; }
   .mensalista-header { background:#7c3aed;padding:6px 10px;display:flex;align-items:center;gap:8px; }
   .mensalista-badge { color:white;font-size:9px;font-weight:700; }
-  .mensalista-summary { color:#ede9fe;font-size:8.5px;margin-left:auto; }
-  .mensalista-block table { border-color:#c4b5fd; }
+  .mensalista-summary { color:#fff;font-size:8.5px;margin-left:auto; }
+  .mensalista-block table { border-color:#7c3aed; }
   .mensalista-block th { background:#6d28d9; }
-  .mensalista-block tbody tr:nth-child(even) { background:#faf5ff; }
-  .mensalista-block td { border-color:#ede9fe; }
-  .mensalista-block tfoot tr td { background:#ede9fe;border-top:2px solid #c4b5fd;color:#6d28d9; }
+  .mensalista-block tbody tr:nth-child(even) { background:#f3eeff; }
+  .mensalista-block td { border-color:#ccc;color:#000; }
+  .mensalista-block tfoot tr td { background:#e9d5ff;border-top:2px solid #7c3aed;color:#000;font-weight:700; }
 </style>
 </head>
 <body>
@@ -787,46 +787,46 @@ function exportComprovanteConsolidado(
 <style>
   @page { size: A4 portrait; margin: 16mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:10px;color:#111; }
-  h1 { font-size:16px;font-weight:700;margin-bottom:2px; }
-  .subtitle { color:#64748b;font-size:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e2e8f0; }
-  .badge { display:inline-block;background:#e0e7ff;color:#3730a3;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
-  .badge-consolidated { display:inline-block;background:#fef3c7;color:#92400e;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  body { font-family:Arial,sans-serif;font-size:10px;color:#000; }
+  h1 { font-size:16px;font-weight:700;margin-bottom:2px;color:#000; }
+  .subtitle { color:#000;font-size:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #000; }
+  .badge { display:inline-block;background:#c7d2fe;color:#1e1b4b;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
+  .badge-consolidated { display:inline-block;background:#fde68a;color:#78350f;font-size:8.5px;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:bold; }
   .grand-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px; }
-  .grand-card { border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;background:#f8fafc; }
-  .grand-card .val { font-size:13px;font-weight:700;margin-bottom:2px; }
-  .grand-card .lbl { font-size:8px;color:#94a3b8; }
-  .section { margin-bottom:22px;padding-top:16px;border-top:1px solid #e2e8f0; }
+  .grand-card { border:1.5px solid #999;border-radius:6px;padding:8px 12px;background:#fff; }
+  .grand-card .val { font-size:13px;font-weight:700;margin-bottom:2px;color:#000; }
+  .grand-card .lbl { font-size:8px;color:#333;font-weight:600; }
+  .section { margin-bottom:22px;padding-top:16px;border-top:1.5px solid #999; }
   .section:first-of-type { border-top:none;padding-top:0; }
-  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #1e293b; }
-  .section-platform { font-size:11px;font-weight:900;color:#1e293b;letter-spacing:0.04em; }
-  .section-file { font-size:8.5px;color:#64748b; }
-  .section-summary { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:8.5px;color:#475569; }
+  .section-header { display:flex;align-items:baseline;gap:8px;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #000; }
+  .section-platform { font-size:11px;font-weight:900;color:#000;letter-spacing:0.04em; }
+  .section-file { font-size:8.5px;color:#333; }
+  .section-summary { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:8.5px;color:#000; }
   .mod-block { margin-bottom:20px; }
   .mod-header { display:flex;align-items:center;gap:8px;background:#1e293b;padding:6px 10px;border-radius:4px 4px 0 0; }
   .mod-name { font-weight:700;font-size:9.5px;color:#fff; }
-  .mod-summary { color:#94a3b8;font-size:8.5px;margin-left:auto; }
-  table { width:100%;border-collapse:collapse;border:1px solid #cbd5e1;table-layout:fixed; }
-  th { background:#334155;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #1e293b;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  .mod-summary { color:#dde;font-size:8.5px;margin-left:auto; }
+  table { width:100%;border-collapse:collapse;border:1.5px solid #999;table-layout:fixed; }
+  th { background:#1e293b;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #000;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
   th.col-nome { text-align:left; }
-  td { padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:8.5px;text-align:center;vertical-align:middle;color:#1e293b; }
+  td { padding:5px 8px;border-bottom:1px solid #ccc;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
   .col-nome { text-align:left !important; }
   .col-center { text-align:center; }
-  tbody tr:nth-child(even) { background:#f8fafc; }
+  tbody tr:nth-child(even) { background:#f0f4f8; }
   tr:last-child td { border-bottom:none; }
-  tfoot tr td { background:#e2e8f0;border-top:2px solid #94a3b8;font-size:8.5px;font-weight:600;color:#1e293b; }
-  .section-total { background:#e2e8f0;border:1px solid #cbd5e1;border-radius:4px;padding:4px 10px;font-size:8.5px;color:#334155;margin-top:4px; }
+  tfoot tr td { background:#dde4ed;border-top:2px solid #666;font-size:8.5px;font-weight:700;color:#000; }
+  .section-total { background:#dde4ed;border:1.5px solid #999;border-radius:4px;padding:4px 10px;font-size:8.5px;color:#000;font-weight:600;margin-top:4px; }
   .grand-total { background:#1e293b;color:white;border-radius:6px;padding:10px 14px;margin-top:20px;font-size:10px; }
-  .mensalista-block { margin-top:20px;border:1px solid #c4b5fd;border-radius:6px;overflow:hidden; }
+  .mensalista-block { margin-top:20px;border:1.5px solid #7c3aed;border-radius:6px;overflow:hidden; }
   .mensalista-header { background:#7c3aed;padding:6px 10px;display:flex;align-items:center;gap:8px; }
   .mensalista-badge { color:white;font-size:9px;font-weight:700; }
-  .mensalista-summary { color:#ede9fe;font-size:8.5px;margin-left:auto; }
-  .mensalista-block table { border-color:#c4b5fd; }
+  .mensalista-summary { color:#fff;font-size:8.5px;margin-left:auto; }
+  .mensalista-block table { border-color:#7c3aed; }
   .mensalista-block th { background:#6d28d9; }
-  .mensalista-block tbody tr:nth-child(even) { background:#faf5ff; }
-  .mensalista-block td { border-color:#ede9fe; }
-  .mensalista-block tfoot tr td { background:#ede9fe;border-top:2px solid #c4b5fd;color:#6d28d9; }
+  .mensalista-block tbody tr:nth-child(even) { background:#f3eeff; }
+  .mensalista-block td { border-color:#ccc;color:#000; }
+  .mensalista-block tfoot tr td { background:#e9d5ff;border-top:2px solid #7c3aed;color:#000;font-weight:700; }
 </style>
 </head>
 <body>
@@ -835,7 +835,7 @@ function exportComprovanteConsolidado(
 
   ${sections.length > 0 ? `
   <div class="grand-grid">
-    <div class="grand-card"><div class="val">${totalAlunos}</div><div class="lbl">Alunos Plataforma</div></div>
+    <div class="grand-card"><div class="val">${totalAlunos}</div><div class="lbl">Visitantes</div></div>
     <div class="grand-card"><div class="val">${totalChks}</div><div class="lbl">Check-ins totais</div></div>
     <div class="grand-card"><div class="val">${fmt(totalReceita)}</div><div class="lbl">Receita Plataforma</div></div>
     ${professorId !== "__arena__" ? `<div class="grand-card" style="border-color:#6ee7b7"><div class="val" style="color:#059669">${fmt(totalComissao)}</div><div class="lbl">Comissão Total (${pct}%)</div></div>` : `<div class="grand-card"><div class="val">${fmt(totalArena)}</div><div class="lbl">Valor Arena</div></div>`}
