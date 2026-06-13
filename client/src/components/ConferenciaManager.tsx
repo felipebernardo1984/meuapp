@@ -1592,9 +1592,8 @@ function MesView({
       const total = sessao.encontrados + sessao.possiveis;
       toast({
         title: `${total} correspondência${total !== 1 ? "s" : ""} encontrada${total !== 1 ? "s" : ""}`,
-        description: `${sessao.encontrados} confirmados · ${sessao.possiveis} possíveis · ${sessao.naoEncontrados} não encontrados`,
+        description: `${sessao.encontrados} confirmados · ${sessao.possiveis} possíveis · ${sessao.naoEncontrados} não encontrados — clique no arquivo para abrir`,
       });
-      onSelectSessao(sessao.id);
     } catch (err: unknown) {
       const msg = parseApiError(err);
       setUploadingFiles((prev) =>
