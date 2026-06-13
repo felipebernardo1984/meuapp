@@ -2456,7 +2456,11 @@ function MensalistaCard({
       setOpen(false);
       reset();
     },
-    onError: (err: Error) => toast({ title: "Erro ao adicionar mensalista", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => {
+      let msg = err.message;
+      try { msg = JSON.parse(msg.replace(/^\d+:\s*/, "")).message ?? msg; } catch {}
+      toast({ title: "Erro ao adicionar mensalista", description: msg, variant: "destructive" });
+    },
   });
 
   const editMutation = useMutation({

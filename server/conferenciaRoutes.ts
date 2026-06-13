@@ -1629,6 +1629,22 @@ export function registerConferenciaRoutes(app: Express): void {
 
       const stuId = typeof studentId === "string" && studentId.trim() ? studentId.trim() : null;
 
+      // Guard: prevent duplicate mensalista entry for same name within the same session
+      const nomeNormCheck = alunoNome.trim().toLowerCase();
+      const existingRegs = await db
+        .select({ id: conferenciaRegistros.id, nomePlataforma: conferenciaRegistros.nomePlataforma })
+        .from(conferenciaRegistros)
+        .where(and(
+          eq(conferenciaRegistros.sessaoId, sessao.id),
+          eq(conferenciaRegistros.categoria, "mensalista")
+        ));
+      const alreadyInSession = existingRegs.some(
+        (r) => r.nomePlataforma.trim().toLowerCase() === nomeNormCheck
+      );
+      if (alreadyInSession) {
+        return res.status(409).json({ message: "Aluno já possui mensalidade registrada nesta sessão" });
+      }
+
       const [novo] = await db
         .insert(conferenciaRegistros)
         .values({
@@ -2126,13 +2142,20 @@ export function registerConferenciaRoutes(app: Express): void {
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
-    await db
-      .delete(conferenciaRegistros)
-      .where(eq(conferenciaRegistros.sessaoId, req.params.id));
-    await db
-      .delete(conferenciaSessoes)
-      .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
-    res.json({ ok: true });
+    try {
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(conferenciaRegistros)
+          .where(eq(conferenciaRegistros.sessaoId, req.params.id));
+        await tx
+          .delete(conferenciaSessoes)
+          .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("Erro ao excluir sessão:", err);
+      res.status(500).json({ message: "Erro ao excluir sessão" });
+    }
   });
 
   // GET /api/conferencia/export/:id — CSV download
