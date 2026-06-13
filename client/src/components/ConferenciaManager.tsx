@@ -3235,7 +3235,7 @@ function SessaoView({
   const [manuallyLinked, setManuallyLinked] = useState<Set<string>>(new Set());
   const [histPast, setHistPast] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
   const [histFuture, setHistFuture] = useState<Array<{ id: string; snap: Record<string, unknown> }>>([]);
-  const prevProfTotal = useRef(-1);
+  const prevProfSignature = useRef<string | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -3290,15 +3290,15 @@ function SessaoView({
     onError: () => toast({ title: "Erro ao vincular", variant: "destructive" }),
   });
 
-  // Auto-rematch whenever professors or students change (add OR remove)
+  // Auto-rematch whenever professors change: count, student links, OR percentage
+  const profSignature = confsProfs.map(p => `${p.id}:${p.percentualComissao}:${p.alunos.length}`).join("|");
   useEffect(() => {
-    const total = confsProfs.reduce((s, p) => s + p.alunos.length, 0) + confsProfs.length;
-    if (prevProfTotal.current >= 0 && total !== prevProfTotal.current && sessao && !rematchMutation.isPending) {
+    if (prevProfSignature.current !== null && prevProfSignature.current !== profSignature && sessao && !rematchMutation.isPending) {
       rematchMutation.mutate();
     }
-    prevProfTotal.current = total;
+    prevProfSignature.current = profSignature;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confsProfs]);
+  }, [profSignature]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
@@ -3490,17 +3490,12 @@ function SessaoView({
           <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs" data-testid="button-export-pdf">
             <Printer className="h-3.5 w-3.5" /> PDF
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => rematchMutation.mutate()}
-            disabled={rematchMutation.isPending}
-            className="gap-1.5 text-xs"
-            data-testid="button-rematch"
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
-            {rematchMutation.isPending ? "Atualizando…" : "Atualizar"}
-          </Button>
+          {rematchMutation.isPending && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              Atualizando…
+            </span>
+          )}
           <Button
             variant="outline"
             size="sm"
