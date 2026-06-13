@@ -548,7 +548,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
@@ -560,11 +560,11 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   .kpi-lbl { font-size:7.5px;color:#555;text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .mod-block { margin-bottom:18px; }
-  .mod-header { display:flex;align-items:center;gap:8px;background:#1e293b;padding:6px 10px;border-radius:4px 4px 0 0; }
+  .mod-header { display:flex;align-items:center;gap:8px;background:#1e40af;padding:6px 10px;border-radius:4px 4px 0 0; }
   .mod-name { font-weight:700;font-size:9.5px;color:#fff; }
   .mod-summary { color:rgba(255,255,255,0.6);font-size:8.5px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1.5px solid #999;table-layout:fixed; }
-  th { background:#1e293b;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #000;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  th { background:#1e40af;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #1e3a8a;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
   th.col-nome { text-align:left; }
   td { padding:5px 8px;border-bottom:1px solid #ccc;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
@@ -573,7 +573,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   tbody tr:nth-child(even) { background:#f0f4f8; }
   tr:last-child td { border-bottom:none; }
   tfoot tr td { background:#dde4ed;border-top:2px solid #666;font-size:8.5px;font-weight:700;color:#000; }
-  .grand-total { background:linear-gradient(135deg,#0f172a,#1e3a5f);color:white;border-radius:8px;padding:12px 16px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;font-size:9.5px; }
+  .grand-total { background:linear-gradient(135deg,#1d4ed8,#2563eb);color:white;border-radius:8px;padding:12px 16px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;font-size:9.5px; }
   .gt-left .gt-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
   .gt-left .gt-val { font-size:16px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
@@ -817,7 +817,7 @@ function exportComprovanteConsolidado(
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
@@ -829,16 +829,16 @@ function exportComprovanteConsolidado(
   .kpi-lbl { font-size:7.5px;color:#555;text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .section { margin-bottom:22px; }
-  .section-header { display:flex;align-items:center;gap:8px;margin-bottom:0;padding:8px 12px;background:#0f172a;border-radius:6px 6px 0 0; }
+  .section-header { display:flex;align-items:center;gap:8px;margin-bottom:0;padding:8px 12px;background:#1e40af;border-radius:6px 6px 0 0; }
   .section-platform { font-size:12px;font-weight:900;color:#fff;letter-spacing:0.06em;text-transform:uppercase; }
   .section-file { font-size:8px;color:rgba(255,255,255,0.5);margin-left:auto; }
   .section-summary { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:8.5px;color:#000;padding:5px 12px;background:#f0f4f8;border:1.5px solid #999;border-top:none; }
   .mod-block { margin-bottom:16px; }
-  .mod-header { display:flex;align-items:center;gap:8px;background:#1e293b;padding:6px 10px;border-radius:4px 4px 0 0; }
+  .mod-header { display:flex;align-items:center;gap:8px;background:#1e40af;padding:6px 10px;border-radius:4px 4px 0 0; }
   .mod-name { font-weight:700;font-size:9.5px;color:#fff; }
   .mod-summary { color:rgba(255,255,255,0.6);font-size:8.5px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1.5px solid #999;table-layout:fixed; }
-  th { background:#1e293b;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #000;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  th { background:#1e40af;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #1e3a8a;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
   th.col-nome { text-align:left; }
   td { padding:5px 8px;border-bottom:1px solid #ccc;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
@@ -848,7 +848,7 @@ function exportComprovanteConsolidado(
   tr:last-child td { border-bottom:none; }
   tfoot tr td { background:#dde4ed;border-top:2px solid #666;font-size:8.5px;font-weight:700;color:#000; }
   .section-total { background:#dde4ed;border:1.5px solid #999;border-radius:4px;padding:4px 10px;font-size:8.5px;color:#000;font-weight:600;margin-top:4px; }
-  .grand-total { background:linear-gradient(135deg,#0f172a,#1e3a5f);color:white;border-radius:8px;padding:12px 16px;margin-top:16px;display:flex;align-items:center;justify-content:space-between; }
+  .grand-total { background:linear-gradient(135deg,#1d4ed8,#2563eb);color:white;border-radius:8px;padding:12px 16px;margin-top:16px;display:flex;align-items:center;justify-content:space-between; }
   .gt-left .gt-lbl { font-size:7px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px; }
   .gt-left .gt-val { font-size:16px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
@@ -946,8 +946,8 @@ function exportArenaRelatorioSimples(
   }
 
   const PLAT_COLORS: Record<string, { bg: string; accent: string }> = {
-    totalpass: { bg: "#0f172a", accent: "#38bdf8" },
-    wellhub:   { bg: "#14532d", accent: "#86efac" },
+    totalpass: { bg: "#111111", accent: "#e2e8f0" },
+    wellhub:   { bg: "#be185d", accent: "#fce7f3" },
   };
 
   // Grand KPIs across all platforms
@@ -960,7 +960,7 @@ function exportArenaRelatorioSimples(
     const visitantes = new Set(regs.map((r) => r.nomePlataforma)).size;
     const vArena   = receita * (pctArena / 100);
     const periodo  = fmtPeriod(periodoInicio, periodoFim);
-    const col      = PLAT_COLORS[key] ?? { bg: "#1e3a5f", accent: "#a5f3fc" };
+    const col      = PLAT_COLORS[key] ?? { bg: "#1d4ed8", accent: "#bfdbfe" };
 
     const repasseSection = pctArena === 100
       ? `<div class="plat-repasse" style="border-color:${col.accent}30">
@@ -1041,7 +1041,7 @@ function exportArenaRelatorioSimples(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:16px 18px 14px;color:white;border-radius:0 0 10px 10px;margin-bottom:0; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:16px 18px 14px;color:white;border-radius:0 0 10px 10px;margin-bottom:0; }
   .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white; }
   .doc-header .sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-top:5px; }
@@ -1087,7 +1087,7 @@ function exportArenaRelatorioSimples(
   .mens-footer { background:#ede9fe;padding:7px 14px;display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:#6d28d9;border-top:1.5px solid #ddd6fe; }
 
   /* ── Grand total ── */
-  .grand-total { background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
+  .grand-total { background:linear-gradient(135deg,#1d4ed8,#2563eb);border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
   .gt-label { font-size:7.5px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
   .gt-val { font-size:22px;font-weight:900;color:white; }
   .gt-arena-val { font-size:20px;font-weight:900;color:#93c5fd; }
@@ -1277,7 +1277,7 @@ function exportArenaRelatorio(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
@@ -1295,11 +1295,11 @@ function exportArenaRelatorio(
 
   /* ── Sections ── */
   .section { margin-bottom:20px; }
-  .section-header { display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:#0f172a;border-radius:6px 6px 0 0; }
+  .section-header { display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:#1e40af;border-radius:6px 6px 0 0; }
   .section-platform { font-size:12px;font-weight:900;color:#fff;letter-spacing:0.06em;text-transform:uppercase; }
   .section-meta { font-size:8px;color:rgba(255,255,255,0.6);margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1.5px solid #999;table-layout:fixed; }
-  th { background:#1e293b;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #000;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  th { background:#1e40af;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #1e3a8a;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
   th.col-nome { text-align:left; }
   td { padding:5px 8px;border-bottom:1px solid #ccc;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }
@@ -1321,7 +1321,7 @@ function exportArenaRelatorio(
   .mensalista-block tfoot tr td { background:#e9d5ff;border-top:2px solid #7c3aed;color:#000;font-weight:700; }
 
   /* ── Grand total ── */
-  .grand-total { background:linear-gradient(135deg,#0f172a,#1e3a5f);color:white;border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
+  .grand-total { background:linear-gradient(135deg,#1d4ed8,#2563eb);color:white;border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
   .gt-left .gt-lbl { font-size:7.5px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
   .gt-left .gt-val { font-size:20px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
@@ -1520,7 +1520,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#f1f5f9; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:20px 24px 18px;color:white;border-radius:0 0 10px 10px; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
   .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5); }
@@ -1532,12 +1532,12 @@ function exportToPDF(sessao: SessaoDetalhe) {
   .kpi-lbl { font-size:7.5px;color:#555;text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .prof-block { margin-bottom:20px; }
-  .prof-header { display:flex;align-items:center;gap:10px;background:#1e293b;padding:7px 10px;border-radius:5px 5px 0 0; }
+  .prof-header { display:flex;align-items:center;gap:10px;background:#1e40af;padding:7px 10px;border-radius:5px 5px 0 0; }
   .prof-name { font-weight:700;font-size:11px;color:#fff; }
   .prof-pct { background:#4f46e5;color:#fff;font-size:9px;padding:2px 8px;border-radius:20px;font-weight:600; }
   .prof-summary { color:rgba(255,255,255,0.55);font-size:8.5px;margin-left:auto; }
   table { width:100%;border-collapse:collapse;border:1.5px solid #999;table-layout:fixed; }
-  th { background:#1e293b;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #000;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
+  th { background:#1e40af;color:#fff;padding:6px 8px;font-size:7.5px;border-bottom:2px solid #1e3a8a;text-align:center;text-transform:uppercase;letter-spacing:0.06em;font-weight:700; }
   th.col-nome { text-align:left; }
   td { padding:5px 8px;border-bottom:1px solid #ccc;font-size:8.5px;text-align:center;vertical-align:middle;color:#000; }
   td.col-nome { text-align:left; }

@@ -581,7 +581,7 @@ export default function ManagerDashboard({
   * { box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact; }
   body { font-family:Arial,sans-serif;background:#f1f5f9;display:flex;justify-content:center;padding:40px 20px; }
   .page { background:#fff;border-radius:12px;max-width:480px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12); }
-  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:28px 32px 24px;text-align:center; }
+  .doc-header { background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);padding:28px 32px 24px;text-align:center; }
   .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:8px; }
   .doc-title { font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.02em;margin-bottom:4px; }
   .doc-arena { font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:16px; }
