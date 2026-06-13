@@ -4883,15 +4883,15 @@ function RelatorioView({
             </h2>
             <Card>
               <CardContent className="p-0">
-                <Table>
+                <Table className="table-fixed w-full">
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40">
                       <TableHead className="text-xs font-semibold py-2 pl-4">Modalidade</TableHead>
-                      <TableHead className="text-xs font-semibold py-2 text-center">Alunos</TableHead>
-                      <TableHead className="text-xs font-semibold py-2 text-center">Chk</TableHead>
-                      <TableHead className="text-xs font-semibold py-2 text-right">Receita</TableHead>
-                      <TableHead className="text-xs font-semibold py-2 text-right text-emerald-700 dark:text-emerald-400">Professor</TableHead>
-                      <TableHead className="text-xs font-semibold py-2 text-right pr-4 text-blue-700 dark:text-blue-400">Arena</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-center w-20">Alunos</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-center w-16">Chk</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right w-36">Receita</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right w-32 text-emerald-700 dark:text-emerald-400">Professor</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right w-28 pr-4 text-blue-700 dark:text-blue-400">Arena</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -4942,41 +4942,39 @@ function RelatorioView({
               Resumo de Pagamentos
             </h2>
             <Card>
-              <CardContent className="pt-3 pb-3 px-4">
-                <div className="border rounded overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs py-1.5">Professor / Arena</TableHead>
-                        <TableHead className="text-xs py-1.5 text-center">Alunos</TableHead>
-                        <TableHead className="text-xs py-1.5 text-center">Chk</TableHead>
-                        <TableHead className="text-xs py-1.5 text-right">Receita</TableHead>
-                        <TableHead className="text-xs py-1.5 text-right text-emerald-700 dark:text-emerald-400">Professor</TableHead>
-                        <TableHead className="text-xs py-1.5 text-right text-blue-700 dark:text-blue-400">Arena</TableHead>
+              <CardContent className="p-0">
+                <Table className="table-fixed w-full">
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead className="text-xs font-semibold py-2 pl-4">Professor / Arena</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-center w-20">Alunos</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-center w-16">Chk</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right w-36">Receita</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right w-32 text-emerald-700 dark:text-emerald-400">Professor</TableHead>
+                      <TableHead className="text-xs font-semibold py-2 text-right w-28 pr-4 text-blue-700 dark:text-blue-400">Arena</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((row) => (
+                      <TableRow key={row.key} className="text-xs">
+                        <TableCell className="py-2 pl-4 font-medium">{row.nome}</TableCell>
+                        <TableCell className="py-2 text-center tabular-nums">{row.alunos}</TableCell>
+                        <TableCell className="py-2 text-center tabular-nums">{row.chks}</TableCell>
+                        <TableCell className="py-2 text-right font-mono tabular-nums">{fmtVal(String(row.receita))}</TableCell>
+                        <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmtVal(String(row.comissao))}</TableCell>
+                        <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400 pr-4">{fmtVal(String(row.arena))}</TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rows.map((row) => (
-                        <TableRow key={row.key} className="text-xs">
-                          <TableCell className="py-1.5 font-medium">{row.nome}</TableCell>
-                          <TableCell className="py-1.5 text-center">{row.alunos}</TableCell>
-                          <TableCell className="py-1.5 text-center">{row.chks}</TableCell>
-                          <TableCell className="py-1.5 text-right font-mono">{fmtVal(String(row.receita))}</TableCell>
-                          <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">{fmtVal(String(row.comissao))}</TableCell>
-                          <TableCell className="py-1.5 text-right font-mono text-blue-600 dark:text-blue-400">{fmtVal(String(row.arena))}</TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow className="text-xs font-bold border-t-2 bg-muted/30">
-                        <TableCell className="py-1.5">Total</TableCell>
-                        <TableCell className="py-1.5 text-center">{rows.reduce((s, r) => s + r.alunos, 0)}</TableCell>
-                        <TableCell className="py-1.5 text-center">{rows.reduce((s, r) => s + r.chks, 0)}</TableCell>
-                        <TableCell className="py-1.5 text-right font-mono">{fmtVal(String(rows.reduce((s, r) => s + r.receita, 0)))}</TableCell>
-                        <TableCell className="py-1.5 text-right font-mono text-emerald-600 dark:text-emerald-400">{fmtVal(String(rows.reduce((s, r) => s + r.comissao, 0)))}</TableCell>
-                        <TableCell className="py-1.5 text-right font-mono text-blue-600 dark:text-blue-400">{fmtVal(String(rows.reduce((s, r) => s + r.arena, 0)))}</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                    <TableRow className="text-xs font-bold border-t-2 bg-muted/30">
+                      <TableCell className="py-2 pl-4">Total</TableCell>
+                      <TableCell className="py-2 text-center tabular-nums">{rows.reduce((s, r) => s + r.alunos, 0)}</TableCell>
+                      <TableCell className="py-2 text-center tabular-nums">{rows.reduce((s, r) => s + r.chks, 0)}</TableCell>
+                      <TableCell className="py-2 text-right font-mono tabular-nums">{fmtVal(String(rows.reduce((s, r) => s + r.receita, 0)))}</TableCell>
+                      <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmtVal(String(rows.reduce((s, r) => s + r.comissao, 0)))}</TableCell>
+                      <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400 pr-4">{fmtVal(String(rows.reduce((s, r) => s + r.arena, 0)))}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </div>
