@@ -557,7 +557,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
   .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
   .kpi-lbl { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
-  .body { padding:16px 20px; }
+  .body { padding:16px 16px; }
   .mod-block { margin-bottom:18px; }
   .mod-header { display:flex;align-items:center;gap:8px;background:#f1f5f9;padding:6px 10px;border-radius:4px 4px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
   .mod-name { font-weight:700;font-size:9.5px;color:#1e293b; }
@@ -826,7 +826,7 @@ function exportComprovanteConsolidado(
   .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
   .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
   .kpi-lbl { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
-  .body { padding:16px 20px; }
+  .body { padding:16px 16px; }
   .section { margin-bottom:22px; }
   .section-header { display:flex;align-items:center;gap:8px;margin-bottom:0;padding:8px 12px;background:#f1f5f9;border-radius:6px 6px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
   .section-platform { font-size:12px;font-weight:900;color:#1e293b;letter-spacing:0.06em;text-transform:uppercase; }
@@ -1288,7 +1288,7 @@ function exportArenaRelatorio(
   .kpi-lbl { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:3px;font-weight:600; }
 
   /* ── Body ── */
-  .body { padding:18px 20px; }
+  .body { padding:18px 16px; }
 
   /* ── Sections ── */
   .section { margin-bottom:20px; }
@@ -1526,7 +1526,7 @@ function exportToPDF(sessao: SessaoDetalhe) {
   .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
   .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
   .kpi-lbl { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
-  .body { padding:16px 20px; }
+  .body { padding:16px 16px; }
   .prof-block { margin-bottom:20px; }
   .prof-header { display:flex;align-items:center;gap:10px;background:#f1f5f9;padding:7px 10px;border-radius:5px 5px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
   .prof-name { font-weight:700;font-size:11px;color:#1e293b; }
