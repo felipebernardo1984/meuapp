@@ -849,6 +849,185 @@ function exportComprovanteConsolidado(
   w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
 }
 
+// ── Arena Simple Report PDF ────────────────────────────────────────────────────
+function exportArenaRelatorioSimples(
+  sessoes: SessaoDetalhe[],
+  allMensalistas: Registro[],
+  mesLabel: string,
+  pctArena: number
+) {
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const byPlat = new Map<string, { label: string; regs: Registro[]; periodoInicio?: string | null; periodoFim?: string | null }>();
+  for (const s of sessoes) {
+    const platRegs = (s.registros ?? []).filter(
+      (r) => r.status === "confirmado" && r.categoria !== "mensalista"
+    );
+    if (platRegs.length === 0) continue;
+    const key = s.plataforma;
+    if (!byPlat.has(key)) byPlat.set(key, { label: plataformaLabel(key), regs: [], periodoInicio: s.periodoInicio, periodoFim: s.periodoFim });
+    byPlat.get(key)!.regs.push(...platRegs);
+  }
+
+  const totalPlataforma = Array.from(byPlat.values()).flatMap((p) => p.regs)
+    .reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalGeral = totalPlataforma + totalMensalistas;
+  const valorArena = totalGeral * (pctArena / 100);
+
+  if (totalGeral === 0) return;
+
+  function fmtPeriod(inicio?: string | null, fim?: string | null): string {
+    const fmtD = (d: string) => {
+      const dt = new Date(d + "T12:00:00");
+      return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
+    };
+    if (inicio && fim) return `${fmtD(inicio)} a ${fmtD(fim)}`;
+    if (inicio) return `a partir de ${fmtD(inicio)}`;
+    return mesLabel;
+  }
+
+  const PLAT_COLORS: Record<string, { bg: string; accent: string }> = {
+    totalpass: { bg: "#0f172a", accent: "#38bdf8" },
+    wellhub:   { bg: "#14532d", accent: "#86efac" },
+  };
+
+  const platCards = Array.from(byPlat.entries()).map(([key, { label, regs, periodoInicio, periodoFim }]) => {
+    const receita = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+    const chks    = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+    const alunos  = new Set(regs.map((r) => r.nomePlataforma)).size;
+    const vArena  = receita * (pctArena / 100);
+    const periodo = fmtPeriod(periodoInicio, periodoFim);
+    const col = PLAT_COLORS[key] ?? { bg: "#1e3a5f", accent: "#a5f3fc" };
+    return `
+    <div class="plat-card" style="background:${col.bg}">
+      <div class="plat-top">
+        <span class="plat-name">${label}</span>
+        <span class="plat-periodo">${periodo}</span>
+      </div>
+      <div class="plat-stats">
+        <div class="stat">
+          <div class="stat-val">${alunos}</div>
+          <div class="stat-lbl">Participantes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">${chks}</div>
+          <div class="stat-lbl">Check-ins</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">${fmt(receita)}</div>
+          <div class="stat-lbl">Total Plataforma</div>
+        </div>
+      </div>
+      <div class="plat-repasse" style="border-color:${col.accent}30">
+        <span class="repasse-label">Repasse Arena (${pctArena}%)</span>
+        <span class="repasse-val" style="color:${col.accent}">${fmt(vArena)}</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  const mensalistaRows = [...allMensalistas]
+    .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
+    .map((r) => {
+      const mes = r.data ? new Date(r.data.replace(/(\d{2})\/(\d{2})\/(\d{4})/, "$3-$2-$1") + "T12:00:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : mesLabel;
+      return `<div class="mens-row">
+        <span class="mens-nome">${r.nomePlataforma}</span>
+        <span class="mens-mes">${mes}</span>
+        <span class="mens-val">${fmt(parseFloat(r.valor || "0"))}</span>
+      </div>`;
+    }).join("");
+
+  const mensalistasSection = allMensalistas.length === 0 ? "" : `
+  <div class="mensalistas-block">
+    <div class="mens-header">
+      <span class="mens-title">Mensalistas</span>
+      <span class="mens-count">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""}</span>
+    </div>
+    <div class="mens-list">${mensalistaRows}</div>
+    <div class="mens-footer">
+      <span>Total Mensalistas</span>
+      <span>${fmt(totalMensalistas)}</span>
+    </div>
+  </div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório Simples — ${mesLabel}</title>
+<style>
+  @page { size: A4 portrait; margin: 14mm 14mm; }
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { font-family:Arial,sans-serif;font-size:11px;color:#0f172a;background:#fff; }
+
+  .doc-header { margin-bottom:18px;padding-bottom:12px;border-bottom:3px solid #0f172a; }
+  .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em; }
+  .doc-header .sub { font-size:9px;color:#64748b;margin-top:4px; }
+
+  .plat-card { border-radius:10px;padding:16px 18px;margin-bottom:12px; }
+  .plat-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px; }
+  .plat-name { font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:white; }
+  .plat-periodo { font-size:8px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em; }
+  .plat-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px; }
+  .stat .stat-val { font-size:17px;font-weight:800;color:white; }
+  .stat .stat-lbl { font-size:8px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px; }
+  .plat-repasse { border-top:1px solid;padding-top:10px;display:flex;align-items:center;justify-content:space-between; }
+  .repasse-label { font-size:9px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em; }
+  .repasse-val { font-size:20px;font-weight:900; }
+
+  .mensalistas-block { margin-top:16px;border:1.5px solid #ddd6fe;border-radius:10px;overflow:hidden; }
+  .mens-header { background:#7c3aed;padding:10px 14px;display:flex;align-items:center;justify-content:space-between; }
+  .mens-title { font-size:11px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:0.06em; }
+  .mens-count { font-size:9px;color:#ede9fe; }
+  .mens-list { padding:4px 0; }
+  .mens-row { display:flex;align-items:center;padding:6px 14px;gap:8px; }
+  .mens-row:nth-child(even) { background:#faf5ff; }
+  .mens-nome { flex:1;font-size:9.5px;font-weight:600;color:#1e293b; }
+  .mens-mes { font-size:8.5px;color:#94a3b8;width:100px;text-align:center; }
+  .mens-val { font-size:9.5px;font-weight:700;color:#7c3aed;width:80px;text-align:right; }
+  .mens-footer { background:#ede9fe;padding:7px 14px;display:flex;justify-content:space-between;font-size:9.5px;font-weight:700;color:#6d28d9;border-top:1.5px solid #ddd6fe; }
+
+  .grand-total { margin-top:18px;background:#0f172a;border-radius:10px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between; }
+  .gt-left .gt-label { font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em; }
+  .gt-left .gt-val { font-size:24px;font-weight:900;color:white;margin-top:3px; }
+  .gt-right { text-align:right; }
+  .gt-right .gt-arena-label { font-size:8px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.1em; }
+  .gt-right .gt-arena-val { font-size:20px;font-weight:900;color:#93c5fd;margin-top:3px; }
+
+  .footer { margin-top:14px;font-size:8px;color:#94a3b8;text-align:right; }
+</style>
+</head>
+<body>
+  <div class="doc-header">
+    <h1>Relatório da Arena</h1>
+    <div class="sub">Período: ${mesLabel} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" })} &nbsp;·&nbsp; ${pctArena}% Arena</div>
+  </div>
+
+  ${platCards}
+
+  ${mensalistasSection}
+
+  <div class="grand-total">
+    <div class="gt-left">
+      <div class="gt-label">Total Geral</div>
+      <div class="gt-val">${fmt(totalGeral)}</div>
+    </div>
+    <div class="gt-right">
+      <div class="gt-arena-label">Repasse Arena (${pctArena}%)</div>
+      <div class="gt-arena-val">${fmt(valorArena)}</div>
+    </div>
+  </div>
+  <div class="footer">Seven Sports &nbsp;·&nbsp; Relatório gerado automaticamente</div>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
+}
+
 // ── Arena Monthly Report PDF ───────────────────────────────────────────────────
 function exportArenaRelatorio(
   sessoes: SessaoDetalhe[],
@@ -2646,6 +2825,16 @@ function ArenaRelatorioCard({
                 data-testid="input-pct-arena-relatorio"
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs h-7 shrink-0"
+              disabled={totalGeral === 0}
+              onClick={() => exportArenaRelatorioSimples(allDetails, allMensalistas, mesLabel, pct)}
+              data-testid="button-gerar-relatorio-simples"
+            >
+              <Printer className="h-3.5 w-3.5" /> Simples
+            </Button>
             <Button
               variant="outline"
               size="sm"
