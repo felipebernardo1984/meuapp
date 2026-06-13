@@ -911,6 +911,7 @@ export function registerConferenciaRoutes(app: Express): void {
       .values({ arenaId, professorId: req.params.id, nome: nome.trim() })
       .returning();
     res.json(aluno);
+    autoRematchArena(arenaId).catch(() => {});
   });
 
   // POST /api/conferencia/professores/:id/alunos/lote — bulk add
@@ -951,6 +952,7 @@ export function registerConferenciaRoutes(app: Express): void {
           .values(batch.map((nome) => ({ arenaId, professorId, nome })));
         total += batch.length;
       }
+      autoRematchArena(arenaId).catch(() => {});
       return res.json({ adicionados: total, ignorados });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao inserir alunos";
@@ -1398,6 +1400,28 @@ export function registerConferenciaRoutes(app: Express): void {
         console.log(`[Conferência] ${reassignCount} registros possíveis pré-atribuídos ao professor da modalidade`);
       }
 
+      // ── Passo 3: Professor por modalidade para matches fracos (≤60%) ──────────
+      // Covers non-divergent pendente/nao_encontrado records with score ≤ 60%.
+      // Only changes professorId — status and all other fields stay unchanged.
+      // Divergente records are handled by Passo 1+2 and never enter here.
+      let passo3Count = 0;
+      for (const r of registrosToInsert) {
+        if (r.status === "confirmado") continue;
+        if (((r.similaridade as number) || 0) > 60) continue;
+        const normName = normalizeNome(r.nomePlataforma as string);
+        if (divergentesUp.has(normName)) continue;
+        if (!r.modalidade) continue;
+        const modKey = (r.modalidade as string).trim().toLowerCase();
+        const suggestedProf = modalProfUp.get(modKey);
+        if (suggestedProf && suggestedProf !== (r.professorId as string | null)) {
+          r.professorId = suggestedProf;
+          passo3Count++;
+        }
+      }
+      if (passo3Count > 0) {
+        console.log(`[Conferência] ${passo3Count} registros pré-atribuídos por modalidade (score ≤60%)`);
+      }
+
       const [sessao] = await db
         .insert(conferenciaSessoes)
         .values({
@@ -1807,6 +1831,25 @@ export function registerConferenciaRoutes(app: Express): void {
       }
     }
     if (reassignOpsR.length > 0) await Promise.all(reassignOpsR);
+
+    // ── Passo 3 (rematch): Professor por modalidade para matches fracos (≤60%) ──
+    const passo3OpsR: Array<Promise<unknown>> = [];
+    for (const r of allRegsForMM) {
+      if (r.status === "confirmado" || r.status === "ignorado") continue;
+      if ((r.similaridade || 0) > 60) continue;
+      const normName = normalizeNome(r.nomePlataforma);
+      if (divergentesR.has(normName)) continue;
+      if (!r.modalidade) continue;
+      const modKey = r.modalidade.trim().toLowerCase();
+      const suggestedProf = modalProfR.get(modKey);
+      if (suggestedProf && suggestedProf !== r.professorId) {
+        passo3OpsR.push(
+          db.update(conferenciaRegistros).set({ professorId: suggestedProf })
+            .where(eq(conferenciaRegistros.id, r.id))
+        );
+      }
+    }
+    if (passo3OpsR.length > 0) await Promise.all(passo3OpsR);
 
     const finalRegs = await db
       .select()
