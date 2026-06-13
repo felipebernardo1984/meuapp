@@ -3305,6 +3305,7 @@ function SessaoView({
   const [redirectAProf, setRedirectAProf] = useState("");
   const [showArenaList, setShowArenaList] = useState(false);
   const [manuallyLinked, setManuallyLinked] = useState<Set<string>>(new Set());
+  const [rowDestino, setRowDestino] = useState<Record<string, string>>({});
   const prevProfSignature = useRef<string | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -3472,7 +3473,16 @@ function SessaoView({
   };
 
   const handleConfirmar = (r: Registro) => {
-    doUpdate(r.id, { status: "confirmado", salvarAlias: true });
+    const destino = rowDestino[r.id];
+    if (destino !== undefined) {
+      const professorId = destino === "arena" ? null : destino;
+      const prof = confsProfs.find((p) => p.id === professorId);
+      const percentual = prof?.percentualComissao ?? "0";
+      const categoria = parseFloat(percentual) > 0 ? "comissao" : "arena";
+      doUpdate(r.id, { professorId, percentual, categoria, status: "confirmado", salvarAlias: true });
+    } else {
+      doUpdate(r.id, { status: "confirmado", salvarAlias: true });
+    }
   };
 
   const handleIgnorar = (r: Registro) => {
@@ -3886,15 +3896,13 @@ function SessaoView({
                           </div>
                         )}
 
-                        {/* ── Destinar / Realocar inline ── */}
+                        {/* ── Destinar inline ── */}
                         {r.status !== "ignorado" && (
                           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                            <span className="text-xs text-muted-foreground">
-                              {r.status === "confirmado" ? "Realocar para:" : "Destinar para:"}
-                            </span>
+                            <span className="text-xs text-muted-foreground">Destinar para:</span>
                             <Select
-                              value={r.professorId ?? "arena"}
-                              onValueChange={(v) => handleDestinar(r.id, v === "arena" ? null : v)}
+                              value={rowDestino[r.id] ?? (r.professorId ?? "arena")}
+                              onValueChange={(v) => setRowDestino((prev) => ({ ...prev, [r.id]: v }))}
                             >
                               <SelectTrigger className="h-6 text-xs w-44 py-0" data-testid={`select-destinar-${r.id}`}>
                                 <SelectValue placeholder="Professor ou arena…" />
