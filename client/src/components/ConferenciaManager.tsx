@@ -998,12 +998,12 @@ function exportArenaRelatorioSimples(
 <meta charset="UTF-8">
 <title>Relatório Simples — ${mesLabel}</title>
 <style>
-  @page { size: A4 portrait; margin: 0; }
+  @page { size: A4 portrait; margin: 14mm 14mm; }
   * { margin:0;padding:0;box-sizing:border-box; }
-  body { font-family:Arial,sans-serif;font-size:11px;color:#0f172a;background:#f8fafc; }
+  body { font-family:Arial,sans-serif;font-size:11px;color:#0f172a;background:#fff; }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:18px 20px 16px;color:white; }
+  .doc-header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:16px 18px 14px;color:white;border-radius:8px;margin-bottom:0; }
   .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px; }
   .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white; }
   .doc-header .sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-top:5px; }
