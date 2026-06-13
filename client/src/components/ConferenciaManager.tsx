@@ -3472,7 +3472,7 @@ function SessaoView({
   };
 
   const handleConfirmar = (r: Registro) => {
-    doUpdate(r.id, { status: "confirmado", salvarAlias: true });
+    doUpdate(r.id, { status: "confirmado", salvarAlias: true, vincularTodos: true });
   };
 
   const handleIgnorar = (r: Registro) => {
