@@ -3697,6 +3697,7 @@ function SessaoView({
   const [filtroProfessor, setFiltroProfessor] = useState("");
   const [buscaNome, setBuscaNome] = useState("");
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ registro: Registro; novoDestino: string } | null>(null);
   const [destinarPara, setDestinarPara] = useState("");
   const [redirectModalidade, setRedirectModalidade] = useState("");
   const [redirectAProf, setRedirectAProf] = useState("");
@@ -4260,7 +4261,7 @@ function SessaoView({
                             </Badge>
                           )}
                           {r.divergente && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 shrink-0" title="Este aluno aparece com 2 modalidades distintas no arquivo (≥3 check-ins em cada) — confirme o professor correto para cada modalidade">
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 shrink-0" title="Este aluno aparece com 2 ou mais modalidades no arquivo — confirme o professor correto para cada check-in">
                               Divergente
                             </Badge>
                           )}
@@ -4358,28 +4359,37 @@ function SessaoView({
                     </div>
 
                     {/* ── Right action panel ── */}
-                    {(r.status === "pendente" || r.status === "nao_encontrado" || (r.status === "confirmado" && !r.professorId)) && (
+                    {r.status !== "ignorado" && (
                       <div className="flex flex-col items-center justify-center gap-1 px-2.5 min-w-[80px] border-l border-border/60 bg-muted/10 shrink-0">
                         <Button
                           size="sm"
                           variant="ghost"
                           className="h-6 px-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 w-full"
-                          onClick={() => handleConfirmar(r)}
+                          onClick={() => {
+                            if (r.status === "confirmado") {
+                              const dest = rowDestino[r.id] ?? (r.professorId ?? "arena");
+                              setConfirmDialog({ registro: r, novoDestino: dest });
+                            } else {
+                              handleConfirmar(r);
+                            }
+                          }}
                           disabled={updateMutation.isPending}
                           data-testid={`button-confirmar-${r.id}`}
                         >
                           Confirmar
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 w-full"
-                          onClick={() => setLinkDialog(r)}
-                          disabled={updateMutation.isPending || linkProfMutation.isPending}
-                          data-testid={`button-atribuir-${r.id}`}
-                        >
-                          Atribuir
-                        </Button>
+                        {(r.status === "pendente" || r.status === "nao_encontrado") && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 w-full"
+                            onClick={() => setLinkDialog(r)}
+                            disabled={updateMutation.isPending || linkProfMutation.isPending}
+                            data-testid={`button-atribuir-${r.id}`}
+                          >
+                            Atribuir
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -4393,6 +4403,54 @@ function SessaoView({
       {/* ── Relatório Tab ── */}
       {tab === "relatorio" && <RelatorioView registros={registros} plataforma={sessao.plataforma} sessao={sessao} sessaoId={sessaoId} arenaId={arenaId} periodo={periodo} confsProfs={confsProfs} />}
 
+
+      {confirmDialog && (
+        <Dialog open onOpenChange={(open) => { if (!open) setConfirmDialog(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Confirmar alteração</DialogTitle>
+              <DialogDescription>
+                {(() => {
+                  const { registro, novoDestino } = confirmDialog;
+                  const currentNome = registro.professorId
+                    ? (registro.professorNome ?? confsProfs.find(p => p.id === registro.professorId)?.nome ?? "Professor")
+                    : "Arena";
+                  const newNome = novoDestino === "arena"
+                    ? "Arena"
+                    : (confsProfs.find(p => p.id === novoDestino)?.nome ?? "Professor");
+                  return (
+                    <span>
+                      Alterar destino de <strong>{registro.nomePlataforma}</strong>:<br />
+                      <span className="text-muted-foreground">{currentNome}</span>
+                      {" → "}
+                      <strong className="text-foreground">{newNome}</strong>
+                    </span>
+                  );
+                })()}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" size="sm" onClick={() => setConfirmDialog(null)}>Cancelar</Button>
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={updateMutation.isPending}
+                onClick={() => {
+                  const { registro, novoDestino } = confirmDialog;
+                  const professorId = novoDestino === "arena" ? null : novoDestino;
+                  const prof = confsProfs.find(p => p.id === professorId);
+                  const percentual = prof?.percentualComissao ?? "0";
+                  const categoria = parseFloat(percentual) > 0 ? "comissao" : "arena";
+                  doUpdate(registro.id, { professorId, percentual, categoria, status: "confirmado" });
+                  setConfirmDialog(null);
+                }}
+              >
+                Confirmar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {linkDialog && (
         <LinkAlunoDialog

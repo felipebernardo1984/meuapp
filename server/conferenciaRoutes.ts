@@ -475,11 +475,7 @@ function buildDivergentesSet(
   }
   const divergentes = new Set<string>();
   for (const [normName, modCounts] of checkinsByNomeMod) {
-    let significativas = 0;
-    for (const [, count] of modCounts) {
-      if (count >= 3) significativas++;
-    }
-    if (significativas >= 2) divergentes.add(normName);
+    if (modCounts.size >= 2) divergentes.add(normName);
   }
   return divergentes;
 }
@@ -1211,9 +1207,7 @@ export function registerConferenciaRoutes(app: Express): void {
       }
       const divergentesUp = new Set<string>();
       for (const [normName, modCounts] of checkinsByNomeModUp) {
-        let significativas = 0;
-        for (const [, count] of modCounts) { if (count >= 3) significativas++; }
-        if (significativas >= 2) divergentesUp.add(normName);
+        if (modCounts.size >= 2) divergentesUp.add(normName);
       }
       for (const r of registrosToInsert) {
         if (r.status !== "confirmado") continue;
@@ -1550,9 +1544,7 @@ export function registerConferenciaRoutes(app: Express): void {
     }
     const divergentesR = new Set<string>();
     for (const [normName, modCounts] of checkinsByNomeModR) {
-      let significativas = 0;
-      for (const [, count] of modCounts) { if (count >= 3) significativas++; }
-      if (significativas >= 2) divergentesR.add(normName);
+      if (modCounts.size >= 2) divergentesR.add(normName);
     }
     const multiModalOpsR: Array<Promise<unknown>> = [];
     for (const r of allRegsForMM) {
