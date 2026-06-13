@@ -3531,73 +3531,73 @@ function SessaoView({
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-px -m-px overflow-visible">
+      <div className="flex flex-nowrap gap-2 p-px -m-px overflow-x-auto">
         <Card
-          className={cn("border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "" && "ring-2 ring-primary/50")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "" && "ring-2 ring-primary/50")}
           onClick={() => { setFiltroStatus(""); setFiltroNaoAtribuido(false); }}
           data-testid="kpi-total"
         >
-          <CardContent className="p-4">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Total planilha</p>
-            <p className="text-lg font-bold text-foreground leading-none">{fmtVal(String(totalValor))}</p>
-            <p className="text-xs text-muted-foreground mt-1">{sessao.totalRegistros} registros</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total planilha</p>
+            <p className="text-base font-bold text-foreground leading-none">{fmtVal(String(totalValor))}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{sessao.totalRegistros} registros</p>
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "confirmado" && "ring-2 ring-emerald-500/60")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "confirmado" && "ring-2 ring-emerald-500/60")}
           onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "confirmado" ? "" : "confirmado"); }}
           data-testid="kpi-confirmados"
         >
-          <CardContent className="p-4">
-            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-1.5">Confirmados</p>
-            <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 leading-none">{sessao.encontrados}</p>
-            <p className="text-xs text-emerald-600/80 dark:text-emerald-500/80 mt-1">{fmtVal(String(confirmedValor))}</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-1">Confirmados</p>
+            <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 leading-none">{sessao.encontrados}</p>
+            <p className="text-[11px] text-emerald-600/80 dark:text-emerald-500/80 mt-1">{fmtVal(String(confirmedValor))}</p>
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "pendente" && "ring-2 ring-amber-500/60")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "pendente" && "ring-2 ring-amber-500/60")}
           onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "pendente" ? "" : "pendente"); }}
           data-testid="kpi-possiveis"
         >
-          <CardContent className="p-4">
-            <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1.5">Possíveis</p>
-            <p className="text-lg font-bold text-amber-700 dark:text-amber-400 leading-none">{sessao.possiveis}</p>
-            <p className="text-xs text-amber-600/80 dark:text-amber-500/80 mt-1">{fmtVal(String(pendenteValor))}</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Possíveis</p>
+            <p className="text-base font-bold text-amber-700 dark:text-amber-400 leading-none">{sessao.possiveis}</p>
+            <p className="text-[11px] text-amber-600/80 dark:text-amber-500/80 mt-1">{fmtVal(String(pendenteValor))}</p>
           </CardContent>
         </Card>
         {divergenteCount > 0 && (
           <Card
-            className={cn("border shadow-none bg-purple-50/60 dark:bg-purple-950/30 border-purple-200/70 dark:border-purple-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroDivergente && "ring-2 ring-purple-500/60")}
+            className={cn("flex-1 min-w-0 border shadow-none bg-purple-50/60 dark:bg-purple-950/30 border-purple-200/70 dark:border-purple-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroDivergente && "ring-2 ring-purple-500/60")}
             onClick={() => { setFiltroNaoAtribuido(false); setFiltroStatus(""); setFiltroDivergente((v) => !v); }}
             data-testid="kpi-divergentes"
           >
-            <CardContent className="p-4">
-              <p className="text-[11px] font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wider mb-1.5">Divergentes</p>
-              <p className="text-lg font-bold text-purple-700 dark:text-purple-400 leading-none">{divergenteCount}</p>
-              <p className="text-xs text-purple-600/80 dark:text-purple-500/80 mt-1">{fmtVal(String(divergenteValor))}</p>
+            <CardContent className="p-3">
+              <p className="text-[10px] font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wider mb-1">Divergentes</p>
+              <p className="text-base font-bold text-purple-700 dark:text-purple-400 leading-none">{divergenteCount}</p>
+              <p className="text-[11px] text-purple-600/80 dark:text-purple-500/80 mt-1">{fmtVal(String(divergenteValor))}</p>
             </CardContent>
           </Card>
         )}
         <Card
-          className={cn("border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
           onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado"); }}
           data-testid="kpi-nao-encontrados"
         >
-          <CardContent className="p-4">
-            <p className="text-[11px] font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1.5">Não encontrados</p>
-            <p className="text-lg font-bold text-red-700 dark:text-red-400 leading-none">{sessao.naoEncontrados}</p>
-            <p className="text-xs text-red-600/80 dark:text-red-500/80 mt-1">{fmtVal(String(naoEncontradoValor))}</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1">Não encontrados</p>
+            <p className="text-base font-bold text-red-700 dark:text-red-400 leading-none">{sessao.naoEncontrados}</p>
+            <p className="text-[11px] text-red-600/80 dark:text-red-500/80 mt-1">{fmtVal(String(naoEncontradoValor))}</p>
           </CardContent>
         </Card>
         <Card
-          className={cn("border shadow-none bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroNaoAtribuido && "ring-2 ring-blue-500/60")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroNaoAtribuido && "ring-2 ring-blue-500/60")}
           onClick={() => { setFiltroStatus(""); setFiltroDivergente(false); setFiltroNaoAtribuido((v) => !v); }}
           data-testid="kpi-nao-atribuido"
         >
-          <CardContent className="p-4">
-            <p className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1.5">Não atribuído</p>
-            <p className="text-lg font-bold text-blue-700 dark:text-blue-400 leading-none">{arenaRecords.length}</p>
-            <p className="text-xs text-blue-600/80 dark:text-blue-500/80 mt-1">{fmtVal(String(naoAtribuidoValor))}</p>
+          <CardContent className="p-3">
+            <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">Não atribuído</p>
+            <p className="text-base font-bold text-blue-700 dark:text-blue-400 leading-none">{arenaRecords.length}</p>
+            <p className="text-[11px] text-blue-600/80 dark:text-blue-500/80 mt-1">{fmtVal(String(naoAtribuidoValor))}</p>
           </CardContent>
         </Card>
       </div>
@@ -3923,10 +3923,7 @@ function SessaoView({
                     </div>
 
                     {/* Right action panel */}
-                    <div className="flex flex-col items-center justify-center gap-1 px-2.5 min-w-[88px] border-l border-border/60 bg-muted/10 shrink-0">
-                      <span className={cn("text-[11px] font-semibold text-center leading-tight", si.color)}>
-                        {si.label}
-                      </span>
+                    <div className="flex flex-col items-center justify-center gap-1 px-2.5 min-w-[80px] border-l border-border/60 bg-muted/10 shrink-0">
                       {r.status === "pendente" && (
                         <>
                           <Button
@@ -3947,18 +3944,38 @@ function SessaoView({
                           >
                             Alterar
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-destructive hover:bg-red-50 dark:hover:bg-red-950/40 w-full"
+                            onClick={() => handleIgnorar(r)}
+                            data-testid={`button-ignorar-${r.id}`}
+                          >
+                            Excluir
+                          </Button>
                         </>
                       )}
                       {r.status === "nao_encontrado" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-xs w-full"
-                          onClick={() => setLinkDialog(r)}
-                          data-testid={`button-vincular-${r.id}`}
-                        >
-                          Vincular
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs w-full"
+                            onClick={() => setLinkDialog(r)}
+                            data-testid={`button-vincular-${r.id}`}
+                          >
+                            Vincular
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-destructive hover:bg-red-50 dark:hover:bg-red-950/40 w-full"
+                            onClick={() => handleIgnorar(r)}
+                            data-testid={`button-ignorar-${r.id}`}
+                          >
+                            Excluir
+                          </Button>
+                        </>
                       )}
                       {r.status === "confirmado" && manuallyLinked.has(r.id) && (
                         <Button
@@ -3969,17 +3986,6 @@ function SessaoView({
                           data-testid={`button-editar-vinculo-${r.id}`}
                         >
                           Editar
-                        </Button>
-                      )}
-                      {(r.status === "pendente" || r.status === "nao_encontrado") && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleIgnorar(r)}
-                          data-testid={`button-ignorar-${r.id}`}
-                        >
-                          <X className="h-3 w-3" />
                         </Button>
                       )}
                     </div>
