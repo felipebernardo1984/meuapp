@@ -3361,6 +3361,10 @@ function SessaoView({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", sessaoId] });
       qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      if (periodo) {
+        qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+        qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      }
     },
     onError: () => toast({ title: "Erro ao vincular", variant: "destructive" }),
   });
@@ -3404,6 +3408,10 @@ function SessaoView({
           registros: newRegs,
         };
       });
+      if (periodo) {
+        qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+        qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      }
     },
     onError: () => toast({ title: "Erro ao atualizar", variant: "destructive" }),
   });
