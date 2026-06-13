@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import * as XLSX from "xlsx";
 import { db } from "./db";
-import { eq, and, desc, inArray, sql } from "drizzle-orm";
+import { eq, and, desc, inArray, sql, or, isNull } from "drizzle-orm";
 import {
   conferenciaSessoes,
   conferenciaRegistros,
@@ -2024,7 +2024,13 @@ export function registerConferenciaRoutes(app: Express): void {
           and(
             eq(conferenciaRegistros.sessaoId, registro.sessaoId),
             eq(conferenciaRegistros.arenaId, arenaId),
-            inArray(conferenciaRegistros.status, ["pendente", "nao_encontrado"])
+            or(
+              inArray(conferenciaRegistros.status, ["pendente", "nao_encontrado"]),
+              and(
+                eq(conferenciaRegistros.status, "confirmado"),
+                isNull(conferenciaRegistros.professorId)
+              )
+            )
           )
         );
 
