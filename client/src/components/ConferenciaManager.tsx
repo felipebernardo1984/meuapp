@@ -1438,7 +1438,7 @@ function LandingView({
               : isWellhubOnly
               ? "bg-green-500 text-white"
               : isTotalpassOnly
-              ? "bg-teal-500 text-white"
+              ? "bg-black text-white"
               : "bg-green-500 text-white";
 
             return (
@@ -1866,7 +1866,7 @@ function MesView({
                         className={cn(
                           "text-xs justify-center border-0 w-full max-w-[88px]",
                           s.plataforma === "totalpass"
-                            ? "bg-teal-500 hover:bg-teal-500 text-white"
+                            ? "bg-black hover:bg-black text-white"
                             : s.plataforma === "wellhub"
                             ? "bg-green-500 hover:bg-green-500 text-white"
                             : "bg-secondary text-secondary-foreground"
