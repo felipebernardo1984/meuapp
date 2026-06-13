@@ -421,6 +421,63 @@ function isArenaOnly(modalidade: string): boolean {
   return ARENA_ONLY_KEYWORDS.some((k) => norm.includes(normalizeNome(k)));
 }
 
+// ── Shared matching logic (used by both upload and rematch) ───────────────────
+
+type AlunoConfRow = { id: string; nome: string; professorId: string; arenaId: string; tipo?: string | null; criadoEm?: Date | null };
+type AliasRow    = { id?: string; alias: string; studentId: string; arenaId: string };
+type ArenaStudentBasic = { id: string; nome: string; professorId: string | null };
+
+function runMatchAluno(
+  nomePlataforma: string,
+  alunosDb: AlunoConfRow[],
+  aliasesDb: AliasRow[],
+  arenaStudentsDb: ArenaStudentBasic[],
+  aliasToAlunoId: Map<string, string>,
+): {
+  aluno: AlunoConfRow | null;
+  arenaStudent: ArenaStudentBasic | null;
+  score: number;
+  status: "confirmado" | "pendente" | "nao_encontrado";
+} {
+  // 1. Exact alias
+  const aliasAlunoId = aliasToAlunoId.get(normalizeNome(nomePlataforma));
+  if (aliasAlunoId) {
+    const aluno = alunosDb.find((a) => a.id === aliasAlunoId);
+    if (aluno) return { aluno, arenaStudent: null, score: 100, status: "confirmado" };
+  }
+
+  // 2. Fuzzy — conferência prof students (also check their aliases)
+  let bestScore = 0;
+  let bestAluno: AlunoConfRow | null = null;
+  for (const aluno of alunosDb) {
+    let s = bestSim(nomePlataforma, aluno.nome);
+    for (const al of aliasesDb.filter((a) => a.studentId === aluno.id)) {
+      s = Math.max(s, bestSim(nomePlataforma, al.alias));
+    }
+    if (s > bestScore) { bestScore = s; bestAluno = aluno; }
+  }
+  if (bestScore >= 80) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "confirmado" };
+  if (bestScore >= 52) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "pendente" };
+
+  // 3. Fallback — main arena students (handles "alunos mudam mês a mês")
+  let bestArenaScore = 0;
+  let bestArenaStudent: ArenaStudentBasic | null = null;
+  for (const s of arenaStudentsDb) {
+    const sc = bestSim(nomePlataforma, s.nome);
+    if (sc > bestArenaScore) { bestArenaScore = sc; bestArenaStudent = s; }
+  }
+  if (bestArenaScore >= 62) {
+    return {
+      aluno: null,
+      arenaStudent: bestArenaStudent,
+      score: bestArenaScore,
+      status: bestArenaScore >= 78 ? "confirmado" : "pendente",
+    };
+  }
+
+  return { aluno: null, arenaStudent: null, score: Math.max(bestScore, bestArenaScore), status: "nao_encontrado" };
+}
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 export function registerConferenciaRoutes(app: Express): void {
@@ -876,7 +933,7 @@ export function registerConferenciaRoutes(app: Express): void {
       // Derive period from upload date (e.g., "2026-05-01" → "2026-05")
       const periodoUpload = dataInicio ? dataInicio.substring(0, 7) : null;
 
-      const profsDb = await db
+      let profsDb = await db
         .select()
         .from(conferenciaProfessores)
         .where(
@@ -884,9 +941,20 @@ export function registerConferenciaRoutes(app: Express): void {
             ? and(eq(conferenciaProfessores.arenaId, arenaId), eq(conferenciaProfessores.periodo, periodoUpload))
             : eq(conferenciaProfessores.arenaId, arenaId)
         );
+
+      // Fallback: if period specified but no professors found for that period,
+      // use all arena professors so the upload is never left with an empty base.
+      if (profsDb.length === 0 && periodoUpload) {
+        console.log(`[Conferência] Nenhum professor para período ${periodoUpload} — usando todos os professores da arena como fallback`);
+        profsDb = await db
+          .select()
+          .from(conferenciaProfessores)
+          .where(eq(conferenciaProfessores.arenaId, arenaId));
+      }
+
       const profMap = new Map(profsDb.map((p) => [p.id, p]));
 
-      // Only use students belonging to professors of this period
+      // Only use students belonging to professors of this period (or fallback set)
       const profIds = new Set(profsDb.map((p) => p.id));
       const allAlunosDb = await db
         .select()
@@ -916,48 +984,8 @@ export function registerConferenciaRoutes(app: Express): void {
         aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
       );
 
-      const matchAluno = (nomePlataforma: string): {
-        aluno: (typeof alunosDb)[0] | null;
-        arenaStudent: { id: string; nome: string; professorId: string | null } | null;
-        score: number;
-        status: "confirmado" | "pendente" | "nao_encontrado";
-      } => {
-        // 1. Exact alias
-        const aliasAlunoId = aliasToAlunoId.get(normalizeNome(nomePlataforma));
-        if (aliasAlunoId) {
-          const aluno = alunosDb.find((a) => a.id === aliasAlunoId);
-          if (aluno) return { aluno, arenaStudent: null, score: 100, status: "confirmado" };
-        }
-
-        // 2. Fuzzy — conferência prof students (also check their aliases)
-        let bestScore = 0, bestAluno: (typeof alunosDb)[0] | null = null;
-        for (const aluno of alunosDb) {
-          let s = bestSim(nomePlataforma, aluno.nome);
-          for (const al of aliasesDb.filter((a) => a.studentId === aluno.id)) {
-            s = Math.max(s, bestSim(nomePlataforma, al.alias));
-          }
-          if (s > bestScore) { bestScore = s; bestAluno = aluno; }
-        }
-        if (bestScore >= 80) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "confirmado" };
-        if (bestScore >= 52) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "pendente" };
-
-        // 3. Fallback — main arena students (always runs; handles "alunos mudam mês a mês")
-        let bestArenaScore = 0, bestArenaStudent: { id: string; nome: string; professorId: string | null } | null = null;
-        for (const s of arenaStudentsDb) {
-          const sc = bestSim(nomePlataforma, s.nome);
-          if (sc > bestArenaScore) { bestArenaScore = sc; bestArenaStudent = s; }
-        }
-        if (bestArenaScore >= 62) {
-          return {
-            aluno: null,
-            arenaStudent: bestArenaStudent,
-            score: bestArenaScore,
-            status: bestArenaScore >= 78 ? "confirmado" : "pendente",
-          };
-        }
-
-        return { aluno: null, arenaStudent: null, score: Math.max(bestScore, bestArenaScore), status: "nao_encontrado" };
-      };
+      const matchAluno = (nomePlataforma: string) =>
+        runMatchAluno(nomePlataforma, alunosDb, aliasesDb, arenaStudentsDb, aliasToAlunoId);
 
       console.log(
         `[Conferência] Base de alunos: ${alunosDb.length} conf-alunos | ${arenaStudentsDb.length} alunos-arena | ${aliasesDb.length} aliases`
@@ -1205,10 +1233,26 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.json({ updated: 0, dayuseDetected: 0, message: "Nenhum registro pendente para atualizar" });
     }
 
-    const profsDb = await db
+    // Derive period from session so rematch uses the same professor scope as upload
+    const periodoRematch = sessao.periodoInicio ? sessao.periodoInicio.substring(0, 7) : null;
+
+    let profsDb = await db
       .select()
       .from(conferenciaProfessores)
-      .where(eq(conferenciaProfessores.arenaId, arenaId));
+      .where(
+        periodoRematch
+          ? and(eq(conferenciaProfessores.arenaId, arenaId), eq(conferenciaProfessores.periodo, periodoRematch))
+          : eq(conferenciaProfessores.arenaId, arenaId)
+      );
+
+    // Fallback: if period-filtered yields nothing, use all arena professors
+    if (profsDb.length === 0 && periodoRematch) {
+      profsDb = await db
+        .select()
+        .from(conferenciaProfessores)
+        .where(eq(conferenciaProfessores.arenaId, arenaId));
+    }
+
     const profMap = new Map(profsDb.map((p) => [p.id, p]));
     const profIds = new Set(profsDb.map((p) => p.id));
 
@@ -1238,35 +1282,8 @@ export function registerConferenciaRoutes(app: Express): void {
       aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
     );
 
-    const matchAlunoR = (nomePlataforma: string) => {
-      const aliasAlunoId = aliasToAlunoId.get(normalizeNome(nomePlataforma));
-      if (aliasAlunoId) {
-        const aluno = alunosDb.find((a) => a.id === aliasAlunoId);
-        if (aluno) return { aluno, arenaStudent: null, score: 100, status: "confirmado" as const };
-      }
-      let bestScore = 0, bestAluno: (typeof alunosDb)[0] | null = null;
-      for (const aluno of alunosDb) {
-        let s = bestSim(nomePlataforma, aluno.nome);
-        for (const al of aliasesDb.filter((a) => a.studentId === aluno.id)) {
-          s = Math.max(s, bestSim(nomePlataforma, al.alias));
-        }
-        if (s > bestScore) { bestScore = s; bestAluno = aluno; }
-      }
-      if (bestScore >= 80) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "confirmado" as const };
-      if (bestScore >= 52) return { aluno: bestAluno!, arenaStudent: null, score: bestScore, status: "pendente" as const };
-      let bestArenaScore = 0, bestArenaStudent: { id: string; nome: string; professorId: string | null } | null = null;
-      for (const s of arenaStudentsDb) {
-        const sc = bestSim(nomePlataforma, s.nome);
-        if (sc > bestArenaScore) { bestArenaScore = sc; bestArenaStudent = s; }
-      }
-      if (bestArenaScore >= 62) {
-        return { aluno: null, arenaStudent: bestArenaStudent, score: bestArenaScore, status: (bestArenaScore >= 78 ? "confirmado" : "pendente") as "confirmado" | "pendente" };
-      }
-      return { aluno: null, arenaStudent: null, score: Math.max(bestScore, bestArenaScore), status: "nao_encontrado" as const };
-    };
-
     const updatePayloads = toRematch.map((r) => {
-      const match = matchAlunoR(r.nomePlataforma);
+      const match = runMatchAluno(r.nomePlataforma, alunosDb, aliasesDb, arenaStudentsDb, aliasToAlunoId);
       let professorId: string | null = null;
       let percentual = "0", valorProfessor = "0", valorArena = r.valor, categoria = "arena";
 
