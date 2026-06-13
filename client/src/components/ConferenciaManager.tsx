@@ -3531,9 +3531,9 @@ function SessaoView({
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="flex flex-nowrap gap-2 p-1 -m-1 overflow-visible">
+      <div className="flex flex-nowrap gap-2 px-2 py-1">
         <Card
-          className={cn("flex-1 min-w-0 border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && filtroStatus === "" && "ring-2 ring-primary/50")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-muted/30 cursor-pointer transition-all hover:shadow-sm select-none outline-none", !filtroNaoAtribuido && filtroStatus === "" && "outline outline-2 outline-primary/60")}
           onClick={() => { setFiltroStatus(""); setFiltroNaoAtribuido(false); }}
           data-testid="kpi-total"
         >
@@ -3544,7 +3544,7 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("flex-1 min-w-0 border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "confirmado" && "ring-2 ring-emerald-500/60")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none outline-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "confirmado" && "outline outline-2 outline-emerald-500/70")}
           onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "confirmado" ? "" : "confirmado"); }}
           data-testid="kpi-confirmados"
         >
@@ -3555,7 +3555,7 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("flex-1 min-w-0 border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "pendente" && "ring-2 ring-amber-500/60")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none outline-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "pendente" && "outline outline-2 outline-amber-500/70")}
           onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "pendente" ? "" : "pendente"); }}
           data-testid="kpi-possiveis"
         >
@@ -3566,7 +3566,7 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("flex-1 min-w-0 border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "nao_encontrado" && "ring-2 ring-red-500/60")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none outline-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "nao_encontrado" && "outline outline-2 outline-red-500/70")}
           onClick={() => { setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado"); }}
           data-testid="kpi-nao-encontrados"
         >
@@ -3577,7 +3577,7 @@ function SessaoView({
           </CardContent>
         </Card>
         <Card
-          className={cn("flex-1 min-w-0 border shadow-none bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40 cursor-pointer transition-all hover:shadow-sm select-none", filtroNaoAtribuido && "ring-2 ring-blue-500/60")}
+          className={cn("flex-1 min-w-0 border shadow-none bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40 cursor-pointer transition-all hover:shadow-sm select-none outline-none", filtroNaoAtribuido && "outline outline-2 outline-blue-500/70")}
           onClick={() => { setFiltroStatus(""); setFiltroDivergente(false); setFiltroNaoAtribuido((v) => !v); }}
           data-testid="kpi-nao-atribuido"
         >
