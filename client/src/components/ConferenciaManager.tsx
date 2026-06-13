@@ -549,10 +549,10 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
   .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
-  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
-  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b;margin-bottom:3px; }
-  .doc-sub { font-size:8px;color:rgba(0,0,0,0.5);margin-bottom:0; }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
+  .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
+  .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
+  .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
   .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
   .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
   .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
@@ -593,9 +593,10 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 <body>
 <div class="page">
   <div class="doc-header">
-    <div class="doc-brand">Seven Sports</div>
-    <h1>${professorNome}${professorKey !== "__arena__" ? ` &mdash; ${pct}% comissão` : ""}</h1>
-    <div class="doc-sub">Comprovante de receita &nbsp;·&nbsp; ${plataformaLabel(sessao.plataforma)} &nbsp;·&nbsp; ${sessao.nomeArquivo} &nbsp;·&nbsp; ${dataStr}</div>
+    <div class="doc-header-top">
+      <div class="doc-header-name">${professorNome}${professorKey !== "__arena__" ? ` &mdash; ${pct}% comissão` : ""}</div>
+      <div class="doc-header-period">${plataformaLabel(sessao.plataforma)} &nbsp;·&nbsp; ${dataStr}</div>
+    </div>
     ${regs.length > 0 ? `
     <div class="kpi-strip">
       <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${new Set(regs.map(r => r.nomePlataforma)).size}</div><div class="kpi-lbl">Visitantes</div></div>
@@ -817,10 +818,10 @@ function exportComprovanteConsolidado(
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
   .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
-  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
-  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b;margin-bottom:3px; }
-  .doc-sub { font-size:8px;color:rgba(0,0,0,0.5);margin-bottom:0; }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
+  .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
+  .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
+  .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
   .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
   .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
   .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
@@ -867,9 +868,10 @@ function exportComprovanteConsolidado(
 <body>
 <div class="page">
   <div class="doc-header">
-    <div class="doc-brand">Seven Sports</div>
-    <h1>${professorNome}${professorId !== "__arena__" ? ` &mdash; ${pct}% comissão` : ""} &mdash; Consolidado</h1>
-    <div class="doc-sub">Comprovante consolidado &nbsp;·&nbsp; ${mesLabel} &nbsp;·&nbsp; ${sections.length} plataforma${sections.length !== 1 ? "s" : ""}${allMensalistas.length > 0 ? ` &nbsp;·&nbsp; ${allMensalistas.length} mensalista${allMensalistas.length !== 1 ? "s" : ""}` : ""}</div>
+    <div class="doc-header-top">
+      <div class="doc-header-name">${professorNome}${professorId !== "__arena__" ? ` &mdash; ${pct}% comissão` : ""} &mdash; Consolidado</div>
+      <div class="doc-header-period">${mesLabel}</div>
+    </div>
     ${sections.length > 0 ? `
     <div class="kpi-strip">
       <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${totalAlunos}</div><div class="kpi-lbl">Visitantes</div></div>
@@ -1039,12 +1041,12 @@ function exportArenaRelatorioSimples(
 
   /* ── Header ── */
   .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
-  .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
-  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b; }
-  .doc-header .sub { font-size:8px;color:rgba(0,0,0,0.5);margin-top:4px;margin-bottom:10px; }
+  .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
+  .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
+  .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
 
   /* ── KPI strip (inside header) ── */
-  .kpi-strip { display:grid;grid-template-columns:${pctArena === 100 ? "repeat(3,1fr)" : "repeat(4,1fr)"};gap:8px;margin-top:10px; }
+  .kpi-strip { display:grid;grid-template-columns:${pctArena === 100 ? "repeat(3,1fr)" : "repeat(4,1fr)"};gap:8px; }
   .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
   .kpi-val { font-size:16px;font-weight:900;color:#1e293b;line-height:1; }
   .kpi-label { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px; }
@@ -1096,9 +1098,10 @@ function exportArenaRelatorioSimples(
 <body>
 <div class="page">
   <div class="doc-header">
-    <div class="doc-header-brand">Seven Sports</div>
-    <h1>Relatório da Arena</h1>
-    <div class="sub">Período: ${mesLabel} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" })} &nbsp;·&nbsp; ${pctArena}% repasse arena</div>
+    <div class="doc-header-top">
+      <div class="doc-header-name">Relatório da Arena</div>
+      <div class="doc-header-period">${mesLabel} &nbsp;·&nbsp; ${pctArena}% repasse arena</div>
+    </div>
     <div class="kpi-strip">
       <div class="kpi">
         <div class="kpi-accent"></div>
@@ -1273,12 +1276,12 @@ function exportArenaRelatorio(
 
   /* ── Header ── */
   .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
-  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
-  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b;margin-bottom:3px; }
-  .doc-sub { font-size:8px;color:rgba(0,0,0,0.5);margin-bottom:10px; }
+  .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
+  .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
+  .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
 
   /* ── KPI strip (inside header) ── */
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
   .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
   .kpi-accent { width:20px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(0,0,0,0.2); }
   .kpi-val { font-size:14px;font-weight:900;color:#1e293b;line-height:1; }
@@ -1331,9 +1334,10 @@ function exportArenaRelatorio(
 <body>
 <div class="page">
   <div class="doc-header">
-    <div class="doc-brand">Seven Sports</div>
-    <h1>Relatório Financeiro</h1>
-    <div class="doc-sub">Período: ${mesLabel} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" })} &nbsp;·&nbsp; ${pctArena}% repasse arena</div>
+    <div class="doc-header-top">
+      <div class="doc-header-name">Relatório Financeiro</div>
+      <div class="doc-header-period">${mesLabel} &nbsp;·&nbsp; ${pctArena}% repasse arena</div>
+    </div>
     <div class="kpi-strip">
       <div class="kpi">
         <div class="kpi-accent"></div>
@@ -1514,10 +1518,10 @@ function exportToPDF(sessao: SessaoDetalhe) {
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
   .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
-  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
-  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b;margin-bottom:3px; }
-  .doc-sub { font-size:8px;color:rgba(0,0,0,0.5);margin-bottom:0; }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
+  .doc-header-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
+  .doc-header-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
+  .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
   .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
   .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
   .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
@@ -1548,9 +1552,10 @@ function exportToPDF(sessao: SessaoDetalhe) {
 <body>
 <div class="page">
   <div class="doc-header">
-    <div class="doc-brand">Seven Sports</div>
-    <h1>Conferência — ${plataformaLabel(sessao.plataforma)}</h1>
-    <div class="doc-sub">${sessao.nomeArquivo} &nbsp;·&nbsp; Gerado em ${dataStr} &nbsp;·&nbsp; ${sessao.totalRegistros} registros &nbsp;·&nbsp; ${confirmados.length} confirmados</div>
+    <div class="doc-header-top">
+      <div class="doc-header-name">Conferência — ${plataformaLabel(sessao.plataforma)}</div>
+      <div class="doc-header-period">${sessao.nomeArquivo} &nbsp;·&nbsp; ${dataStr}</div>
+    </div>
     <div class="kpi-strip">
       <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(totalRecebido)}</div><div class="kpi-lbl">Total Recebido</div></div>
       <div class="kpi"><div class="kpi-accent"></div><div class="kpi-val">${fmt(totalArena)}</div><div class="kpi-lbl">Valor Arena</div></div>
