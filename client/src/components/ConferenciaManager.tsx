@@ -548,15 +548,15 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
-  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
-  .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
-  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px; }
-  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
-  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(255,255,255,0.4); }
-  .kpi-val { font-size:13px;font-weight:900;color:#fff;line-height:1; }
-  .kpi-lbl { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
+  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
+  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b;margin-bottom:3px; }
+  .doc-sub { font-size:8px;color:rgba(0,0,0,0.5);margin-bottom:0; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
+  .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
+  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
+  .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
+  .kpi-lbl { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .mod-block { margin-bottom:18px; }
   .mod-header { display:flex;align-items:center;gap:8px;background:#f1f5f9;padding:6px 10px;border-radius:4px 4px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
@@ -816,15 +816,15 @@ function exportComprovanteConsolidado(
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
-  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
-  .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
-  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px; }
-  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
-  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(255,255,255,0.4); }
-  .kpi-val { font-size:13px;font-weight:900;color:#fff;line-height:1; }
-  .kpi-lbl { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
+  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
+  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b;margin-bottom:3px; }
+  .doc-sub { font-size:8px;color:rgba(0,0,0,0.5);margin-bottom:0; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
+  .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
+  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
+  .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
+  .kpi-lbl { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .section { margin-bottom:22px; }
   .section-header { display:flex;align-items:center;gap:8px;margin-bottom:0;padding:8px 12px;background:#f1f5f9;border-radius:6px 6px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
@@ -1038,17 +1038,17 @@ function exportArenaRelatorioSimples(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:16px 18px 18px;color:white;text-align:center;border-radius:0;margin-bottom:0; }
-  .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px; }
-  .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white; }
-  .doc-header .sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-top:5px;margin-bottom:14px; }
+  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-header-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
+  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b; }
+  .doc-header .sub { font-size:8px;color:rgba(0,0,0,0.5);margin-top:4px;margin-bottom:10px; }
 
   /* ── KPI strip (inside header) ── */
-  .kpi-strip { display:grid;grid-template-columns:${pctArena === 100 ? "repeat(3,1fr)" : "repeat(4,1fr)"};gap:8px;margin-top:14px; }
-  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
-  .kpi-val { font-size:16px;font-weight:900;color:#fff;line-height:1; }
-  .kpi-label { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px; }
-  .kpi-accent { width:20px;height:2px;border-radius:2px;margin-bottom:6px;background:rgba(255,255,255,0.4); }
+  .kpi-strip { display:grid;grid-template-columns:${pctArena === 100 ? "repeat(3,1fr)" : "repeat(4,1fr)"};gap:8px;margin-top:10px; }
+  .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
+  .kpi-val { font-size:16px;font-weight:900;color:#1e293b;line-height:1; }
+  .kpi-label { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px; }
+  .kpi-accent { width:20px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(0,0,0,0.2); }
 
   /* ── Body ── */
   .body { padding:14px 16px; }
@@ -1272,17 +1272,17 @@ function exportArenaRelatorio(
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
 
   /* ── Header ── */
-  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
-  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
-  .doc-header h1 { font-size:22px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
-  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:14px; }
+  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
+  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b;margin-bottom:3px; }
+  .doc-sub { font-size:8px;color:rgba(0,0,0,0.5);margin-bottom:10px; }
 
   /* ── KPI strip (inside header) ── */
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px; }
-  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
-  .kpi-accent { width:20px;height:2px;border-radius:2px;margin-bottom:6px;background:rgba(255,255,255,0.4); }
-  .kpi-val { font-size:14px;font-weight:900;color:#fff;line-height:1; }
-  .kpi-lbl { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-top:3px;font-weight:600; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
+  .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
+  .kpi-accent { width:20px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(0,0,0,0.2); }
+  .kpi-val { font-size:14px;font-weight:900;color:#1e293b;line-height:1; }
+  .kpi-lbl { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:3px;font-weight:600; }
 
   /* ── Body ── */
   .body { padding:18px 20px; }
@@ -1513,15 +1513,15 @@ function exportToPDF(sessao: SessaoDetalhe) {
   body { font-family:Arial,sans-serif;font-size:10px;color:#000;background:#fff; }
   .page { max-width:800px;margin:0 auto;background:#fff;min-height:100vh; }
   @media print { body { background:#fff; } .page { max-width:100%;box-shadow:none; } }
-  .doc-header { background:linear-gradient(135deg,#88a8e9 0%,#88a8e9 100%);padding:20px 24px 20px;color:white;text-align:center;border-radius:0; }
-  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px; }
-  .doc-header h1 { font-size:20px;font-weight:900;letter-spacing:-0.02em;color:white;margin-bottom:4px; }
-  .doc-sub { font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:0; }
-  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px; }
-  .kpi { background:rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;text-align:left; }
-  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:5px;background:rgba(255,255,255,0.4); }
-  .kpi-val { font-size:13px;font-weight:900;color:#fff;line-height:1; }
-  .kpi-lbl { font-size:7px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
+  .doc-header { background:#88a8e9;border-radius:10px;padding:16px 18px;margin-bottom:10px; }
+  .doc-brand { font-size:8px;font-weight:700;letter-spacing:0.15em;color:rgba(0,0,0,0.45);text-transform:uppercase;margin-bottom:4px; }
+  .doc-header h1 { font-size:16px;font-weight:900;letter-spacing:-0.01em;color:#1e293b;margin-bottom:3px; }
+  .doc-sub { font-size:8px;color:rgba(0,0,0,0.5);margin-bottom:0; }
+  .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px; }
+  .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
+  .kpi-accent { width:18px;height:2px;border-radius:2px;margin-bottom:4px;background:rgba(0,0,0,0.2); }
+  .kpi-val { font-size:13px;font-weight:900;color:#1e293b;line-height:1; }
+  .kpi-lbl { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.07em;margin-top:2px;font-weight:600; }
   .body { padding:16px 20px; }
   .prof-block { margin-bottom:20px; }
   .prof-header { display:flex;align-items:center;gap:10px;background:#f1f5f9;padding:7px 10px;border-radius:5px 5px 0 0;border:1.5px solid #e2e8f0;border-bottom:none; }
