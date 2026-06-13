@@ -744,12 +744,30 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(403).json({ message: "Acesso negado" });
     }
     const { nome, percentualComissao } = req.body as { nome: string; percentualComissao?: string };
+    const newPct = parseFloat(String(percentualComissao ?? "0"));
+
     const [prof] = await db
       .update(conferenciaProfessores)
-      .set({ nome: nome.trim(), percentualComissao: String(percentualComissao ?? "0") })
+      .set({ nome: nome.trim(), percentualComissao: String(newPct) })
       .where(and(eq(conferenciaProfessores.id, req.params.id), eq(conferenciaProfessores.arenaId, arenaId)))
       .returning();
     if (!prof) return res.status(404).json({ message: "Professor não encontrado" });
+
+    // Recalculate all existing registros for this professor with the new percentage
+    await db
+      .update(conferenciaRegistros)
+      .set({
+        percentual: String(newPct),
+        valorProfessor: sql`ROUND((CAST(valor AS NUMERIC) * ${newPct} / 100)::numeric, 2)::text`,
+        valorArena:     sql`ROUND((CAST(valor AS NUMERIC) * (1 - ${newPct} / 100))::numeric, 2)::text`,
+      })
+      .where(
+        and(
+          eq(conferenciaRegistros.arenaId, arenaId),
+          eq(conferenciaRegistros.professorId, req.params.id)
+        )
+      );
+
     res.json(prof);
   });
 

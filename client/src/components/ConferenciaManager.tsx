@@ -414,7 +414,7 @@ function fmtData(d: string | null | undefined): string {
   return d;
 }
 
-function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, professorNome: string) {
+function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, professorNome: string, pctAtual = "0") {
   const allRegsForProf = sessao.registros.filter(
     (r) => r.status === "confirmado" && (professorKey === "__arena__" ? !r.professorId : r.professorId === professorKey)
   );
@@ -425,10 +425,14 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 
   if (regs.length === 0 && mensalistaRegs.length === 0) return;
 
-  const pct = (regs[0] ?? mensalistaRegs[0])?.percentual ?? "0";
+  // Always recalculate from the current percentage — never trust snapshots
+  const pct = professorKey === "__arena__" ? "0" : pctAtual;
+  const pctNum = parseFloat(pct);
+  const rowVProf  = (r: Registro) => Math.round(parseFloat(r.valor || "0") * pctNum / 100 * 100) / 100;
+  const rowVArena = (r: Registro) => Math.round((parseFloat(r.valor || "0") - rowVProf(r)) * 100) / 100;
   const subtotal = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-  const comissao = regs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-  const arena    = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const comissao = regs.reduce((s, r) => s + rowVProf(r), 0);
+  const arena    = regs.reduce((s, r) => s + rowVArena(r), 0);
   const chks     = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const dataStr = new Date(sessao.criadoEm).toLocaleDateString("pt-BR");
@@ -451,7 +455,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       const modChks    = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
       const modAlunos  = new Set(mrs.map(r => r.nomePlataforma)).size;
       const modReceita = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-      const modComissao = mrs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+      const modComissao = mrs.reduce((s, r) => s + rowVProf(r), 0);
       const hasComissao = professorKey !== "__arena__";
       const modRows = mrs.map((r) => `
         <tr>
@@ -459,7 +463,7 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
           <td class="col-center">${fmtData(r.data)}</td>
           <td class="col-center">${r.checkins ?? 1}</td>
           <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
-          ${hasComissao ? `<td class="col-center" style="color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+          ${hasComissao ? `<td class="col-center" style="color:#059669">${fmt(rowVProf(r))}</td>` : ""}
         </tr>`).join("");
       return `
       <div class="mod-block">
@@ -494,17 +498,16 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 
   // ── Mensalistas block (separate card) ──────────────────────────────────────
   const mSubtotal  = mensalistaRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-  const mComissao  = mensalistaRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-  const mArena     = mensalistaRegs.reduce((s, r) => s + Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0")), 0);
+  const mComissao  = mensalistaRegs.reduce((s, r) => s + rowVProf(r), 0);
+  const mArena     = mensalistaRegs.reduce((s, r) => s + rowVArena(r), 0);
   const mensalistaRows = mensalistaRegs
     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
     .map((r) => {
-      const rv = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
       return `
       <tr>
         <td class="col-nome">${r.nomePlataforma}</td>
         <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
-        ${professorKey !== "__arena__" ? `<td class="col-center" style="color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td><td class="col-center" style="color:#2563eb">${fmt(rv)}</td>` : ""}
+        ${professorKey !== "__arena__" ? `<td class="col-center" style="color:#059669">${fmt(rowVProf(r))}</td><td class="col-center" style="color:#2563eb">${fmt(rowVArena(r))}</td>` : ""}
       </tr>`;
     }).join("");
   const mensalistaBlock = mensalistaRegs.length === 0 ? "" : `
@@ -633,15 +636,20 @@ function exportComprovanteConsolidado(
   if (sections.length === 0 && allMensalistas.length === 0) return;
 
   const pct = percentualComissao;
+  const pctNum = parseFloat(pct);
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // Helper: always recalculate from current percentage — never trust snapshots
+  const rVProf  = (r: Registro) => Math.round(parseFloat(r.valor || "0") * pctNum / 100 * 100) / 100;
+  const rVArena = (r: Registro) => Math.round((parseFloat(r.valor || "0") - rVProf(r)) * 100) / 100;
 
   // Grand totals — platform only
   const allRegs = sections.flatMap((s) => s.regs);
   const totalAlunos   = new Set(allRegs.map((r) => r.nomePlataforma)).size;
   const totalChks     = allRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const totalReceita  = allRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-  const totalComissao = allRegs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-  const totalArena    = allRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const totalComissao = allRegs.reduce((s, r) => s + rVProf(r), 0);
+  const totalArena    = allRegs.reduce((s, r) => s + rVArena(r), 0);
 
   // Build one section block per platform/arquivo
   const sectionBlocks = sections
@@ -649,8 +657,8 @@ function exportComprovanteConsolidado(
       const secAlunos   = new Set(regs.map((r) => r.nomePlataforma)).size;
       const secChks     = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
       const secReceita  = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-      const secComissao = regs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-      const secArena    = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+      const secComissao = regs.reduce((s, r) => s + rVProf(r), 0);
+      const secArena    = regs.reduce((s, r) => s + rVArena(r), 0);
 
       // Group platform records by modalidade (no mensalistas here)
       const byMod = new Map<string, typeof regs>();
@@ -669,7 +677,7 @@ function exportComprovanteConsolidado(
         const mChks    = mrs.reduce((s, r) => s + (r.checkins ?? 1), 0);
         const mAlunos  = new Set(mrs.map(r => r.nomePlataforma)).size;
         const mReceita = mrs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-        const mComissao = mrs.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
+        const mComissao = mrs.reduce((s, r) => s + rVProf(r), 0);
         const hasCom = professorId !== "__arena__";
         const mRows = mrs.map((r) => `
           <tr>
@@ -677,7 +685,7 @@ function exportComprovanteConsolidado(
             <td class="col-center">${fmtData(r.data)}</td>
             <td class="col-center">${r.checkins ?? 1}</td>
             <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
-            ${hasCom ? `<td class="col-center" style="color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td>` : ""}
+            ${hasCom ? `<td class="col-center" style="color:#059669">${fmt(rVProf(r))}</td>` : ""}
           </tr>`).join("");
         return `
         <div class="mod-block">
@@ -732,18 +740,17 @@ function exportComprovanteConsolidado(
 
   // ── Mensalistas block (separate card, outside platform sections) ───────────
   const mTotal    = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-  const mComissao = allMensalistas.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-  const mArena    = allMensalistas.reduce((s, r) => s + Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0")), 0);
+  const mComissao = allMensalistas.reduce((s, r) => s + rVProf(r), 0);
+  const mArena    = allMensalistas.reduce((s, r) => s + rVArena(r), 0);
   const hasCom2 = professorId !== "__arena__";
   const mensalistaRows = allMensalistas
     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
     .map((r) => {
-      const rv = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
       return `
       <tr>
         <td class="col-nome">${r.nomePlataforma}</td>
         <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
-        ${hasCom2 ? `<td class="col-center" style="color:#059669">${fmt(parseFloat(r.valorProfessor || "0"))}</td><td class="col-center" style="color:#2563eb">${fmt(rv)}</td>` : ""}
+        ${hasCom2 ? `<td class="col-center" style="color:#059669">${fmt(rVProf(r))}</td><td class="col-center" style="color:#2563eb">${fmt(rVArena(r))}</td>` : ""}
       </tr>`;
     }).join("");
   const mensalistasBlock = allMensalistas.length === 0 ? "" : `
@@ -3069,6 +3076,12 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
       }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: profQueryKey });
+      // Invalidate all session caches so valorProfessor/valorArena refresh from DB
+      for (const id of sessaoIds) {
+        qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", id] });
+      }
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
       setEditingProf(null);
       toast({ title: "Professor atualizado!" });
     },
@@ -4448,7 +4461,7 @@ function RelatorioView({
                         variant="outline"
                         size="sm"
                         className="h-7 text-xs gap-1"
-                        onClick={() => exportToPDFComprovante(sessao, key, g.nome)}
+                        onClick={() => exportToPDFComprovante(sessao, key, g.nome, confsProfs.find(p => p.id === key)?.percentualComissao ?? pct)}
                         data-testid={`button-comprovante-${key}`}
                       >
                         <Printer className="h-3 w-3" /> Comprovante
