@@ -3138,7 +3138,12 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   const saveMutation = useMutation({
     mutationFn: (vals: RepasseConfig & { periodo: string }) =>
       apiRequest("PUT", "/api/conferencia/repasse-config", vals).then((r) => r.json()),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/repasse-config", periodo] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/repasse-config", periodo] });
+      qc.refetchQueries({ queryKey: ["/api/conferencia/sessao"], type: "all" });
+      qc.refetchQueries({ queryKey: ["/api/conferencia/sessoes"], type: "all" });
+      qc.refetchQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo], type: "all" });
+    },
     onError: () => toast({ title: "Erro ao salvar configuração de repasse", variant: "destructive" }),
   });
 
@@ -3312,12 +3317,13 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
       }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: profQueryKey });
-      // Invalidate all session caches so valorProfessor/valorArena refresh from DB
+      // Force-refetch all session caches (active + inactive) so valorProfessor/valorArena
+      // update immediately even if the SessaoView is not currently mounted
       for (const id of sessaoIds) {
-        qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", id] });
+        qc.refetchQueries({ queryKey: ["/api/conferencia/sessao", id], type: "all" });
       }
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+      qc.refetchQueries({ queryKey: ["/api/conferencia/sessoes"], type: "all" });
+      qc.refetchQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo], type: "all" });
       setEditingProf(null);
       toast({ title: "Professor atualizado!" });
     },
