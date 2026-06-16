@@ -457,11 +457,12 @@ function buildModalidadeMap(
 }
 
 /**
- * Builds a set of normalized student names that genuinely appear with 2+ distinct
- * modalities in the session, each with ≥3 check-ins.
- * A single accidental dayuse check-in (count=1 or 2) does NOT qualify as a real modality.
+ * Builds a set of normalized student names that appear with 2+ distinct modalities.
+ * Any check-in in a second modality triggers the divergente flow — the dominant
+ * modality is confirmed automatically, the minority records surface as "possível"
+ * for the gestor to decide (error vs. real second modality).
  */
-const MIN_CHECKINS_FOR_REAL_MODALITY = 3;
+const MIN_CHECKINS_FOR_REAL_MODALITY = 1;
 
 function buildDivergentesSet(
   records: Array<{ nomePlataforma: string; modalidade: string | null | undefined; checkins: number | null | undefined }>
@@ -1273,6 +1274,18 @@ export function registerConferenciaRoutes(app: Express): void {
             }
           }
 
+          // ── Possível records go to Arena (sem professor) ────────────────────
+          // Any record that is not fully confirmed goes to the Arena bucket with
+          // no professor pre-assigned and no commission calculated.
+          // The gestor explicitly attributes when reviewing possíveis.
+          if ((match.status as string) === "pendente") {
+            professorId = null;
+            percentual = "0";
+            valorProfessor = "0";
+            valorArena = valor;
+            categoria = "arena";
+          }
+
           return {
             arenaId,
             sessaoId: "__PLACEHOLDER__",
@@ -1399,8 +1412,12 @@ export function registerConferenciaRoutes(app: Express): void {
         for (const [pid, cnt] of pc) { if (cnt > best) { best = cnt; bestId = pid; } }
         if (bestId) modalProfUp.set(mod, bestId);
       }
-      let reassignCount = 0;
-      let clearCount = 0;
+      // ── Passo 2: Garantir que possíveis divergentes fiquem sem professor ──────
+      // Possível (pendente) records must always go to Arena (sem professor).
+      // The gestor decides attribution manually — no pre-assignment allowed.
+      // This also covers records downgraded by the divergente cycle and records
+      // that started as pendente (low match score).
+      let clearedP2 = 0;
       for (const r of registrosToInsert) {
         const inDowngraded = downgradedUp.has(r);
         const isPendente = r.status === "pendente";
@@ -1408,47 +1425,25 @@ export function registerConferenciaRoutes(app: Express): void {
         const isDivergenteP2 = divergentesUp.has(normNameP2);
 
         if (!isPendente) continue;
-        // Process records that went through the downgrade cycle OR divergente records
-        // that started as pendente (low match score — never entered downgradedUp).
         if (!inDowngraded && !isDivergenteP2) continue;
-        // For non-downgraded divergente records skip the dominant modality —
-        // those stay as pendente for the gestor to confirm manually.
+        // For non-downgraded divergente records skip the dominant modality record
+        // (it was re-confirmed by Passo 1 and should keep its professor).
         if (!inDowngraded && isDivergenteP2) {
           const dominant = dominantModUp.get(normNameP2);
           const recMod = (r.modalidade as string || "").trim().toLowerCase();
           if (recMod === dominant) continue;
         }
 
-        const modKey = (r.modalidade as string || "").trim().toLowerCase();
-        const suggestedProf = modalProfUp.get(modKey);
-        if (suggestedProf) {
-          // We have a statistically-inferred professor for this modality
-          const profUp = profMap.get(suggestedProf);
-          const pctUp = parseFloat(profUp?.percentualComissao ?? "0");
-          const valUp = parseFloat(r.valor as string || "0");
-          const vpUp = Math.round(valUp * pctUp / 100 * 100) / 100;
-          r.professorId = suggestedProf;
-          r.percentual = String(pctUp);
-          r.valorProfessor = String(vpUp);
-          r.valorArena = String(Math.round((valUp - vpUp) * 100) / 100);
-          r.categoria = pctUp > 0 ? "comissao" : "arena";
-          reassignCount++;
-        } else if (r.professorId) {
-          // No other student confirms this modality — cannot infer the right
-          // professor. Reset to unassigned so the gestor sees it clearly.
-          r.professorId = null;
-          r.percentual = "0";
-          r.valorProfessor = "0";
-          r.valorArena = r.valor;
-          r.categoria = "arena";
-          clearCount++;
-        }
+        // Always clear professor for pendente minority records
+        r.professorId = null;
+        r.percentual = "0";
+        r.valorProfessor = "0";
+        r.valorArena = r.valor;
+        r.categoria = "arena";
+        clearedP2++;
       }
-      if (reassignCount > 0) {
-        console.log(`[Conferência] ${reassignCount} registros possíveis pré-atribuídos ao professor da modalidade`);
-      }
-      if (clearCount > 0) {
-        console.log(`[Conferência] ${clearCount} registros divergentes sem professor inferível — aguardam atribuição manual`);
+      if (clearedP2 > 0) {
+        console.log(`[Conferência] ${clearedP2} registros possíveis mantidos em Arena (sem professor) — aguardam atribuição manual`);
       }
 
       // ── Passo 2b: Corrigir professor nos registros dominantes re-confirmados ───
