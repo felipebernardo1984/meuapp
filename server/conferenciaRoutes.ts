@@ -1451,6 +1451,37 @@ export function registerConferenciaRoutes(app: Express): void {
         console.log(`[Conferência] ${clearCount} registros divergentes sem professor inferível — aguardam atribuição manual`);
       }
 
+      // ── Passo 2b: Corrigir professor nos registros dominantes re-confirmados ───
+      // Passo 1 re-confirms dominant-modality records but keeps the original
+      // professorId from the initial name-match. If the statistical map built
+      // in Passo 2 shows a different (better) professor for that modality, apply
+      // it here. This covers cases like Letícia (beachtennis) matched to Felipe
+      // by name but statistically Márcio teaches all beachtennis students.
+      let dominant2bCount = 0;
+      for (const r of registrosToInsert) {
+        if (r.status !== "confirmado") continue;
+        if (!downgradedUp.has(r)) continue; // only Passo 1 re-confirmed records
+        const normName2b = normalizeNome(r.nomePlataforma as string);
+        if (!divergentesUp.has(normName2b)) continue;
+        const modKey2b = (r.modalidade as string || "").trim().toLowerCase();
+        const suggestedProf2b = modalProfUp.get(modKey2b);
+        if (suggestedProf2b && suggestedProf2b !== (r.professorId as string | null)) {
+          const prof2b = profMap.get(suggestedProf2b);
+          const pct2b = parseFloat(prof2b?.percentualComissao ?? "0");
+          const val2b = parseFloat(r.valor as string || "0");
+          const vp2b = Math.round(val2b * pct2b / 100 * 100) / 100;
+          r.professorId = suggestedProf2b;
+          r.percentual = String(pct2b);
+          r.valorProfessor = String(vp2b);
+          r.valorArena = String(Math.round((val2b - vp2b) * 100) / 100);
+          r.categoria = pct2b > 0 ? "comissao" : "arena";
+          dominant2bCount++;
+        }
+      }
+      if (dominant2bCount > 0) {
+        console.log(`[Conferência] ${dominant2bCount} registros dominantes de divergentes corrigidos por estatística`);
+      }
+
       // ── Passo 3: Professor por modalidade para matches fracos (≤60%) ──────────
       // Covers non-divergent pendente/nao_encontrado records with score ≤ 60%.
       // Only changes professorId — status and all other fields stay unchanged.
@@ -1848,16 +1879,15 @@ export function registerConferenciaRoutes(app: Express): void {
     if (reconfirmOpsR.length > 0) await Promise.all(reconfirmOpsR);
 
     // ── Passo 2 (rematch): Pré-atribuir professor nos possíveis não-dominantes ──
+    // Stats are built only from non-divergente confirmed records — same as upload.
+    // Excluding divergente records prevents their possibly-wrong professorId from
+    // polluting the modality→professor map (chicken-and-egg problem).
     const profModalCountR = new Map<string, Map<string, number>>();
     for (const r of allRegsForMM) {
-      if (!r.professorId || !r.modalidade) continue;
+      if (r.status !== "confirmado" || !r.professorId || !r.modalidade) continue;
       const normName = normalizeNome(r.nomePlataforma);
-      const isDivergent = divergentesR.has(normName);
+      if (divergentesR.has(normName)) continue; // exclude all divergentes from stats
       const modKey = r.modalidade.trim().toLowerCase();
-      const isEffectivelyConfirmed =
-        r.status === "confirmado" &&
-        (!isDivergent || dominantModR.get(normName) === modKey);
-      if (!isEffectivelyConfirmed) continue;
       if (!profModalCountR.has(modKey)) profModalCountR.set(modKey, new Map());
       const pc = profModalCountR.get(modKey)!;
       pc.set(r.professorId, (pc.get(r.professorId) || 0) + (r.checkins || 1));
@@ -1895,6 +1925,36 @@ export function registerConferenciaRoutes(app: Express): void {
       }
     }
     if (reassignOpsR.length > 0) await Promise.all(reassignOpsR);
+
+    // ── Passo 2b (rematch): Corrigir professor nos registros dominantes re-confirmados ──
+    // Same logic as upload Passo 2b: Passo 1 re-confirms dominant-modality records
+    // but keeps the original professorId. Apply the statistical correction here.
+    const passo2bOpsR: Array<Promise<unknown>> = [];
+    for (const r of allRegsForMM) {
+      if (r.status !== "confirmado") continue;
+      const normName2bR = normalizeNome(r.nomePlataforma);
+      if (!divergentesR.has(normName2bR)) continue;
+      const dominant2bR = dominantModR.get(normName2bR);
+      const modKey2bR = (r.modalidade || "").trim().toLowerCase();
+      if (modKey2bR !== dominant2bR) continue; // only dominant re-confirmed records
+      const suggestedProf2bR = modalProfR.get(modKey2bR);
+      if (suggestedProf2bR && suggestedProf2bR !== r.professorId) {
+        const prof2bR = profMap.get(suggestedProf2bR) ?? teacherMapR.get(suggestedProf2bR);
+        const pct2bR = parseFloat(prof2bR?.percentualComissao ?? "0");
+        const val2bR = parseFloat(r.valor || "0");
+        const vp2bR = Math.round(val2bR * pct2bR / 100 * 100) / 100;
+        passo2bOpsR.push(
+          db.update(conferenciaRegistros).set({
+            professorId: suggestedProf2bR,
+            percentual: String(pct2bR),
+            valorProfessor: String(vp2bR),
+            valorArena: String(Math.round((val2bR - vp2bR) * 100) / 100),
+            categoria: pct2bR > 0 ? "comissao" : "arena",
+          }).where(eq(conferenciaRegistros.id, r.id))
+        );
+      }
+    }
+    if (passo2bOpsR.length > 0) await Promise.all(passo2bOpsR);
 
     // ── Passo 3 (rematch): Professor por modalidade para matches fracos (≤60%) ──
     const passo3OpsR: Array<Promise<unknown>> = [];
