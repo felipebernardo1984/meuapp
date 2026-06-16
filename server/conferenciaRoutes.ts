@@ -1396,9 +1396,17 @@ export function registerConferenciaRoutes(app: Express): void {
       let reassignCount = 0;
       let clearCount = 0;
       for (const r of registrosToInsert) {
-        if (!downgradedUp.has(r) || r.status !== "pendente") continue;
+        const inDowngraded = downgradedUp.has(r);
+        const isPendente = r.status === "pendente";
+        if (!inDowngraded || !isPendente) {
+          if (divergentesUp.has(normalizeNome(r.nomePlataforma as string)) && isPendente) {
+            console.log(`[Conferência Passo2 SKIP] "${r.nomePlataforma}" mod="${r.modalidade}" inDowngraded=${inDowngraded} status=${r.status} profId=${r.professorId}`);
+          }
+          continue;
+        }
         const modKey = (r.modalidade as string || "").trim().toLowerCase();
         const suggestedProf = modalProfUp.get(modKey);
+        console.log(`[Conferência Passo2] "${r.nomePlataforma}" mod="${modKey}" suggestedProf=${suggestedProf ?? "null"} curProfId=${r.professorId ?? "null"}`);
         if (suggestedProf) {
           // We have a statistically-inferred professor for this modality
           const profUp = profMap.get(suggestedProf);
