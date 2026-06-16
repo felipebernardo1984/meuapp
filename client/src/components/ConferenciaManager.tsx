@@ -4567,14 +4567,10 @@ function RelatorioView({
     enabled: !!periodo,
   });
 
-  // Always recalculate prof/arena split from current % — never trust DB snapshots
-  const getPctNum = (profId: string | null | undefined) => {
-    if (!profId) return 0;
-    const p = confsProfs.find((c) => c.id === profId);
-    return parseFloat(p?.percentualComissao ?? "0");
-  };
-  const profRowVal = (r: Registro) => Math.round(parseFloat(r.valor || "0") * getPctNum(r.professorId) / 100 * 100) / 100;
-  const arenaRow   = (r: Registro) => Math.max(0, parseFloat(r.valor || "0") - profRowVal(r));
+  // Use stored snapshot values — recalculating from the current professor %
+  // would retroactively change past reports when a professor's rate is edited.
+  const profRowVal = (r: Registro) => parseFloat(r.valorProfessor || "0");
+  const arenaRow   = (r: Registro) => parseFloat(r.valorArena || "0");
   const arenaSum   = (regs: Registro[]) => regs.reduce((s, r) => s + arenaRow(r), 0);
 
   // Platform records only — mensalistas are excluded from platform totals

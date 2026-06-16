@@ -461,6 +461,8 @@ function buildModalidadeMap(
  * modalities in the session, each with ≥3 check-ins.
  * A single accidental dayuse check-in (count=1 or 2) does NOT qualify as a real modality.
  */
+const MIN_CHECKINS_FOR_REAL_MODALITY = 3;
+
 function buildDivergentesSet(
   records: Array<{ nomePlataforma: string; modalidade: string | null | undefined; checkins: number | null | undefined }>
 ): Set<string> {
@@ -475,7 +477,10 @@ function buildDivergentesSet(
   }
   const divergentes = new Set<string>();
   for (const [normName, modCounts] of checkinsByNomeMod) {
-    if (modCounts.size >= 2) divergentes.add(normName);
+    // Only flag as divergente when at least 2 modalities each have ≥3 check-ins.
+    // A single accidental dayuse or guest visit does NOT count as a real modality.
+    const realMods = [...modCounts.entries()].filter(([, c]) => c >= MIN_CHECKINS_FOR_REAL_MODALITY);
+    if (realMods.length >= 2) divergentes.add(normName);
   }
   return divergentes;
 }
@@ -1305,7 +1310,8 @@ export function registerConferenciaRoutes(app: Express): void {
       }
       const divergentesUp = new Set<string>();
       for (const [normName, modCounts] of checkinsByNomeModUp) {
-        if (modCounts.size >= 2) {
+        const realMods = [...modCounts.entries()].filter(([, c]) => c >= MIN_CHECKINS_FOR_REAL_MODALITY);
+        if (realMods.length >= 2) {
           divergentesUp.add(normName);
           console.log(`[Conferência] Divergente detectado: "${normName}" — ${Array.from(modCounts.entries()).map(([m, c]) => `${m}(${c})`).join(", ")}`);
         }
@@ -1398,15 +1404,23 @@ export function registerConferenciaRoutes(app: Express): void {
       for (const r of registrosToInsert) {
         const inDowngraded = downgradedUp.has(r);
         const isPendente = r.status === "pendente";
-        if (!inDowngraded || !isPendente) {
-          if (divergentesUp.has(normalizeNome(r.nomePlataforma as string)) && isPendente) {
-            console.log(`[Conferência Passo2 SKIP] "${r.nomePlataforma}" mod="${r.modalidade}" inDowngraded=${inDowngraded} status=${r.status} profId=${r.professorId}`);
-          }
-          continue;
+        const normNameP2 = normalizeNome(r.nomePlataforma as string);
+        const isDivergenteP2 = divergentesUp.has(normNameP2);
+
+        if (!isPendente) continue;
+        // Process records that went through the downgrade cycle OR divergente records
+        // that started as pendente (low match score — never entered downgradedUp).
+        if (!inDowngraded && !isDivergenteP2) continue;
+        // For non-downgraded divergente records skip the dominant modality —
+        // those stay as pendente for the gestor to confirm manually.
+        if (!inDowngraded && isDivergenteP2) {
+          const dominant = dominantModUp.get(normNameP2);
+          const recMod = (r.modalidade as string || "").trim().toLowerCase();
+          if (recMod === dominant) continue;
         }
+
         const modKey = (r.modalidade as string || "").trim().toLowerCase();
         const suggestedProf = modalProfUp.get(modKey);
-        console.log(`[Conferência Passo2] "${r.nomePlataforma}" mod="${modKey}" suggestedProf=${suggestedProf ?? "null"} curProfId=${r.professorId ?? "null"}`);
         if (suggestedProf) {
           // We have a statistically-inferred professor for this modality
           const profUp = profMap.get(suggestedProf);
@@ -1787,7 +1801,8 @@ export function registerConferenciaRoutes(app: Express): void {
     }
     const divergentesR = new Set<string>();
     for (const [normName, modCounts] of checkinsByNomeModR) {
-      if (modCounts.size >= 2) divergentesR.add(normName);
+      const realModsR = [...modCounts.entries()].filter(([, c]) => c >= MIN_CHECKINS_FOR_REAL_MODALITY);
+      if (realModsR.length >= 2) divergentesR.add(normName);
     }
     const multiModalOpsR: Array<Promise<unknown>> = [];
     for (const r of allRegsForMM) {
