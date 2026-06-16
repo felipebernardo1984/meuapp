@@ -4044,7 +4044,7 @@ function SessaoView({
         </Card>
         <Card
           className={cn("flex-1 min-w-0 border shadow-none bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/70 dark:border-emerald-800/40 cursor-pointer transition-all hover:shadow-sm select-none outline-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "confirmado" && "outline outline-2 outline-emerald-500/70")}
-          onClick={() => { setTab("conferencia"); setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "confirmado" ? "" : "confirmado"); }}
+          onClick={() => { setTab("conferencia"); setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus("confirmado"); }}
           data-testid="kpi-confirmados"
         >
           <CardContent className="p-3">
@@ -4055,7 +4055,7 @@ function SessaoView({
         </Card>
         <Card
           className={cn("flex-1 min-w-0 border shadow-none bg-amber-50/60 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/40 cursor-pointer transition-all hover:shadow-sm select-none outline-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "pendente" && "outline outline-2 outline-amber-500/70")}
-          onClick={() => { setTab("conferencia"); setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "pendente" ? "" : "pendente"); }}
+          onClick={() => { setTab("conferencia"); setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus("pendente"); }}
           data-testid="kpi-possiveis"
         >
           <CardContent className="p-3">
@@ -4066,7 +4066,7 @@ function SessaoView({
         </Card>
         <Card
           className={cn("flex-1 min-w-0 border shadow-none bg-red-50/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 cursor-pointer transition-all hover:shadow-sm select-none outline-none", !filtroNaoAtribuido && !filtroDivergente && filtroStatus === "nao_encontrado" && "outline outline-2 outline-red-500/70")}
-          onClick={() => { setTab("conferencia"); setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus(filtroStatus === "nao_encontrado" ? "" : "nao_encontrado"); }}
+          onClick={() => { setTab("conferencia"); setFiltroNaoAtribuido(false); setFiltroDivergente(false); setFiltroStatus("nao_encontrado"); }}
           data-testid="kpi-nao-encontrados"
         >
           <CardContent className="p-3">
@@ -4077,7 +4077,7 @@ function SessaoView({
         </Card>
         <Card
           className={cn("flex-1 min-w-0 border shadow-none bg-blue-50/60 dark:bg-blue-950/30 border-blue-200/70 dark:border-blue-800/40 cursor-pointer transition-all hover:shadow-sm select-none outline-none", filtroNaoAtribuido && "outline outline-2 outline-blue-500/70")}
-          onClick={() => { setTab("conferencia"); setFiltroStatus(""); setFiltroDivergente(false); setFiltroNaoAtribuido((v) => !v); }}
+          onClick={() => { setTab("conferencia"); setFiltroStatus(""); setFiltroDivergente(false); setFiltroNaoAtribuido(true); }}
           data-testid="kpi-nao-atribuido"
         >
           <CardContent className="p-3">
