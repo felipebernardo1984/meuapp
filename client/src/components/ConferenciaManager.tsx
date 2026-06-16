@@ -4677,22 +4677,22 @@ function RelatorioView({
                 })
                 .map((r) => (
                   <TableRow key={r.id} className="text-xs">
-                    <TableCell className="py-2 font-medium max-w-[160px]">
+                    <TableCell className="py-2 font-medium max-w-0 overflow-hidden">
                       <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
                     </TableCell>
-                    <TableCell className="py-2 w-28 text-[11px] text-muted-foreground whitespace-nowrap">
-                      {r.modalidade || "—"}
+                    <TableCell className="py-2 w-40 max-w-0 overflow-hidden text-[11px] text-muted-foreground">
+                      <span className="block truncate" title={r.modalidade || "—"}>{r.modalidade || "—"}</span>
                     </TableCell>
-                    <TableCell className="py-2 tabular-nums text-muted-foreground whitespace-nowrap">
+                    <TableCell className="py-2 w-28 tabular-nums text-muted-foreground whitespace-nowrap">
                       {fmtData(r.data)}
                     </TableCell>
-                    <TableCell className="py-2 text-right font-mono tabular-nums">
+                    <TableCell className="py-2 w-24 text-right font-mono tabular-nums">
                       {fmtVal(r.valor)}
                     </TableCell>
-                    <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <TableCell className="py-2 w-20 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                       {fmtVal(String(profRowVal(r)))}
                     </TableCell>
-                    <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
+                    <TableCell className="py-2 w-20 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">
                       {fmtVal(String(arenaRow(r)))}
                     </TableCell>
                   </TableRow>
@@ -4717,10 +4717,10 @@ function RelatorioView({
               const tableHeader = () => (
                 <TableRow className="bg-muted/40">
                   <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
-                  <TableHead className="text-xs py-2 w-28">Modalidade</TableHead>
-                  <TableHead className="text-xs py-2 w-40">Data/Hora</TableHead>
-                  <TableHead className="text-xs py-2 text-right w-28">Total</TableHead>
-                  <TableHead className="text-xs py-2 text-right w-24">Prof.</TableHead>
+                  <TableHead className="text-xs py-2 w-40">Modalidade</TableHead>
+                  <TableHead className="text-xs py-2 w-28">Data/Hora</TableHead>
+                  <TableHead className="text-xs py-2 text-right w-24">Total</TableHead>
+                  <TableHead className="text-xs py-2 text-right w-20">Prof.</TableHead>
                   <TableHead className="text-xs py-2 text-right w-20">Arena</TableHead>
                 </TableRow>
               );

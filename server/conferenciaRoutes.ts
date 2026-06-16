@@ -1368,9 +1368,19 @@ export function registerConferenciaRoutes(app: Express): void {
       // session. For each non-dominant possível record of divergent students,
       // pre-assigns the professor who is predominant in that modality.
       // Status stays "pendente" — gestor still confirms manually as usual.
+      //
+      // If no other student is confirmed for the same modality (e.g. the
+      // divergente student is the only one in that modality), we cannot infer
+      // the right professor statistically. In that case we reset professorId to
+      // null so the record appears visually unassigned ("Arena") — making it
+      // obvious to the gestor that an explicit assignment is required.
       const profModalCountUp = new Map<string, Map<string, number>>(); // mod → profId → count
       for (const r of registrosToInsert) {
         if (r.status !== "confirmado" || !r.professorId || !r.modalidade) continue;
+        // Exclude the dominant registro of the divergente student itself — we
+        // only want to learn from OTHER students to infer the correct professor.
+        const normNameR = normalizeNome(r.nomePlataforma as string);
+        if (divergentesUp.has(normNameR)) continue;
         const modKey = (r.modalidade as string).trim().toLowerCase();
         if (!profModalCountUp.has(modKey)) profModalCountUp.set(modKey, new Map());
         const pc = profModalCountUp.get(modKey)!;
@@ -1384,11 +1394,13 @@ export function registerConferenciaRoutes(app: Express): void {
         if (bestId) modalProfUp.set(mod, bestId);
       }
       let reassignCount = 0;
+      let clearCount = 0;
       for (const r of registrosToInsert) {
         if (!downgradedUp.has(r) || r.status !== "pendente") continue;
         const modKey = (r.modalidade as string || "").trim().toLowerCase();
         const suggestedProf = modalProfUp.get(modKey);
-        if (suggestedProf && suggestedProf !== (r.professorId as string | null)) {
+        if (suggestedProf) {
+          // We have a statistically-inferred professor for this modality
           const profUp = profMap.get(suggestedProf);
           const pctUp = parseFloat(profUp?.percentualComissao ?? "0");
           const valUp = parseFloat(r.valor as string || "0");
@@ -1399,10 +1411,22 @@ export function registerConferenciaRoutes(app: Express): void {
           r.valorArena = String(Math.round((valUp - vpUp) * 100) / 100);
           r.categoria = pctUp > 0 ? "comissao" : "arena";
           reassignCount++;
+        } else if (r.professorId) {
+          // No other student confirms this modality — cannot infer the right
+          // professor. Reset to unassigned so the gestor sees it clearly.
+          r.professorId = null;
+          r.percentual = "0";
+          r.valorProfessor = "0";
+          r.valorArena = r.valor;
+          r.categoria = "arena";
+          clearCount++;
         }
       }
       if (reassignCount > 0) {
         console.log(`[Conferência] ${reassignCount} registros possíveis pré-atribuídos ao professor da modalidade`);
+      }
+      if (clearCount > 0) {
+        console.log(`[Conferência] ${clearCount} registros divergentes sem professor inferível — aguardam atribuição manual`);
       }
 
       // ── Passo 3: Professor por modalidade para matches fracos (≤60%) ──────────
