@@ -1601,6 +1601,7 @@ export default function ConferenciaManager({ arenaId, onTitleChange }: Props) {
   const [view, setView] = useState<"landing" | "mes" | "sessao">("landing");
   const [mesSel, setMesSel] = useState<MesRef | null>(null);
   const [sessaoId, setSessaoId] = useState<string | null>(null);
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (view === "mes" && mesSel) {
@@ -1609,6 +1610,35 @@ export default function ConferenciaManager({ arenaId, onTitleChange }: Props) {
       onTitleChange?.("Conferência");
     }
   }, [view, mesSel]);
+
+  // Rebusca dados da conferência ao mudar de view (ex: voltar de sessão para mês)
+  useEffect(() => {
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    if (sessaoId) qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", sessaoId] });
+    if (mesSel) {
+      const periodo = `${mesSel.ano}-${String(mesSel.mes).padStart(2, "0")}`;
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/professores", periodo] });
+    }
+  }, [view]);
+
+  // Rebusca ao retornar para a aba do navegador / janela
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+        if (sessaoId) qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", sessaoId] });
+        if (mesSel) {
+          const periodo = `${mesSel.ano}-${String(mesSel.mes).padStart(2, "0")}`;
+          qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+          qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+          qc.invalidateQueries({ queryKey: ["/api/conferencia/professores", periodo] });
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [sessaoId, mesSel]);
 
   if (view === "sessao" && sessaoId) {
     return (
@@ -1721,6 +1751,7 @@ function LandingView({
   const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
     queryKey: ["/api/conferencia/sessoes"],
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const { data: profPeriodos = [] } = useQuery<string[]>({
@@ -1943,6 +1974,7 @@ function MesView({
   const { data: sessoes = [], isLoading } = useQuery<Sessao[]>({
     queryKey: ["/api/conferencia/sessoes"],
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const mesSessoes = sessoes.filter((s) => s.periodoInicio?.startsWith(monthKey));
@@ -2977,6 +3009,7 @@ function ArenaRelatorioCard({
     },
     enabled: mesSessoes.length > 0,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const { data: repasseCfg } = useQuery<RepasseConfig>({
@@ -3726,6 +3759,8 @@ function SessaoView({
       if (!res.ok) throw new Error("Erro ao carregar sessão");
       return res.json();
     },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const periodo = sessao?.periodoInicio ? sessao.periodoInicio.substring(0, 7) : undefined;
@@ -3737,6 +3772,8 @@ function SessaoView({
         r.json()
       ),
     enabled: !!sessao,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const rematchMutation = useMutation({
