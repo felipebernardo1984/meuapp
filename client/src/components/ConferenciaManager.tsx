@@ -4676,7 +4676,7 @@ function RelatorioView({
                     <TableCell className="py-2 font-medium max-w-0 overflow-hidden">
                       <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
                     </TableCell>
-                    <TableCell className="py-2 w-40 text-[11px] text-muted-foreground">
+                    <TableCell className="py-2 w-40 text-[11px] text-muted-foreground text-center">
                       <span className="line-clamp-2 leading-tight" title={r.modalidade || "—"}>{r.modalidade || "—"}</span>
                     </TableCell>
                     <TableCell className="py-2 w-28 tabular-nums text-muted-foreground whitespace-nowrap">
@@ -4713,7 +4713,7 @@ function RelatorioView({
               const tableHeader = () => (
                 <TableRow className="bg-muted/40">
                   <TableHead className="text-xs py-2">Nome Plataforma</TableHead>
-                  <TableHead className="text-xs py-2 w-40">Modalidade</TableHead>
+                  <TableHead className="text-xs py-2 w-40 text-center">Modalidade</TableHead>
                   <TableHead className="text-xs py-2 w-28">Data/Hora</TableHead>
                   <TableHead className="text-xs py-2 text-right w-24">Total</TableHead>
                   <TableHead className="text-xs py-2 text-right w-20">Prof.</TableHead>
