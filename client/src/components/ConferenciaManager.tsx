@@ -4685,8 +4685,14 @@ function RelatorioView({
                     <TableCell className="py-2 w-40 text-[11px] text-muted-foreground text-center">
                       <span className="line-clamp-2 leading-tight" title={r.modalidade || "—"}>{r.modalidade || "—"}</span>
                     </TableCell>
-                    <TableCell className="py-2 w-28 tabular-nums text-muted-foreground whitespace-nowrap">
-                      {fmtData(r.data)}
+                    <TableCell className="py-2 w-28 tabular-nums text-muted-foreground">
+                      {(() => {
+                        const d = fmtData(r.data);
+                        const sp = d.indexOf(" ");
+                        return sp > 0 ? (
+                          <><span className="block text-[11px] leading-tight">{d.slice(0, sp)}</span><span className="block text-[11px] leading-tight">{d.slice(sp + 1)}</span></>
+                        ) : <span className="text-[11px]">{d}</span>;
+                      })()}
                     </TableCell>
                     <TableCell className="py-2 w-24 text-right font-mono tabular-nums">
                       {fmtVal(r.valor)}
