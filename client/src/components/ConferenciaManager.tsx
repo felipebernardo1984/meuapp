@@ -4680,8 +4680,8 @@ function RelatorioView({
                     <TableCell className="py-2 font-medium max-w-0 overflow-hidden">
                       <span className="block truncate" title={r.nomePlataforma}>{r.nomePlataforma}</span>
                     </TableCell>
-                    <TableCell className="py-2 w-40 max-w-0 overflow-hidden text-[11px] text-muted-foreground">
-                      <span className="block truncate" title={r.modalidade || "—"}>{r.modalidade || "—"}</span>
+                    <TableCell className="py-2 w-40 text-[11px] text-muted-foreground">
+                      <span className="line-clamp-2 leading-tight" title={r.modalidade || "—"}>{r.modalidade || "—"}</span>
                     </TableCell>
                     <TableCell className="py-2 w-28 tabular-nums text-muted-foreground whitespace-nowrap">
                       {fmtData(r.data)}
