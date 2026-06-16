@@ -1303,6 +1303,10 @@ export function registerConferenciaRoutes(app: Express): void {
       const checkinsByNomeModUp = new Map<string, Map<string, number>>();
       for (const r of registrosToInsert) {
         if (!r.modalidade || !r.nomePlataforma) continue;
+        // Arena-only modalities (day use, esportes coletivos, livre, etc.) are
+        // always routed to the Arena bucket and should never trigger the divergente
+        // flow — a student with beach×11 + day use×1 has ONE real modality.
+        if (isArenaOnly(r.modalidade as string)) continue;
         const normName = normalizeNome(r.nomePlataforma as string);
         const modKey = (r.modalidade as string).trim().toLowerCase();
         if (!checkinsByNomeModUp.has(normName)) checkinsByNomeModUp.set(normName, new Map());
@@ -1826,6 +1830,8 @@ export function registerConferenciaRoutes(app: Express): void {
     const checkinsByNomeModR = new Map<string, Map<string, number>>();
     for (const r of allRegsForMM) {
       if (!r.modalidade || r.status === "ignorado") continue;
+      // Arena-only modalities never trigger divergente — same rule as upload.
+      if (isArenaOnly(r.modalidade)) continue;
       const normName = normalizeNome(r.nomePlataforma);
       const modKey = r.modalidade.trim().toLowerCase();
       if (!checkinsByNomeModR.has(normName)) checkinsByNomeModR.set(normName, new Map());
