@@ -1683,9 +1683,16 @@ export function registerConferenciaRoutes(app: Express): void {
       .from(conferenciaRegistros)
       .where(eq(conferenciaRegistros.sessaoId, sessao.id));
 
-    const toRematch = allRegistros.filter(
-      (r) => r.status === "pendente" || r.status === "nao_encontrado"
-    );
+    // When useArenaOnly is explicitly passed in the body (toggle action), re-process
+    // ALL non-ignored records so the rule takes effect immediately on existing data.
+    // Without it (regular rematch), only pendente/nao_encontrado records are processed.
+    const useArenaOnlyParam = req.body !== null && typeof req.body === "object" && "useArenaOnly" in req.body
+      ? Boolean((req.body as Record<string, unknown>).useArenaOnly)
+      : undefined;
+
+    const toRematch = useArenaOnlyParam !== undefined
+      ? allRegistros.filter((r) => r.status !== "ignorado")
+      : allRegistros.filter((r) => r.status === "pendente" || r.status === "nao_encontrado");
 
     if (toRematch.length === 0) {
       return res.json({ updated: 0, dayuseDetected: 0, message: "Nenhum registro pendente para atualizar" });
@@ -1736,6 +1743,18 @@ export function registerConferenciaRoutes(app: Express): void {
     );
 
     const updatePayloads = toRematch.map((r) => {
+      // When useArenaOnly is ON, auto-confirm arena-only modalities without professor matching
+      const arenaOnly = useArenaOnlyParam ? isArenaOnly(r.modalidade || "") : false;
+      if (arenaOnly) {
+        return {
+          id: r.id,
+          studentId: null as string | null, alunoNomeMatch: null as string | null,
+          similaridade: 1, status: "confirmado" as string, categoria: "arena",
+          professorId: null as string | null, percentual: "0",
+          valorProfessor: "0", valorArena: r.valor,
+        };
+      }
+
       const match = runMatchAluno(r.nomePlataforma, alunosDb, aliasesDb, arenaStudentsDb, aliasToAlunoId);
       let professorId: string | null = null;
       let percentual = "0", valorProfessor = "0", valorArena = r.valor, categoria = "arena";

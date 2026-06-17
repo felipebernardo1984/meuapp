@@ -1970,6 +1970,7 @@ function MesView({
   const [pendingMap, setPendingMap] = useState<PendingMapFile | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [useArenaOnly, setUseArenaOnly] = useState(false);
+  const [isRematchingArena, setIsRematchingArena] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -2136,7 +2137,33 @@ function MesView({
       )}
 
       {/* ── Professores (first) ─────────────────────────────────────────── */}
-      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} sessaoIds={mesSessoes.map((s) => s.id)} mesLabel={mesLabel} useArenaOnly={useArenaOnly} onToggleArenaOnly={setUseArenaOnly} />
+      <ConfiguracaoView
+        arenaId={arenaId}
+        periodo={monthKey}
+        sessaoIds={mesSessoes.map((s) => s.id)}
+        mesLabel={mesLabel}
+        useArenaOnly={useArenaOnly}
+        isRematchingArena={isRematchingArena}
+        onToggleArenaOnly={async (v: boolean) => {
+          setUseArenaOnly(v);
+          const platformSessaoIds = mesSessoes.filter(s => s.plataforma !== "manual").map(s => s.id);
+          if (platformSessaoIds.length === 0) return;
+          setIsRematchingArena(true);
+          try {
+            await Promise.all(
+              platformSessaoIds.map(id =>
+                apiRequest("POST", `/api/conferencia/sessao/${id}/rematch`, { useArenaOnly: v }).then(r => r.json())
+              )
+            );
+            qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+            platformSessaoIds.forEach(id => qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", id] }));
+          } catch {
+            // state still updated — data refresh will reflect new setting on next rematch
+          } finally {
+            setIsRematchingArena(false);
+          }
+        }}
+      />
 
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5">
@@ -3250,7 +3277,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   );
 }
 
-function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", useArenaOnly = false, onToggleArenaOnly }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string; useArenaOnly?: boolean; onToggleArenaOnly?: (v: boolean) => void }) {
+function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", useArenaOnly = false, isRematchingArena = false, onToggleArenaOnly }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string; useArenaOnly?: boolean; isRematchingArena?: boolean; onToggleArenaOnly?: (v: boolean) => void }) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
   const [editingProf, setEditingProf] = useState<string | null>(null);
@@ -3462,12 +3489,16 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", use
               {onToggleArenaOnly && (
                 <Button
                   variant={useArenaOnly ? "default" : "outline"}
-                  onClick={() => onToggleArenaOnly(!useArenaOnly)}
+                  onClick={() => !isRematchingArena && onToggleArenaOnly(!useArenaOnly)}
+                  disabled={isRematchingArena}
                   className="w-full justify-center"
                   data-testid="button-toggle-arena-only"
                 >
-                  <Building2 className="h-3.5 w-3.5 mr-1.5" />
-                  regra arena {useArenaOnly ? "ON" : "OFF"}
+                  {isRematchingArena
+                    ? <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    : <Building2 className="h-3.5 w-3.5 mr-1.5" />
+                  }
+                  {isRematchingArena ? "aplicando…" : `regra arena ${useArenaOnly ? "ON" : "OFF"}`}
                 </Button>
               )}
               <Button
