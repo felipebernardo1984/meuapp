@@ -3412,25 +3412,12 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", use
   return (
     <div className="space-y-5">
 
-      {/* ── Header + inline add form ─────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex-1">
-          <h2 className="text-base font-semibold text-foreground">Professores da Conferência</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Configure os professores e vincule os alunos de cada um para o cruzamento automático.
-          </p>
-        </div>
-        {onToggleArenaOnly && (
-          <Button
-            variant={useArenaOnly ? "default" : "outline"}
-            onClick={() => onToggleArenaOnly(!useArenaOnly)}
-            className="shrink-0 w-[176px] justify-center"
-            data-testid="button-toggle-arena-only"
-          >
-            <Building2 className="h-3.5 w-3.5 mr-1.5" />
-            regra arena {useArenaOnly ? "ON" : "OFF"}
-          </Button>
-        )}
+      {/* ── Header ───────────────────────────────────────────────────────── */}
+      <div>
+        <h2 className="text-base font-semibold text-foreground">Professores da Conferência</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Configure os professores e vincule os alunos de cada um para o cruzamento automático.
+        </p>
       </div>
 
       {/* ── Add-professor inline form ──────────────────────────────────── */}
@@ -3463,19 +3450,32 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", use
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
               </div>
             </div>
-            <Button
-              onClick={handleAddProf}
-              disabled={!novoProfNome.trim() || addProfMutation.isPending}
-              className="shrink-0 w-[176px] justify-center"
-              data-testid="button-add-professor"
-            >
-              {addProfMutation.isPending ? (
-                <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
+            <div className="flex flex-col gap-2 shrink-0 w-[176px]">
+              {onToggleArenaOnly && (
+                <Button
+                  variant={useArenaOnly ? "default" : "outline"}
+                  onClick={() => onToggleArenaOnly(!useArenaOnly)}
+                  className="w-full justify-center"
+                  data-testid="button-toggle-arena-only"
+                >
+                  <Building2 className="h-3.5 w-3.5 mr-1.5" />
+                  regra arena {useArenaOnly ? "ON" : "OFF"}
+                </Button>
               )}
-              Adicionar Professor
-            </Button>
+              <Button
+                onClick={handleAddProf}
+                disabled={!novoProfNome.trim() || addProfMutation.isPending}
+                className="w-full justify-center"
+                data-testid="button-add-professor"
+              >
+                {addProfMutation.isPending ? (
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Adicionar Professor
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
