@@ -11,8 +11,36 @@ import {
   conferenciaRepasseConfig,
   students,
   teachers,
+  turmas,
+  turmaAlunos,
 } from "@shared/schema";
 import { lt } from "drizzle-orm";
+
+/**
+ * Builds a map of studentId → professorId based on their active turma enrollment.
+ * This takes priority over students.professorId (which is set at registration and
+ * may be stale if the student later moved to a different professor's class).
+ */
+async function buildStudentTurmaProfMap(arenaId: string): Promise<Map<string, string>> {
+  const enrollments = await db
+    .select({ alunoId: turmaAlunos.alunoId, professorId: turmas.professorId })
+    .from(turmaAlunos)
+    .innerJoin(turmas, eq(turmaAlunos.turmaId, turmas.id))
+    .where(
+      and(
+        eq(turmaAlunos.arenaId, arenaId),
+        eq(turmaAlunos.ativo, true),
+        eq(turmas.ativo, true),
+      )
+    );
+  const map = new Map<string, string>();
+  for (const row of enrollments) {
+    if (row.alunoId && row.professorId) {
+      map.set(row.alunoId, row.professorId);
+    }
+  }
+  return map;
+}
 
 // ── Fuzzy matching (pure JS — no external AI/API) ─────────────────────────────
 
@@ -565,10 +593,15 @@ export async function autoRematchArena(arenaId: string): Promise<void> {
       .from(conferenciaAliases)
       .where(eq(conferenciaAliases.arenaId, arenaId));
 
-    const arenaStudentsDb = await db
+    const arenaStudentsRaw = await db
       .select({ id: students.id, nome: students.nome, professorId: students.professorId })
       .from(students)
       .where(and(eq(students.arenaId, arenaId), eq(students.ativo, true)));
+    const turmaProfMapAuto = await buildStudentTurmaProfMap(arenaId);
+    const arenaStudentsDb = arenaStudentsRaw.map((s) => ({
+      ...s,
+      professorId: turmaProfMapAuto.get(s.id) ?? s.professorId,
+    }));
 
     const aliasToAlunoId = new Map(
       aliasesDb.map((a) => [normalizeNome(a.alias), a.studentId])
@@ -1153,10 +1186,15 @@ export function registerConferenciaRoutes(app: Express): void {
         .where(eq(conferenciaAliases.arenaId, arenaId));
 
       // Fallback: match against main arena students when conferência list misses
-      const arenaStudentsDb = await db
+      const arenaStudentsRawUp = await db
         .select({ id: students.id, nome: students.nome, professorId: students.professorId })
         .from(students)
         .where(and(eq(students.arenaId, arenaId), eq(students.ativo, true)));
+      const turmaProfMapUp = await buildStudentTurmaProfMap(arenaId);
+      const arenaStudentsDb = arenaStudentsRawUp.map((s) => ({
+        ...s,
+        professorId: turmaProfMapUp.get(s.id) ?? s.professorId,
+      }));
 
       // Teachers map for auto-commission when matched via arena student fallback
       const teachersDb = await db
@@ -1727,10 +1765,15 @@ export function registerConferenciaRoutes(app: Express): void {
       .from(conferenciaAliases)
       .where(eq(conferenciaAliases.arenaId, arenaId));
 
-    const arenaStudentsDb = await db
+    const arenaStudentsRawR = await db
       .select({ id: students.id, nome: students.nome, professorId: students.professorId })
       .from(students)
       .where(and(eq(students.arenaId, arenaId), eq(students.ativo, true)));
+    const turmaProfMapR = await buildStudentTurmaProfMap(arenaId);
+    const arenaStudentsDb = arenaStudentsRawR.map((s) => ({
+      ...s,
+      professorId: turmaProfMapR.get(s.id) ?? s.professorId,
+    }));
 
     const teachersDb = await db
       .select()
