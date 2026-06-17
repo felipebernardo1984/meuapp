@@ -425,15 +425,19 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
 
   if (regs.length === 0 && mensalistaRegs.length === 0) return;
 
-  // Always recalculate from the current percentage — never trust snapshots
-  const pct = professorKey === "__arena__" ? "0" : pctAtual;
-  const pctNum = parseFloat(pct);
-  const rowVProf  = (r: Registro) => Math.round(parseFloat(r.valor || "0") * pctNum / 100 * 100) / 100;
-  const rowVArena = (r: Registro) => Math.round((parseFloat(r.valor || "0") - rowVProf(r)) * 100) / 100;
+  // Use stored snapshot values — consistent with RelatorioView and historical accuracy.
+  // Recalculating from the current % would retroactively change commission when a
+  // professor's rate is edited, and would incorrectly apply commission to dayuse/arena
+  // records whose stored valorProfessor is intentionally 0.
+  const rowVProf  = (r: Registro) => parseFloat(r.valorProfessor || "0");
+  const rowVArena = (r: Registro) => parseFloat(r.valorArena || "0");
   const subtotal = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const comissao = regs.reduce((s, r) => s + rowVProf(r), 0);
   const arena    = regs.reduce((s, r) => s + rowVArena(r), 0);
   const chks     = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+  // Derive display % from commission-eligible stored snapshots (categoria=comissao only)
+  const comissaoBase = regs.filter(r => r.categoria === "comissao").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const pct = professorKey === "__arena__" ? "0" : (comissaoBase > 0 ? (comissao / comissaoBase * 100).toFixed(1).replace(/\.0$/, "") : pctAtual);
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const dataStr = new Date(sessao.criadoEm).toLocaleDateString("pt-BR");
 
@@ -665,13 +669,14 @@ function exportComprovanteConsolidado(
 
   if (sections.length === 0 && allMensalistas.length === 0) return;
 
-  const pct = percentualComissao;
-  const pctNum = parseFloat(pct);
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  // Helper: always recalculate from current percentage — never trust snapshots
-  const rVProf  = (r: Registro) => Math.round(parseFloat(r.valor || "0") * pctNum / 100 * 100) / 100;
-  const rVArena = (r: Registro) => Math.round((parseFloat(r.valor || "0") - rVProf(r)) * 100) / 100;
+  // Use stored snapshot values — consistent with RelatorioView and historical accuracy.
+  // Recalculating from the current % would retroactively alter commission when a
+  // professor's rate is edited, and incorrectly applies commission to dayuse/arena
+  // records whose stored valorProfessor is intentionally 0.
+  const rVProf  = (r: Registro) => parseFloat(r.valorProfessor || "0");
+  const rVArena = (r: Registro) => parseFloat(r.valorArena || "0");
 
   // Grand totals — platform only
   const allRegs = sections.flatMap((s) => s.regs);
@@ -680,6 +685,9 @@ function exportComprovanteConsolidado(
   const totalReceita  = allRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalComissao = allRegs.reduce((s, r) => s + rVProf(r), 0);
   const totalArena    = allRegs.reduce((s, r) => s + rVArena(r), 0);
+  // Derive display % from commission-eligible stored snapshots (categoria=comissao only)
+  const comissaoBaseC = allRegs.filter(r => r.categoria === "comissao").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const pct = professorId === "__arena__" ? "0" : (comissaoBaseC > 0 ? (totalComissao / comissaoBaseC * 100).toFixed(1).replace(/\.0$/, "") : percentualComissao);
 
   // Build one section block per platform/arquivo
   const sectionBlocks = sections
@@ -4682,7 +4690,18 @@ function RelatorioView({
             const comissao = platRegs.reduce((s, r) => s + profRowVal(r), 0);
             const arena = arenaSum(platRegs);
             const chks = platRegs.reduce((s, r) => s + (r.checkins ?? 1), 0);
-            const pct = key !== "__arena__" ? (confsProfs.find((p) => p.id === key)?.percentualComissao ?? "0") : "0";
+            // Commission-eligible subtotal (categoria=comissao only) — used for accurate % display.
+            // Using ALL platRegs would dilute the % when dayuse/arena records (valorProfessor=0)
+            // are present in the professor's group, making the % appear lower than configured.
+            const comissaoEligibleSubtotal = regulares.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+            // Derive effective % from stored snapshots, not from the current configured %.
+            // If the professor's rate was edited after upload, the stored comissão reflects
+            // the rate at the time of upload, not the current setting.
+            const pct = key !== "__arena__"
+              ? (comissaoEligibleSubtotal > 0
+                  ? (comissao / comissaoEligibleSubtotal * 100).toFixed(1).replace(/\.0$/, "")
+                  : (confsProfs.find((p) => p.id === key)?.percentualComissao ?? "0"))
+              : "0";
 
             const renderLinhas = (rows: Registro[]) =>
               [...rows]
@@ -4821,8 +4840,8 @@ function RelatorioView({
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {[
                       { label: "Receita", val: fmtVal(String(subtotal)), color: "text-foreground", sub: null },
-                      { label: "Arena", val: fmtVal(String(arena)), color: "text-blue-600 dark:text-blue-400", sub: subtotal > 0 ? `${Math.round(arena/subtotal*100)}%` : null },
-                      { label: "Comissão Prof.", val: fmtVal(String(comissao)), color: "text-emerald-600 dark:text-emerald-400", sub: subtotal > 0 ? `${Math.round(comissao/subtotal*100)}%` : null },
+                      { label: "Arena", val: fmtVal(String(arena)), color: "text-blue-600 dark:text-blue-400", sub: subtotal > 0 ? `${Math.round(arena/subtotal*100)}% do total` : null },
+                      { label: "Comissão Prof.", val: fmtVal(String(comissao)), color: "text-emerald-600 dark:text-emerald-400", sub: comissaoEligibleSubtotal > 0 ? `${(comissao/comissaoEligibleSubtotal*100).toFixed(1).replace(/\.0$/,"")}% s/ aulas` : null },
                     ].map((i) => (
                       <div key={i.label} className="bg-muted/40 rounded-md px-2.5 py-1.5 text-center">
                         <div className={cn("font-bold text-sm", i.color)}>{i.val}</div>
