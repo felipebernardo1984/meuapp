@@ -3424,7 +3424,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", use
           <Button
             variant={useArenaOnly ? "default" : "outline"}
             onClick={() => onToggleArenaOnly(!useArenaOnly)}
-            className="shrink-0"
+            className="shrink-0 w-[176px] justify-center"
             data-testid="button-toggle-arena-only"
           >
             <Building2 className="h-3.5 w-3.5 mr-1.5" />
@@ -3466,7 +3466,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", use
             <Button
               onClick={handleAddProf}
               disabled={!novoProfNome.trim() || addProfMutation.isPending}
-              className="shrink-0"
+              className="shrink-0 w-[176px] justify-center"
               data-testid="button-add-professor"
             >
               {addProfMutation.isPending ? (
