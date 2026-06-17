@@ -1961,6 +1961,7 @@ function MesView({
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [pendingMap, setPendingMap] = useState<PendingMapFile | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [useArenaOnly, setUseArenaOnly] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -2064,6 +2065,7 @@ function MesView({
         colModalidade: mapping.colModalidade || undefined,
         colData: mapping.colData || undefined,
         colCheckins: mapping.colCheckins || undefined,
+        useArenaOnly,
       });
       let sessao: SessaoDetalhe;
       try {
@@ -2126,7 +2128,7 @@ function MesView({
       )}
 
       {/* ── Professores (first) ─────────────────────────────────────────── */}
-      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} sessaoIds={mesSessoes.map((s) => s.id)} mesLabel={mesLabel} />
+      <ConfiguracaoView arenaId={arenaId} periodo={monthKey} sessaoIds={mesSessoes.map((s) => s.id)} mesLabel={mesLabel} useArenaOnly={useArenaOnly} onToggleArenaOnly={setUseArenaOnly} />
 
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
       <div className="border-t pt-5">
@@ -3240,7 +3242,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   );
 }
 
-function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string }) {
+function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", useArenaOnly = false, onToggleArenaOnly }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string; useArenaOnly?: boolean; onToggleArenaOnly?: (v: boolean) => void }) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
   const [editingProf, setEditingProf] = useState<string | null>(null);
@@ -3418,6 +3420,17 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "" }: {
             Configure os professores e vincule os alunos de cada um para o cruzamento automático.
           </p>
         </div>
+        {onToggleArenaOnly && (
+          <Button
+            variant={useArenaOnly ? "default" : "outline"}
+            onClick={() => onToggleArenaOnly(!useArenaOnly)}
+            className="shrink-0"
+            data-testid="button-toggle-arena-only"
+          >
+            <Building2 className="h-3.5 w-3.5 mr-1.5" />
+            regra arena {useArenaOnly ? "ON" : "OFF"}
+          </Button>
+        )}
       </div>
 
       {/* ── Add-professor inline form ──────────────────────────────────── */}

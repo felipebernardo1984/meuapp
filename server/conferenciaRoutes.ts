@@ -1050,6 +1050,7 @@ export function registerConferenciaRoutes(app: Express): void {
       colModalidade,
       colData,
       colCheckins,
+      useArenaOnly = false,
     } = req.body as {
       filename: string;
       content: string;
@@ -1061,6 +1062,7 @@ export function registerConferenciaRoutes(app: Express): void {
       colModalidade?: string;
       colData?: string;
       colCheckins?: string;
+      useArenaOnly?: boolean;
     };
     if (!filename || !content) {
       return res.status(400).json({ message: "filename e content são obrigatórios" });
@@ -1212,7 +1214,7 @@ export function registerConferenciaRoutes(app: Express): void {
             : "";
 
           // Arena-only modalidades → 100% to arena, auto-confirmed, no professor
-          const arenaOnly = isArenaOnly(modalidade);
+          const arenaOnly = useArenaOnly ? isArenaOnly(modalidade) : false;
 
           const match = arenaOnly
             ? { aluno: null, arenaStudent: null, score: 100, status: "confirmado" as const }
