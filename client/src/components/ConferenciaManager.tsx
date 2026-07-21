@@ -3510,19 +3510,28 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", use
             </div>
             <div className="flex flex-col gap-2 shrink-0 w-[176px]">
               {onToggleArenaOnly && (
-                <Button
-                  variant={useArenaOnly ? "default" : "outline"}
-                  onClick={() => !isRematchingArena && onToggleArenaOnly(!useArenaOnly)}
-                  disabled={isRematchingArena}
-                  className="w-full justify-center"
-                  data-testid="button-toggle-arena-only"
-                >
-                  {isRematchingArena
-                    ? <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    : <Building2 className="h-3.5 w-3.5 mr-1.5" />
-                  }
-                  {isRematchingArena ? "aplicando…" : `regra arena ${useArenaOnly ? "ON" : "OFF"}`}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={useArenaOnly ? "default" : "outline"}
+                      onClick={() => !isRematchingArena && onToggleArenaOnly(!useArenaOnly)}
+                      disabled={isRematchingArena}
+                      className="w-full justify-center"
+                      data-testid="button-toggle-arena-only"
+                    >
+                      {isRematchingArena
+                        ? <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        : <Building2 className="h-3.5 w-3.5 mr-1.5" />
+                      }
+                      {isRematchingArena ? "aplicando…" : `regra arena ${useArenaOnly ? "ON" : "OFF"}`}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="text-xs max-w-[220px]">
+                    {useArenaOnly
+                      ? "Regra arena ON: modalidades de day use e esporte coletivo são direcionadas 100% para a arena, sem comissão de professor. Clique para desativar."
+                      : "Regra arena OFF: todos os registros passam pelo matching normal de professor. Ative para direcionar day use e esporte coletivo direto para a arena."}
+                  </TooltipContent>
+                </Tooltip>
               )}
               <Button
                 onClick={handleAddProf}
@@ -4394,17 +4403,17 @@ function SessaoView({
                           {r.alunoNomeMatch &&
                            r.nomePlataforma.toLowerCase().trim() !== r.alunoNomeMatch.toLowerCase().trim() &&
                            r.categoria !== "mensalista" && r.status !== "ignorado" && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Eye className="h-3.5 w-3.5 text-muted-foreground/50 cursor-default shrink-0" />
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-xs max-w-[240px] space-y-1">
-                                  <p><span className="font-medium">Arquivo:</span> {r.nomePlataforma}</p>
-                                  <p><span className="font-medium">Sistema:</span> {r.alunoNomeMatch}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex items-center cursor-default shrink-0">
+                                  <Eye className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs max-w-[240px] space-y-1">
+                                <p><span className="font-medium">Arquivo:</span> {r.nomePlataforma}</p>
+                                <p><span className="font-medium">Sistema:</span> {r.alunoNomeMatch}</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                           {r.status === "pendente" && r.clusterHint === "dayuse" && (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 shrink-0" title="O valor deste registro está abaixo do padrão da modalidade — pode ser day use">
