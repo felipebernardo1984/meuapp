@@ -66,7 +66,14 @@ import {
   Settings2,
   ImageIcon,
   UserPlus,
+  Eye,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -111,6 +118,7 @@ interface Sessao {
   criadoEm: string;
   periodoInicio?: string | null;
   periodoFim?: string | null;
+  precisaReprocessar?: boolean;
 }
 
 interface Registro {
@@ -4081,6 +4089,26 @@ function SessaoView({
         </div>
       </div>
 
+      {/* ── Banner: reprocessar após mudança de config ── */}
+      {sessao.precisaReprocessar && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/20 px-3.5 py-2.5">
+          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-xs text-amber-800 dark:text-amber-300 flex-1">
+            A lista de alunos foi alterada. Reprocesse para aplicar as mudanças a esta sessão.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 shrink-0"
+            onClick={() => rematchMutation.mutate()}
+            disabled={rematchMutation.isPending}
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
+            {rematchMutation.isPending ? "Reprocessando…" : "Reprocessar"}
+          </Button>
+        </div>
+      )}
+
       {/* ── KPI Cards ── */}
       <div className="flex flex-nowrap gap-2 px-2 py-1">
         <Card
@@ -4359,6 +4387,21 @@ function SessaoView({
                             <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
                               {r.similaridade}%
                             </span>
+                          )}
+                          {r.alunoNomeMatch &&
+                           r.nomePlataforma.toLowerCase().trim() !== r.alunoNomeMatch.toLowerCase().trim() &&
+                           r.categoria !== "mensalista" && r.status !== "ignorado" && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Eye className="h-3.5 w-3.5 text-muted-foreground/50 cursor-default shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs max-w-[240px] space-y-1">
+                                  <p><span className="font-medium">Arquivo:</span> {r.nomePlataforma}</p>
+                                  <p><span className="font-medium">Sistema:</span> {r.alunoNomeMatch}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                           {r.status === "pendente" && r.clusterHint === "dayuse" && (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 shrink-0" title="O valor deste registro está abaixo do padrão da modalidade — pode ser day use">

@@ -575,6 +575,13 @@ function runMatchAluno(
 // Finds all sessions for the arena that still have nao_encontrado records
 // and re-runs the name-matching logic on them. Fire-and-forget safe.
 
+async function markSessoesDirty(arenaId: string): Promise<void> {
+  await db
+    .update(conferenciaSessoes)
+    .set({ precisaReprocessar: true })
+    .where(eq(conferenciaSessoes.arenaId, arenaId));
+}
+
 export async function autoRematchArena(arenaId: string): Promise<void> {
   try {
     const sessoes = await db
@@ -947,6 +954,7 @@ export function registerConferenciaRoutes(app: Express): void {
       .values({ arenaId, professorId: req.params.id, nome: nome.trim() })
       .returning();
     await autoRematchArena(arenaId).catch(() => {});
+    await markSessoesDirty(arenaId).catch(() => {});
     res.json(aluno);
   });
 
@@ -989,6 +997,7 @@ export function registerConferenciaRoutes(app: Express): void {
         total += batch.length;
       }
       await autoRematchArena(arenaId).catch(() => {});
+      await markSessoesDirty(arenaId).catch(() => {});
       return res.json({ adicionados: total, ignorados });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao inserir alunos";
@@ -1034,6 +1043,7 @@ export function registerConferenciaRoutes(app: Express): void {
           eq(conferenciaProfessorAlunos.arenaId, arenaId)
         )
       );
+    await markSessoesDirty(arenaId).catch(() => {});
     res.json({ ok: true });
   });
 
@@ -2061,7 +2071,7 @@ export function registerConferenciaRoutes(app: Express): void {
 
     await db
       .update(conferenciaSessoes)
-      .set({ encontrados, possiveis, naoEncontrados })
+      .set({ encontrados, possiveis, naoEncontrados, precisaReprocessar: false })
       .where(eq(conferenciaSessoes.id, sessao.id));
 
     res.json({ updated: updatePayloads.length, dayuseDetected: dayuseOps.length, encontrados, possiveis, naoEncontrados });

@@ -518,6 +518,7 @@ export const conferenciaSessoes = pgTable("conferencia_sessoes", {
   naoEncontrados: integer("nao_encontrados").default(0),
   periodoInicio: text("periodo_inicio"),
   periodoFim: text("periodo_fim"),
+  precisaReprocessar: boolean("precisa_reprocessar").default(false),
   criadoEm: timestamp("criado_em").defaultNow(),
 });
 
