@@ -2152,6 +2152,7 @@ function MesView({
         mesLabel={mesLabel}
         useArenaOnly={useArenaOnly}
         isRematchingArena={isRematchingArena}
+        sincronizado={mesSessoes.length === 0 ? undefined : !mesSessoes.some((s) => s.precisaReprocessar)}
         onToggleArenaOnly={async (v: boolean) => {
           setUseArenaOnly(v);
           const platformSessaoIds = mesSessoes.filter(s => s.plataforma !== "manual").map(s => s.id);
@@ -3285,7 +3286,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   );
 }
 
-function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", useArenaOnly = false, isRematchingArena = false, onToggleArenaOnly }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string; useArenaOnly?: boolean; isRematchingArena?: boolean; onToggleArenaOnly?: (v: boolean) => void }) {
+function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", useArenaOnly = false, isRematchingArena = false, sincronizado, onToggleArenaOnly }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string; useArenaOnly?: boolean; isRematchingArena?: boolean; sincronizado?: boolean; onToggleArenaOnly?: (v: boolean) => void }) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
   const [editingProf, setEditingProf] = useState<string | null>(null);
@@ -3456,11 +3457,25 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", use
     <div className="space-y-5">
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div>
-        <h2 className="text-base font-semibold text-foreground">Professores da Conferência</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Configure os professores e vincule os alunos de cada um para o cruzamento automático.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Professores da Conferência</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Configure os professores e vincule os alunos de cada um para o cruzamento automático.
+          </p>
+        </div>
+        {sessaoIds.length > 0 && sincronizado !== undefined && (
+          <span className={cn(
+            "flex items-center gap-1.5 text-[11px] font-medium shrink-0 mt-0.5",
+            sincronizado ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"
+          )}>
+            {sincronizado
+              ? <CheckCircle className="h-3.5 w-3.5" />
+              : <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            }
+            {sincronizado ? "Arquivos sincronizados" : "Sincronizando…"}
+          </span>
+        )}
       </div>
 
       {/* ── Add-professor inline form ──────────────────────────────────── */}
@@ -3890,6 +3905,14 @@ function SessaoView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profSignature]);
 
+  // Auto-rematch silencioso ao abrir sessão com mudanças pendentes
+  useEffect(() => {
+    if (sessao?.precisaReprocessar && !rematchMutation.isPending) {
+      rematchMutation.mutate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessao?.precisaReprocessar]);
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
       apiRequest("PUT", `/api/conferencia/registro/${id}`, data).then((r) => r.json()),
@@ -4088,26 +4111,6 @@ function SessaoView({
           )}
         </div>
       </div>
-
-      {/* ── Banner: reprocessar após mudança de config ── */}
-      {sessao.precisaReprocessar && (
-        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/20 px-3.5 py-2.5">
-          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <p className="text-xs text-amber-800 dark:text-amber-300 flex-1">
-            A lista de alunos foi alterada. Reprocesse para aplicar as mudanças a esta sessão.
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-xs gap-1.5 border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 shrink-0"
-            onClick={() => rematchMutation.mutate()}
-            disabled={rematchMutation.isPending}
-          >
-            <RefreshCw className={cn("h-3.5 w-3.5", rematchMutation.isPending && "animate-spin")} />
-            {rematchMutation.isPending ? "Reprocessando…" : "Reprocessar"}
-          </Button>
-        </div>
-      )}
 
       {/* ── KPI Cards ── */}
       <div className="flex flex-nowrap gap-2 px-2 py-1">
