@@ -582,12 +582,15 @@ async function markSessoesDirty(arenaId: string, periodo?: string | null): Promi
   await db.update(conferenciaSessoes).set({ precisaReprocessar: true }).where(cond);
 }
 
-export async function autoRematchArena(arenaId: string): Promise<void> {
+export async function autoRematchArena(arenaId: string, periodo?: string | null): Promise<void> {
   try {
+    const sessoesWhere = periodo
+      ? and(eq(conferenciaSessoes.arenaId, arenaId), sql`${conferenciaSessoes.periodoInicio} LIKE ${periodo + "%"}`)
+      : eq(conferenciaSessoes.arenaId, arenaId);
     const sessoes = await db
       .select()
       .from(conferenciaSessoes)
-      .where(eq(conferenciaSessoes.arenaId, arenaId));
+      .where(sessoesWhere);
     if (sessoes.length === 0) return;
 
     const alunosDb = await db
@@ -894,20 +897,31 @@ export function registerConferenciaRoutes(app: Express): void {
       .returning();
     if (!prof) return res.status(404).json({ message: "Professor não encontrado" });
 
-    // Recalculate all existing registros for this professor with the new percentage
-    await db
-      .update(conferenciaRegistros)
-      .set({
-        percentual: String(newPct),
-        valorProfessor: sql`ROUND((CAST(valor AS NUMERIC) * ${newPct} / 100)::numeric, 2)::text`,
-        valorArena:     sql`ROUND((CAST(valor AS NUMERIC) * (1 - ${newPct} / 100))::numeric, 2)::text`,
-      })
+    // Recalculate registros for this professor, scoped to their period only
+    const sessaoIds = await db
+      .select({ id: conferenciaSessoes.id })
+      .from(conferenciaSessoes)
       .where(
-        and(
-          eq(conferenciaRegistros.arenaId, arenaId),
-          eq(conferenciaRegistros.professorId, req.params.id)
-        )
+        prof.periodo
+          ? and(eq(conferenciaSessoes.arenaId, arenaId), sql`${conferenciaSessoes.periodoInicio} LIKE ${prof.periodo + "%"}`)
+          : eq(conferenciaSessoes.arenaId, arenaId)
       );
+    if (sessaoIds.length > 0) {
+      await db
+        .update(conferenciaRegistros)
+        .set({
+          percentual: String(newPct),
+          valorProfessor: sql`ROUND((CAST(valor AS NUMERIC) * ${newPct} / 100)::numeric, 2)::text`,
+          valorArena:     sql`ROUND((CAST(valor AS NUMERIC) * (1 - ${newPct} / 100))::numeric, 2)::text`,
+        })
+        .where(
+          and(
+            eq(conferenciaRegistros.arenaId, arenaId),
+            eq(conferenciaRegistros.professorId, req.params.id),
+            inArray(conferenciaRegistros.sessaoId, sessaoIds.map(s => s.id))
+          )
+        );
+    }
 
     // % já recalculado via SQL acima — nenhum rematch necessário
     res.json(prof);
@@ -965,7 +979,7 @@ export function registerConferenciaRoutes(app: Express): void {
       .select({ periodo: conferenciaProfessores.periodo })
       .from(conferenciaProfessores)
       .where(and(eq(conferenciaProfessores.id, req.params.id), eq(conferenciaProfessores.arenaId, arenaId)));
-    await autoRematchArena(arenaId).catch(() => {});
+    await autoRematchArena(arenaId, profPeriodo?.periodo).catch(() => {});
     await markSessoesDirty(arenaId, profPeriodo?.periodo).catch(() => {});
     res.json(aluno);
   });
@@ -1012,7 +1026,7 @@ export function registerConferenciaRoutes(app: Express): void {
         .select({ periodo: conferenciaProfessores.periodo })
         .from(conferenciaProfessores)
         .where(and(eq(conferenciaProfessores.id, professorId), eq(conferenciaProfessores.arenaId, arenaId)));
-      await autoRematchArena(arenaId).catch(() => {});
+      await autoRematchArena(arenaId, profPeriodoLote?.periodo).catch(() => {});
       await markSessoesDirty(arenaId, profPeriodoLote?.periodo).catch(() => {});
       return res.json({ adicionados: total, ignorados });
     } catch (err: unknown) {
