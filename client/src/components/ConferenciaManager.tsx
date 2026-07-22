@@ -964,29 +964,23 @@ function exportArenaRelatorioSimples(
     return mesLabel;
   }
 
-  const PLAT_COLORS: Record<string, { bg: string; accent: string }> = {
-    totalpass: { bg: "#e5e7eb", accent: "#f3f4f6" },
-    wellhub:   { bg: "#fce7f3", accent: "#fdf4ff" },
-  };
-
   // Grand KPIs across all platforms
   const totalVisitantes = Array.from(byPlat.values()).reduce((s, { regs }) => s + new Set(regs.map(r => r.nomePlataforma)).size, 0);
   const totalCheckins   = Array.from(byPlat.values()).reduce((s, { regs }) => s + regs.reduce((ss, r) => ss + (r.checkins ?? 1), 0), 0);
 
-  const platCards = Array.from(byPlat.entries()).map(([key, { label, regs, periodoInicio, periodoFim }]) => {
-    const receita  = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-    const chks     = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
+  const platCards = Array.from(byPlat.entries()).map(([, { label, regs, periodoInicio, periodoFim }]) => {
+    const receita    = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+    const chks       = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
     const visitantes = new Set(regs.map((r) => r.nomePlataforma)).size;
-    const vArena   = receita * (pctArena / 100);
-    const periodo  = fmtPeriod(periodoInicio, periodoFim);
-    const col      = PLAT_COLORS[key] ?? { bg: "#88a8e9", accent: "#c8d8f4" };
+    const vArena     = receita * (pctArena / 100);
+    const periodo    = fmtPeriod(periodoInicio, periodoFim);
 
     const repasseSection = pctArena === 100
-      ? `<div class="plat-repasse" style="border-color:${col.accent}30">
+      ? `<div class="plat-repasse">
            <span class="repasse-label">Total / Repasse Arena (100%)</span>
-           <span class="repasse-val" style="color:${col.accent}">${fmt(receita)}</span>
+           <span class="repasse-val">${fmt(receita)}</span>
          </div>`
-      : `<div class="plat-repasse" style="border-color:${col.accent}30">
+      : `<div class="plat-repasse">
            <div class="repasse-split">
              <div>
                <div class="repasse-label">Total Plataforma</div>
@@ -994,30 +988,21 @@ function exportArenaRelatorioSimples(
              </div>
              <div style="text-align:right">
                <div class="repasse-label">Repasse Arena (${pctArena}%)</div>
-               <div class="repasse-val" style="color:${col.accent}">${fmt(vArena)}</div>
+               <div class="repasse-val">${fmt(vArena)}</div>
              </div>
            </div>
          </div>`;
 
     return `
-    <div class="plat-card" style="background:${col.bg}">
+    <div class="plat-card">
       <div class="plat-top">
         <span class="plat-name">${label}</span>
         <span class="plat-periodo">${periodo}</span>
       </div>
       <div class="plat-stats">
-        <div class="stat">
-          <div class="stat-val">${visitantes}</div>
-          <div class="stat-lbl">Visitantes</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val">${chks}</div>
-          <div class="stat-lbl">Check-ins</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val">${fmt(receita)}</div>
-          <div class="stat-lbl">Receita</div>
-        </div>
+        <div class="stat"><div class="stat-val">${visitantes}</div><div class="stat-lbl">Visitantes</div></div>
+        <div class="stat"><div class="stat-val">${chks}</div><div class="stat-lbl">Check-ins</div></div>
+        <div class="stat"><div class="stat-val">${fmt(receita)}</div><div class="stat-lbl">Receita</div></div>
       </div>
       ${repasseSection}
     </div>`;
@@ -1076,39 +1061,41 @@ function exportArenaRelatorioSimples(
   .body { padding:14px 16px; }
 
   /* ── Platform cards ── */
-  .plat-card { border-radius:10px;padding:16px 18px;margin-bottom:10px; }
-  .plat-top { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px; }
-  .plat-name { font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#1e293b; }
-  .plat-periodo { font-size:7.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em; }
-  .plat-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px; }
-  .stat { background:rgba(0,0,0,0.05);border-radius:6px;padding:8px 10px; }
-  .stat .stat-val { font-size:16px;font-weight:800;color:#1e293b; }
-  .stat .stat-lbl { font-size:7px;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;margin-top:2px; }
+  .plat-card { border-radius:6px;margin-bottom:20px;border:1.5px solid #e2e8f0;overflow:hidden; }
+  .plat-top { display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f1f5f9;border-bottom:1.5px solid #e2e8f0; }
+  .plat-name { font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:#1e293b; }
+  .plat-periodo { font-size:8px;color:#64748b;margin-left:auto; }
+  .plat-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1.5px solid #e2e8f0; }
+  .stat { padding:8px 12px;border-right:1px solid #e2e8f0; }
+  .stat:last-child { border-right:none; }
+  .stat .stat-val { font-size:14px;font-weight:900;color:#1e293b;line-height:1; }
+  .stat .stat-lbl { font-size:7px;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;margin-top:3px;font-weight:600; }
 
   /* ── Repasse ── */
-  .plat-repasse { border-top:1px solid rgba(0,0,0,0.1);padding-top:10px; }
+  .plat-repasse { padding:8px 12px;background:#e8ecf0; }
   .repasse-split { display:flex;justify-content:space-between;align-items:flex-end; }
-  .repasse-label { font-size:7.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px; }
-  .repasse-total { font-size:13px;font-weight:700;color:#475569; }
-  .repasse-val { font-size:20px;font-weight:900;color:#1e293b; }
+  .repasse-label { font-size:7.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;font-weight:600; }
+  .repasse-total { font-size:12px;font-weight:700;color:#475569; }
+  .repasse-val { font-size:18px;font-weight:900;color:#1e293b; }
 
   /* ── Mensalistas ── */
-  .mensalistas-block { border-radius:10px;overflow:hidden;margin-bottom:10px;border:1.5px solid #ddd6fe; }
-  .mens-header { background:linear-gradient(90deg,#7c3aed,#6d28d9);padding:10px 14px;display:flex;align-items:center;justify-content:space-between; }
-  .mens-title { font-size:11px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:0.06em; }
-  .mens-count { font-size:8.5px;color:#ede9fe; }
+  .mensalistas-block { margin-bottom:20px;border:1.5px solid #7c3aed;border-radius:6px;overflow:hidden; }
+  .mens-header { background:#7c3aed;padding:8px 12px;display:flex;align-items:center;justify-content:space-between; }
+  .mens-title { font-size:10px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:0.05em; }
+  .mens-count { font-size:8.5px;color:#fff;margin-left:auto; }
   .mens-list { background:#fff; }
-  .mens-row { display:flex;align-items:center;padding:6px 14px;gap:8px; }
+  .mens-row { display:flex;align-items:center;padding:5px 14px;gap:8px;border-bottom:1px solid #e2e8f0; }
+  .mens-row:last-child { border-bottom:none; }
   .mens-nome { flex:1;font-size:9px;font-weight:600;color:#1e293b; }
   .mens-mes { font-size:8px;color:#94a3b8;width:90px;text-align:center; }
   .mens-val { font-size:9px;font-weight:700;color:#7c3aed;width:70px;text-align:right; }
-  .mens-footer { background:#ede9fe;padding:7px 14px;display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:#6d28d9;border-top:1.5px solid #ddd6fe; }
+  .mens-footer { background:#ede9fe;padding:7px 14px;display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:#6d28d9;border-top:1.5px solid #c4b5fd; }
 
   /* ── Grand total ── */
-  .grand-total { background:#1e293b;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
+  .grand-total { background:#1e293b;color:white;border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between; }
   .gt-label { font-size:7.5px;color:#fff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px; }
-  .gt-val { font-size:22px;font-weight:900;color:#fff; }
-  .gt-arena-val { font-size:20px;font-weight:900;color:#fff; }
+  .gt-val { font-size:20px;font-weight:900;color:#fff; }
+  .gt-arena-val { font-size:18px;font-weight:900;color:#fff; }
   .gt-right { text-align:right; }
 
   /* ── Footer ── */
