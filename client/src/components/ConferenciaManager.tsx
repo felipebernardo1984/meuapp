@@ -1998,6 +1998,22 @@ function MesView({
   const mesSessoes = sessoes.filter((s) => s.periodoInicio?.startsWith(monthKey));
   const platformSessoes = mesSessoes.filter((s) => s.plataforma !== "manual");
 
+  // Auto-rematch imediato: dispara rematch para todas as sessões do mês com mudanças pendentes
+  const autoRematchRef = useRef<Set<string>>(new Set());
+  const dirtySig = mesSessoes.map(s => `${s.id}:${s.precisaReprocessar}`).join("|");
+  useEffect(() => {
+    const dirty = mesSessoes.filter(s => s.precisaReprocessar && s.plataforma !== "manual" && !autoRematchRef.current.has(s.id));
+    if (dirty.length === 0) return;
+    dirty.forEach(s => autoRematchRef.current.add(s.id));
+    Promise.all(
+      dirty.map(s => apiRequest("POST", `/api/conferencia/sessao/${s.id}/rematch`).then(r => r.json()))
+    ).finally(() => {
+      dirty.forEach(s => autoRematchRef.current.delete(s.id));
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirtySig]);
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/sessao/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] }),
@@ -3914,13 +3930,6 @@ function SessaoView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profSignature]);
 
-  // Auto-rematch silencioso ao abrir sessão com mudanças pendentes
-  useEffect(() => {
-    if (sessao?.precisaReprocessar && !rematchMutation.isPending) {
-      rematchMutation.mutate();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessao?.precisaReprocessar]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>

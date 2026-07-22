@@ -874,6 +874,7 @@ export function registerConferenciaRoutes(app: Express): void {
       .insert(conferenciaProfessores)
       .values({ arenaId, nome: nome.trim(), percentualComissao: String(percentualComissao ?? "0"), periodo: periodo ?? null })
       .returning();
+    await markSessoesDirty(arenaId).catch(() => {});
     res.json({ ...prof, alunos: [] });
   });
 
@@ -908,6 +909,7 @@ export function registerConferenciaRoutes(app: Express): void {
         )
       );
 
+    await markSessoesDirty(arenaId).catch(() => {});
     res.json(prof);
   });
 
@@ -928,6 +930,7 @@ export function registerConferenciaRoutes(app: Express): void {
     await db
       .delete(conferenciaProfessores)
       .where(and(eq(conferenciaProfessores.id, req.params.id), eq(conferenciaProfessores.arenaId, arenaId)));
+    await markSessoesDirty(arenaId).catch(() => {});
     res.json({ ok: true });
   });
 
