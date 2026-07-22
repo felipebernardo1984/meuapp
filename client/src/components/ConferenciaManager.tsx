@@ -1977,8 +1977,6 @@ function MesView({
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [pendingMap, setPendingMap] = useState<PendingMapFile | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
-  const [useArenaOnly, setUseArenaOnly] = useState(false);
-  const [isRematchingArena, setIsRematchingArena] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -2098,7 +2096,6 @@ function MesView({
         colModalidade: mapping.colModalidade || undefined,
         colData: mapping.colData || undefined,
         colCheckins: mapping.colCheckins || undefined,
-        useArenaOnly,
       });
       let sessao: SessaoDetalhe;
       try {
@@ -2166,28 +2163,7 @@ function MesView({
         periodo={monthKey}
         sessaoIds={mesSessoes.map((s) => s.id)}
         mesLabel={mesLabel}
-        useArenaOnly={useArenaOnly}
-        isRematchingArena={isRematchingArena}
         sincronizado={mesSessoes.length === 0 ? undefined : !mesSessoes.some((s) => s.precisaReprocessar)}
-        onToggleArenaOnly={async (v: boolean) => {
-          setUseArenaOnly(v);
-          const platformSessaoIds = mesSessoes.filter(s => s.plataforma !== "manual").map(s => s.id);
-          if (platformSessaoIds.length === 0) return;
-          setIsRematchingArena(true);
-          try {
-            await Promise.all(
-              platformSessaoIds.map(id =>
-                apiRequest("POST", `/api/conferencia/sessao/${id}/rematch`, { useArenaOnly: v }).then(r => r.json())
-              )
-            );
-            qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-            platformSessaoIds.forEach(id => qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao", id] }));
-          } catch {
-            // state still updated — data refresh will reflect new setting on next rematch
-          } finally {
-            setIsRematchingArena(false);
-          }
-        }}
       />
 
       {/* ── Arquivos (below) ────────────────────────────────────────────── */}
@@ -3302,7 +3278,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   );
 }
 
-function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", useArenaOnly = false, isRematchingArena = false, sincronizado, onToggleArenaOnly }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string; useArenaOnly?: boolean; isRematchingArena?: boolean; sincronizado?: boolean; onToggleArenaOnly?: (v: boolean) => void }) {
+function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sincronizado }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string; sincronizado?: boolean; }) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
   const [editingProf, setEditingProf] = useState<string | null>(null);
@@ -3525,30 +3501,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", use
               </div>
             </div>
             <div className="flex flex-col gap-2 shrink-0 w-[176px]">
-              {onToggleArenaOnly && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={useArenaOnly ? "default" : "outline"}
-                      onClick={() => !isRematchingArena && onToggleArenaOnly(!useArenaOnly)}
-                      disabled={isRematchingArena}
-                      className="w-full justify-center"
-                      data-testid="button-toggle-arena-only"
-                    >
-                      {isRematchingArena
-                        ? <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                        : <Building2 className="h-3.5 w-3.5 mr-1.5" />
-                      }
-                      {isRematchingArena ? "aplicando…" : `regra arena ${useArenaOnly ? "ON" : "OFF"}`}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left" className="text-xs max-w-[220px]">
-                    {useArenaOnly
-                      ? "Regra arena ON: modalidades de day use e esporte coletivo são direcionadas 100% para a arena, sem comissão de professor. Clique para desativar."
-                      : "Regra arena OFF: todos os registros passam pelo matching normal de professor. Ative para direcionar day use e esporte coletivo direto para a arena."}
-                  </TooltipContent>
-                </Tooltip>
-              )}
               <Button
                 onClick={handleAddProf}
                 disabled={!novoProfNome.trim() || addProfMutation.isPending}
