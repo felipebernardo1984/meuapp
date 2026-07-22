@@ -575,11 +575,11 @@ function runMatchAluno(
 // Finds all sessions for the arena that still have nao_encontrado records
 // and re-runs the name-matching logic on them. Fire-and-forget safe.
 
-async function markSessoesDirty(arenaId: string): Promise<void> {
-  await db
-    .update(conferenciaSessoes)
-    .set({ precisaReprocessar: true })
-    .where(eq(conferenciaSessoes.arenaId, arenaId));
+async function markSessoesDirty(arenaId: string, periodo?: string | null): Promise<void> {
+  const cond = periodo
+    ? and(eq(conferenciaSessoes.arenaId, arenaId), sql`${conferenciaSessoes.periodoInicio} LIKE ${periodo + "%"}`)
+    : eq(conferenciaSessoes.arenaId, arenaId);
+  await db.update(conferenciaSessoes).set({ precisaReprocessar: true }).where(cond);
 }
 
 export async function autoRematchArena(arenaId: string): Promise<void> {
@@ -874,7 +874,7 @@ export function registerConferenciaRoutes(app: Express): void {
       .insert(conferenciaProfessores)
       .values({ arenaId, nome: nome.trim(), percentualComissao: String(percentualComissao ?? "0"), periodo: periodo ?? null })
       .returning();
-    await markSessoesDirty(arenaId).catch(() => {});
+    // Novo professor ainda não tem alunos — nenhuma sessão precisa ser rematchada
     res.json({ ...prof, alunos: [] });
   });
 
@@ -909,7 +909,7 @@ export function registerConferenciaRoutes(app: Express): void {
         )
       );
 
-    await markSessoesDirty(arenaId).catch(() => {});
+    // % já recalculado via SQL acima — nenhum rematch necessário
     res.json(prof);
   });
 
@@ -919,6 +919,11 @@ export function registerConferenciaRoutes(app: Express): void {
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
+    // Fetch period before deleting so we only mark the right month dirty
+    const [prof] = await db
+      .select({ periodo: conferenciaProfessores.periodo })
+      .from(conferenciaProfessores)
+      .where(and(eq(conferenciaProfessores.id, req.params.id), eq(conferenciaProfessores.arenaId, arenaId)));
     await db
       .delete(conferenciaProfessorAlunos)
       .where(
@@ -930,7 +935,7 @@ export function registerConferenciaRoutes(app: Express): void {
     await db
       .delete(conferenciaProfessores)
       .where(and(eq(conferenciaProfessores.id, req.params.id), eq(conferenciaProfessores.arenaId, arenaId)));
-    await markSessoesDirty(arenaId).catch(() => {});
+    await markSessoesDirty(arenaId, prof?.periodo).catch(() => {});
     res.json({ ok: true });
   });
 
@@ -956,8 +961,12 @@ export function registerConferenciaRoutes(app: Express): void {
       .insert(conferenciaProfessorAlunos)
       .values({ arenaId, professorId: req.params.id, nome: nome.trim() })
       .returning();
+    const [profPeriodo] = await db
+      .select({ periodo: conferenciaProfessores.periodo })
+      .from(conferenciaProfessores)
+      .where(and(eq(conferenciaProfessores.id, req.params.id), eq(conferenciaProfessores.arenaId, arenaId)));
     await autoRematchArena(arenaId).catch(() => {});
-    await markSessoesDirty(arenaId).catch(() => {});
+    await markSessoesDirty(arenaId, profPeriodo?.periodo).catch(() => {});
     res.json(aluno);
   });
 
@@ -999,8 +1008,12 @@ export function registerConferenciaRoutes(app: Express): void {
           .values(batch.map((nome) => ({ arenaId, professorId, nome })));
         total += batch.length;
       }
+      const [profPeriodoLote] = await db
+        .select({ periodo: conferenciaProfessores.periodo })
+        .from(conferenciaProfessores)
+        .where(and(eq(conferenciaProfessores.id, professorId), eq(conferenciaProfessores.arenaId, arenaId)));
       await autoRematchArena(arenaId).catch(() => {});
-      await markSessoesDirty(arenaId).catch(() => {});
+      await markSessoesDirty(arenaId, profPeriodoLote?.periodo).catch(() => {});
       return res.json({ adicionados: total, ignorados });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao inserir alunos";
@@ -1046,7 +1059,11 @@ export function registerConferenciaRoutes(app: Express): void {
           eq(conferenciaProfessorAlunos.arenaId, arenaId)
         )
       );
-    await markSessoesDirty(arenaId).catch(() => {});
+    const [profPeriodoDel] = await db
+      .select({ periodo: conferenciaProfessores.periodo })
+      .from(conferenciaProfessores)
+      .where(and(eq(conferenciaProfessores.id, aluno.professorId), eq(conferenciaProfessores.arenaId, arenaId)));
+    await markSessoesDirty(arenaId, profPeriodoDel?.periodo).catch(() => {});
     res.json({ ok: true });
   });
 
