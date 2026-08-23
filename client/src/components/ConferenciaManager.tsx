@@ -3789,8 +3789,6 @@ function SessaoView({
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ registro: Registro; novoDestino: string } | null>(null);
   const [destinarPara, setDestinarPara] = useState("");
-  const [loteModalidade, setLoteModalidade] = useState("");
-  const [loteModalidadeProf, setLoteModalidadeProf] = useState("");
   const [redirectModalidade, setRedirectModalidade] = useState("");
   const [redirectAProf, setRedirectAProf] = useState("");
   const [showArenaList, setShowArenaList] = useState(false);
@@ -4024,32 +4022,6 @@ function SessaoView({
     toast({ title: `${naoEnc.length} registro${naoEnc.length !== 1 ? "s" : ""} confirmado${naoEnc.length !== 1 ? "s" : ""} e destinado${naoEnc.length !== 1 ? "s" : ""}` });
   };
 
-  const handleBulkDestinarModalidade = () => {
-    if (!loteModalidade || !loteModalidadeProf) return;
-    const registrosLote = registros.filter(
-      (r) =>
-        (r.status === "pendente" || r.status === "nao_encontrado") &&
-        (r.modalidade?.trim() ?? "") === loteModalidade
-    );
-    if (registrosLote.length === 0) return;
-
-    const professorId = loteModalidadeProf === "arena" ? null : loteModalidadeProf;
-    const prof = confsProfs.find((p) => p.id === professorId);
-    const percentual = prof?.percentualComissao ?? "0";
-    const categoria = parseFloat(percentual) > 0 ? "comissao" : "arena";
-    registrosLote.forEach((r) => {
-      updateMutation.mutate({
-        id: r.id,
-        data: { professorId, percentual, status: "confirmado", categoria },
-      });
-    });
-    toast({
-      title: `${registrosLote.length} registro${registrosLote.length !== 1 ? "s" : ""} confirmado${registrosLote.length !== 1 ? "s" : ""}`,
-      description: `${loteModalidade} destinado para ${prof?.nome ?? "Arena"}.`,
-    });
-    setLoteModalidade("");
-    setLoteModalidadeProf("");
-  };
 
   const arenaRecords = registros.filter(
     (r) => r.status === "confirmado" && r.categoria === "arena" && !r.professorId
@@ -4212,58 +4184,6 @@ function SessaoView({
               </Select>
               <Button size="sm" className="w-[110px] shrink-0" onClick={handleBulkDestinar} disabled={!destinarPara || updateMutation.isPending} data-testid="button-bulk-destinar">
                 Aplicar a todos
-              </Button>
-            </div>
-          )}
-
-          {/* Bulk destination by modality — only possible/not found, never confirmed */}
-          {registros.some((r) => r.status === "pendente" || r.status === "nao_encontrado") && confsProfs.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
-              <Filter className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <p className="text-sm text-amber-800 dark:text-amber-300 flex-1 min-w-0">
-                Confirmar por modalidade:
-              </p>
-              <Select value={loteModalidade} onValueChange={setLoteModalidade}>
-                <SelectTrigger className="h-8 w-[220px] text-xs bg-white dark:bg-background" data-testid="select-lote-modalidade">
-                  <SelectValue placeholder="Selecionar modalidade…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from(new Set(
-                    registros
-                      .filter((r) => r.status === "pendente" || r.status === "nao_encontrado")
-                      .map((r) => r.modalidade?.trim())
-                      .filter(Boolean) as string[]
-                  )).sort((a, b) => a.localeCompare(b, "pt-BR")).map((modalidade) => {
-                    const qtd = registros.filter(
-                      (r) =>
-                        (r.status === "pendente" || r.status === "nao_encontrado") &&
-                        (r.modalidade?.trim() ?? "") === modalidade
-                    ).length;
-                    return <SelectItem key={modalidade} value={modalidade}>{modalidade} ({qtd})</SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
-              <Select value={loteModalidadeProf} onValueChange={setLoteModalidadeProf}>
-                <SelectTrigger className="h-8 w-[200px] text-xs bg-white dark:bg-background" data-testid="select-lote-modalidade-prof">
-                  <SelectValue placeholder="Destinar para…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="arena">Arena (sem comissão)</SelectItem>
-                  {confsProfs.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}{parseFloat(p.percentualComissao) > 0 ? ` (${p.percentualComissao}%)` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                className="w-[110px] shrink-0"
-                onClick={handleBulkDestinarModalidade}
-                disabled={!loteModalidade || !loteModalidadeProf || updateMutation.isPending}
-                data-testid="button-lote-modalidade"
-              >
-                Confirmar lote
               </Button>
             </div>
           )}
