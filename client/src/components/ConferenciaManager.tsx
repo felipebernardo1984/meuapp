@@ -3900,6 +3900,11 @@ function SessaoView({
           registros: newRegs,
         };
       });
+      setRowDestino((prev) => {
+        const next = { ...prev };
+        delete next[updated.id];
+        return next;
+      });
       if (periodo) {
         qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
         qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
@@ -4325,9 +4330,20 @@ function SessaoView({
             <div className="space-y-1.5">
               {filtered.map((r) => {
                 const si = statusInfo(r.status);
-                const hasSplit = parseFloat(r.percentual) > 0 && parseFloat(r.valorProfessor) > 0;
-                const { vArena } = calcDisplayValores(r);
                 const profNome = r.professorNome ?? confsProfs.find((p) => p.id === r.professorId)?.nome ?? null;
+                const selectedDest = rowDestino[r.id];
+                const selectedProf = selectedDest && selectedDest !== "arena"
+                  ? confsProfs.find((p) => p.id === selectedDest)
+                  : null;
+                const displayProfNome = selectedDest !== undefined
+                  ? selectedProf?.nome ?? null
+                  : profNome;
+                const displayPercentual = selectedDest !== undefined
+                  ? selectedProf?.percentualComissao ?? "0"
+                  : r.percentual;
+                const displayValorProf = parseFloat(r.valor || "0") * (parseFloat(displayPercentual) / 100);
+                const displayValorArena = Math.max(0, parseFloat(r.valor || "0") - displayValorProf);
+                const hasSplit = displayValorProf > 0;
                 return (
                   <div
                     key={r.id}
@@ -4403,11 +4419,11 @@ function SessaoView({
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <span className="text-xs text-muted-foreground">→</span>
                             <span className="text-xs font-medium text-foreground">{r.alunoNomeMatch}</span>
-                            {profNome && (
-                              <span className="text-xs font-medium text-primary">· {profNome}</span>
+                            {displayProfNome && (
+                              <span className="text-xs font-medium text-primary">· {displayProfNome}</span>
                             )}
-                            {parseFloat(r.percentual) > 0 && (
-                              <span className="text-[11px] text-muted-foreground">({r.percentual}%)</span>
+                            {parseFloat(displayPercentual) > 0 && (
+                              <span className="text-[11px] text-muted-foreground">({displayPercentual}%)</span>
                             )}
                             {r.checkins > 0 && (
                               <span className="text-[11px] text-muted-foreground">
@@ -4468,16 +4484,16 @@ function SessaoView({
                         {hasSplit ? (
                           <div className="mt-0.5 space-y-px">
                             <div className="text-[11px] text-emerald-600 dark:text-emerald-400 tabular-nums">
-                              Prof: {fmtVal(r.valorProfessor)}
+                              Prof: {fmtVal(String(displayValorProf))}
                             </div>
                             <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums">
-                              Arena: {fmtVal(String(vArena))}
+                              Arena: {fmtVal(String(displayValorArena))}
                             </div>
                           </div>
                         ) : r.status !== "ignorado" ? (
                           <div className="mt-0.5 space-y-px">
                             <div className="text-[11px] text-blue-600 dark:text-blue-400 tabular-nums">
-                              Arena: {fmtVal(String(vArena))}
+                              Arena: {fmtVal(String(displayValorArena))}
                             </div>
                           </div>
                         ) : null}
