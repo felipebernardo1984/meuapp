@@ -3783,6 +3783,7 @@ function SessaoView({
   const [filtroNaoAtribuido, setFiltroNaoAtribuido] = useState(false);
   const [filtroDivergente, setFiltroDivergente] = useState(false);
   const [filtroProfessor, setFiltroProfessor] = useState("");
+  const [filtroModalidade, setFiltroModalidade] = useState("");
   const [buscaNome, setBuscaNome] = useState("");
   const [linkDialog, setLinkDialog] = useState<Registro | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ registro: Registro; novoDestino: string } | null>(null);
@@ -3921,11 +3922,15 @@ function SessaoView({
   const filteredProfs = Array.from(
     new Map(registros.filter((r) => r.professorNome).map((r) => [r.professorId, r.professorNome])).entries()
   ).map(([id, nome]) => ({ id: id!, nome: nome! }));
+  const modalidades = Array.from(
+    new Set(registros.map((r) => r.modalidade?.trim()).filter(Boolean) as string[])
+  ).sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   const searchActive = buscaNome.trim().length > 0;
 
   const filtered = registros
     .filter((r) => {
+      if (filtroModalidade && (r.modalidade?.trim() ?? "") !== filtroModalidade) return false;
       if (searchActive) {
         if (filtroProfessor && r.professorId !== filtroProfessor) return false;
         return r.nomePlataforma.toLowerCase().includes(buscaNome.toLowerCase());
@@ -4289,6 +4294,19 @@ function SessaoView({
                   <SelectItem value="__all__">Todos os professores</SelectItem>
                   {filteredProfs.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {modalidades.length > 0 && (
+              <Select value={filtroModalidade} onValueChange={(v) => setFiltroModalidade(v === "__all__" ? "" : v)}>
+                <SelectTrigger className="h-8 text-sm w-44" data-testid="select-filtro-modalidade">
+                  <SelectValue placeholder="Modalidades" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todas as modalidades</SelectItem>
+                  {modalidades.map((modalidade) => (
+                    <SelectItem key={modalidade} value={modalidade}>{modalidade}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
