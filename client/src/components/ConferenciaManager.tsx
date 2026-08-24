@@ -3960,11 +3960,15 @@ function SessaoView({
       return parseDataSort(a.data).localeCompare(parseDataSort(b.data));
     });
 
+  // O lote respeita os filtros ativos e nunca inclui registros confirmados.
+  const loteDestinaveis = filtered.filter(
+    (r) => r.status === "pendente" || r.status === "nao_encontrado"
+  );
+
   const confirmedValor = registros.filter((r) => r.status === "confirmado").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const pendenteValor = registros.filter((r) => r.status === "pendente").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const naoEncontradoValor = registros.filter((r) => r.status === "nao_encontrado").reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalValor = confirmedValor + pendenteValor + naoEncontradoValor;
-  const naoEncontradosCount = registros.filter((r) => r.status === "nao_encontrado").length;
   const divergenteRegs = registros.filter((r) => r.status === "pendente" && r.divergente);
   const divergenteCount = divergenteRegs.length;
   const divergenteValor = divergenteRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
@@ -4011,7 +4015,7 @@ function SessaoView({
 
   const handleBulkDestinar = () => {
     if (!destinarPara) return;
-    const naoEnc = registros.filter((r) => r.status === "nao_encontrado");
+    const naoEnc = loteDestinaveis;
     const professorId = destinarPara === "arena" ? null : destinarPara;
     const prof = confsProfs.find((p) => p.id === professorId);
     const percentual = prof?.percentualComissao ?? "0";
@@ -4162,12 +4166,12 @@ function SessaoView({
       {tab === "conferencia" && (
         <div className="space-y-3">
 
-          {/* Bulk destinar bar — não encontrados */}
-          {naoEncontradosCount > 0 && (
+          {/* Bulk destinar bar — registros filtrados possíveis/não encontrados */}
+          {loteDestinaveis.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/60">
               <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
               <p className="text-sm text-red-800 dark:text-red-300 flex-1 min-w-0">
-                <strong>{naoEncontradosCount}</strong> sem correspondência — destinar receita para:
+                <strong>{loteDestinaveis.length}</strong> registro{loteDestinaveis.length !== 1 ? "s" : ""} filtrado{loteDestinaveis.length !== 1 ? "s" : ""} — destinar receita para:
               </p>
               <Select value={destinarPara} onValueChange={setDestinarPara}>
                 <SelectTrigger className="h-8 w-[200px] text-xs bg-white dark:bg-background" data-testid="select-destinar-bulk">
