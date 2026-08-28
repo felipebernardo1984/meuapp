@@ -4628,12 +4628,20 @@ function SessaoView({
                 vincularTodos: true,
               },
             });
-            setManuallyLinked(prev => new Set([...prev, linkDialog.id]));
+            setManuallyLinked(prev => {
+              const next = new Set(prev);
+              next.add(linkDialog.id);
+              return next;
+            });
             setLinkDialog(null);
           }}
           onConfirmStudent={(confAlunoId, salvarAlias) => {
             doUpdate(linkDialog.id, { studentId: confAlunoId, status: "confirmado", salvarAlias, vincularTodos: true });
-            setManuallyLinked(prev => new Set([...prev, linkDialog.id]));
+            setManuallyLinked(prev => {
+              const next = new Set(prev);
+              next.add(linkDialog.id);
+              return next;
+            });
             setLinkDialog(null);
           }}
           onClose={() => setLinkDialog(null)}

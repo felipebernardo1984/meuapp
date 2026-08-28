@@ -1418,7 +1418,7 @@ export function registerConferenciaRoutes(app: Express): void {
         const realMods = [...modCounts.entries()].filter(([, c]) => c >= MIN_CHECKINS_FOR_REAL_MODALITY);
         if (realMods.length >= 2) {
           divergentesUp.add(normName);
-          console.log(`[Conferência] Divergente detectado: "${normName}" — ${Array.from(modCounts.entries()).map(([m, c]) => `${m}(${c})`).join(", ")}`);
+          console.log(`[Conferência] Divergente detectado: "${normName}" — ${Array.from(modCounts.entries()).map(([m, c]: [string, number]) => `${m}(${c})`).join(", ")}`);
         }
       }
       // Track which records are downgraded so Passo 1 only re-confirms those
@@ -1872,9 +1872,10 @@ export function registerConferenciaRoutes(app: Express): void {
         if (prof?.percentualComissao && parseFloat(prof.percentualComissao) > 0) {
           percentual = String(prof.percentualComissao);
           const pct = parseFloat(percentual) / 100;
-          const rVp = Math.round(parseFloat(r.valor) * pct * 100) / 100;
+          const valorBase = parseFloat(r.valor || "0");
+          const rVp = Math.round(valorBase * pct * 100) / 100;
           valorProfessor = String(rVp);
-          valorArena = String(Math.round((parseFloat(r.valor) - rVp) * 100) / 100);
+          valorArena = String(Math.round((valorBase - rVp) * 100) / 100);
           categoria = "comissao";
         }
       } else if (match.arenaStudent) {
@@ -1885,9 +1886,10 @@ export function registerConferenciaRoutes(app: Express): void {
             professorId = tid;
             percentual = String(teacher.percentualComissao);
             const pct = parseFloat(percentual) / 100;
-            const rVp2 = Math.round(parseFloat(r.valor) * pct * 100) / 100;
+            const valorBase = parseFloat(r.valor || "0");
+            const rVp2 = Math.round(valorBase * pct * 100) / 100;
             valorProfessor = String(rVp2);
-            valorArena = String(Math.round((parseFloat(r.valor) - rVp2) * 100) / 100);
+            valorArena = String(Math.round((valorBase - rVp2) * 100) / 100);
             categoria = "comissao";
           }
         }
