@@ -54,6 +54,26 @@ function normalizeNome(s: string): string {
     .replace(/\s+/g, " ");
 }
 
+function normalizeModalidade(s: string): string {
+  return normalizeNome(s).replace(/\s+/g, " ").trim();
+}
+
+/**
+ * A modalidade cadastrada pode be less specific than the platform export.
+ * For example, "Esportes Coletivos" must accept "Esportes Coletivos -
+ * Utilização Livre". Multiple modalities may be separated by comma, slash,
+ * semicolon or pipe.
+ */
+function professorAtendeModalidade(configurada: string | null | undefined, modalidade: string | null | undefined): boolean {
+  const mod = normalizeModalidade(modalidade || "");
+  const configs = String(configurada || "")
+    .split(/[,;/|]+/)
+    .map(normalizeModalidade)
+    .filter(Boolean);
+  if (!mod || configs.length === 0) return true; // backwards-compatible until configured
+  return configs.some((c) => c === mod || c.includes(mod) || mod.includes(c));
+}
+
 function levenshtein(a: string, b: string): number {
   const m = a.length, n = b.length;
   const dp: number[][] = Array.from({ length: m + 1 }, (_, i) => [i]);

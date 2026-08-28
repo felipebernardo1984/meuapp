@@ -558,6 +558,7 @@ export const conferenciaProfessores = pgTable("conferencia_professores", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   arenaId: text("arena_id").notNull(),
   nome: text("nome").notNull(),
+  modalidade: text("modalidade").notNull().default(""),
   percentualComissao: text("percentual_comissao").default("0"),
   periodo: text("periodo"),
   criadoEm: timestamp("criado_em").defaultNow(),
