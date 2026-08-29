@@ -140,6 +140,11 @@ interface Registro {
   percentual: string;
   valorProfessor: string;
   valorArena: string;
+  percentualArena?: string | null;
+  percentualDestinatario?: string | null;
+  valorDestinatario?: string | null;
+  destinatarioId?: string | null;
+  destinatarioNome?: string | null;
   observacao: string | null;
   comprovante?: string | null;
   clusterHint?: string | null;
@@ -171,6 +176,12 @@ interface RepasseConfig {
   pctGestao: string;
   gestaoTipo: string;
   gestaoProfessorId: string | null;
+  configurado?: boolean;
+}
+
+interface RepasseDestinatario {
+  id: string;
+  nome: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -178,6 +189,18 @@ interface RepasseConfig {
 function fmtVal(v: string | null | undefined): string {
   const n = parseFloat(v || "0");
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function mensalistaPercentuais(
+  pctArenaConfig: string | undefined,
+  configConfigured: boolean | undefined,
+  pctProfessor: number,
+) {
+  const arena = configConfigured
+    ? (parseFloat(pctArenaConfig ?? "0") || 0)
+    : Math.max(0, 100 - pctProfessor);
+  const destinatario = 100 - arena - pctProfessor;
+  return { arena, professor: pctProfessor, destinatario };
 }
 
 function plataformaLabel(p: string): string {

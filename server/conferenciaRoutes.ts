@@ -602,6 +602,118 @@ async function markSessoesDirty(arenaId: string, periodo?: string | null): Promi
   await db.update(conferenciaSessoes).set({ precisaReprocessar: true }).where(cond);
 }
 
+type MensalistaRateio = {
+  percentualArena: string;
+  percentualProfessor: string;
+  percentualDestinatario: string;
+  valorArena: string;
+  valorProfessor: string;
+  valorDestinatario: string;
+  destinatarioId: string | null;
+  destinatarioNome: string | null;
+};
+
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Mensalistas have a three-way split. The arena percentage comes from the
+ * period configuration; the teacher percentage comes from the selected
+ * professor; the remaining percentage must have an explicit recipient.
+ *
+ * When no period configuration exists, preserve the old behavior by assigning
+ * the remainder after the teacher to the arena.
+ */
+async function calcularRateioMensalista(
+  arenaId: string,
+  sessao: { periodoInicio?: string | null },
+  valorNum: number,
+  professorId: string | null,
+  destinatarioId: string | null,
+): Promise<MensalistaRateio> {
+  const periodo = sessao.periodoInicio ? sessao.periodoInicio.substring(0, 7) : null;
+  const [config] = periodo
+    ? await db
+        .select()
+        .from(conferenciaRepasseConfig)
+        .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)))
+    : [];
+
+  let profNome: string | null = null;
+  let percentualProfessorNum = 0;
+  if (professorId) {
+    const [prof] = await db
+      .select()
+      .from(conferenciaProfessores)
+      .where(and(eq(conferenciaProfessores.id, professorId), eq(conferenciaProfessores.arenaId, arenaId)));
+    if (prof) {
+      profNome = prof.nome;
+      percentualProfessorNum = Math.max(0, parseFloat(prof.percentualComissao ?? "0") || 0);
+    } else {
+      const [teacher] = await db
+        .select({ id: teachers.id, nome: teachers.nome, percentualComissao: teachers.percentualComissao })
+        .from(teachers)
+        .where(and(eq(teachers.id, professorId), eq(teachers.arenaId, arenaId)));
+      if (teacher) {
+        profNome = teacher.nome;
+        percentualProfessorNum = Math.max(0, parseFloat(teacher.percentualComissao ?? "0") || 0);
+      }
+    }
+  }
+
+  const hasPeriodConfig = Boolean(config);
+  const configuredArena = parseFloat(config?.pctArena ?? "");
+  const percentualArenaNum = hasPeriodConfig && Number.isFinite(configuredArena)
+    ? configuredArena
+    : Math.max(0, 100 - percentualProfessorNum);
+  const percentualDestinatarioNum = 100 - percentualArenaNum - percentualProfessorNum;
+
+  if (percentualArenaNum < 0 || percentualArenaNum > 100 || percentualProfessorNum > 100 || percentualDestinatarioNum < -0.0001) {
+    throw new Error("A soma dos percentuais da arena e do professor não pode ultrapassar 100%");
+  }
+
+  let destinatarioNome: string | null = null;
+  if (destinatarioId) {
+    const [confDest] = await db
+      .select({ id: conferenciaProfessores.id, nome: conferenciaProfessores.nome })
+      .from(conferenciaProfessores)
+      .where(and(eq(conferenciaProfessores.id, destinatarioId), eq(conferenciaProfessores.arenaId, arenaId)));
+    if (confDest) {
+      destinatarioNome = confDest.nome;
+    } else {
+      const [teacherDest] = await db
+        .select({ id: teachers.id, nome: teachers.nome })
+        .from(teachers)
+        .where(and(eq(teachers.id, destinatarioId), eq(teachers.arenaId, arenaId)));
+      if (teacherDest) destinatarioNome = teacherDest.nome;
+    }
+    if (!destinatarioNome) throw new Error("Destinatário do pagamento não encontrado no cadastro");
+  }
+
+  const pctDestRounded = roundMoney(percentualDestinatarioNum);
+  if (pctDestRounded > 0 && !destinatarioId) {
+    throw new Error(`Selecione quem receberá os ${pctDestRounded}% restantes da mensalidade`);
+  }
+
+  const valorProfessor = roundMoney(valorNum * percentualProfessorNum / 100);
+  const valorArena = roundMoney(valorNum * percentualArenaNum / 100);
+  // Calculate the last slice from the remainder so the three amounts always
+  // close exactly to the mensalidade, even when cents are rounded.
+  const valorDestinatario = roundMoney(Math.max(0, valorNum - valorProfessor - valorArena));
+
+  return {
+    percentualArena: String(roundMoney(percentualArenaNum)),
+    percentualProfessor: String(roundMoney(percentualProfessorNum)),
+    percentualDestinatario: String(pctDestRounded),
+    valorArena: String(valorArena),
+    valorProfessor: String(valorProfessor),
+    valorDestinatario: String(valorDestinatario),
+    destinatarioId: destinatarioId || null,
+    destinatarioNome,
+  };
+}
+
 export async function autoRematchArena(arenaId: string, periodo?: string | null): Promise<void> {
   try {
     const sessoesWhere = periodo
@@ -769,7 +881,9 @@ export function registerConferenciaRoutes(app: Express): void {
       .select()
       .from(conferenciaRepasseConfig)
       .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)));
-    res.json(config ?? { pctArena: "100", pctGestao: "0", gestaoTipo: "caixa", gestaoProfessorId: null });
+    res.json(config
+      ? { ...config, configurado: true }
+      : { pctArena: "100", pctGestao: "0", gestaoTipo: "caixa", gestaoProfessorId: null, configurado: false });
   });
 
   // PUT /api/conferencia/repasse-config
@@ -2147,34 +2261,25 @@ export function registerConferenciaRoutes(app: Express): void {
         .where(and(eq(conferenciaSessoes.id, req.params.id), eq(conferenciaSessoes.arenaId, arenaId)));
       if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
 
-      const { studentId, alunoNome, professorId, valor, comprovante } = req.body as Record<string, string | null>;
+      const { studentId, alunoNome, professorId, valor, comprovante, destinatarioId } = req.body as Record<string, string | null>;
       if (!alunoNome?.trim()) return res.status(400).json({ message: "alunoNome é obrigatório" });
       const valorNum = parseFloat(String(valor ?? "0"));
       if (isNaN(valorNum) || valorNum <= 0) return res.status(400).json({ message: "Valor inválido ou zero" });
 
-      let percentual = "0";
-      let valorProfessor = "0";
-      let valorArena = String(valorNum);
       let profNome: string | null = null;
 
       const profId = typeof professorId === "string" && professorId.trim() && professorId !== "__none__"
         ? professorId.trim()
         : null;
-
-      if (profId) {
-        const [prof] = await db
-          .select()
-          .from(conferenciaProfessores)
-          .where(and(eq(conferenciaProfessores.id, profId), eq(conferenciaProfessores.arenaId, arenaId)));
-        if (prof) {
-          profNome = prof.nome;
-          percentual = prof.percentualComissao ?? "0";
-          const pct = parseFloat(percentual) / 100;
-          const vpM = Math.round(valorNum * pct * 100) / 100;
-          valorProfessor = String(vpM);
-          valorArena = String(Math.round((valorNum - vpM) * 100) / 100);
-        }
-      }
+      const destId = typeof destinatarioId === "string" && destinatarioId.trim() ? destinatarioId.trim() : null;
+      const rateio = await calcularRateioMensalista(arenaId, sessao, valorNum, profId, destId);
+      profNome = profId
+        ? (await db
+            .select({ nome: conferenciaProfessores.nome })
+            .from(conferenciaProfessores)
+            .where(and(eq(conferenciaProfessores.id, profId), eq(conferenciaProfessores.arenaId, arenaId)))
+            .then(([p]) => p?.nome ?? null))
+        : null;
 
       const stuId = typeof studentId === "string" && studentId.trim() ? studentId.trim() : null;
 
@@ -2211,9 +2316,14 @@ export function registerConferenciaRoutes(app: Express): void {
           status: "confirmado",
           categoria: "mensalista",
           professorId: profId,
-          percentual,
-          valorProfessor,
-          valorArena,
+          percentual: rateio.percentualProfessor,
+          valorProfessor: rateio.valorProfessor,
+          valorArena: rateio.valorArena,
+          percentualArena: rateio.percentualArena,
+          percentualDestinatario: rateio.percentualDestinatario,
+          valorDestinatario: rateio.valorDestinatario,
+          destinatarioId: rateio.destinatarioId,
+          destinatarioNome: rateio.destinatarioNome,
           observacao: null,
           comprovante: typeof comprovante === "string" && comprovante.trim() ? comprovante : null,
         })
@@ -2256,7 +2366,7 @@ export function registerConferenciaRoutes(app: Express): void {
         })
         .where(eq(conferenciaSessoes.id, sessao.id));
 
-      res.json({ ...novo, professorNome: profNome });
+      res.json({ ...novo, professorNome: profNome, destinatarioNome: rateio.destinatarioNome });
     } catch (err) {
       console.error("[mensalista POST]", err);
       res.status(500).json({ message: String(err instanceof Error ? err.message : err) });
@@ -2318,8 +2428,8 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(403).json({ message: "Acesso negado" });
     }
 
-    const { alunoNome, valor, professorId, comprovante } = req.body as {
-      alunoNome: string; valor: string; professorId?: string; comprovante?: string | null;
+    const { alunoNome, valor, professorId, destinatarioId, comprovante } = req.body as {
+      alunoNome: string; valor: string; professorId?: string; destinatarioId?: string | null; comprovante?: string | null;
     };
 
     const [registro] = await db
@@ -2330,21 +2440,33 @@ export function registerConferenciaRoutes(app: Express): void {
     if (registro.categoria !== "mensalista") return res.status(400).json({ message: "Somente registros mensalistas" });
 
     const newProfId = professorId?.trim() || null;
-    let percentual = "0";
+    const newDestId = destinatarioId?.trim() || null;
+    const valorNum = parseFloat(valor || "0");
+    if (!Number.isFinite(valorNum) || valorNum <= 0) {
+      return res.status(400).json({ message: "Valor inválido ou zero" });
+    }
+    const sessao = await db
+      .select({ periodoInicio: conferenciaSessoes.periodoInicio })
+      .from(conferenciaSessoes)
+      .where(and(eq(conferenciaSessoes.id, registro.sessaoId), eq(conferenciaSessoes.arenaId, arenaId)))
+      .then(([row]) => row);
+    if (!sessao) return res.status(404).json({ message: "Sessão não encontrada" });
+    const rateio = await calcularRateioMensalista(arenaId, sessao, valorNum, newProfId, newDestId);
     let profNome: string | null = null;
-
     if (newProfId) {
       const [prof] = await db
-        .select()
+        .select({ nome: conferenciaProfessores.nome })
         .from(conferenciaProfessores)
         .where(and(eq(conferenciaProfessores.id, newProfId), eq(conferenciaProfessores.arenaId, arenaId)));
-      if (prof) { percentual = prof.percentualComissao || "0"; profNome = prof.nome; }
+      if (prof) profNome = prof.nome;
+      else {
+        const [teacher] = await db
+          .select({ nome: teachers.nome })
+          .from(teachers)
+          .where(and(eq(teachers.id, newProfId), eq(teachers.arenaId, arenaId)));
+        profNome = teacher?.nome ?? null;
+      }
     }
-
-    const valorNum = parseFloat(valor || "0");
-    const pct = parseFloat(percentual) / 100;
-    const valorProf = String(Math.round(valorNum * pct * 100) / 100);
-    const valorAr   = String(Math.round((valorNum - parseFloat(valorProf)) * 100) / 100);
 
     const [updated] = await db
       .update(conferenciaRegistros)
@@ -2352,9 +2474,14 @@ export function registerConferenciaRoutes(app: Express): void {
         nomePlataforma: alunoNome.trim(),
         valor: String(valorNum),
         professorId: newProfId,
-        percentual,
-        valorProfessor: valorProf,
-        valorArena: valorAr,
+        percentual: rateio.percentualProfessor,
+        valorProfessor: rateio.valorProfessor,
+        valorArena: rateio.valorArena,
+        percentualArena: rateio.percentualArena,
+        percentualDestinatario: rateio.percentualDestinatario,
+        valorDestinatario: rateio.valorDestinatario,
+        destinatarioId: rateio.destinatarioId,
+        destinatarioNome: rateio.destinatarioNome,
         comprovante: typeof comprovante === "string" && comprovante.trim() ? comprovante : (comprovante === null ? null : registro.comprovante),
       })
       .where(eq(conferenciaRegistros.id, req.params.id))
@@ -2386,7 +2513,7 @@ export function registerConferenciaRoutes(app: Express): void {
       }
     }
 
-    res.json({ ...updated, professorNome: profNome });
+    res.json({ ...updated, professorNome: profNome, destinatarioNome: rateio.destinatarioNome });
   });
 
   // DELETE /api/conferencia/registro/:id — remove a mensalista entry
