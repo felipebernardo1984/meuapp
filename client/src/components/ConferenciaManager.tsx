@@ -171,6 +171,13 @@ interface ConfProfessor {
   alunos: ConfAluno[];
 }
 
+interface ConfGestor {
+  id: string;
+  nome: string;
+  percentualComissao: string;
+  periodo?: string | null;
+}
+
 interface RepasseConfig {
   pctArena: string;
   pctGestao: string;
@@ -3295,6 +3302,11 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const [editingProf, setEditingProf] = useState<string | null>(null);
   const [editNome, setEditNome] = useState("");
   const [editPct, setEditPct] = useState("0");
+  const [novoGestorNome, setNovoGestorNome] = useState("");
+  const [novoGestorPct, setNovoGestorPct] = useState("0");
+  const [editingGestor, setEditingGestor] = useState<string | null>(null);
+  const [editGestorNome, setEditGestorNome] = useState("");
+  const [editGestorPct, setEditGestorPct] = useState("0");
   const [comprovanteLoading, setComprovanteLoading] = useState<string | null>(null);
   const qcOuter = useQueryClient();
   const [listaTexto, setListaTexto] = useState<Record<string, string>>({});
@@ -3302,11 +3314,19 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const qc = useQueryClient();
 
   const profQueryKey = ["/api/conferencia/professores", periodo];
+  const gestorQueryKey = ["/api/conferencia/gestores", periodo];
 
   const { data: professores = [], isLoading } = useQuery<ConfProfessor[]>({
     queryKey: profQueryKey,
     queryFn: () =>
       fetch(`/api/conferencia/professores?periodo=${periodo}`).then((r) => r.json()),
+    placeholderData: keepPreviousData,
+  });
+
+  const { data: gestores = [], isLoading: gestoresLoading } = useQuery<ConfGestor[]>({
+    queryKey: gestorQueryKey,
+    queryFn: () =>
+      fetch(`/api/conferencia/gestores?periodo=${periodo}`).then((r) => r.json()),
     placeholderData: keepPreviousData,
   });
 
@@ -3399,6 +3419,64 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
       }),
   });
 
+  const addGestorMutation = useMutation({
+    mutationFn: (data: { nome: string; percentualComissao: string }) =>
+      apiRequest("POST", "/api/conferencia/gestores", { ...data, periodo }).then((r) => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: gestorQueryKey });
+      setNovoGestorNome("");
+      setNovoGestorPct("0");
+      toast({ title: "Gestor adicionado!" });
+    },
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao adicionar gestor",
+        description: err.message,
+        variant: "destructive",
+      }),
+  });
+
+  const editGestorMutation = useMutation({
+    mutationFn: ({
+      id,
+      nome,
+      percentualComissao,
+    }: {
+      id: string;
+      nome: string;
+      percentualComissao: string;
+    }) =>
+      apiRequest("PUT", `/api/conferencia/gestores/${id}`, {
+        nome,
+        percentualComissao,
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: gestorQueryKey });
+      setEditingGestor(null);
+      toast({ title: "Gestor atualizado!" });
+    },
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao editar gestor",
+        description: err.message,
+        variant: "destructive",
+      }),
+  });
+
+  const delGestorMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/gestores/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: gestorQueryKey });
+      toast({ title: "Gestor removido" });
+    },
+    onError: (err: Error) =>
+      toast({
+        title: "Erro ao remover gestor",
+        description: err.message,
+        variant: "destructive",
+      }),
+  });
+
   const addAlunosLoteMutation = useMutation({
     mutationFn: ({ profId, nomes }: { profId: string; nomes: string[] }) =>
       apiRequest("POST", `/api/conferencia/professores/${profId}/alunos/lote`, { nomes }).then(
@@ -3444,6 +3522,12 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     addProfMutation.mutate({ nome, percentualComissao: novoProfPct });
   };
 
+  const handleAddGestor = () => {
+    const nome = novoGestorNome.trim();
+    if (!nome) return;
+    addGestorMutation.mutate({ nome, percentualComissao: novoGestorPct });
+  };
+
   const [expandedProf, setExpandedProf] = useState<Set<string>>(new Set());
   const [expandedSubSection, setExpandedSubSection] = useState<string | null>(null);
 
@@ -3480,6 +3564,168 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
           </span>
         )}
       </div>
+
+      {/* ── Add-manager inline form ─────────────────────────────────────── */}
+      <Card className="border-dashed">
+        <CardContent className="p-4">
+          <div className="flex gap-3 items-end flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Nome do gestor</p>
+              <Input
+                placeholder="Nome do gestor…"
+                value={novoGestorNome}
+                onChange={(e) => setNovoGestorNome(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddGestor()}
+                data-testid="input-novo-gestor-nome"
+              />
+            </div>
+            <div className="w-36">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">% Comissão</p>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={novoGestorPct}
+                  onChange={(e) => setNovoGestorPct(e.target.value)}
+                  className="pr-7"
+                  data-testid="input-novo-gestor-pct"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 shrink-0 w-[176px]">
+              <Button
+                onClick={handleAddGestor}
+                disabled={!novoGestorNome.trim() || addGestorMutation.isPending}
+                className="w-full justify-center"
+                data-testid="button-add-gestor"
+              >
+                {addGestorMutation.isPending ? (
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Adicionar Gestor
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Manager table / list ────────────────────────────────────────── */}
+      {gestoresLoading ? (
+        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm gap-2">
+          <RefreshCw className="h-4 w-4 animate-spin" /> Carregando gestores…
+        </div>
+      ) : gestores.length > 0 ? (
+        <Card>
+          <div className="divide-y">
+            {gestores.map((gestor) => {
+              const isEditing = editingGestor === gestor.id;
+              const pctNum = parseFloat(gestor.percentualComissao || "0");
+              return (
+                <div key={gestor.id} data-testid={`card-gestor-${gestor.id}`}>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 select-none">
+                      {initials(gestor.nome)}
+                    </div>
+
+                    {isEditing ? (
+                      <div className="flex-1 flex gap-2 items-center flex-wrap">
+                        <Input
+                          value={editGestorNome}
+                          onChange={(e) => setEditGestorNome(e.target.value)}
+                          className="flex-1 min-w-[150px] h-8 text-sm"
+                          autoFocus
+                          data-testid={`input-edit-gestor-nome-${gestor.id}`}
+                        />
+                        <div className="relative w-24">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={editGestorPct}
+                            onChange={(e) => setEditGestorPct(e.target.value)}
+                            className="h-8 text-sm pr-6"
+                            placeholder="0"
+                            data-testid={`input-edit-gestor-pct-${gestor.id}`}
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="h-8"
+                          onClick={() => editGestorMutation.mutate({
+                            id: gestor.id,
+                            nome: editGestorNome,
+                            percentualComissao: editGestorPct,
+                          })}
+                          disabled={editGestorMutation.isPending}
+                          data-testid={`button-save-gestor-${gestor.id}`}
+                        >
+                          {editGestorMutation.isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : "Salvar"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setEditingGestor(null)}
+                          data-testid={`button-cancel-gestor-${gestor.id}`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex-1 grid items-center min-w-0" style={{ gridTemplateColumns: "1fr 130px 80px" }}>
+                        <span className="font-medium text-sm text-foreground truncate pr-3">{gestor.nome}</span>
+                        <div className="flex justify-start">
+                          <Badge
+                            variant={pctNum > 0 ? "default" : "secondary"}
+                            className="text-xs tabular-nums"
+                          >
+                            {pctNum > 0 ? `${pctNum}% comissão` : "Sem comissão"}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Destinatário</span>
+                      </div>
+                    )}
+
+                    {!isEditing && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            setEditingGestor(gestor.id);
+                            setEditGestorNome(gestor.nome);
+                            setEditGestorPct(gestor.percentualComissao);
+                          }}
+                          data-testid={`button-edit-gestor-${gestor.id}`}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => delGestorMutation.mutate(gestor.id)}
+                          disabled={delGestorMutation.isPending}
+                          data-testid={`button-del-gestor-${gestor.id}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      ) : null}
 
       {/* ── Add-professor inline form ──────────────────────────────────── */}
       <Card className="border-dashed">

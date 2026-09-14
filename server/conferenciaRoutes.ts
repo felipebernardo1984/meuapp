@@ -7,6 +7,7 @@ import {
   conferenciaRegistros,
   conferenciaAliases,
   conferenciaProfessores,
+  conferenciaGestores,
   conferenciaProfessorAlunos,
   conferenciaRepasseConfig,
   students,
@@ -921,6 +922,90 @@ export function registerConferenciaRoutes(app: Express): void {
       .values({ arenaId, periodo, ...vals })
       .returning();
     res.json(created);
+  });
+
+  // ── Gestor CRUD ───────────────────────────────────────────────────────────
+
+  // GET /api/conferencia/gestores — list by arena and period
+  app.get("/api/conferencia/gestores", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const periodo = req.query.periodo as string | undefined;
+    const gestores = await db
+      .select()
+      .from(conferenciaGestores)
+      .where(
+        periodo
+          ? and(eq(conferenciaGestores.arenaId, arenaId), eq(conferenciaGestores.periodo, periodo))
+          : eq(conferenciaGestores.arenaId, arenaId)
+      )
+      .orderBy(conferenciaGestores.criadoEm);
+    res.json(gestores);
+  });
+
+  // POST /api/conferencia/gestores
+  app.post("/api/conferencia/gestores", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const { nome, percentualComissao, periodo } = req.body as {
+      nome: string;
+      percentualComissao?: string;
+      periodo?: string;
+    };
+    if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
+
+    const [gestor] = await db
+      .insert(conferenciaGestores)
+      .values({
+        arenaId,
+        nome: nome.trim(),
+        percentualComissao: String(percentualComissao ?? "0"),
+        periodo: periodo ?? null,
+      })
+      .returning();
+    res.json(gestor);
+  });
+
+  // PUT /api/conferencia/gestores/:id
+  app.put("/api/conferencia/gestores/:id", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const { nome, percentualComissao } = req.body as {
+      nome: string;
+      percentualComissao?: string;
+    };
+    if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
+
+    const [gestor] = await db
+      .update(conferenciaGestores)
+      .set({
+        nome: nome.trim(),
+        percentualComissao: String(percentualComissao ?? "0"),
+      })
+      .where(and(eq(conferenciaGestores.id, req.params.id), eq(conferenciaGestores.arenaId, arenaId)))
+      .returning();
+    if (!gestor) return res.status(404).json({ message: "Gestor não encontrado" });
+    res.json(gestor);
+  });
+
+  // DELETE /api/conferencia/gestores/:id
+  app.delete("/api/conferencia/gestores/:id", async (req, res) => {
+    const arenaId = req.session.arenaId;
+    if (!arenaId || req.session.userType !== "gestor") {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const [gestor] = await db
+      .delete(conferenciaGestores)
+      .where(and(eq(conferenciaGestores.id, req.params.id), eq(conferenciaGestores.arenaId, arenaId)))
+      .returning({ id: conferenciaGestores.id });
+    if (!gestor) return res.status(404).json({ message: "Gestor não encontrado" });
+    res.json({ ok: true });
   });
 
   // ── Professor CRUD ─────────────────────────────────────────────────────────
