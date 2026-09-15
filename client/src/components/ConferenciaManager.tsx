@@ -198,6 +198,13 @@ function fmtVal(v: string | null | undefined): string {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function clampPercentualInput(value: string): string {
+  if (value === "") return "";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  return String(Math.min(100, Math.max(0, n)));
+}
+
 function mensalistaPercentuais(
   pctArenaConfig: string | undefined,
   configConfigured: boolean | undefined,
@@ -2574,6 +2581,20 @@ function MensalistaCard({
     queryFn: () => fetch(`/api/conferencia/professores?periodo=${periodo}`).then((r) => r.json()),
   });
 
+  const { data: confGestores = [] } = useQuery<ConfGestor[]>({
+    queryKey: ["/api/conferencia/gestores", periodo],
+    queryFn: () => fetch(`/api/conferencia/gestores?periodo=${periodo}`).then((r) => r.json()),
+  });
+
+  const { data: repasseConfig } = useQuery<RepasseConfig>({
+    queryKey: ["/api/conferencia/repasse-config", periodo],
+    queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
+  });
+
+  const pctArenaPreview = parseFloat(repasseConfig?.pctArena ?? "100") || 0;
+  const gestorPreview = confGestores.find((g) => g.id === repasseConfig?.gestaoGestorId);
+  const pctGestaoPreview = parseFloat(gestorPreview?.percentualComissao ?? "0") || 0;
+
   // Arena students (autocomplete, only fetched when dialog is open)
   const { data: arenaStudents = [] } = useQuery<{ id: string; nome: string }[]>({
     queryKey: ["/api/students"],
@@ -2894,22 +2915,31 @@ function MensalistaCard({
                   ))}
                 </SelectContent>
               </Select>
-              {mProfId && mProfId !== "__none__" && (() => {
+              {(() => {
                 const prof = confsProfs.find((p) => p.id === mProfId);
                 const pct = parseFloat(prof?.percentualComissao ?? "0");
                 const val = parseFloat(mValor) || 0;
-                if (pct > 0 && val > 0) {
-                  const vp = Math.round(val * pct / 100 * 100) / 100;
-                  const va = Math.round((val - vp) * 100) / 100;
-                  return (
-                    <p className="text-[11px] text-muted-foreground mt-1">
+                if (val <= 0) return null;
+                const hasGestao = Boolean(gestorPreview && pctGestaoPreview > 0);
+                const vp = Math.round(val * pct / 100 * 100) / 100;
+                const va = Math.round(val * (hasGestao ? pctArenaPreview : 100 - pct) / 100 * 100) / 100;
+                const vg = Math.round(val * (hasGestao ? pctGestaoPreview : 0) / 100 * 100) / 100;
+                const totalPct = pct + (hasGestao ? pctArenaPreview + pctGestaoPreview : 100);
+                return (
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    <p>
                       Prof: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtVal(String(vp))}</span>
                       {" · "}
                       Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(va))}</span>
+                      {hasGestao && <>{" · "}Gestão: <span className="text-amber-600 dark:text-amber-400 font-medium">{fmtVal(String(vg))}</span></>}
                     </p>
-                  );
-                }
-                return null;
+                    {hasGestao && Math.abs(totalPct - 100) > 0.001 && (
+                      <p className="text-amber-600 dark:text-amber-400">
+                        A soma atual é {totalPct.toFixed(2)}%; ajuste os percentuais para fechar 100%.
+                      </p>
+                    )}
+                  </div>
+                );
               })()}
             </div>
 
@@ -3031,22 +3061,31 @@ function MensalistaCard({
                   ))}
                 </SelectContent>
               </Select>
-              {editProfId && editProfId !== "__none__" && (() => {
+              {(() => {
                 const prof = confsProfs.find((p) => p.id === editProfId);
                 const pct = parseFloat(prof?.percentualComissao ?? "0");
                 const val = parseFloat(editValor) || 0;
-                if (pct > 0 && val > 0) {
-                  const vp = Math.round(val * pct / 100 * 100) / 100;
-                  const va = Math.round((val - vp) * 100) / 100;
-                  return (
-                    <p className="text-[11px] text-muted-foreground mt-1">
+                if (val <= 0) return null;
+                const hasGestao = Boolean(gestorPreview && pctGestaoPreview > 0);
+                const vp = Math.round(val * pct / 100 * 100) / 100;
+                const va = Math.round(val * (hasGestao ? pctArenaPreview : 100 - pct) / 100 * 100) / 100;
+                const vg = Math.round(val * (hasGestao ? pctGestaoPreview : 0) / 100 * 100) / 100;
+                const totalPct = pct + (hasGestao ? pctArenaPreview + pctGestaoPreview : 100);
+                return (
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    <p>
                       Prof: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtVal(String(vp))}</span>
                       {" · "}
                       Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(va))}</span>
+                      {hasGestao && <>{" · "}Gestão: <span className="text-amber-600 dark:text-amber-400 font-medium">{fmtVal(String(vg))}</span></>}
                     </p>
-                  );
-                }
-                return null;
+                    {hasGestao && Math.abs(totalPct - 100) > 0.001 && (
+                      <p className="text-amber-600 dark:text-amber-400">
+                        A soma atual é {totalPct.toFixed(2)}%; ajuste os percentuais para fechar 100%.
+                      </p>
+                    )}
+                  </div>
+                );
               })()}
             </div>
 
@@ -3284,6 +3323,8 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   const gestaoGestorId = config?.gestaoGestorId ?? null;
   const pctArenaNum = parseFloat(localPctArena) || 0;
   const gestaoAtiva = pctArenaNum < 100;
+  const gestorSelecionado = gestores.find((gestor) => gestor.id === gestaoGestorId);
+  const pctGestaoSelecionada = parseFloat(gestorSelecionado?.percentualComissao || "0");
 
   const save = (patch: Partial<RepasseConfig & { pctArena: string }>) =>
     saveMutation.mutate({
@@ -3317,10 +3358,12 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
             </div>
           </div>
 
-          {/* Gestão = sobra + gestor padrão */}
+          {/* Gestão = percentual do gestor padrão */}
           {gestaoAtiva && (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground whitespace-nowrap">Gestão: sobra</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                Gestão: {gestorSelecionado && pctGestaoSelecionada > 0 ? `${pctGestaoSelecionada}%` : "sobra"}
+              </span>
               <Select
                 value={gestaoGestorId ?? "__none__"}
                 onValueChange={(v) => save({ gestaoGestorId: v === "__none__" ? null : v })}
@@ -3337,7 +3380,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
               </Select>
               {!gestaoGestorId && (
                 <span className="text-[11px] text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                  selecione o gestor que receberá a sobra
+                  selecione o gestor e informe o percentual
                 </span>
               )}
             </div>
@@ -3355,8 +3398,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const [editNome, setEditNome] = useState("");
   const [editPct, setEditPct] = useState("0");
   const [novoGestorNome, setNovoGestorNome] = useState("");
+  const [novoGestorPct, setNovoGestorPct] = useState("10");
   const [editingGestor, setEditingGestor] = useState<string | null>(null);
   const [editGestorNome, setEditGestorNome] = useState("");
+  const [editGestorPct, setEditGestorPct] = useState("10");
   const [comprovanteLoading, setComprovanteLoading] = useState<string | null>(null);
   const qcOuter = useQueryClient();
   const [listaTexto, setListaTexto] = useState<Record<string, string>>({});
@@ -3493,11 +3538,12 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   });
 
   const addGestorMutation = useMutation({
-    mutationFn: (data: { nome: string }) =>
+    mutationFn: (data: { nome: string; percentualComissao: string }) =>
       apiRequest("POST", "/api/conferencia/gestores", { ...data, periodo }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
       setNovoGestorNome("");
+      setNovoGestorPct("10");
       toast({ title: "Gestor adicionado!" });
     },
     onError: (err: Error) =>
@@ -3512,12 +3558,15 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     mutationFn: ({
       id,
       nome,
+      percentualComissao,
     }: {
       id: string;
       nome: string;
+      percentualComissao: string;
     }) =>
       apiRequest("PUT", `/api/conferencia/gestores/${id}`, {
         nome,
+        percentualComissao,
       }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
@@ -3594,7 +3643,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const handleAddGestor = () => {
     const nome = novoGestorNome.trim();
     if (!nome) return;
-    addGestorMutation.mutate({ nome });
+    addGestorMutation.mutate({ nome, percentualComissao: novoGestorPct || "0" });
   };
 
   const [expandedProf, setExpandedProf] = useState<Set<string>>(new Set());
@@ -3639,7 +3688,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         <CardContent className="p-4">
           <div className="flex gap-3 items-end flex-wrap">
             <div className="flex-1 min-w-[200px]">
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Nome do gestor</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Nome</p>
               <Input
                 placeholder="Nome do gestor…"
                 value={novoGestorNome}
@@ -3648,10 +3697,35 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                 data-testid="input-novo-gestor-nome"
               />
             </div>
+            <div className="w-36">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">% Comissão</p>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder="10"
+                  value={novoGestorPct}
+                  onChange={(e) => setNovoGestorPct(clampPercentualInput(e.target.value))}
+                  onBlur={() => setNovoGestorPct((prev) => prev === "" ? "0" : clampPercentualInput(prev))}
+                  className="pr-7"
+                  data-testid="input-novo-gestor-pct"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+              </div>
+            </div>
             <div className="flex flex-col gap-2 shrink-0 w-[176px]">
               <Button
                 onClick={handleAddGestor}
-                disabled={!novoGestorNome.trim() || addGestorMutation.isPending}
+                disabled={
+                  !novoGestorNome.trim() ||
+                  novoGestorPct === "" ||
+                  !Number.isFinite(Number(novoGestorPct)) ||
+                  Number(novoGestorPct) < 0 ||
+                  Number(novoGestorPct) > 100 ||
+                  addGestorMutation.isPending
+                }
                 className="w-full justify-center"
                 data-testid="button-add-gestor"
               >
@@ -3693,12 +3767,28 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                           autoFocus
                           data-testid={`input-edit-gestor-nome-${gestor.id}`}
                         />
+                        <div className="relative w-24">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={editGestorPct}
+                            onChange={(e) => setEditGestorPct(clampPercentualInput(e.target.value))}
+                            onBlur={() => setEditGestorPct((prev) => prev === "" ? "0" : clampPercentualInput(prev))}
+                            className="h-8 text-sm pr-6"
+                            placeholder="10"
+                            data-testid={`input-edit-gestor-pct-${gestor.id}`}
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+                        </div>
                         <Button
                           size="sm"
                           className="h-8"
                           onClick={() => editGestorMutation.mutate({
                             id: gestor.id,
                             nome: editGestorNome,
+                            percentualComissao: editGestorPct || "0",
                           })}
                           disabled={editGestorMutation.isPending}
                           data-testid={`button-save-gestor-${gestor.id}`}
@@ -3716,10 +3806,17 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                         </Button>
                       </div>
                     ) : (
-                       <div className="flex-1 grid items-center min-w-0" style={{ gridTemplateColumns: "1fr 150px 80px" }}>
+                       <div className="flex-1 grid items-center min-w-0" style={{ gridTemplateColumns: "1fr 130px 80px" }}>
                         <span className="font-medium text-sm text-foreground truncate pr-3">{gestor.nome}</span>
                         <div className="flex justify-start">
-                           <Badge variant="secondary" className="text-xs">Recebe a sobra automática</Badge>
+                           <Badge
+                             variant={parseFloat(gestor.percentualComissao || "0") > 0 ? "default" : "secondary"}
+                             className="text-xs tabular-nums"
+                           >
+                             {parseFloat(gestor.percentualComissao || "0") > 0
+                               ? `${gestor.percentualComissao}% comissão`
+                               : "Sem comissão"}
+                           </Badge>
                         </div>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">Destinatário</span>
                       </div>
@@ -3751,6 +3848,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                           onClick={() => {
                             setEditingGestor(gestor.id);
                             setEditGestorNome(gestor.nome);
+                            setEditGestorPct(gestor.percentualComissao || "0");
                           }}
                           data-testid={`button-edit-gestor-${gestor.id}`}
                         >

@@ -618,6 +618,15 @@ function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function parsePercentual(value: unknown, label: string): number {
+  const raw = String(value ?? "").trim();
+  const percentual = raw === "" ? 0 : Number(raw);
+  if (!Number.isFinite(percentual) || percentual < 0 || percentual > 100) {
+    throw new Error(`${label} deve estar entre 0% e 100%`);
+  }
+  return roundMoney(percentual);
+}
+
 /**
  * Mensalistas have a three-way split. The arena percentage comes from the
  * period configuration; the teacher percentage comes from the selected
@@ -668,9 +677,7 @@ async function calcularRateioMensalista(
   const percentualArenaNum = hasPeriodConfig && Number.isFinite(configuredArena)
     ? configuredArena
     : Math.max(0, 100 - percentualProfessorNum);
-  const percentualDestinatarioNum = 100 - percentualArenaNum - percentualProfessorNum;
-
-  if (percentualArenaNum < 0 || percentualArenaNum > 100 || percentualProfessorNum > 100 || percentualDestinatarioNum < -0.0001) {
+  if (percentualArenaNum < 0 || percentualArenaNum > 100 || percentualProfessorNum < 0 || percentualProfessorNum > 100 || percentualArenaNum + percentualProfessorNum > 100.0001) {
     throw new Error("A soma dos percentuais da arena e do professor não pode ultrapassar 100%");
   }
 
@@ -681,17 +688,25 @@ async function calcularRateioMensalista(
   const effectiveDestinatarioId = destinatarioId || configuredGestorId || null;
 
   let destinatarioNome: string | null = null;
+  let gestorConfigurado: { id: string; nome: string; percentualComissao: string | null } | null = null;
   if (effectiveDestinatarioId) {
     if (periodo) {
       const [gestor] = await db
-        .select({ id: conferenciaGestores.id, nome: conferenciaGestores.nome })
+        .select({
+          id: conferenciaGestores.id,
+          nome: conferenciaGestores.nome,
+          percentualComissao: conferenciaGestores.percentualComissao,
+        })
         .from(conferenciaGestores)
         .where(and(
           eq(conferenciaGestores.id, effectiveDestinatarioId),
           eq(conferenciaGestores.arenaId, arenaId),
           eq(conferenciaGestores.periodo, periodo),
         ));
-      if (gestor) destinatarioNome = gestor.nome;
+      if (gestor) {
+        gestorConfigurado = gestor;
+        destinatarioNome = gestor.nome;
+      }
     }
 
     const [confDest] = await db
@@ -708,6 +723,24 @@ async function calcularRateioMensalista(
       if (teacherDest) destinatarioNome = teacherDest.nome;
     }
     if (!destinatarioNome) throw new Error("Destinatário do pagamento não encontrado no cadastro");
+  }
+
+  const percentualDestinatarioCalculado = 100 - percentualArenaNum - percentualProfessorNum;
+  let percentualDestinatarioNum = percentualDestinatarioCalculado;
+  const percentualGestorInformado = gestorConfigurado?.percentualComissao;
+  const percentualGestorNum = percentualGestorInformado && Number(percentualGestorInformado) > 0
+    ? parsePercentual(percentualGestorInformado, "O percentual do gestor")
+    : null;
+
+  if (percentualGestorNum !== null) {
+    const totalPercentual = percentualArenaNum + percentualProfessorNum + percentualGestorNum;
+    if (totalPercentual > 100.0001) {
+      throw new Error("A soma dos percentuais da arena, professor e gestor não pode ultrapassar 100%");
+    }
+    if (Math.abs(totalPercentual - 100) > 0.0001) {
+      throw new Error(`Arena + professor + gestor precisam totalizar 100% (atual: ${roundMoney(totalPercentual)}%)`);
+    }
+    percentualDestinatarioNum = percentualGestorNum;
   }
 
   const pctDestRounded = roundMoney(percentualDestinatarioNum);
@@ -974,8 +1007,14 @@ export function registerConferenciaRoutes(app: Express): void {
       gestaoGestorId: string | null;
     };
     if (!periodo) return res.status(400).json({ message: "periodo obrigatório" });
+    let percentualArena: number;
+    try {
+      percentualArena = parsePercentual(pctArena, "O percentual da arena");
+    } catch (err) {
+      return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual da arena inválido" });
+    }
     const vals = {
-      pctArena: String(pctArena ?? "100"),
+      pctArena: String(percentualArena),
       pctGestao: String(pctGestao ?? "0"),
       gestaoTipo: gestaoTipo ?? "caixa",
       gestaoProfessorId: gestaoProfessorId ?? null,
@@ -1035,13 +1074,19 @@ export function registerConferenciaRoutes(app: Express): void {
       periodo?: string;
     };
     if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
+    let percentualGestor: number;
+    try {
+      percentualGestor = parsePercentual(percentualComissao, "O percentual do gestor");
+    } catch (err) {
+      return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual do gestor inválido" });
+    }
 
     const [gestor] = await db
       .insert(conferenciaGestores)
       .values({
         arenaId,
         nome: nome.trim(),
-        percentualComissao: String(percentualComissao ?? "0"),
+        percentualComissao: String(percentualGestor),
         periodo: periodo ?? null,
       })
       .returning();
@@ -1059,12 +1104,18 @@ export function registerConferenciaRoutes(app: Express): void {
       percentualComissao?: string;
     };
     if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
+    let percentualGestor: number;
+    try {
+      percentualGestor = parsePercentual(percentualComissao, "O percentual do gestor");
+    } catch (err) {
+      return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual do gestor inválido" });
+    }
 
     const [gestor] = await db
       .update(conferenciaGestores)
       .set({
         nome: nome.trim(),
-        percentualComissao: String(percentualComissao ?? "0"),
+        percentualComissao: String(percentualGestor),
       })
       .where(and(eq(conferenciaGestores.id, req.params.id), eq(conferenciaGestores.arenaId, arenaId)))
       .returning();
@@ -1076,6 +1127,9 @@ export function registerConferenciaRoutes(app: Express): void {
         eq(conferenciaRegistros.arenaId, arenaId),
         eq(conferenciaRegistros.destinatarioId, gestor.id),
       ));
+    if (gestor.periodo) {
+      await recalcularMensalistasDoPeriodo(arenaId, gestor.periodo);
+    }
     res.json(gestor);
   });
 
@@ -1183,10 +1237,16 @@ export function registerConferenciaRoutes(app: Express): void {
     }
     const { nome, percentualComissao, periodo } = req.body as { nome: string; percentualComissao?: string; periodo?: string };
     if (!nome?.trim()) return res.status(400).json({ message: "Nome obrigatório" });
+    let percentualProfessor: number;
+    try {
+      percentualProfessor = parsePercentual(percentualComissao, "O percentual do professor");
+    } catch (err) {
+      return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual do professor inválido" });
+    }
 
     const [prof] = await db
       .insert(conferenciaProfessores)
-      .values({ arenaId, nome: nome.trim(), percentualComissao: String(percentualComissao ?? "0"), periodo: periodo ?? null })
+      .values({ arenaId, nome: nome.trim(), percentualComissao: String(percentualProfessor), periodo: periodo ?? null })
       .returning();
     // Novo professor ainda não tem alunos — nenhuma sessão precisa ser rematchada
     res.json({ ...prof, alunos: [] });
@@ -1199,7 +1259,12 @@ export function registerConferenciaRoutes(app: Express): void {
       return res.status(403).json({ message: "Acesso negado" });
     }
     const { nome, percentualComissao } = req.body as { nome: string; percentualComissao?: string };
-    const newPct = parseFloat(String(percentualComissao ?? "0"));
+    let newPct: number;
+    try {
+      newPct = parsePercentual(percentualComissao, "O percentual do professor");
+    } catch (err) {
+      return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual do professor inválido" });
+    }
 
     const [prof] = await db
       .update(conferenciaProfessores)
