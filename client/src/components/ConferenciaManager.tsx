@@ -64,7 +64,6 @@ import {
   Printer,
   CalendarDays,
   Link2,
-  Settings2,
   ImageIcon,
   UserPlus,
   Eye,
@@ -183,6 +182,7 @@ interface RepasseConfig {
   pctGestao: string;
   gestaoTipo: string;
   gestaoProfessorId: string | null;
+  gestaoGestorId?: string | null;
   configurado?: boolean;
 }
 
@@ -554,31 +554,33 @@ function exportToPDFComprovante(sessao: SessaoDetalhe, professorKey: string, pro
       <tr>
         <td class="col-nome">${r.nomePlataforma}</td>
         <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
-        ${professorKey !== "__arena__" ? `<td class="col-center" style="color:#059669">${fmt(rowVProf(r))}</td><td class="col-center" style="color:#88a8e9">${fmt(rowVArena(r))}</td>` : ""}
+        ${professorKey !== "__arena__"
+          ? `<td class="col-center" style="color:#059669">${fmt(rowVProf(r))}</td>`
+          : `<td class="col-center" style="color:#2563eb">${fmt(rowVArena(r))}</td>`}
       </tr>`;
     }).join("");
   const mensalistaBlock = mensalistaRegs.length === 0 ? "" : `
   <div class="mensalista-block">
     <div class="mensalista-header">
       <span class="mensalista-badge">Mensalistas Manuais</span>
-      <span class="mensalista-summary">${mensalistaRegs.length} aluno${mensalistaRegs.length !== 1 ? "s" : ""} · ${fmt(mSubtotal)}${professorKey !== "__arena__" ? ` · Comissão: ${fmt(mComissao)} · Arena: ${fmt(mArena)}` : ""}</span>
+      <span class="mensalista-summary">${mensalistaRegs.length} aluno${mensalistaRegs.length !== 1 ? "s" : ""} · ${fmt(mSubtotal)}${professorKey !== "__arena__" ? ` · Comissão: ${fmt(mComissao)}` : ` · Repasse Arena: ${fmt(mArena)}`}</span>
     </div>
     <table>
       <colgroup>
         <col style="width:${professorKey !== "__arena__" ? "46%" : "65%"}">
         <col style="width:${professorKey !== "__arena__" ? "18%" : "35%"}">
-        ${professorKey !== "__arena__" ? `<col style="width:18%"><col style="width:18%">` : ""}
+        <col style="width:36%">
       </colgroup>
       <thead><tr>
         <th class="col-nome">Aluno</th>
         <th class="col-center">Mensalidade</th>
-        ${professorKey !== "__arena__" ? `<th class="col-center">Comissão</th><th class="col-center">Arena</th>` : ""}
+        <th class="col-center">${professorKey !== "__arena__" ? "Comissão" : "Repasse Arena"}</th>
       </tr></thead>
       <tbody>${mensalistaRows}</tbody>
       <tfoot><tr>
         <td class="col-nome"><strong>Subtotal Mensalistas</strong></td>
         <td class="col-center"><strong>${fmt(mSubtotal)}</strong></td>
-        ${professorKey !== "__arena__" ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td class="col-center"><strong style="color:#88a8e9">${fmt(mArena)}</strong></td>` : ""}
+        <td class="col-center"><strong style="color:${professorKey !== "__arena__" ? "#059669" : "#2563eb"}">${fmt(professorKey !== "__arena__" ? mComissao : mArena)}</strong></td>
       </tr></tfoot>
     </table>
   </div>`;
@@ -827,31 +829,33 @@ function exportComprovanteConsolidado(
       <tr>
         <td class="col-nome">${r.nomePlataforma}</td>
         <td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td>
-        ${hasCom2 ? `<td class="col-center" style="color:#059669">${fmt(rVProf(r))}</td><td class="col-center" style="color:#88a8e9">${fmt(rVArena(r))}</td>` : ""}
+        ${hasCom2
+          ? `<td class="col-center" style="color:#059669">${fmt(rVProf(r))}</td>`
+          : `<td class="col-center" style="color:#2563eb">${fmt(rVArena(r))}</td>`}
       </tr>`;
     }).join("");
   const mensalistasBlock = allMensalistas.length === 0 ? "" : `
   <div class="mensalista-block">
     <div class="mensalista-header">
       <span class="mensalista-badge">Mensalistas Manuais</span>
-      <span class="mensalista-summary">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(mTotal)}${hasCom2 ? ` · Comissão: ${fmt(mComissao)} · Arena: ${fmt(mArena)}` : ""}</span>
+      <span class="mensalista-summary">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(mTotal)}${hasCom2 ? ` · Comissão: ${fmt(mComissao)}` : ` · Repasse Arena: ${fmt(mArena)}`}</span>
     </div>
     <table>
       <colgroup>
         <col style="width:${hasCom2 ? "46%" : "65%"}">
         <col style="width:${hasCom2 ? "18%" : "35%"}">
-        ${hasCom2 ? `<col style="width:18%"><col style="width:18%">` : ""}
+        <col style="width:36%">
       </colgroup>
       <thead><tr>
         <th class="col-nome">Aluno</th>
         <th class="col-center">Mensalidade</th>
-        ${hasCom2 ? `<th class="col-center">Comissão</th><th class="col-center">Arena</th>` : ""}
+        <th class="col-center">${hasCom2 ? "Comissão" : "Repasse Arena"}</th>
       </tr></thead>
       <tbody>${mensalistaRows}</tbody>
       <tfoot><tr>
         <td class="col-nome"><strong>Subtotal Mensalistas</strong></td>
         <td class="col-center"><strong>${fmt(mTotal)}</strong></td>
-        ${hasCom2 ? `<td class="col-center"><strong style="color:#059669">${fmt(mComissao)}</strong></td><td class="col-center"><strong style="color:#88a8e9">${fmt(mArena)}</strong></td>` : ""}
+        <td class="col-center"><strong style="color:${hasCom2 ? "#059669" : "#2563eb"}">${fmt(hasCom2 ? mComissao : mArena)}</strong></td>
       </tr></tfoot>
     </table>
   </div>`;
@@ -957,6 +961,86 @@ function exportComprovanteConsolidado(
   w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
 }
 
+function exportComprovanteGestorConsolidado(
+  sessoes: SessaoDetalhe[],
+  gestorId: string,
+  gestorNome: string,
+  mesLabel: string,
+) {
+  const mensalistas = sessoes.flatMap((s) =>
+    s.registros.filter(
+      (r) =>
+        r.status === "confirmado" &&
+        r.categoria === "mensalista" &&
+        r.destinatarioId === gestorId,
+    )
+  );
+  if (mensalistas.length === 0) return;
+
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const totalReceita = mensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
+  const totalRepasse = mensalistas.reduce((s, r) => s + parseFloat(r.valorDestinatario || "0"), 0);
+  const rows = [...mensalistas]
+    .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
+    .map((r) => `
+      <tr>
+        <td class="name">${r.nomePlataforma}</td>
+        <td>${fmt(parseFloat(r.valor || "0"))}</td>
+        <td class="manager">${fmt(parseFloat(r.valorDestinatario || "0"))}</td>
+      </tr>`)
+    .join("");
+
+  const html = `<!DOCTYPE html>
+  <html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>Comprovante — ${gestorNome}</title>
+  <style>
+    @page { size: A4 portrait; margin: 14mm; }
+    * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body { font-family:Arial,sans-serif; color:#0f172a; font-size:10px; margin:0; }
+    .page { max-width:800px; margin:0 auto; }
+    .header { background:#e2e8f0; border-radius:10px; padding:16px; margin-bottom:18px; }
+    .top { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+    h1 { margin:0; font-size:15px; text-transform:uppercase; letter-spacing:.05em; }
+    .period { color:#64748b; font-size:8px; }
+    .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; }
+    .kpi { background:rgba(0,0,0,.08); border-radius:6px; padding:9px 10px; }
+    .value { font-size:15px; font-weight:900; }
+    .label { color:#64748b; font-size:7px; margin-top:3px; text-transform:uppercase; letter-spacing:.07em; }
+    .title { color:#6d28d9; font-size:10px; font-weight:800; text-transform:uppercase; margin:0 0 6px; }
+    table { width:100%; border-collapse:collapse; border:1.5px solid #c4b5fd; table-layout:fixed; }
+    th { background:#ede9fe; color:#4c1d95; font-size:7.5px; padding:7px 9px; text-transform:uppercase; text-align:right; }
+    th.name { text-align:left; }
+    td { padding:7px 9px; border-bottom:1px solid #e2e8f0; text-align:right; }
+    td.name { text-align:left; font-weight:600; }
+    td.manager { color:#6d28d9; font-weight:700; }
+    tbody tr:nth-child(even) { background:#faf5ff; }
+    tfoot td { background:#ede9fe; border-top:2px solid #7c3aed; font-weight:800; }
+    .footer { margin-top:12px; color:#888; font-size:7.5px; text-align:right; }
+  </style></head>
+  <body><div class="page">
+    <div class="header">
+      <div class="top"><h1>${gestorNome} — Gestão</h1><div class="period">${mesLabel}</div></div>
+      <div class="kpis">
+        <div class="kpi"><div class="value">${mensalistas.length}</div><div class="label">Mensalistas</div></div>
+        <div class="kpi"><div class="value">${fmt(totalReceita)}</div><div class="label">Receita integral</div></div>
+        <div class="kpi"><div class="value">${fmt(totalRepasse)}</div><div class="label">Seu repasse</div></div>
+      </div>
+    </div>
+    <h2 class="title">Repasse de gestão</h2>
+    <table><thead><tr><th class="name">Aluno</th><th>Mensalidade</th><th>Repasse gestor</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td class="name">Total</td><td>${fmt(totalReceita)}</td><td>${fmt(totalRepasse)}</td></tr></tfoot>
+    </table>
+    <div class="footer">Seven Sports · Comprovante gerado automaticamente</div>
+  </div></body></html>`;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
+}
+
 // ── Arena Simple Report PDF ────────────────────────────────────────────────────
 function exportArenaRelatorioSimples(
   sessoes: SessaoDetalhe[],
@@ -981,7 +1065,10 @@ function exportArenaRelatorioSimples(
     .reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalGeral = totalPlataforma + totalMensalistas;
-  const valorArena = totalGeral * (pctArena / 100);
+  const valorArenaPlataforma = Array.from(byPlat.values()).flatMap((p) => p.regs)
+    .reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const valorArenaMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const valorArena = valorArenaPlataforma + valorArenaMensalistas;
 
   if (totalGeral === 0) return;
 
@@ -1003,26 +1090,21 @@ function exportArenaRelatorioSimples(
     const receita    = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
     const chks       = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
     const visitantes = new Set(regs.map((r) => r.nomePlataforma)).size;
-    const vArena     = receita * (pctArena / 100);
+    const vArena     = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
     const periodo    = fmtPeriod(periodoInicio, periodoFim);
 
-    const repasseSection = pctArena === 100
-      ? `<div class="plat-repasse">
-           <span class="repasse-label">Total / Repasse Arena (100%)</span>
-           <span class="repasse-val">${fmt(receita)}</span>
-         </div>`
-      : `<div class="plat-repasse">
+     const repasseSection = `<div class="plat-repasse">
            <div class="repasse-split">
              <div>
                <div class="repasse-label">Total Plataforma</div>
                <div class="repasse-total">${fmt(receita)}</div>
              </div>
              <div style="text-align:right">
-               <div class="repasse-label">Repasse Arena (${pctArena}%)</div>
+                <div class="repasse-label">Repasse Arena</div>
                <div class="repasse-val">${fmt(vArena)}</div>
              </div>
            </div>
-         </div>`;
+          </div>`;
 
     return `
     <div class="plat-card">
@@ -1047,6 +1129,7 @@ function exportArenaRelatorioSimples(
         <span class="mens-nome">${r.nomePlataforma}</span>
         <span class="mens-mes">${mes}</span>
         <span class="mens-val">${fmt(parseFloat(r.valor || "0"))}</span>
+        <span class="mens-val" style="color:#2563eb">Arena: ${fmt(parseFloat(r.valorArena || "0"))}</span>
       </div>`;
     }).join("");
 
@@ -1054,12 +1137,12 @@ function exportArenaRelatorioSimples(
   <div class="mensalistas-block">
     <div class="mens-header">
       <span class="mens-title">Mensalistas</span>
-      <span class="mens-count">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(totalMensalistas)}</span>
+      <span class="mens-count">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · Receita: ${fmt(totalMensalistas)} · Arena: ${fmt(valorArenaMensalistas)}</span>
     </div>
     <div class="mens-list">${mensalistaRows}</div>
     <div class="mens-footer">
-      <span>Total Mensalistas</span>
-      <span>${fmt(totalMensalistas)}</span>
+      <span>Total Mensalistas · Repasse Arena</span>
+      <span>${fmt(totalMensalistas)} · ${fmt(valorArenaMensalistas)}</span>
     </div>
   </div>`;
 
@@ -1082,7 +1165,7 @@ function exportArenaRelatorioSimples(
   .doc-header-period { font-size:7.5px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em; }
 
   /* ── KPI strip (inside header) ── */
-  .kpi-strip { display:grid;grid-template-columns:${pctArena === 100 ? "repeat(3,1fr)" : "repeat(4,1fr)"};gap:8px; }
+   .kpi-strip { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
   .kpi { background:rgba(0,0,0,0.08);border-radius:6px;padding:8px 10px;text-align:left; }
   .kpi-val { font-size:16px;font-weight:900;color:#1e293b;line-height:1; }
   .kpi-label { font-size:7px;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em;margin-top:3px; }
@@ -1156,12 +1239,11 @@ function exportArenaRelatorioSimples(
         <div class="kpi-val">${totalCheckins}</div>
         <div class="kpi-label">Check-ins</div>
       </div>
-      ${pctArena !== 100 ? `
       <div class="kpi">
         <div class="kpi-accent"></div>
         <div class="kpi-val">${fmt(valorArena)}</div>
-        <div class="kpi-label">Repasse Arena (${pctArena}%)</div>
-      </div>` : ""}
+         <div class="kpi-label">Repasse Arena</div>
+       </div>
     </div>
   </div>
 
@@ -1171,20 +1253,14 @@ function exportArenaRelatorioSimples(
     ${mensalistasSection}
 
     <div class="grand-total">
-      ${pctArena === 100
-        ? `<div>
-             <div class="gt-label">Total Geral · Repasse Arena (100%)</div>
-             <div class="gt-val">${fmt(totalGeral)}</div>
-           </div>`
-        : `<div>
-             <div class="gt-label">Total Geral</div>
-             <div class="gt-val">${fmt(totalGeral)}</div>
-           </div>
-           <div class="gt-right">
-             <div class="gt-label">Repasse Arena (${pctArena}%)</div>
-             <div class="gt-arena-val">${fmt(valorArena)}</div>
-           </div>`
-      }
+       <div>
+         <div class="gt-label">Receita Total</div>
+         <div class="gt-val">${fmt(totalGeral)}</div>
+       </div>
+       <div class="gt-right">
+         <div class="gt-label">Repasse Arena</div>
+         <div class="gt-arena-val">${fmt(valorArena)}</div>
+       </div>
     </div>
 
     <div class="footer">Seven Sports &nbsp;·&nbsp; Relatório gerado automaticamente</div>
@@ -1225,7 +1301,10 @@ function exportArenaRelatorio(
     .reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalGeral = totalPlataforma + totalMensalistas;
-  const valorArena = totalGeral * (pctArena / 100);
+  const valorArenaPlataforma = Array.from(byPlat.values()).flatMap((p) => p.regs)
+    .reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const valorArenaMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const valorArena = valorArenaPlataforma + valorArenaMensalistas;
 
   if (totalGeral === 0) return;
 
@@ -1252,7 +1331,7 @@ function exportArenaRelatorio(
     <div class="section">
       <div class="section-header">
         <span class="section-platform">${label.toUpperCase()}</span>
-        <span class="section-meta">${alunos} visitante${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · ${fmt(receita)}</span>
+        <span class="section-meta">${alunos} visitante${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · Receita: ${fmt(receita)} · Arena: ${fmt(regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0))}</span>
       </div>
       <table>
         <colgroup>
@@ -1279,19 +1358,19 @@ function exportArenaRelatorio(
   // Mensalistas block
   const mensalistaRows = [...allMensalistas]
     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
-    .map((r) => `<tr><td class="col-nome">${r.nomePlataforma}</td><td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td></tr>`)
+    .map((r) => `<tr><td class="col-nome">${r.nomePlataforma}</td><td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td><td class="col-center">${fmt(parseFloat(r.valorArena || "0"))}</td></tr>`)
     .join("");
   const mensalistasBlock = allMensalistas.length === 0 ? "" : `
   <div class="mensalista-block">
     <div class="mensalista-header">
       <span class="mensalista-badge">Mensalistas Manuais</span>
-      <span class="mensalista-meta">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · ${fmt(totalMensalistas)}</span>
+      <span class="mensalista-meta">${allMensalistas.length} aluno${allMensalistas.length !== 1 ? "s" : ""} · Receita: ${fmt(totalMensalistas)} · Arena: ${fmt(valorArenaMensalistas)}</span>
     </div>
     <table>
-      <colgroup><col style="width:65%"><col style="width:35%"></colgroup>
-      <thead><tr><th class="col-nome">Aluno</th><th class="col-center">Mensalidade</th></tr></thead>
+      <colgroup><col style="width:50%"><col style="width:25%"><col style="width:25%"></colgroup>
+      <thead><tr><th class="col-nome">Aluno</th><th class="col-center">Mensalidade</th><th class="col-center">Repasse Arena</th></tr></thead>
       <tbody>${mensalistaRows}</tbody>
-      <tfoot><tr><td class="col-nome"><strong>Subtotal Mensalistas</strong></td><td class="col-center"><strong>${fmt(totalMensalistas)}</strong></td></tr></tfoot>
+      <tfoot><tr><td class="col-nome"><strong>Subtotal Mensalistas</strong></td><td class="col-center"><strong>${fmt(totalMensalistas)}</strong></td><td class="col-center"><strong>${fmt(valorArenaMensalistas)}</strong></td></tr></tfoot>
     </table>
   </div>`;
 
@@ -1392,17 +1471,11 @@ function exportArenaRelatorio(
         <div class="kpi-val">${totalCheckinsAll}</div>
         <div class="kpi-lbl">Check-ins</div>
       </div>
-      ${pctArena !== 100 ? `
       <div class="kpi">
         <div class="kpi-accent"></div>
         <div class="kpi-val">${fmt(valorArena)}</div>
-        <div class="kpi-lbl">Repasse Arena (${pctArena}%)</div>
-      </div>` : `
-      <div class="kpi">
-        <div class="kpi-accent"></div>
-        <div class="kpi-val">${fmt(totalMensalistas)}</div>
-        <div class="kpi-lbl">Mensalistas</div>
-      </div>`}
+        <div class="kpi-lbl">Repasse Arena</div>
+       </div>
     </div>
   </div>
 
@@ -1411,20 +1484,14 @@ function exportArenaRelatorio(
     ${mensalistasBlock}
 
     <div class="grand-total">
-      ${pctArena === 100
-        ? `<div class="gt-full">
-             <div class="gt-lbl">Total Geral · Repasse Arena (100%)</div>
-             <div class="gt-val">${fmt(totalGeral)}</div>
-           </div>`
-        : `<div class="gt-left">
-             <div class="gt-lbl">Total Geral</div>
-             <div class="gt-val">${fmt(totalGeral)}</div>
-           </div>
-           <div class="gt-right">
-             <div class="gt-lbl">Repasse Arena (${pctArena}%)</div>
-             <div class="gt-val">${fmt(valorArena)}</div>
-           </div>`
-      }
+      <div class="gt-left">
+        <div class="gt-lbl">Receita Total</div>
+        <div class="gt-val">${fmt(totalGeral)}</div>
+      </div>
+      <div class="gt-right">
+        <div class="gt-lbl">Repasse Arena</div>
+        <div class="gt-val">${fmt(valorArena)}</div>
+      </div>
     </div>
     <div class="footer">Seven Sports &nbsp;·&nbsp; Relatório gerado automaticamente</div>
   </div>
@@ -2498,7 +2565,8 @@ function MensalistaCard({
 
   const totalValor = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalProf  = allMensalistas.reduce((s, r) => s + parseFloat(r.valorProfessor || "0"), 0);
-  const totalArena = Math.max(0, totalValor - totalProf);
+  const totalArena = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const totalGestao = allMensalistas.reduce((s, r) => s + parseFloat(r.valorDestinatario || "0"), 0);
 
   // Professor list (for dialog)
   const { data: confsProfs = [] } = useQuery<ConfProfessor[]>({
@@ -2624,6 +2692,12 @@ function MensalistaCard({
                         <span>Prof: <span className="text-emerald-600 dark:text-emerald-400 font-medium">{fmtVal(String(totalProf))}</span></span>
                         <span className="text-muted-foreground/50">·</span>
                         <span>Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(totalArena))}</span></span>
+                        {totalGestao > 0 && (
+                          <>
+                            <span className="text-muted-foreground/50">·</span>
+                            <span>Gestão: <span className="text-violet-600 dark:text-violet-400 font-medium">{fmtVal(String(totalGestao))}</span></span>
+                          </>
+                        )}
                       </>
                     )}
                   </p>
@@ -2654,6 +2728,7 @@ function MensalistaCard({
                     <TableHead className="text-xs py-2 text-right">Total</TableHead>
                     <TableHead className="text-xs py-2 text-right">Prof.</TableHead>
                     <TableHead className="text-xs py-2 text-right">Arena</TableHead>
+                    <TableHead className="text-xs py-2 text-right">Gestão</TableHead>
                     <TableHead className="text-xs py-2 text-center w-12">Comp.</TableHead>
                     <TableHead className="w-8" />
                   </TableRow>
@@ -2662,7 +2737,7 @@ function MensalistaCard({
                   {[...allMensalistas]
                     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
                     .map((r) => {
-                      const arenaVal = Math.max(0, parseFloat(r.valor || "0") - parseFloat(r.valorProfessor || "0"));
+                      const arenaVal = parseFloat(r.valorArena || "0");
                       return (
                         <TableRow key={r.id} className="text-xs">
                           <TableCell className="py-2 font-medium max-w-[140px]">
@@ -2671,6 +2746,7 @@ function MensalistaCard({
                           <TableCell className="py-2 text-right font-mono tabular-nums">{fmtVal(r.valor)}</TableCell>
                           <TableCell className="py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmtVal(r.valorProfessor)}</TableCell>
                           <TableCell className="py-2 text-right font-mono tabular-nums text-blue-600 dark:text-blue-400">{fmtVal(String(arenaVal))}</TableCell>
+                          <TableCell className="py-2 text-right font-mono tabular-nums text-violet-600 dark:text-violet-400">{fmtVal(r.valorDestinatario)}</TableCell>
                           <TableCell className="py-2 text-center">
                             {r.comprovante ? (
                               <button
@@ -3089,7 +3165,9 @@ function ArenaRelatorioCard({
   const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalGeral       = totalPlataforma + totalMensalistas;
   const pct              = parseFloat(pctArena) || 0;
-  const valorArena       = totalGeral * (pct / 100);
+  const valorArenaPlataforma = allPlatformRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const valorArenaMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+  const valorArena       = valorArenaPlataforma + valorArenaMensalistas;
 
   return (
     <Card className="border border-border">
@@ -3103,8 +3181,8 @@ function ArenaRelatorioCard({
               <CardTitle className="text-sm font-semibold">Relatório Arena</CardTitle>
               {totalGeral > 0 ? (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Total <span className="font-medium text-foreground">{fmtVal(String(totalGeral))}</span>
-                  {" · "}Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(valorArena))}</span>
+                   Receita total <span className="font-medium text-foreground">{fmtVal(String(totalGeral))}</span>
+                   {" · "}Repasse Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(valorArena))}</span>
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground mt-0.5">Nenhum dado para este mês</p>
@@ -3151,7 +3229,7 @@ function ArenaRelatorioCard({
         <CardContent className="px-4 pb-4 pt-0">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
-              { label: `Arena (${pctArena}%)`, val: fmtVal(String(valorArena)), color: "text-blue-600 dark:text-blue-400" },
+              { label: "Repasse Arena", val: fmtVal(String(valorArena)), color: "text-blue-600 dark:text-blue-400" },
               { label: "Total Geral", val: fmtVal(String(totalGeral)), color: "text-foreground" },
               { label: "Plataformas", val: fmtVal(String(totalPlataforma)), color: "text-emerald-600 dark:text-emerald-400" },
               { label: "Mensalistas", val: fmtVal(String(totalMensalistas)), color: "text-violet-600 dark:text-violet-400" },
@@ -3174,9 +3252,9 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const { data: professores = [] } = useQuery<ConfProfessor[]>({
-    queryKey: ["/api/conferencia/professores", periodo],
-    queryFn: () => fetch(`/api/conferencia/professores?periodo=${periodo}`).then((r) => r.json()),
+  const { data: gestores = [] } = useQuery<ConfGestor[]>({
+    queryKey: ["/api/conferencia/gestores", periodo],
+    queryFn: () => fetch(`/api/conferencia/gestores?periodo=${periodo}`).then((r) => r.json()),
   });
 
   const { data: config } = useQuery<RepasseConfig>({
@@ -3203,8 +3281,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
     onError: () => toast({ title: "Erro ao salvar configuração de repasse", variant: "destructive" }),
   });
 
-  const gestaoTipo = config?.gestaoTipo ?? "caixa";
-  const gestaoProfessorId = config?.gestaoProfessorId ?? null;
+  const gestaoGestorId = config?.gestaoGestorId ?? null;
   const pctArenaNum = parseFloat(localPctArena) || 0;
   const gestaoAtiva = pctArenaNum < 100;
 
@@ -3213,11 +3290,10 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
       periodo,
       pctArena: patch.pctArena ?? localPctArena,
       pctGestao: "0",
-      gestaoTipo: patch.gestaoTipo ?? gestaoTipo,
-      gestaoProfessorId: "gestaoProfessorId" in patch ? (patch.gestaoProfessorId ?? null) : gestaoProfessorId,
+      gestaoTipo: "gestor",
+      gestaoProfessorId: null,
+      gestaoGestorId: "gestaoGestorId" in patch ? (patch.gestaoGestorId ?? null) : gestaoGestorId,
     });
-
-  const [showGestaoConfig, setShowGestaoConfig] = useState(false);
 
   return (
     <Card className="border">
@@ -3241,54 +3317,30 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
             </div>
           </div>
 
-          {/* Gestão = sobra + gear icon */}
+          {/* Gestão = sobra + gestor padrão */}
           {gestaoAtiva && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-foreground whitespace-nowrap">Gestão: sobra</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowGestaoConfig((v) => !v)}
-                data-testid="btn-gestao-config"
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
-
-          {/* Destino da Gestão — expandido ao clicar na engrenagem */}
-          {gestaoAtiva && showGestaoConfig && (
-            <>
               <Select
-                value={gestaoTipo}
-                onValueChange={(v) => save({ gestaoTipo: v, gestaoProfessorId: v === "caixa" ? null : gestaoProfessorId })}
+                value={gestaoGestorId ?? "__none__"}
+                onValueChange={(v) => save({ gestaoGestorId: v === "__none__" ? null : v })}
               >
-                <SelectTrigger className="h-8 text-xs w-44" data-testid="select-gestao-tipo">
-                  <SelectValue />
+                <SelectTrigger className="h-8 text-xs w-48" data-testid="select-gestao-gestor">
+                  <SelectValue placeholder="Selecionar gestor…" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="caixa">Caixa gestão (separado)</SelectItem>
-                  <SelectItem value="professor">Professor específico</SelectItem>
+                  <SelectItem value="__none__">Selecionar gestor…</SelectItem>
+                  {gestores.map((gestor) => (
+                    <SelectItem key={gestor.id} value={gestor.id}>{gestor.nome}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-
-              {gestaoTipo === "professor" && (
-                <Select
-                  value={gestaoProfessorId ?? ""}
-                  onValueChange={(v) => save({ gestaoProfessorId: v || null })}
-                >
-                  <SelectTrigger className="h-8 text-xs w-40" data-testid="select-gestao-professor">
-                    <SelectValue placeholder="Selecionar professor…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {professores.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {!gestaoGestorId && (
+                <span className="text-[11px] text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                  selecione o gestor que receberá a sobra
+                </span>
               )}
-            </>
+            </div>
           )}
         </div>
       </CardContent>
@@ -3303,10 +3355,8 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const [editNome, setEditNome] = useState("");
   const [editPct, setEditPct] = useState("0");
   const [novoGestorNome, setNovoGestorNome] = useState("");
-  const [novoGestorPct, setNovoGestorPct] = useState("0");
   const [editingGestor, setEditingGestor] = useState<string | null>(null);
   const [editGestorNome, setEditGestorNome] = useState("");
-  const [editGestorPct, setEditGestorPct] = useState("0");
   const [comprovanteLoading, setComprovanteLoading] = useState<string | null>(null);
   const qcOuter = useQueryClient();
   const [listaTexto, setListaTexto] = useState<Record<string, string>>({});
@@ -3345,6 +3395,29 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         })
       );
       exportComprovanteConsolidado(sessoes, prof.id, prof.nome, prof.percentualComissao, mesLabel);
+    } catch {
+      toast({ title: "Erro ao gerar comprovante", variant: "destructive" });
+    } finally {
+      setComprovanteLoading(null);
+    }
+  };
+
+  const handleComprovanteGestorConsolidado = async (gestor: ConfGestor) => {
+    if (sessaoIds.length === 0) {
+      toast({ title: "Nenhum arquivo enviado", description: "Envie os arquivos do mês antes de gerar o comprovante.", variant: "destructive" });
+      return;
+    }
+    const loadingKey = `gestor:${gestor.id}`;
+    setComprovanteLoading(loadingKey);
+    try {
+      const sessoes = await Promise.all(
+        sessaoIds.map((id) => {
+          const cached = qcOuter.getQueryData<SessaoDetalhe>(["/api/conferencia/sessao", id]);
+          if (cached) return Promise.resolve(cached);
+          return fetch(`/api/conferencia/sessao/${id}`).then((r) => r.json() as Promise<SessaoDetalhe>);
+        })
+      );
+      exportComprovanteGestorConsolidado(sessoes, gestor.id, gestor.nome, mesLabel);
     } catch {
       toast({ title: "Erro ao gerar comprovante", variant: "destructive" });
     } finally {
@@ -3420,12 +3493,11 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   });
 
   const addGestorMutation = useMutation({
-    mutationFn: (data: { nome: string; percentualComissao: string }) =>
+    mutationFn: (data: { nome: string }) =>
       apiRequest("POST", "/api/conferencia/gestores", { ...data, periodo }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
       setNovoGestorNome("");
-      setNovoGestorPct("0");
       toast({ title: "Gestor adicionado!" });
     },
     onError: (err: Error) =>
@@ -3440,15 +3512,12 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     mutationFn: ({
       id,
       nome,
-      percentualComissao,
     }: {
       id: string;
       nome: string;
-      percentualComissao: string;
     }) =>
       apiRequest("PUT", `/api/conferencia/gestores/${id}`, {
         nome,
-        percentualComissao,
       }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
@@ -3525,7 +3594,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const handleAddGestor = () => {
     const nome = novoGestorNome.trim();
     if (!nome) return;
-    addGestorMutation.mutate({ nome, percentualComissao: novoGestorPct });
+    addGestorMutation.mutate({ nome });
   };
 
   const [expandedProf, setExpandedProf] = useState<Set<string>>(new Set());
@@ -3579,22 +3648,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                 data-testid="input-novo-gestor-nome"
               />
             </div>
-            <div className="w-36">
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">% Comissão</p>
-              <div className="relative">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  placeholder="0"
-                  value={novoGestorPct}
-                  onChange={(e) => setNovoGestorPct(e.target.value)}
-                  className="pr-7"
-                  data-testid="input-novo-gestor-pct"
-                />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
-              </div>
-            </div>
             <div className="flex flex-col gap-2 shrink-0 w-[176px]">
               <Button
                 onClick={handleAddGestor}
@@ -3624,7 +3677,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
           <div className="divide-y">
             {gestores.map((gestor) => {
               const isEditing = editingGestor === gestor.id;
-              const pctNum = parseFloat(gestor.percentualComissao || "0");
               return (
                 <div key={gestor.id} data-testid={`card-gestor-${gestor.id}`}>
                   <div className="flex items-center gap-3 px-4 py-3">
@@ -3641,26 +3693,12 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                           autoFocus
                           data-testid={`input-edit-gestor-nome-${gestor.id}`}
                         />
-                        <div className="relative w-24">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={editGestorPct}
-                            onChange={(e) => setEditGestorPct(e.target.value)}
-                            className="h-8 text-sm pr-6"
-                            placeholder="0"
-                            data-testid={`input-edit-gestor-pct-${gestor.id}`}
-                          />
-                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
-                        </div>
                         <Button
                           size="sm"
                           className="h-8"
                           onClick={() => editGestorMutation.mutate({
                             id: gestor.id,
                             nome: editGestorNome,
-                            percentualComissao: editGestorPct,
                           })}
                           disabled={editGestorMutation.isPending}
                           data-testid={`button-save-gestor-${gestor.id}`}
@@ -3678,15 +3716,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex-1 grid items-center min-w-0" style={{ gridTemplateColumns: "1fr 130px 80px" }}>
+                       <div className="flex-1 grid items-center min-w-0" style={{ gridTemplateColumns: "1fr 150px 80px" }}>
                         <span className="font-medium text-sm text-foreground truncate pr-3">{gestor.nome}</span>
                         <div className="flex justify-start">
-                          <Badge
-                            variant={pctNum > 0 ? "default" : "secondary"}
-                            className="text-xs tabular-nums"
-                          >
-                            {pctNum > 0 ? `${pctNum}% comissão` : "Sem comissão"}
-                          </Badge>
+                           <Badge variant="secondary" className="text-xs">Recebe a sobra automática</Badge>
                         </div>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">Destinatário</span>
                       </div>
@@ -3694,6 +3727,23 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
 
                     {!isEditing && (
                       <div className="flex items-center gap-1 shrink-0">
+                        {sessaoIds.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs gap-1.5"
+                            onClick={() => handleComprovanteGestorConsolidado(gestor)}
+                            disabled={comprovanteLoading === `gestor:${gestor.id}`}
+                            data-testid={`button-comprovante-gestor-${gestor.id}`}
+                          >
+                            {comprovanteLoading === `gestor:${gestor.id}` ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Printer className="h-3 w-3" />
+                            )}
+                            Comprovante
+                          </Button>
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"
@@ -3701,7 +3751,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                           onClick={() => {
                             setEditingGestor(gestor.id);
                             setEditGestorNome(gestor.nome);
-                            setEditGestorPct(gestor.percentualComissao);
                           }}
                           data-testid={`button-edit-gestor-${gestor.id}`}
                         >
@@ -4955,7 +5004,7 @@ function RelatorioView({
   const confirmados = registros.filter((r) => r.status === "confirmado" && r.categoria !== "mensalista");
   const totalRecebido = confirmados.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalProfessores = confirmados.reduce((s, r) => s + profRowVal(r), 0);
-  const totalArena = Math.max(0, totalRecebido - totalProfessores);
+  const totalArena = arenaSum(confirmados);
   const totalCheckins = confirmados.reduce((s, r) => s + (r.checkins ?? 1), 0);
   const naoEncontrados = registros.filter((r) => r.status === "nao_encontrado");
 

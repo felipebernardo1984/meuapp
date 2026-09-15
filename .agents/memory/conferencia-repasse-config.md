@@ -16,8 +16,8 @@ description: How the gestão/arena split is stored and computed in the conferên
 
 ## UI card (RepasseConfigCard)
 - **Left section**: "% Repasse Arena" — editable number input, saves to `pctArena`
-- **Right section**: "Gestão" — no % input; shows destination selector only when `gestaoAtiva`
-  - Destination (`gestaoTipo`): "caixa" (separate bucket) or "professor" (specific professor via `gestaoProfessorId`)
+- **Right section**: "Gestão" — no % input; shows a gestor selector only when `gestaoAtiva`
+  - The selected `gestaoGestorId` is the default recipient for the remainder; legacy `gestaoTipo`/`gestaoProfessorId` fields remain for compatibility.
 - **RepasseConfigCard lives only in RelatorioView** — removed from MesView
 
 ## How to apply

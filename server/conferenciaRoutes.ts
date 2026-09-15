@@ -674,26 +674,44 @@ async function calcularRateioMensalista(
     throw new Error("A soma dos percentuais da arena e do professor não pode ultrapassar 100%");
   }
 
+  // The configured manager is the default recipient for the period. Keep an
+  // explicitly supplied ID as a backwards-compatible override for old records.
+  const configuredGestorId = config?.gestaoGestorId
+    ?? (config?.gestaoTipo === "professor" ? config.gestaoProfessorId : null);
+  const effectiveDestinatarioId = destinatarioId || configuredGestorId || null;
+
   let destinatarioNome: string | null = null;
-  if (destinatarioId) {
+  if (effectiveDestinatarioId) {
+    if (periodo) {
+      const [gestor] = await db
+        .select({ id: conferenciaGestores.id, nome: conferenciaGestores.nome })
+        .from(conferenciaGestores)
+        .where(and(
+          eq(conferenciaGestores.id, effectiveDestinatarioId),
+          eq(conferenciaGestores.arenaId, arenaId),
+          eq(conferenciaGestores.periodo, periodo),
+        ));
+      if (gestor) destinatarioNome = gestor.nome;
+    }
+
     const [confDest] = await db
       .select({ id: conferenciaProfessores.id, nome: conferenciaProfessores.nome })
       .from(conferenciaProfessores)
-      .where(and(eq(conferenciaProfessores.id, destinatarioId), eq(conferenciaProfessores.arenaId, arenaId)));
-    if (confDest) {
+      .where(and(eq(conferenciaProfessores.id, effectiveDestinatarioId), eq(conferenciaProfessores.arenaId, arenaId)));
+    if (confDest && !destinatarioNome) {
       destinatarioNome = confDest.nome;
-    } else {
+    } else if (!destinatarioNome) {
       const [teacherDest] = await db
         .select({ id: teachers.id, nome: teachers.nome })
         .from(teachers)
-        .where(and(eq(teachers.id, destinatarioId), eq(teachers.arenaId, arenaId)));
+        .where(and(eq(teachers.id, effectiveDestinatarioId), eq(teachers.arenaId, arenaId)));
       if (teacherDest) destinatarioNome = teacherDest.nome;
     }
     if (!destinatarioNome) throw new Error("Destinatário do pagamento não encontrado no cadastro");
   }
 
   const pctDestRounded = roundMoney(percentualDestinatarioNum);
-  if (pctDestRounded > 0 && !destinatarioId) {
+  if (pctDestRounded > 0 && !effectiveDestinatarioId) {
     throw new Error(`Selecione quem receberá os ${pctDestRounded}% restantes da mensalidade`);
   }
 
@@ -710,9 +728,58 @@ async function calcularRateioMensalista(
     valorArena: String(valorArena),
     valorProfessor: String(valorProfessor),
     valorDestinatario: String(valorDestinatario),
-    destinatarioId: destinatarioId || null,
+    destinatarioId: effectiveDestinatarioId,
     destinatarioNome,
   };
+}
+
+async function recalcularMensalistasDoPeriodo(arenaId: string, periodo: string): Promise<void> {
+  const sessoes = await db
+    .select({ id: conferenciaSessoes.id })
+    .from(conferenciaSessoes)
+    .where(and(
+      eq(conferenciaSessoes.arenaId, arenaId),
+      sql`${conferenciaSessoes.periodoInicio} LIKE ${periodo + "%"}`,
+    ));
+  if (sessoes.length === 0) return;
+
+  const registros = await db
+    .select()
+    .from(conferenciaRegistros)
+    .where(and(
+      eq(conferenciaRegistros.arenaId, arenaId),
+      eq(conferenciaRegistros.categoria, "mensalista"),
+      inArray(conferenciaRegistros.sessaoId, sessoes.map((s) => s.id)),
+    ));
+
+  for (const registro of registros) {
+    try {
+      const rateio = await calcularRateioMensalista(
+        arenaId,
+        { periodoInicio: periodo },
+        parseFloat(registro.valor ?? "0") || 0,
+        registro.professorId,
+        null,
+      );
+      await db
+        .update(conferenciaRegistros)
+        .set({
+          percentual: rateio.percentualProfessor,
+          valorProfessor: rateio.valorProfessor,
+          valorArena: rateio.valorArena,
+          percentualArena: rateio.percentualArena,
+          percentualDestinatario: rateio.percentualDestinatario,
+          valorDestinatario: rateio.valorDestinatario,
+          destinatarioId: rateio.destinatarioId,
+          destinatarioNome: rateio.destinatarioNome,
+        })
+        .where(eq(conferenciaRegistros.id, registro.id));
+    } catch (err) {
+      // A configuration can be saved before a manager is selected. In that
+      // case new entries are blocked, while existing snapshots stay intact.
+      console.warn("[mensalista recalc]", registro.id, err instanceof Error ? err.message : err);
+    }
+  }
 }
 
 export async function autoRematchArena(arenaId: string, periodo?: string | null): Promise<void> {
@@ -884,19 +951,27 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)));
     res.json(config
       ? { ...config, configurado: true }
-      : { pctArena: "100", pctGestao: "0", gestaoTipo: "caixa", gestaoProfessorId: null, configurado: false });
+      : {
+        pctArena: "100",
+        pctGestao: "0",
+        gestaoTipo: "caixa",
+        gestaoProfessorId: null,
+        gestaoGestorId: null,
+        configurado: false,
+      });
   });
 
   // PUT /api/conferencia/repasse-config
   app.put("/api/conferencia/repasse-config", async (req, res) => {
     const arenaId = req.session.arenaId;
     if (!arenaId || req.session.userType !== "gestor") return res.status(403).json({ message: "Acesso negado" });
-    const { periodo, pctArena, pctGestao, gestaoTipo, gestaoProfessorId } = req.body as {
+    const { periodo, pctArena, pctGestao, gestaoTipo, gestaoProfessorId, gestaoGestorId } = req.body as {
       periodo: string;
       pctArena: string;
       pctGestao: string;
       gestaoTipo: string;
       gestaoProfessorId: string | null;
+      gestaoGestorId: string | null;
     };
     if (!periodo) return res.status(400).json({ message: "periodo obrigatório" });
     const vals = {
@@ -904,6 +979,7 @@ export function registerConferenciaRoutes(app: Express): void {
       pctGestao: String(pctGestao ?? "0"),
       gestaoTipo: gestaoTipo ?? "caixa",
       gestaoProfessorId: gestaoProfessorId ?? null,
+      gestaoGestorId: gestaoGestorId ?? null,
     };
     const existing = await db
       .select({ id: conferenciaRepasseConfig.id })
@@ -915,12 +991,14 @@ export function registerConferenciaRoutes(app: Express): void {
         .set(vals)
         .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)))
         .returning();
+      await recalcularMensalistasDoPeriodo(arenaId, periodo);
       return res.json(updated);
     }
     const [created] = await db
       .insert(conferenciaRepasseConfig)
       .values({ arenaId, periodo, ...vals })
       .returning();
+    await recalcularMensalistasDoPeriodo(arenaId, periodo);
     res.json(created);
   });
 
@@ -991,6 +1069,13 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(and(eq(conferenciaGestores.id, req.params.id), eq(conferenciaGestores.arenaId, arenaId)))
       .returning();
     if (!gestor) return res.status(404).json({ message: "Gestor não encontrado" });
+    await db
+      .update(conferenciaRegistros)
+      .set({ destinatarioNome: gestor.nome })
+      .where(and(
+        eq(conferenciaRegistros.arenaId, arenaId),
+        eq(conferenciaRegistros.destinatarioId, gestor.id),
+      ));
     res.json(gestor);
   });
 
@@ -1005,6 +1090,13 @@ export function registerConferenciaRoutes(app: Express): void {
       .where(and(eq(conferenciaGestores.id, req.params.id), eq(conferenciaGestores.arenaId, arenaId)))
       .returning({ id: conferenciaGestores.id });
     if (!gestor) return res.status(404).json({ message: "Gestor não encontrado" });
+    await db
+      .update(conferenciaRepasseConfig)
+      .set({ gestaoGestorId: null })
+      .where(and(
+        eq(conferenciaRepasseConfig.arenaId, arenaId),
+        eq(conferenciaRepasseConfig.gestaoGestorId, req.params.id),
+      ));
     res.json({ ok: true });
   });
 

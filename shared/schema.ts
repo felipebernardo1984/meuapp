@@ -595,5 +595,6 @@ export const conferenciaRepasseConfig = pgTable("conferencia_repasse_config", {
   pctGestao: text("pct_gestao").notNull().default("0"),
   gestaoTipo: text("gestao_tipo").notNull().default("caixa"),
   gestaoProfessorId: text("gestao_professor_id"),
+  gestaoGestorId: text("gestao_gestor_id"),
   criadoEm: timestamp("criado_em").defaultNow(),
 });
