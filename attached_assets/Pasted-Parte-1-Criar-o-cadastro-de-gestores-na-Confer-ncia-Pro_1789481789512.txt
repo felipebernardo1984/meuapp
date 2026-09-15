@@ -1,0 +1,89 @@
+Parte 1 — Criar o cadastro de gestores na Conferência
+Prompt:
+
+Trabalhe somente no módulo Conferência.
+Crie, acima do bloco “Nome do professor”, um bloco chamado Gestores, exatamente com o mesmo tamanho, espaçamento e estrutura visual do bloco de professores.
+
+O bloco deve ter:
+
+Campo de nome;
+Campo de comissão;
+Botão “Adicionar Gestor”;
+Lista dos gestores cadastrados;
+Edição e exclusão, seguindo o mesmo padrão já usado para professores.
+Os gestores devem ser salvos por arena e período da Conferência.
+Não altere nenhum cálculo, comprovante, relatório ou comportamento dos professores neste pedido.
+Antes de criar estruturas novas, reutilize o padrão existente da Conferência e evite duplicações.
+
+Parte 2 — Disponibilizar gestores como destinatários
+Prompt:
+
+Trabalhe somente no módulo Conferência.
+Faça com que os gestores cadastrados apareçam nas listas de seleção de destinatários dos rateios.
+
+Quando um gestor for selecionado, salve corretamente o vínculo com o registro da Conferência.
+O gestor deve ficar disponível para receber percentuais restantes nos cálculos de mensalistas e demais registros da Conferência.
+
+Não altere ainda as fórmulas, os valores dos comprovantes ou o layout dos relatórios.
+Apenas implemente o cadastro, a seleção e a persistência do gestor como destinatário.
+
+Parte 3 — Corrigir o cálculo dos mensalistas
+Prompt:
+
+Trabalhe somente no módulo Conferência e corrija o rateio dos alunos mensalistas.
+
+Para cada mensalista, a soma da distribuição deve fechar exatamente em 100%:
+
+Percentual da arena;
+Percentual do professor selecionado;
+Percentual restante destinado ao gestor selecionado.
+Exemplo:
+
+Mensalidade: R$ 200,00;
+Arena: 40% = R$ 80,00;
+Professor: 50% = R$ 100,00;
+Gestor: 10% = R$ 20,00.
+Regras:
+
+Se arena + professor ultrapassarem 100%, impedir a confirmação e mostrar uma mensagem clara;
+Se existir percentual restante, exigir um gestor destinatário;
+Se a soma fechar em 100%, não exigir percentual adicional;
+Os valores devem fechar exatamente com o valor total da mensalidade, inclusive nos centavos.
+Não altere o fluxo financeiro geral, o cadastro normal de alunos, pagamentos fora da Conferência ou funcionalidades de outros módulos.
+
+Parte 4 — Corrigir somente o valor da arena no relatório
+Prompt:
+
+Trabalhe somente no relatório e comprovante da Conferência da arena.
+
+Preserve exatamente o layout atual, mas corrija o cálculo para que os mensalistas contribuam para a arena apenas com o percentual configurado.
+
+Exemplo:
+
+Mensalidade do aluno: R$ 200,00;
+Arena configurada com 40%;
+O relatório deve considerar R$ 80,00 para a arena, e não R$ 200,00.
+O total da receita pode continuar mostrando os R$ 200,00 como receita do mensalista, mas o campo de repasse da arena deve mostrar somente a parte de 40%.
+
+Não mostre neste comprovante os valores do professor ou do gestor.
+Não altere o comprovante do professor nem os relatórios fora da Conferência.
+
+Parte 5 — Criar o comprovante do gestor
+Prompt:
+
+Trabalhe somente no módulo Conferência.
+
+Crie um comprovante próprio para cada gestor cadastrado, seguindo o mesmo padrão visual e estrutura do relatório da arena.
+
+O comprovante do gestor deve mostrar:
+
+Nome do gestor;
+Período;
+Quantidade de mensalistas ou registros relacionados;
+Percentual destinado ao gestor;
+Valor total destinado ao gestor;
+Total geral correspondente ao gestor.
+O comprovante deve considerar somente os valores destinados ao gestor, sem somar novamente o valor integral da mensalidade.
+
+Não altere o comprovante do professor. Ele deve continuar como está, sem mostrar valores da arena ou do gestor.
+Não altere o restante do sistema.
