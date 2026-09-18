@@ -3450,6 +3450,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const [editPct, setEditPct] = useState("0");
   const [novoGestorNome, setNovoGestorNome] = useState("");
   const [novoGestorPct, setNovoGestorPct] = useState("10");
+  const [gestorFormId, setGestorFormId] = useState<string | null>(null);
   const [editingGestor, setEditingGestor] = useState<string | null>(null);
   const [editGestorNome, setEditGestorNome] = useState("");
   const [editGestorPct, setEditGestorPct] = useState("10");
@@ -3484,6 +3485,25 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
       fetch(`/api/conferencia/gestores?periodo=${periodo}`).then((r) => r.json()),
     placeholderData: keepPreviousData,
   });
+
+  // The form represents the first gestor of the selected period. Keeping its
+  // id makes the Save button update that record instead of creating a new row.
+  useEffect(() => {
+    const principal = gestorFormId
+      ? gestores.find((gestor) => gestor.id === gestorFormId)
+      : gestores[0];
+    if (!principal) {
+      if (gestores.length === 0 && gestorFormId) {
+        setGestorFormId(null);
+        setNovoGestorNome("");
+        setNovoGestorPct("10");
+      }
+      return;
+    }
+    if (gestorFormId !== principal.id) setGestorFormId(principal.id);
+    setNovoGestorNome(principal.nome);
+    setNovoGestorPct(principal.percentualComissao || "0");
+  }, [gestores, gestorFormId]);
 
   const handleComprovanteConsolidado = async (prof: ConfProfessor) => {
     if (sessaoIds.length === 0) {
@@ -3602,12 +3622,13 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const addGestorMutation = useMutation({
     mutationFn: (data: { nome: string; percentualComissao: string }) =>
       apiRequest("POST", "/api/conferencia/gestores", { ...data, periodo }).then((r) => r.json()),
-    onSuccess: () => {
+    onSuccess: (created: ConfGestor) => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
       refreshConferencia();
-      setNovoGestorNome("");
-      setNovoGestorPct("10");
-      toast({ title: "Gestor adicionado!" });
+      setGestorFormId(created.id);
+      setNovoGestorNome(created.nome);
+      setNovoGestorPct(created.percentualComissao || "0");
+      toast({ title: "Gestor salvo!" });
     },
     onError: (err: Error) =>
       toast({
@@ -3650,6 +3671,9 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
       refreshConferencia();
+      setGestorFormId(null);
+      setNovoGestorNome("");
+      setNovoGestorPct("10");
       toast({ title: "Gestor removido" });
     },
     onError: (err: Error) =>
@@ -3707,8 +3731,35 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
 
   const handleAddGestor = () => {
     const nome = novoGestorNome.trim();
-    if (!nome) return;
-    addGestorMutation.mutate({ nome, percentualComissao: novoGestorPct || "0" });
+    const percentual = Number(novoGestorPct);
+    if (!nome || !Number.isFinite(percentual) || percentual <= 0 || percentual > 100) return;
+
+    const gestorDoFormulario = gestorFormId
+      ? gestores.find((gestor) => gestor.id === gestorFormId)
+      : undefined;
+    const nomeNormalizado = nome
+      .toLocaleLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+    const gestorExistente = gestorDoFormulario ?? gestores.find((gestor) =>
+      gestor.nome
+        .toLocaleLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim() === nomeNormalizado
+    );
+
+    if (gestorExistente) {
+      editGestorMutation.mutate({
+        id: gestorExistente.id,
+        nome,
+        percentualComissao: String(percentual),
+      });
+      return;
+    }
+
+    addGestorMutation.mutate({ nome, percentualComissao: String(percentual) });
   };
 
   const [expandedProf, setExpandedProf] = useState<Set<string>>(new Set());
@@ -3748,12 +3799,12 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         )}
       </div>
 
-      {/* ── Add-manager inline form ─────────────────────────────────────── */}
+      {/* ── Manager inline form ─────────────────────────────────────────── */}
       <Card className="border-dashed">
         <CardContent className="p-4">
           <div className="flex gap-3 items-end flex-wrap">
             <div className="flex-1 min-w-[200px]">
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Nome</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Nome do gestor</p>
               <Input
                 placeholder="Nome do gestor…"
                 value={novoGestorNome}
@@ -3787,19 +3838,20 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                   !novoGestorNome.trim() ||
                   novoGestorPct === "" ||
                   !Number.isFinite(Number(novoGestorPct)) ||
-                  Number(novoGestorPct) < 0 ||
+                  Number(novoGestorPct) <= 0 ||
                   Number(novoGestorPct) > 100 ||
-                  addGestorMutation.isPending
+                  addGestorMutation.isPending ||
+                  editGestorMutation.isPending
                 }
                 className="w-full justify-center"
-                data-testid="button-add-gestor"
+                data-testid="button-save-gestor"
               >
-                {addGestorMutation.isPending ? (
+                {addGestorMutation.isPending || editGestorMutation.isPending ? (
                   <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                 ) : (
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                 )}
-                Adicionar Gestor
+                Salvar
               </Button>
             </div>
           </div>
@@ -3811,10 +3863,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         <div className="flex items-center justify-center py-8 text-muted-foreground text-sm gap-2">
           <RefreshCw className="h-4 w-4 animate-spin" /> Carregando gestores…
         </div>
-      ) : gestores.length > 0 ? (
+      ) : gestores.filter((gestor) => gestor.id !== gestorFormId).length > 0 ? (
         <Card>
           <div className="divide-y">
-            {gestores.map((gestor) => {
+            {gestores.filter((gestor) => gestor.id !== gestorFormId).map((gestor) => {
               const isEditing = editingGestor === gestor.id;
               return (
                 <div key={gestor.id} data-testid={`card-gestor-${gestor.id}`}>

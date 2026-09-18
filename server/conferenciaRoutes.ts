@@ -1080,6 +1080,9 @@ export function registerConferenciaRoutes(app: Express): void {
     } catch (err) {
       return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual do gestor inválido" });
     }
+    if (percentualGestor <= 0) {
+      return res.status(400).json({ message: "O percentual do gestor deve ser maior que zero" });
+    }
 
     const [gestor] = await db
       .insert(conferenciaGestores)
@@ -1109,6 +1112,9 @@ export function registerConferenciaRoutes(app: Express): void {
       percentualGestor = parsePercentual(percentualComissao, "O percentual do gestor");
     } catch (err) {
       return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual do gestor inválido" });
+    }
+    if (percentualGestor <= 0) {
+      return res.status(400).json({ message: "O percentual do gestor deve ser maior que zero" });
     }
 
     const [gestor] = await db
