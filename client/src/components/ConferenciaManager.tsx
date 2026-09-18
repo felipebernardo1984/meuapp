@@ -4009,13 +4009,13 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         </Card>
       ) : null}
 
-      <p className="text-sm font-semibold text-muted-foreground px-1">
-        Configure os professores e vincule os alunos de cada um para o cruzamento automático.
-      </p>
-
       {/* ── Professor card: form and saved names stay together ──────────── */}
       <Card className="border">
         <CardContent className="p-4 space-y-4">
+          <p className="text-sm font-semibold text-muted-foreground">
+            Configure os professores e vincule os alunos de cada um para o cruzamento automático.
+          </p>
+
           <div className="flex gap-3 items-end flex-wrap">
             <div className="flex-1 min-w-[200px]">
               <p className="text-xs font-medium text-muted-foreground mb-1.5">Nome</p>
