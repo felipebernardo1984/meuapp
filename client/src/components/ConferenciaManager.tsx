@@ -4011,6 +4011,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         </Card>
       ) : null}
 
+      <p className="text-xs text-muted-foreground px-1">
+        Configure os professores e vincule os alunos de cada um para o cruzamento automático.
+      </p>
+
       {/* ── Professor card: form and saved names stay together ──────────── */}
       <Card className="border">
         <CardContent className="p-4 space-y-4">
@@ -4063,27 +4067,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                 {professorFoiSalvo ? "Adicionado" : "Salvar"}
               </Button>
             </div>
-          </div>
-
-          <div className="border-t pt-4 flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-foreground">Professores da Conferência</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Configure os professores e vincule os alunos de cada um para o cruzamento automático.
-              </p>
-            </div>
-            {sessaoIds.length > 0 && sincronizado !== undefined && (
-              <span className={cn(
-                "flex items-center gap-1.5 text-[11px] font-medium shrink-0 mt-0.5",
-                sincronizado ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"
-              )}>
-                {sincronizado
-                  ? <CheckCircle className="h-3.5 w-3.5" />
-                  : <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                }
-                {sincronizado ? "Arquivos sincronizados" : "Sincronizando…"}
-              </span>
-            )}
           </div>
 
           {/* ── Professor table / list ───────────────────────────────────── */}
