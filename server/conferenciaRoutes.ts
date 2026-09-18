@@ -1299,6 +1299,13 @@ export function registerConferenciaRoutes(app: Express): void {
         );
     }
 
+    // Registros de mensalista usam também a configuração de repasse do período.
+    // Recalcule-os depois da alteração do professor para manter arena, professor
+    // e gestão consistentes com a regra vigente no mês.
+    if (prof.periodo) {
+      await recalcularMensalistasDoPeriodo(arenaId, prof.periodo);
+    }
+
     // % já recalculado via SQL acima — nenhum rematch necessário
     res.json(prof);
   });

@@ -1860,6 +1860,9 @@ function LandingView({
     queryKey: ["/api/conferencia/sessoes"],
     staleTime: 0,
     refetchOnWindowFocus: true,
+    // Mantém o mês aberto atualizado quando outro usuário/tela altera
+    // pagamentos, alunos ou professores.
+    refetchInterval: 5000,
   });
 
   const { data: profPeriodos = [] } = useQuery<string[]>({
@@ -2564,6 +2567,7 @@ function MensalistaCard({
     },
     enabled: mesSessoes.length > 0,
     staleTime: 0,
+    refetchInterval: 5000,
   });
 
   const allMensalistas = allDetails.flatMap((d) =>
@@ -3166,6 +3170,8 @@ function ArenaRelatorioCard({
   periodo: string;
   mesLabel: string;
 }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
   const [pctArena, setPctArena] = useState("70");
 
   const arenaRelSessaoKey = mesSessoes.map((s) => s.id).join(",");
@@ -3181,6 +3187,7 @@ function ArenaRelatorioCard({
     enabled: mesSessoes.length > 0,
     staleTime: 0,
     refetchOnWindowFocus: true,
+    refetchInterval: 5000,
   });
 
   const { data: repasseCfg } = useQuery<RepasseConfig>({
@@ -3192,6 +3199,43 @@ function ArenaRelatorioCard({
   useEffect(() => {
     if (repasseCfg?.pctArena) setPctArena(repasseCfg.pctArena);
   }, [repasseCfg]);
+
+  const savePctMutation = useMutation({
+    mutationFn: async (value: string) => {
+      const response = await apiRequest("PUT", "/api/conferencia/repasse-config", {
+        periodo,
+        pctArena: value,
+        pctGestao: repasseCfg?.pctGestao ?? "0",
+        gestaoTipo: repasseCfg?.gestaoTipo ?? "caixa",
+        gestaoProfessorId: repasseCfg?.gestaoProfessorId ?? null,
+        gestaoGestorId: repasseCfg?.gestaoGestorId ?? null,
+      });
+      return response.json() as Promise<RepasseConfig>;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/repasse-config", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      toast({ title: "Percentual da arena atualizado", description: `Configuração salva para ${mesLabel}.` });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Não foi possível atualizar o percentual",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const savePctArena = () => {
+    const normalized = clampPercentualInput(pctArena);
+    setPctArena(normalized);
+    if (!normalized || !Number.isFinite(Number(normalized))) return;
+    if (normalized === String(repasseCfg?.pctArena ?? "")) return;
+    savePctMutation.mutate(normalized);
+  };
 
   const allPlatformRegs = allDetails.flatMap((d) =>
     (d?.registros ?? []).filter((r) => r.status === "confirmado" && r.categoria !== "mensalista")
@@ -3237,9 +3281,17 @@ function ArenaRelatorioCard({
                 max={100}
                 value={pctArena}
                 onChange={(e) => setPctArena(e.target.value)}
+                onBlur={savePctArena}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+                disabled={savePctMutation.isPending}
                 className="w-14 h-7 text-xs border border-border rounded px-2 bg-background text-foreground"
                 data-testid="input-pct-arena-relatorio"
               />
+              {savePctMutation.isPending && (
+                <RefreshCw className="h-3 w-3 text-muted-foreground animate-spin" aria-label="Salvando percentual" />
+              )}
             </div>
             <Button
               variant="outline"
@@ -4224,6 +4276,7 @@ function SessaoView({
     },
     staleTime: 0,
     refetchOnWindowFocus: true,
+    refetchInterval: 5000,
   });
 
   const periodo = sessao?.periodoInicio ? sessao.periodoInicio.substring(0, 7) : undefined;
