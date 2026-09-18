@@ -3846,12 +3846,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                 className="w-full justify-center"
                 data-testid="button-save-gestor"
               >
-                {addGestorMutation.isPending || editGestorMutation.isPending ? (
-                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                )}
-                Salvar
+                {addGestorMutation.isPending || editGestorMutation.isPending ? "Salvando…" : "Salvar"}
               </Button>
             </div>
           </div>
