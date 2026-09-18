@@ -3445,6 +3445,7 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
 function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sincronizado }: { arenaId: string; periodo: string; sessaoIds?: string[]; mesLabel?: string; sincronizado?: boolean; }) {
   const [novoProfNome, setNovoProfNome] = useState("");
   const [novoProfPct, setNovoProfPct] = useState("0");
+  const [professorSalvo, setProfessorSalvo] = useState<{ nome: string; percentual: string } | null>(null);
   const [editingProf, setEditingProf] = useState<string | null>(null);
   const [editNome, setEditNome] = useState("");
   const [editPct, setEditPct] = useState("0");
@@ -3553,12 +3554,16 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const addProfMutation = useMutation({
     mutationFn: (data: { nome: string; percentualComissao: string }) =>
       apiRequest("POST", "/api/conferencia/professores", { ...data, periodo }).then((r) => r.json()),
-    onSuccess: () => {
+    onSuccess: (created: ConfProfessor) => {
       qc.invalidateQueries({ queryKey: profQueryKey });
       qc.invalidateQueries({ queryKey: ["/api/conferencia/periodos-professores"] });
       refreshConferencia();
-      setNovoProfNome("");
-      setNovoProfPct("0");
+      setNovoProfNome(created.nome);
+      setNovoProfPct(created.percentualComissao || "0");
+      setProfessorSalvo({
+        nome: created.nome,
+        percentual: created.percentualComissao || "0",
+      });
       toast({ title: "Professor adicionado!" });
     },
     onError: (err: Error) =>
@@ -3725,9 +3730,18 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
 
   const handleAddProf = () => {
     const nome = novoProfNome.trim();
-    if (!nome) return;
+    const percentual = novoProfPct || "0";
+    const jaSalvo =
+      professorSalvo?.nome === nome &&
+      professorSalvo.percentual === percentual;
+    if (!nome || jaSalvo) return;
     addProfMutation.mutate({ nome, percentualComissao: novoProfPct });
   };
+
+  const professorFoiSalvo =
+    professorSalvo !== null &&
+    professorSalvo.nome === novoProfNome.trim() &&
+    professorSalvo.percentual === (novoProfPct || "0");
 
   const handleAddGestor = () => {
     const nome = novoGestorNome.trim();
@@ -3776,28 +3790,6 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
 
   return (
     <div className="space-y-5">
-
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-foreground">Professores da Conferência</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Configure os professores e vincule os alunos de cada um para o cruzamento automático.
-          </p>
-        </div>
-        {sessaoIds.length > 0 && sincronizado !== undefined && (
-          <span className={cn(
-            "flex items-center gap-1.5 text-[11px] font-medium shrink-0 mt-0.5",
-            sincronizado ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"
-          )}>
-            {sincronizado
-              ? <CheckCircle className="h-3.5 w-3.5" />
-              : <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            }
-            {sincronizado ? "Arquivos sincronizados" : "Sincronizando…"}
-          </span>
-        )}
-      </div>
 
       {/* ── Manager inline form ─────────────────────────────────────────── */}
       <Card className="border-dashed">
@@ -3986,9 +3978,9 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         </Card>
       ) : null}
 
-      {/* ── Add-professor inline form ──────────────────────────────────── */}
-      <Card className="border-dashed">
-        <CardContent className="p-4">
+      {/* ── Professor card: form and saved names stay together ──────────── */}
+      <Card className="border">
+        <CardContent className="p-4 space-y-4">
           <div className="flex gap-3 items-end flex-wrap">
             <div className="flex-1 min-w-[200px]">
               <p className="text-xs font-medium text-muted-foreground mb-1.5">Nome</p>
@@ -4020,37 +4012,62 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
               <Button
                 onClick={handleAddProf}
                 disabled={!novoProfNome.trim() || addProfMutation.isPending}
-                className="w-full justify-center"
+                className={cn(
+                  "w-full justify-center text-white",
+                  professorFoiSalvo
+                    ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600"
+                    : "bg-blue-600 hover:bg-blue-700 border-blue-600"
+                )}
                 data-testid="button-add-professor"
               >
                 {addProfMutation.isPending ? (
                   <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : professorFoiSalvo ? (
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                 ) : (
                   <Plus className="h-3.5 w-3.5 mr-1.5" />
                 )}
-                Adicionar Professor
+                {professorFoiSalvo ? "Adicionado" : "Salvar"}
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* ── Professor table / list ─────────────────────────────────────── */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12 text-muted-foreground text-sm gap-2">
-          <RefreshCw className="h-4 w-4 animate-spin" /> Carregando professores…
-        </div>
-      ) : professores.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-xl">
-          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
-            <Users className="h-5 w-5 text-muted-foreground" />
+          <div className="border-t pt-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Professores da Conferência</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Configure os professores e vincule os alunos de cada um para o cruzamento automático.
+              </p>
+            </div>
+            {sessaoIds.length > 0 && sincronizado !== undefined && (
+              <span className={cn(
+                "flex items-center gap-1.5 text-[11px] font-medium shrink-0 mt-0.5",
+                sincronizado ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"
+              )}>
+                {sincronizado
+                  ? <CheckCircle className="h-3.5 w-3.5" />
+                  : <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                }
+                {sincronizado ? "Arquivos sincronizados" : "Sincronizando…"}
+              </span>
+            )}
           </div>
-          <p className="text-sm font-medium text-foreground">Nenhum professor cadastrado</p>
-          <p className="text-xs text-muted-foreground mt-1">Use o formulário acima para adicionar o primeiro professor.</p>
-        </div>
-      ) : (
-        <Card>
-          <div className="divide-y">
+
+          {/* ── Professor table / list ───────────────────────────────────── */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm gap-2">
+              <RefreshCw className="h-4 w-4 animate-spin" /> Carregando professores…
+            </div>
+          ) : professores.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed rounded-xl">
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+                <Users className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Nenhum professor cadastrado</p>
+              <p className="text-xs text-muted-foreground mt-1">Digite um nome acima para adicionar o primeiro professor.</p>
+            </div>
+          ) : (
+            <div className="divide-y border rounded-lg overflow-hidden">
             {professores.map((prof) => {
               const isEditing = editingProf === prof.id;
               const isExpanded = expandedProf.has(prof.id);
@@ -4289,9 +4306,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                 </div>
               );
             })}
-          </div>
-        </Card>
-      )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
