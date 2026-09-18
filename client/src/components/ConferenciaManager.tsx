@@ -3451,6 +3451,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const [editPct, setEditPct] = useState("0");
   const [novoGestorNome, setNovoGestorNome] = useState("");
   const [novoGestorPct, setNovoGestorPct] = useState("10");
+  const [gestorSalvo, setGestorSalvo] = useState<{ nome: string; percentual: string } | null>(null);
   const [gestorFormId, setGestorFormId] = useState<string | null>(null);
   const [editingGestor, setEditingGestor] = useState<string | null>(null);
   const [editGestorNome, setEditGestorNome] = useState("");
@@ -3504,6 +3505,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     if (gestorFormId !== principal.id) setGestorFormId(principal.id);
     setNovoGestorNome(principal.nome);
     setNovoGestorPct(principal.percentualComissao || "0");
+    setGestorSalvo({
+      nome: principal.nome,
+      percentual: principal.percentualComissao || "0",
+    });
   }, [gestores, gestorFormId]);
 
   const handleComprovanteConsolidado = async (prof: ConfProfessor) => {
@@ -3633,6 +3638,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
       setGestorFormId(created.id);
       setNovoGestorNome(created.nome);
       setNovoGestorPct(created.percentualComissao || "0");
+      setGestorSalvo({
+        nome: created.nome,
+        percentual: created.percentualComissao || "0",
+      });
       toast({ title: "Gestor salvo!" });
     },
     onError: (err: Error) =>
@@ -3747,6 +3756,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     const nome = novoGestorNome.trim();
     const percentual = Number(novoGestorPct);
     if (!nome || !Number.isFinite(percentual) || percentual <= 0 || percentual > 100) return;
+    const gestorFoiSalvo =
+      gestorSalvo?.nome === nome &&
+      gestorSalvo.percentual === String(percentual);
+    if (gestorFoiSalvo) return;
 
     const gestorDoFormulario = gestorFormId
       ? gestores.find((gestor) => gestor.id === gestorFormId)
@@ -3778,6 +3791,10 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
 
   const [expandedProf, setExpandedProf] = useState<Set<string>>(new Set());
   const [expandedSubSection, setExpandedSubSection] = useState<string | null>(null);
+  const gestorFormularioFoiSalvo =
+    gestorSalvo !== null &&
+    gestorSalvo.nome === novoGestorNome.trim() &&
+    gestorSalvo.percentual === String(Number(novoGestorPct));
 
   const toggleProf = (id: string) => {
     setExpandedProf((prev) => {
@@ -3835,10 +3852,26 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                   addGestorMutation.isPending ||
                   editGestorMutation.isPending
                 }
-                className="w-full justify-center"
+                className={cn(
+                  "w-full justify-center text-white",
+                  gestorFormularioFoiSalvo
+                    ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600"
+                    : "bg-blue-600 hover:bg-blue-700 border-blue-600"
+                )}
                 data-testid="button-save-gestor"
               >
-                {addGestorMutation.isPending || editGestorMutation.isPending ? "Salvando…" : "Salvar"}
+                {addGestorMutation.isPending || editGestorMutation.isPending ? (
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : gestorFormularioFoiSalvo ? (
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                ) : (
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {addGestorMutation.isPending || editGestorMutation.isPending
+                  ? "Salvando…"
+                  : gestorFormularioFoiSalvo
+                    ? "Adicionado"
+                    : "Salvar"}
               </Button>
             </div>
           </div>
