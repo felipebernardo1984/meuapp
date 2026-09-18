@@ -4009,7 +4009,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         </Card>
       ) : null}
 
-      <p className="text-xs font-semibold text-muted-foreground px-1">
+      <p className="text-sm font-semibold text-muted-foreground px-1">
         Configure os professores e vincule os alunos de cada um para o cruzamento automático.
       </p>
 
