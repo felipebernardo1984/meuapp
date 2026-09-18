@@ -2267,10 +2267,8 @@ function MesView({
           <CardContent className="p-5 space-y-4">
             {/* Header */}
             <div>
-              <p className="text-sm font-semibold text-foreground mb-0.5">Arquivos do mês</p>
-              <p className="text-xs text-muted-foreground">
-                Arraste o Excel do TotalPass ou Wellhub referente a <strong>{mesLabel}</strong>.
-                As colunas serão mapeadas antes de processar.
+              <p className="text-sm font-semibold text-foreground">
+                Arquivo do mês: Arraste o Excel do TotalPass ou Wellhub referente a {mesLabel}.
               </p>
             </div>
 
@@ -4011,7 +4009,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
         </Card>
       ) : null}
 
-      <p className="text-xs text-muted-foreground px-1">
+      <p className="text-xs font-semibold text-muted-foreground px-1">
         Configure os professores e vincule os alunos de cada um para o cruzamento automático.
       </p>
 
