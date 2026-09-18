@@ -30,6 +30,15 @@ export default function ArenaApp() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const { toast } = useToast();
+
+  const refreshConferencia = () => {
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/gestores"] });
+  };
   const [loginData, setLoginData] = useState({ usuario: "", senha: "" });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [lembrarDados, setLembrarDados] = useState(false);
@@ -149,6 +158,7 @@ export default function ArenaApp() {
     mutationFn: (d: any) => apiRequest("POST", "/api/professores", d).then((r) => r.json()),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/professores"] });
+      refreshConferencia();
       setCredenciaisDialog({ tipo: "Professor", login: data.loginGerado, senha: data.senhaGerada });
     },
   });
@@ -157,11 +167,15 @@ export default function ArenaApp() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/professores"] });
       qc.invalidateQueries({ queryKey: ["/api/session"] });
+      refreshConferencia();
     },
   });
   const excluirProfessor = useMutation({
     mutationFn: (profId: string) => apiRequest("DELETE", `/api/professores/${profId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/professores"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/professores"] });
+      refreshConferencia();
+    },
   });
 
   // ── Student mutations ─────────────────────────────────────────────────────
@@ -169,16 +183,23 @@ export default function ArenaApp() {
     mutationFn: (d: any) => apiRequest("POST", "/api/alunos", d).then((r) => r.json()),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
       setCredenciaisDialog({ tipo: "Aluno", login: data.loginGerado, senha: data.senhaGerada });
     },
   });
   const alterarPlanoAluno = useMutation({
     mutationFn: ({ alunoId, planoId }: any) => apiRequest("PUT", `/api/alunos/${alunoId}/plano`, { planoId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
+    },
   });
   const aprovarAluno = useMutation({
     mutationFn: (alunoId: string) => apiRequest("PUT", `/api/alunos/${alunoId}/aprovar`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
+    },
   });
   const checkinManual = useMutation({
     mutationFn: ({ id: alunoId, data, hora }: any) =>
@@ -188,6 +209,7 @@ export default function ArenaApp() {
       qc.invalidateQueries({ queryKey: ["/api/session"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/receita/summary"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/summary"] });
+      refreshConferencia();
     },
   });
   const removerCheckin = useMutation({
@@ -198,27 +220,43 @@ export default function ArenaApp() {
       qc.invalidateQueries({ queryKey: ["/api/session"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/receita/summary"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/summary"] });
+      refreshConferencia();
     },
   });
   const editarAluno = useMutation({
     mutationFn: ({ id: alunoId, ...d }: any) => apiRequest("PUT", `/api/alunos/${alunoId}`, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
+    },
   });
   const alterarPlanoAluno2 = useMutation({
     mutationFn: ({ alunoId, planoId }: any) => apiRequest("PUT", `/api/alunos/${alunoId}/plano`, { planoId }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/alunos"] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
+    },
   });
   const excluirAluno = useMutation({
     mutationFn: (alunoId: string) => apiRequest("DELETE", `/api/alunos/${alunoId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
+    },
   });
   const reativarAluno = useMutation({
     mutationFn: (alunoId: string) => apiRequest("PUT", `/api/alunos/${alunoId}/reativar`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
+    },
   });
   const excluirAlunoPermanente = useMutation({
     mutationFn: (alunoId: string) => apiRequest("DELETE", `/api/alunos/${alunoId}/permanente`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
+    },
   });
 
   // ── Financial queries ─────────────────────────────────────────────────────
@@ -234,7 +272,10 @@ export default function ArenaApp() {
   // ── Financial mutations ───────────────────────────────────────────────────
   const registrarPagamento = useMutation({
     mutationFn: (d: any) => apiRequest("POST", "/api/finance/payments", d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/finance/payments"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      refreshConferencia();
+    },
   });
   const criarCobranca = useMutation({
     mutationFn: (d: any) => apiRequest("POST", "/api/finance/charges", d),

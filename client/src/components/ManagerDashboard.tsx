@@ -554,6 +554,15 @@ export default function ManagerDashboard({
   const qc = useQueryClient();
   const { toast } = useToast();
 
+  const refreshConferencia = () => {
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/gestores"] });
+  };
+
   const gerarComprovante = (params: {
     alunoNome: string;
     amount: string;
@@ -687,6 +696,7 @@ export default function ManagerDashboard({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/payments/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      refreshConferencia();
       setConfirmDeleteFinanceiro(null);
       toast({ title: "Pagamento removido" });
     },
@@ -709,6 +719,7 @@ export default function ManagerDashboard({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
       setDialogRegistrarMens(false);
       toast({ title: "Pagamento registrado com sucesso!" });
     },
@@ -723,6 +734,7 @@ export default function ManagerDashboard({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
       setDialogPagarMens(false);
       toast({ title: "Pagamento confirmado!" });
     },
@@ -733,6 +745,7 @@ export default function ManagerDashboard({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/finance/payments/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
+      refreshConferencia();
       toast({ title: "Pagamento removido." });
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível remover.", variant: "destructive" }),
@@ -744,6 +757,7 @@ export default function ManagerDashboard({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
       setDialogEditPagMens(false);
       toast({ title: "Pagamento atualizado!" });
     },
@@ -756,7 +770,7 @@ export default function ManagerDashboard({
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      refreshConferencia();
       setDialogNovoMensalista(false);
       setNovoMensalista({ nome: "", cpf: "", email: "", telefone: "", login: "", senha: "", modalidade: "", planoId: "", professorId: "", diaVencimento: "10", carenciaDias: "3" });
       setCredenciaisMensalista({ login: data.loginGerado, senha: data.senhaGerada });
@@ -784,6 +798,7 @@ export default function ManagerDashboard({
       qc.invalidateQueries({ queryKey: ["/api/finance/charges"] });
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/receita/aluno"] });
+      refreshConferencia();
       toast({ title: "Pagamento validado!", description: "Receita e histórico atualizados." });
     },
     onError: () => toast({ title: "Erro", description: "Não foi possível validar o pagamento.", variant: "destructive" }),

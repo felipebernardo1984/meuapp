@@ -2500,13 +2500,9 @@ function MesView({
           dataFim={dataFim}
         />
 
-        {/* Arena financial report card — shown when there is data */}
-        {mesSessoes.length > 0 && (
-          <>
-            <div className="my-4 border-t border-border" />
-            <ArenaRelatorioCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} mesLabel={mesLabel} />
-          </>
-        )}
+        {/* Arena financial report card — fixed for every month */}
+        <div className="my-4 border-t border-border" />
+        <ArenaRelatorioCard mesSessoes={mesSessoes} arenaId={arenaId} periodo={monthKey} mesLabel={mesLabel} />
       </div>
     </div>
   );
@@ -3175,7 +3171,7 @@ function ArenaRelatorioCard({
   const [pctArena, setPctArena] = useState("70");
 
   const arenaRelSessaoKey = mesSessoes.map((s) => s.id).join(",");
-  const { data: allDetails = [] } = useQuery<SessaoDetalhe[]>({
+  const { data: allDetails = [], isFetching: isFetchingDetails } = useQuery<SessaoDetalhe[]>({
     queryKey: ["/api/conferencia/arena-relatorio", periodo, arenaRelSessaoKey],
     queryFn: async () => {
       if (mesSessoes.length === 0) return [];
@@ -3270,6 +3266,9 @@ function ArenaRelatorioCard({
               ) : (
                 <p className="text-xs text-muted-foreground mt-0.5">Nenhum dado para este mês</p>
               )}
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {savePctMutation.isPending || isFetchingDetails ? "Atualizando…" : "Atualização automática ativa"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -3463,6 +3462,15 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const profQueryKey = ["/api/conferencia/professores", periodo];
   const gestorQueryKey = ["/api/conferencia/gestores", periodo];
 
+  const refreshConferencia = () => {
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+    qc.invalidateQueries({ queryKey: profQueryKey });
+    qc.invalidateQueries({ queryKey: gestorQueryKey });
+  };
+
   const { data: professores = [], isLoading } = useQuery<ConfProfessor[]>({
     queryKey: profQueryKey,
     queryFn: () =>
@@ -3528,6 +3536,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: profQueryKey });
       qc.invalidateQueries({ queryKey: ["/api/conferencia/periodos-professores"] });
+      refreshConferencia();
       setNovoProfNome("");
       setNovoProfPct("0");
       toast({ title: "Professor adicionado!" });
@@ -3578,6 +3587,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/professores/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: profQueryKey });
+      refreshConferencia();
       qc.invalidateQueries({ queryKey: ["/api/conferencia/periodos-professores"] });
       toast({ title: "Professor removido" });
     },
@@ -3594,6 +3604,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
       apiRequest("POST", "/api/conferencia/gestores", { ...data, periodo }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
+      refreshConferencia();
       setNovoGestorNome("");
       setNovoGestorPct("10");
       toast({ title: "Gestor adicionado!" });
@@ -3622,6 +3633,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
       }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
+      refreshConferencia();
       setEditingGestor(null);
       toast({ title: "Gestor atualizado!" });
     },
@@ -3637,6 +3649,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
     mutationFn: (id: string) => apiRequest("DELETE", `/api/conferencia/gestores/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gestorQueryKey });
+      refreshConferencia();
       toast({ title: "Gestor removido" });
     },
     onError: (err: Error) =>

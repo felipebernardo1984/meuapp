@@ -50,6 +50,15 @@ interface AlunoCompleto {
 export default function Home() {
   const qc = useQueryClient();
   const { toast } = useToast();
+
+  const refreshConferencia = () => {
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/professores"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/gestores"] });
+  };
   const [loginError, setLoginError] = useState<string | null>(null);
   const [gestorView, setGestorView] = useState<"dashboard" | "overview">("dashboard");
   const [credenciaisDialog, setCredenciaisDialog] = useState<{ tipo: string; login: string; senha: string } | null>(null);
@@ -153,6 +162,7 @@ export default function Home() {
       apiRequest("POST", "/api/professores", d).then((r) => r.json()),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["/api/professores"] });
+      refreshConferencia();
       setCredenciaisDialog({ tipo: "Professor", login: data.loginGerado, senha: data.senhaGerada });
     },
   });
@@ -160,12 +170,18 @@ export default function Home() {
   const editarProfessor = useMutation({
     mutationFn: ({ id, ...d }: any) =>
       apiRequest("PUT", `/api/professores/${id}`, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/professores"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/professores"] });
+      refreshConferencia();
+    },
   });
 
   const excluirProfessor = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/professores/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/professores"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/professores"] });
+      refreshConferencia();
+    },
   });
 
   // ── Student mutations ─────────────────────────────────────────────────────
@@ -174,13 +190,17 @@ export default function Home() {
       apiRequest("POST", "/api/alunos", d).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
     },
   });
 
   const editarAluno = useMutation({
     mutationFn: ({ id, ...d }: any) =>
       apiRequest("PUT", `/api/alunos/${id}`, d),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/alunos"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/alunos"] });
+      refreshConferencia();
+    },
   });
 
   const excluirAluno = useMutation({
@@ -401,7 +421,11 @@ export default function Home() {
               onExcluirAluno={(alunoId) => excluirAluno.mutate(alunoId)}
               onReativarAluno={(alunoId) => reativarAluno.mutate(alunoId)}
               onExcluirAlunoPermanente={(alunoId) => excluirAlunoPermanente.mutate(alunoId)}
-              onRegistrarPagamento={(dados) => apiRequest("POST", "/api/finance/payments", dados)}
+              onRegistrarPagamento={async (dados) => {
+                const response = await apiRequest("POST", "/api/finance/payments", dados);
+                refreshConferencia();
+                return response;
+              }}
               onCriarCobranca={(dados) => apiRequest("POST", "/api/finance/charges", dados)}
               statusConta={sessao.statusConta}
               trialExpiraEm={sessao.trialExpiraEm}

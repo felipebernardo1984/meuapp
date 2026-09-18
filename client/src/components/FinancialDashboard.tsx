@@ -75,6 +75,13 @@ interface ReceitaSummary {
 
 export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashboardProps) {
   const qc = useQueryClient();
+
+  const refreshConferencia = () => {
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card"] });
+    qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio"] });
+  };
   const [confirmDelete, setConfirmDelete] = useState<{ type: "payment" | "charge"; id: string; label: string } | null>(null);
   const [receitaRange, setReceitaRange] = useState<DateRange | null>(currentMonthRange());
   const [buscaPagamento, setBuscaPagamento] = useState("");
@@ -101,6 +108,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/summary"] });
+      refreshConferencia();
     },
   });
 
@@ -109,6 +117,7 @@ export default function FinancialDashboard({ alunos, onVoltar }: FinancialDashbo
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/finance/payments"] });
       qc.invalidateQueries({ queryKey: ["/api/finance/summary"] });
+      refreshConferencia();
       setConfirmDelete(null);
     },
   });
