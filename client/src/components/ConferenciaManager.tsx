@@ -973,27 +973,30 @@ function exportComprovanteGestorConsolidado(
   gestorId: string,
   gestorNome: string,
   mesLabel: string,
+  registrosOverride?: Registro[],
+  repasseResolver?: (registro: Registro) => number,
 ) {
-  const mensalistas = sessoes.flatMap((s) =>
+  const mensalistas = (registrosOverride ?? sessoes.flatMap((s) =>
     s.registros.filter(
       (r) =>
         r.status === "confirmado" &&
         r.categoria === "mensalista" &&
         r.destinatarioId === gestorId,
     )
-  );
+  )).filter((r) => r.status === "confirmado" && r.categoria === "mensalista");
   if (mensalistas.length === 0) return;
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const totalReceita = mensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
-  const totalRepasse = mensalistas.reduce((s, r) => s + parseFloat(r.valorDestinatario || "0"), 0);
+  const repasse = (r: Registro) => repasseResolver?.(r) ?? parseFloat(r.valorDestinatario || "0");
+  const totalRepasse = mensalistas.reduce((s, r) => s + repasse(r), 0);
   const rows = [...mensalistas]
     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
     .map((r) => `
       <tr>
         <td class="name">${r.nomePlataforma}</td>
         <td>${fmt(parseFloat(r.valor || "0"))}</td>
-        <td class="manager">${fmt(parseFloat(r.valorDestinatario || "0"))}</td>
+        <td class="manager">${fmt(repasse(r))}</td>
       </tr>`)
     .join("");
 
@@ -1026,7 +1029,7 @@ function exportComprovanteGestorConsolidado(
   </style></head>
   <body><div class="page">
     <div class="header">
-      <div class="top"><h1>${gestorNome} — Gestão</h1><div class="period">${mesLabel}</div></div>
+      <div class="top"><h1>${gestorNome} — Repasse Gestor</h1><div class="period">${mesLabel}</div></div>
       <div class="kpis">
         <div class="kpi"><div class="value">${mensalistas.length}</div><div class="label">Mensalistas</div></div>
         <div class="kpi"><div class="value">${fmt(totalReceita)}</div><div class="label">Receita integral</div></div>
@@ -3270,6 +3273,9 @@ function ArenaRelatorioCard({
     queryFn: () => fetch(`/api/conferencia/gestores?periodo=${periodo}`).then((r) => r.json()),
   });
 
+  const [gestorNomeInput, setGestorNomeInput] = useState("");
+  const [gestorPctInput, setGestorPctInput] = useState("10");
+
   useEffect(() => {
     if (repasseCfg?.pctArena) setPctArena(repasseCfg.pctArena);
   }, [repasseCfg]);
@@ -3318,6 +3324,69 @@ function ArenaRelatorioCard({
     (d?.registros ?? []).filter((r) => r.categoria === "mensalista")
   );
 
+  const gestorRelatorio =
+    gestores.find((g) => g.id === repasseCfg?.gestaoGestorId)
+    ?? (gestores.length === 1 ? gestores[0] : undefined);
+
+  useEffect(() => {
+    if (!gestorRelatorio) {
+      if (gestores.length === 0) {
+        setGestorNomeInput("");
+        setGestorPctInput("10");
+      }
+      return;
+    }
+    setGestorNomeInput(gestorRelatorio.nome);
+    setGestorPctInput(gestorRelatorio.percentualComissao || "0");
+  }, [gestorRelatorio?.id, gestorRelatorio?.nome, gestorRelatorio?.percentualComissao, gestores.length]);
+
+  const saveGestorMutation = useMutation({
+    mutationFn: async (values: { id?: string; nome: string; percentualComissao: string }) => {
+      const response = values.id
+        ? await apiRequest("PUT", `/api/conferencia/gestores/${values.id}`, {
+            nome: values.nome,
+            percentualComissao: values.percentualComissao,
+          })
+        : await apiRequest("POST", "/api/conferencia/gestores", {
+            nome: values.nome,
+            percentualComissao: values.percentualComissao,
+            periodo,
+          });
+      const gestor = await response.json() as ConfGestor;
+
+      // Make the manager explicit for this period. This removes the ambiguity
+      // that previously left the report with a zero total when the single
+      // manager had not been selected in the period configuration.
+      await apiRequest("PUT", "/api/conferencia/repasse-config", {
+        periodo,
+        pctArena: repasseCfg?.pctArena ?? pctArena ?? "100",
+        pctGestao: repasseCfg?.pctGestao ?? "0",
+        gestaoTipo: "gestor",
+        gestaoProfessorId: repasseCfg?.gestaoProfessorId ?? null,
+        gestaoGestorId: gestor.id,
+      });
+      return gestor;
+    },
+    onSuccess: (gestor: ConfGestor) => {
+      setGestorNomeInput(gestor.nome);
+      setGestorPctInput(gestor.percentualComissao || "0");
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/gestores", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/repasse-config", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
+      qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
+      toast({ title: "Repasse Gestor atualizado", description: `${gestor.nome} · ${gestor.percentualComissao || "0"}%` });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Não foi possível atualizar o gestor",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const totalPlataforma  = allPlatformRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalGeral       = totalPlataforma + totalMensalistas;
@@ -3325,14 +3394,35 @@ function ArenaRelatorioCard({
   const valorArenaPlataforma = allPlatformRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
   const valorArenaMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
   const valorArena       = valorArenaPlataforma + valorArenaMensalistas;
-  const gestorRelatorio =
-    gestores.find((g) => g.id === repasseCfg?.gestaoGestorId)
-    ?? (gestores.length === 1 ? gestores[0] : undefined);
-  const totalRepasseGestor = gestorRelatorio
-    ? allMensalistas
-        .filter((r) => r.destinatarioId === gestorRelatorio.id)
-        .reduce((s, r) => s + parseFloat(r.valorDestinatario || "0"), 0)
-    : 0;
+  const pctGestorAtual = parseFloat(gestorRelatorio?.percentualComissao || "0") || 0;
+  const gestorMensalistaPertence = (r: Registro) => {
+    if (!gestorRelatorio) return false;
+    if (r.destinatarioId === gestorRelatorio.id) return true;
+    if (r.destinatarioNome?.trim().toLocaleLowerCase() === gestorRelatorio.nome.trim().toLocaleLowerCase()) return true;
+    // A single manager is the automatic recipient even for old snapshots that
+    // were saved before destinatarioId was populated.
+    return !r.destinatarioId && gestores.length === 1;
+  };
+  const gestorMensalistas = allMensalistas.filter(gestorMensalistaPertence);
+  const repasseGestorValor = (r: Registro) => {
+    const valor = parseFloat(r.valor || "0") || 0;
+    if (pctGestorAtual > 0) {
+      return Math.round(valor * pctGestorAtual) / 100;
+    }
+    return Math.max(
+      0,
+      Math.round((valor - (parseFloat(r.valorArena || "0") || 0) - (parseFloat(r.valorProfessor || "0") || 0)) * 100) / 100,
+    );
+  };
+  const totalRepasseGestor = gestorMensalistas.reduce((s, r) => s + repasseGestorValor(r), 0);
+
+  useEffect(() => {
+    if (!repasseCfg || mesSessoes.length === 0) return;
+    void qc.refetchQueries({
+      queryKey: ["/api/conferencia/arena-relatorio", periodo, arenaRelSessaoKey],
+      type: "active",
+    });
+  }, [repasseCfg?.pctArena, repasseCfg?.gestaoGestorId, periodo, arenaRelSessaoKey]);
 
   return (
     <>
@@ -3420,47 +3510,112 @@ function ArenaRelatorioCard({
         </CardContent>
       )}
     </Card>
-    {gestorRelatorio && (
-      <Card className="border border-violet-200 dark:border-violet-900/60 mt-3">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center justify-between gap-3">
+    <Card className="border border-violet-200 dark:border-violet-900/60 mt-3">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-end justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="shrink-0 h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+              <Users className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            </div>
             <div className="min-w-0">
-              <CardTitle className="text-sm font-semibold">Repasse Gestor · {gestorRelatorio.nome}</CardTitle>
+              <CardTitle className="text-sm font-semibold">Repasse Gestor</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {gestorRelatorio.percentualComissao || "0"}% configurado
+                {gestorRelatorio
+                  ? `${gestorRelatorio.nome} · ${gestorRelatorio.percentualComissao || "0"}% configurado`
+                  : "Informe o nome e a porcentagem do gestor"}
               </p>
             </div>
+          </div>
+          <div className="flex items-end gap-2 flex-wrap">
+            <div>
+              <Label htmlFor="input-nome-gestor-relatorio" className="text-[10px] text-muted-foreground">Nome do gestor</Label>
+              <Input
+                id="input-nome-gestor-relatorio"
+                value={gestorNomeInput}
+                onChange={(e) => setGestorNomeInput(e.target.value)}
+                placeholder="Nome do gestor"
+                className="h-7 w-48 text-xs"
+                data-testid="input-nome-gestor-relatorio"
+              />
+            </div>
+            <div>
+              <Label htmlFor="input-pct-gestor-relatorio" className="text-[10px] text-muted-foreground">% Comissão</Label>
+              <div className="relative">
+                <Input
+                  id="input-pct-gestor-relatorio"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={gestorPctInput}
+                  onChange={(e) => setGestorPctInput(clampPercentualInput(e.target.value))}
+                  className="h-7 w-20 text-xs pr-5"
+                  data-testid="input-pct-gestor-relatorio"
+                />
+                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">%</span>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              disabled={
+                !gestorNomeInput.trim() ||
+                gestorPctInput === "" ||
+                !Number.isFinite(Number(gestorPctInput)) ||
+                Number(gestorPctInput) < 0 ||
+                Number(gestorPctInput) > 100 ||
+                saveGestorMutation.isPending
+              }
+              onClick={() => saveGestorMutation.mutate({
+                id: gestorRelatorio?.id,
+                nome: gestorNomeInput.trim(),
+                percentualComissao: gestorPctInput || "0",
+              })}
+              data-testid="button-salvar-gestor-relatorio"
+            >
+              {saveGestorMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : "Salvar"}
+            </Button>
             <Button
               variant="outline"
               size="sm"
               className="gap-1.5 text-xs h-7 shrink-0"
-              disabled={totalGeral === 0 || totalRepasseGestor === 0}
-              onClick={() => exportComprovanteGestorConsolidado(allDetails, gestorRelatorio.id, gestorRelatorio.nome, mesLabel)}
+              disabled={!gestorRelatorio || gestorMensalistas.length === 0 || totalRepasseGestor === 0}
+              onClick={() => gestorRelatorio && exportComprovanteGestorConsolidado(
+                allDetails,
+                gestorRelatorio.id,
+                gestorRelatorio.nome,
+                mesLabel,
+                gestorMensalistas,
+                repasseGestorValor,
+              )}
               data-testid="button-comprovante-gestor-relatorio"
             >
               <Printer className="h-3.5 w-3.5" /> Comprovante
             </Button>
           </div>
-        </CardHeader>
-        {totalGeral > 0 && (
-          <CardContent className="px-4 pb-4 pt-0">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
-                { label: "Total Geral", val: fmtVal(String(totalGeral)) },
-                { label: "Plataformas", val: fmtVal(String(totalPlataforma)) },
-                { label: "Mensalistas", val: fmtVal(String(totalMensalistas)) },
-                { label: "Repasse Gestor", val: fmtVal(String(totalRepasseGestor)) },
-              ].map((i) => (
-                <div key={i.label} className="bg-violet-500/10 rounded-md px-2.5 py-1.5 text-center">
-                  <div className="font-bold text-sm text-violet-700 dark:text-violet-300">{i.val}</div>
-                  <div className="text-xs text-muted-foreground">{i.label}</div>
-                </div>
-              ))}
+        </div>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { label: "Total Geral", val: fmtVal(String(totalGeral)) },
+            { label: "Plataformas", val: fmtVal(String(totalPlataforma)) },
+            { label: "Mensalistas", val: fmtVal(String(totalMensalistas)) },
+            { label: "Repasse Gestor", val: fmtVal(String(totalRepasseGestor)) },
+          ].map((i) => (
+            <div key={i.label} className="bg-violet-500/10 rounded-md px-2.5 py-1.5 text-center">
+              <div className="font-bold text-sm text-violet-700 dark:text-violet-300">{i.val}</div>
+              <div className="text-xs text-muted-foreground">{i.label}</div>
             </div>
-          </CardContent>
+          ))}
+        </div>
+        {!gestorRelatorio && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+            Informe o gestor acima para calcular e emitir o comprovante do repasse.
+          </p>
         )}
-      </Card>
-    )}
+      </CardContent>
+    </Card>
     </>
   );
 }
