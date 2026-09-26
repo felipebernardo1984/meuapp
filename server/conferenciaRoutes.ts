@@ -628,12 +628,14 @@ function parsePercentual(value: unknown, label: string): number {
 }
 
 /**
- * Mensalistas have a three-way split. The arena percentage comes from the
- * period configuration; the teacher percentage comes from the selected
- * professor; the remaining percentage must have an explicit recipient.
+ * Mensalistas have a three-way split. When a period configuration exists,
+ * the arena percentage is always the configured percentage; it must never be
+ * inferred as the remainder after the teacher. The manager receives either
+ * its configured percentage or the remaining percentage.
  *
- * When no period configuration exists, preserve the old behavior by assigning
- * the remainder after the teacher to the arena.
+ * A missing manager is allowed. In that case the arena and professor
+ * snapshots are still saved and the unassigned remainder is kept only as a
+ * value snapshot so the UI can warn without blocking the entry.
  */
 async function calcularRateioMensalista(
   arenaId: string,
@@ -677,15 +679,29 @@ async function calcularRateioMensalista(
   const percentualArenaNum = hasPeriodConfig && Number.isFinite(configuredArena)
     ? configuredArena
     : Math.max(0, 100 - percentualProfessorNum);
-  if (percentualArenaNum < 0 || percentualArenaNum > 100 || percentualProfessorNum < 0 || percentualProfessorNum > 100 || percentualArenaNum + percentualProfessorNum > 100.0001) {
-    throw new Error("A soma dos percentuais da arena e do professor não pode ultrapassar 100%");
+  if (percentualArenaNum < 0 || percentualArenaNum > 100 || percentualProfessorNum < 0 || percentualProfessorNum > 100) {
+    throw new Error("Os percentuais da arena e do professor devem estar entre 0% e 100%");
   }
 
   // The configured manager is the default recipient for the period. Keep an
   // explicitly supplied ID as a backwards-compatible override for old records.
   const configuredGestorId = config?.gestaoGestorId
     ?? (config?.gestaoTipo === "professor" ? config.gestaoProfessorId : null);
-  const effectiveDestinatarioId = destinatarioId || configuredGestorId || null;
+  let effectiveDestinatarioId = destinatarioId || configuredGestorId || null;
+
+  // The configuration screen has one principal manager in the common case.
+  // Use it automatically so entering the manager above the report is enough;
+  // an explicit selection still wins when more than one manager exists.
+  if (!effectiveDestinatarioId && periodo) {
+    const gestoresDoPeriodo = await db
+      .select({ id: conferenciaGestores.id })
+      .from(conferenciaGestores)
+      .where(and(
+        eq(conferenciaGestores.arenaId, arenaId),
+        eq(conferenciaGestores.periodo, periodo),
+      ));
+    if (gestoresDoPeriodo.length === 1) effectiveDestinatarioId = gestoresDoPeriodo[0].id;
+  }
 
   let destinatarioNome: string | null = null;
   let gestorConfigurado: { id: string; nome: string; percentualComissao: string | null } | null = null;
@@ -732,27 +748,19 @@ async function calcularRateioMensalista(
     ? parsePercentual(percentualGestorInformado, "O percentual do gestor")
     : null;
 
-  if (percentualGestorNum !== null) {
-    const totalPercentual = percentualArenaNum + percentualProfessorNum + percentualGestorNum;
-    if (totalPercentual > 100.0001) {
-      throw new Error("A soma dos percentuais da arena, professor e gestor não pode ultrapassar 100%");
-    }
-    if (Math.abs(totalPercentual - 100) > 0.0001) {
-      throw new Error(`Arena + professor + gestor precisam totalizar 100% (atual: ${roundMoney(totalPercentual)}%)`);
-    }
-    percentualDestinatarioNum = percentualGestorNum;
-  }
+  if (percentualGestorNum !== null) percentualDestinatarioNum = percentualGestorNum;
 
   const pctDestRounded = roundMoney(percentualDestinatarioNum);
-  if (pctDestRounded > 0 && !effectiveDestinatarioId) {
-    throw new Error(`Selecione quem receberá os ${pctDestRounded}% restantes da mensalidade`);
-  }
 
   const valorProfessor = roundMoney(valorNum * percentualProfessorNum / 100);
   const valorArena = roundMoney(valorNum * percentualArenaNum / 100);
   // Calculate the last slice from the remainder so the three amounts always
   // close exactly to the mensalidade, even when cents are rounded.
-  const valorDestinatario = roundMoney(Math.max(0, valorNum - valorProfessor - valorArena));
+  const valorDestinatario = roundMoney(
+    percentualGestorNum !== null
+      ? Math.max(0, valorNum * percentualGestorNum / 100)
+      : Math.max(0, valorNum - valorProfessor - valorArena)
+  );
 
   return {
     percentualArena: String(roundMoney(percentualArenaNum)),
@@ -808,8 +816,8 @@ async function recalcularMensalistasDoPeriodo(arenaId: string, periodo: string):
         })
         .where(eq(conferenciaRegistros.id, registro.id));
     } catch (err) {
-      // A configuration can be saved before a manager is selected. In that
-      // case new entries are blocked, while existing snapshots stay intact.
+      // Keep recalculating the other records even if one has invalid legacy
+      // configuration. New records are not blocked by a missing manager.
       console.warn("[mensalista recalc]", registro.id, err instanceof Error ? err.message : err);
     }
   }
@@ -982,6 +990,10 @@ export function registerConferenciaRoutes(app: Express): void {
       .select()
       .from(conferenciaRepasseConfig)
       .where(and(eq(conferenciaRepasseConfig.arenaId, arenaId), eq(conferenciaRepasseConfig.periodo, periodo)));
+    // Keep existing mensalista snapshots aligned with the current period
+    // configuration as well as new entries. This also repairs records saved
+    // before a manager was optional.
+    if (config) await recalcularMensalistasDoPeriodo(arenaId, periodo);
     res.json(config
       ? { ...config, configurado: true }
       : {
@@ -1080,10 +1092,6 @@ export function registerConferenciaRoutes(app: Express): void {
     } catch (err) {
       return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual do gestor inválido" });
     }
-    if (percentualGestor <= 0) {
-      return res.status(400).json({ message: "O percentual do gestor deve ser maior que zero" });
-    }
-
     const [gestor] = await db
       .insert(conferenciaGestores)
       .values({
@@ -1093,6 +1101,7 @@ export function registerConferenciaRoutes(app: Express): void {
         periodo: periodo ?? null,
       })
       .returning();
+    if (periodo) await recalcularMensalistasDoPeriodo(arenaId, periodo);
     res.json(gestor);
   });
 
@@ -1113,10 +1122,6 @@ export function registerConferenciaRoutes(app: Express): void {
     } catch (err) {
       return res.status(400).json({ message: err instanceof Error ? err.message : "Percentual do gestor inválido" });
     }
-    if (percentualGestor <= 0) {
-      return res.status(400).json({ message: "O percentual do gestor deve ser maior que zero" });
-    }
-
     const [gestor] = await db
       .update(conferenciaGestores)
       .set({

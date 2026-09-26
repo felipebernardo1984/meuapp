@@ -1236,16 +1236,16 @@ function exportArenaRelatorioSimples(
         <div class="kpi-val">${fmt(totalGeral)}</div>
         <div class="kpi-label">Total Geral</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-accent"></div>
-        <div class="kpi-val">${totalVisitantes}</div>
-        <div class="kpi-label">Visitantes</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-accent"></div>
-        <div class="kpi-val">${totalCheckins}</div>
-        <div class="kpi-label">Check-ins</div>
-      </div>
+       <div class="kpi">
+         <div class="kpi-accent"></div>
+         <div class="kpi-val">${fmt(totalPlataforma)}</div>
+         <div class="kpi-label">Plataformas</div>
+       </div>
+       <div class="kpi">
+         <div class="kpi-accent"></div>
+         <div class="kpi-val">${fmt(totalMensalistas)}</div>
+         <div class="kpi-label">Mensalistas</div>
+       </div>
       <div class="kpi">
         <div class="kpi-accent"></div>
         <div class="kpi-val">${fmt(valorArena)}</div>
@@ -1468,16 +1468,16 @@ function exportArenaRelatorio(
         <div class="kpi-val">${fmt(totalGeral)}</div>
         <div class="kpi-lbl">Total Geral</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-accent"></div>
-        <div class="kpi-val">${totalVisitantes}</div>
-        <div class="kpi-lbl">Visitantes</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-accent"></div>
-        <div class="kpi-val">${totalCheckinsAll}</div>
-        <div class="kpi-lbl">Check-ins</div>
-      </div>
+       <div class="kpi">
+         <div class="kpi-accent"></div>
+         <div class="kpi-val">${fmt(totalPlataforma)}</div>
+         <div class="kpi-lbl">Plataformas</div>
+       </div>
+       <div class="kpi">
+         <div class="kpi-accent"></div>
+         <div class="kpi-val">${fmt(totalMensalistas)}</div>
+         <div class="kpi-lbl">Mensalistas</div>
+       </div>
       <div class="kpi">
         <div class="kpi-accent"></div>
         <div class="kpi-val">${fmt(valorArena)}</div>
@@ -2528,6 +2528,14 @@ function MensalistaCard({
   const [mValor, setMValor] = useState("");
   const [mComprovante, setMComprovante] = useState<string | null>(null);
   const [mComboOpen, setMComboOpen] = useState(false);
+  const [pendingAdd, setPendingAdd] = useState<{
+    studentId: string;
+    alunoNome: string;
+    professorId: string;
+    valor: string;
+    comprovante?: string | null;
+    destinatarioId?: string | null;
+  } | null>(null);
 
   // Edit state
   const [editOpen, setEditOpen] = useState(false);
@@ -2590,7 +2598,9 @@ function MensalistaCard({
   });
 
   const pctArenaPreview = parseFloat(repasseConfig?.pctArena ?? "100") || 0;
-  const gestorPreview = confGestores.find((g) => g.id === repasseConfig?.gestaoGestorId);
+  const gestorPreview =
+    confGestores.find((g) => g.id === repasseConfig?.gestaoGestorId)
+    ?? (confGestores.length === 1 ? confGestores[0] : undefined);
   const pctGestaoPreview = parseFloat(gestorPreview?.percentualComissao ?? "0") || 0;
 
   // Arena students (autocomplete, only fetched when dialog is open)
@@ -2610,7 +2620,8 @@ function MensalistaCard({
 
   const addMutation = useMutation({
     mutationFn: async (body: {
-      studentId: string; alunoNome: string; professorId: string; valor: string; comprovante?: string | null;
+      studentId: string; alunoNome: string; professorId: string; valor: string;
+      comprovante?: string | null; destinatarioId?: string | null;
     }) => {
       // Ensure we have a manual session — create one if needed
       let sessaoId = manualSessao?.id;
@@ -2642,11 +2653,15 @@ function MensalistaCard({
   });
 
   const editMutation = useMutation({
-    mutationFn: async (body: { id: string; alunoNome: string; valor: string; professorId: string; comprovante?: string | null }) => {
+    mutationFn: async (body: {
+      id: string; alunoNome: string; valor: string; professorId: string;
+      comprovante?: string | null; destinatarioId?: string | null;
+    }) => {
       const res = await apiRequest("PUT", `/api/conferencia/registro/${body.id}/mensalista`, {
         alunoNome: body.alunoNome,
         valor: body.valor,
         professorId: body.professorId || null,
+          destinatarioId: body.destinatarioId ?? null,
         comprovante: body.comprovante,
       });
       const ct = res.headers.get("content-type") ?? "";
@@ -2664,6 +2679,29 @@ function MensalistaCard({
     },
     onError: (err: Error) => toast({ title: "Erro ao editar mensalista", description: err.message, variant: "destructive" }),
   });
+
+  const shouldWarnBeforeAdd = (professorId: string): boolean => {
+    if (gestorPreview) return false;
+    const professor = confsProfs.find((p) => p.id === professorId);
+    const pctProfessor = parseFloat(professor?.percentualComissao ?? "0") || 0;
+    const totalPct = pctArenaPreview + pctProfessor;
+    return Math.abs(totalPct - 100) > 0.001;
+  };
+
+  const submitAdd = (body: {
+    studentId: string;
+    alunoNome: string;
+    professorId: string;
+    valor: string;
+    comprovante?: string | null;
+    destinatarioId?: string | null;
+  }) => {
+    if (shouldWarnBeforeAdd(body.professorId)) {
+      setPendingAdd(body);
+      return;
+    }
+    addMutation.mutate(body);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
@@ -2918,11 +2956,14 @@ function MensalistaCard({
                 const pct = parseFloat(prof?.percentualComissao ?? "0");
                 const val = parseFloat(mValor) || 0;
                 if (val <= 0) return null;
-                const hasGestao = Boolean(gestorPreview && pctGestaoPreview > 0);
+                const hasGestao = Boolean(gestorPreview);
                 const vp = Math.round(val * pct / 100 * 100) / 100;
-                const va = Math.round(val * (hasGestao ? pctArenaPreview : 100 - pct) / 100 * 100) / 100;
-                const vg = Math.round(val * (hasGestao ? pctGestaoPreview : 0) / 100 * 100) / 100;
-                const totalPct = pct + (hasGestao ? pctArenaPreview + pctGestaoPreview : 100);
+                const pctGestao = hasGestao
+                  ? (pctGestaoPreview > 0 ? pctGestaoPreview : Math.max(0, 100 - pctArenaPreview - pct))
+                  : 0;
+                const va = Math.round(val * pctArenaPreview / 100 * 100) / 100;
+                const vg = Math.round(val * pctGestao / 100 * 100) / 100;
+                const totalPct = pct + pctArenaPreview + (hasGestao ? pctGestao : 0);
                 return (
                   <div className="text-[11px] text-muted-foreground mt-1">
                     <p>
@@ -2931,9 +2972,9 @@ function MensalistaCard({
                       Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(va))}</span>
                       {hasGestao && <>{" · "}Gestão: <span className="text-amber-600 dark:text-amber-400 font-medium">{fmtVal(String(vg))}</span></>}
                     </p>
-                    {hasGestao && Math.abs(totalPct - 100) > 0.001 && (
+                    {Math.abs(totalPct - 100) > 0.001 && (
                       <p className="text-amber-600 dark:text-amber-400">
-                        A soma atual é {totalPct.toFixed(2)}%; ajuste os percentuais para fechar 100%.
+                        A soma atual é {totalPct.toFixed(2)}%. A arena será calculada com {pctArenaPreview}% mesmo assim.
                       </p>
                     )}
                   </div>
@@ -2986,17 +3027,47 @@ function MensalistaCard({
                 addMutation.isPending
               }
               onClick={() =>
-                addMutation.mutate({
+                submitAdd({
                   studentId: mAlunoId,
                   alunoNome: mAlunoNome,
                   professorId: mProfId && mProfId !== "__none__" ? mProfId : "",
                   valor: mValor,
                   comprovante: mComprovante,
+                  destinatarioId: gestorPreview?.id ?? null,
                 })
               }
               data-testid="button-confirmar-mensalista"
             >
               {addMutation.isPending ? "Salvando…" : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(pendingAdd)} onOpenChange={(open) => { if (!open) setPendingAdd(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              Percentuais não fecham 100%
+            </DialogTitle>
+            <DialogDescription>
+              Não há um gestor selecionado para receber a diferença. O repasse da arena continuará usando exatamente a porcentagem informada.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Você pode continuar e deixar o valor restante sem destinatário, ou voltar para ajustar a configuração.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingAdd(null)}>Voltar</Button>
+            <Button
+              onClick={() => {
+                if (pendingAdd) addMutation.mutate(pendingAdd);
+                setPendingAdd(null);
+              }}
+              disabled={addMutation.isPending}
+            >
+              Continuar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3064,11 +3135,14 @@ function MensalistaCard({
                 const pct = parseFloat(prof?.percentualComissao ?? "0");
                 const val = parseFloat(editValor) || 0;
                 if (val <= 0) return null;
-                const hasGestao = Boolean(gestorPreview && pctGestaoPreview > 0);
+                const hasGestao = Boolean(gestorPreview);
                 const vp = Math.round(val * pct / 100 * 100) / 100;
-                const va = Math.round(val * (hasGestao ? pctArenaPreview : 100 - pct) / 100 * 100) / 100;
-                const vg = Math.round(val * (hasGestao ? pctGestaoPreview : 0) / 100 * 100) / 100;
-                const totalPct = pct + (hasGestao ? pctArenaPreview + pctGestaoPreview : 100);
+                const pctGestao = hasGestao
+                  ? (pctGestaoPreview > 0 ? pctGestaoPreview : Math.max(0, 100 - pctArenaPreview - pct))
+                  : 0;
+                const va = Math.round(val * pctArenaPreview / 100 * 100) / 100;
+                const vg = Math.round(val * pctGestao / 100 * 100) / 100;
+                const totalPct = pct + pctArenaPreview + (hasGestao ? pctGestao : 0);
                 return (
                   <div className="text-[11px] text-muted-foreground mt-1">
                     <p>
@@ -3077,9 +3151,9 @@ function MensalistaCard({
                       Arena: <span className="text-blue-600 dark:text-blue-400 font-medium">{fmtVal(String(va))}</span>
                       {hasGestao && <>{" · "}Gestão: <span className="text-amber-600 dark:text-amber-400 font-medium">{fmtVal(String(vg))}</span></>}
                     </p>
-                    {hasGestao && Math.abs(totalPct - 100) > 0.001 && (
+                    {Math.abs(totalPct - 100) > 0.001 && (
                       <p className="text-amber-600 dark:text-amber-400">
-                        A soma atual é {totalPct.toFixed(2)}%; ajuste os percentuais para fechar 100%.
+                        A soma atual é {totalPct.toFixed(2)}%. A arena será calculada com {pctArenaPreview}% mesmo assim.
                       </p>
                     )}
                   </div>
@@ -3138,6 +3212,7 @@ function MensalistaCard({
                   alunoNome: editNome,
                   valor: editValor,
                   professorId: editProfId && editProfId !== "__none__" ? editProfId : "",
+                   destinatarioId: gestorPreview?.id ?? null,
                   comprovante: editComprovante,
                 });
               }}
@@ -3188,6 +3263,11 @@ function ArenaRelatorioCard({
     queryKey: ["/api/conferencia/repasse-config", periodo],
     queryFn: () => fetch(`/api/conferencia/repasse-config?periodo=${periodo}`).then((r) => r.json()),
     enabled: !!periodo,
+  });
+
+  const { data: gestores = [] } = useQuery<ConfGestor[]>({
+    queryKey: ["/api/conferencia/gestores", periodo],
+    queryFn: () => fetch(`/api/conferencia/gestores?periodo=${periodo}`).then((r) => r.json()),
   });
 
   useEffect(() => {
@@ -3245,8 +3325,17 @@ function ArenaRelatorioCard({
   const valorArenaPlataforma = allPlatformRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
   const valorArenaMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
   const valorArena       = valorArenaPlataforma + valorArenaMensalistas;
+  const gestorRelatorio =
+    gestores.find((g) => g.id === repasseCfg?.gestaoGestorId)
+    ?? (gestores.length === 1 ? gestores[0] : undefined);
+  const totalRepasseGestor = gestorRelatorio
+    ? allMensalistas
+        .filter((r) => r.destinatarioId === gestorRelatorio.id)
+        .reduce((s, r) => s + parseFloat(r.valorDestinatario || "0"), 0)
+    : 0;
 
   return (
+    <>
     <Card className="border border-border">
       <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -3317,10 +3406,10 @@ function ArenaRelatorioCard({
         <CardContent className="px-4 pb-4 pt-0">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
-              { label: "Repasse Arena", val: fmtVal(String(valorArena)), color: "text-blue-600 dark:text-blue-400" },
               { label: "Total Geral", val: fmtVal(String(totalGeral)), color: "text-foreground" },
               { label: "Plataformas", val: fmtVal(String(totalPlataforma)), color: "text-emerald-600 dark:text-emerald-400" },
               { label: "Mensalistas", val: fmtVal(String(totalMensalistas)), color: "text-violet-600 dark:text-violet-400" },
+              { label: "Repasse Arena", val: fmtVal(String(valorArena)), color: "text-blue-600 dark:text-blue-400" },
             ].map((i) => (
               <div key={i.label} className="bg-muted/40 rounded-md px-2.5 py-1.5 text-center">
                 <div className={cn("font-bold text-sm", i.color)}>{i.val}</div>
@@ -3331,6 +3420,48 @@ function ArenaRelatorioCard({
         </CardContent>
       )}
     </Card>
+    {gestorRelatorio && (
+      <Card className="border border-violet-200 dark:border-violet-900/60 mt-3">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="text-sm font-semibold">Repasse Gestor · {gestorRelatorio.nome}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {gestorRelatorio.percentualComissao || "0"}% configurado
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs h-7 shrink-0"
+              disabled={totalGeral === 0 || totalRepasseGestor === 0}
+              onClick={() => exportComprovanteGestorConsolidado(allDetails, gestorRelatorio.id, gestorRelatorio.nome, mesLabel)}
+              data-testid="button-comprovante-gestor-relatorio"
+            >
+              <Printer className="h-3.5 w-3.5" /> Comprovante
+            </Button>
+          </div>
+        </CardHeader>
+        {totalGeral > 0 && (
+          <CardContent className="px-4 pb-4 pt-0">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { label: "Total Geral", val: fmtVal(String(totalGeral)) },
+                { label: "Plataformas", val: fmtVal(String(totalPlataforma)) },
+                { label: "Mensalistas", val: fmtVal(String(totalMensalistas)) },
+                { label: "Repasse Gestor", val: fmtVal(String(totalRepasseGestor)) },
+              ].map((i) => (
+                <div key={i.label} className="bg-violet-500/10 rounded-md px-2.5 py-1.5 text-center">
+                  <div className="font-bold text-sm text-violet-700 dark:text-violet-300">{i.val}</div>
+                  <div className="text-xs text-muted-foreground">{i.label}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        )}
+      </Card>
+    )}
+    </>
   );
 }
 
@@ -3369,7 +3500,9 @@ function RepasseConfigCard({ arenaId: _arenaId, periodo }: { arenaId: string; pe
     onError: () => toast({ title: "Erro ao salvar configuração de repasse", variant: "destructive" }),
   });
 
-  const gestaoGestorId = config?.gestaoGestorId ?? null;
+  const gestaoGestorId =
+    config?.gestaoGestorId
+    ?? (gestores.length === 1 ? gestores[0].id : null);
   const pctArenaNum = parseFloat(localPctArena) || 0;
   const gestaoAtiva = pctArenaNum < 100;
   const gestorSelecionado = gestores.find((gestor) => gestor.id === gestaoGestorId);
@@ -3753,7 +3886,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const handleAddGestor = () => {
     const nome = novoGestorNome.trim();
     const percentual = Number(novoGestorPct);
-    if (!nome || !Number.isFinite(percentual) || percentual <= 0 || percentual > 100) return;
+    if (!nome || !Number.isFinite(percentual) || percentual < 0 || percentual > 100) return;
     const gestorFoiSalvo =
       gestorSalvo?.nome === nome &&
       gestorSalvo.percentual === String(percentual);
@@ -3845,7 +3978,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                   !novoGestorNome.trim() ||
                   novoGestorPct === "" ||
                   !Number.isFinite(Number(novoGestorPct)) ||
-                  Number(novoGestorPct) <= 0 ||
+                   Number(novoGestorPct) < 0 ||
                   Number(novoGestorPct) > 100 ||
                   addGestorMutation.isPending ||
                   editGestorMutation.isPending

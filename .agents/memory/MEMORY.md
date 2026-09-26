@@ -1,3 +1,3 @@
 - [Conferência Excel header detection](conferencia-excel-parsing.md) — TotalPass/Wellhub exports have title rows; must auto-detect real header row, not use row 0.
-- [Conferência Repasse Config](conferencia-repasse-config.md) — pctArena/gestão split stored per-period; gestão is display-only computed from (valor - vArena - vProf), not stored in records.
+- [Conferência Repasse Config](conferencia-repasse-config.md) — pctArena is exact per-period arena share; manager gets configured/remainder share, and missing manager never blocks arena calculation.
 - [Conferência dayuse detection](conferencia-dayuse-detection.md) — uses collective modality+value map (per session file); old per-student min/max heuristic was inverted and removed.
