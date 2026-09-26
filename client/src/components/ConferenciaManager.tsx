@@ -2614,10 +2614,16 @@ function MensalistaCard({
   });
 
   const invalidateAll = () => {
-    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-    qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
-    qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
-    qc.invalidateQueries({ queryKey: ["/api/conferencia/professores", periodo] });
+    // Refetch every dependent view immediately. Invalidating only the local
+    // mensalistas query left the report card and its receipt with stale totals
+    // until their polling interval ran.
+    void Promise.all([
+      qc.refetchQueries({ queryKey: ["/api/conferencia/sessoes"], type: "all" }),
+      qc.refetchQueries({ queryKey: ["/api/conferencia/sessao"], type: "all" }),
+      qc.refetchQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo], type: "all" }),
+      qc.refetchQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo], type: "all" }),
+      qc.refetchQueries({ queryKey: ["/api/conferencia/professores", periodo], type: "all" }),
+    ]);
     void refetchDetails();
   };
 
@@ -3273,9 +3279,6 @@ function ArenaRelatorioCard({
     queryFn: () => fetch(`/api/conferencia/gestores?periodo=${periodo}`).then((r) => r.json()),
   });
 
-  const [gestorNomeInput, setGestorNomeInput] = useState("");
-  const [gestorPctInput, setGestorPctInput] = useState("10");
-
   useEffect(() => {
     if (repasseCfg?.pctArena) setPctArena(repasseCfg.pctArena);
   }, [repasseCfg]);
@@ -3327,65 +3330,6 @@ function ArenaRelatorioCard({
   const gestorRelatorio =
     gestores.find((g) => g.id === repasseCfg?.gestaoGestorId)
     ?? (gestores.length === 1 ? gestores[0] : undefined);
-
-  useEffect(() => {
-    if (!gestorRelatorio) {
-      if (gestores.length === 0) {
-        setGestorNomeInput("");
-        setGestorPctInput("10");
-      }
-      return;
-    }
-    setGestorNomeInput(gestorRelatorio.nome);
-    setGestorPctInput(gestorRelatorio.percentualComissao || "0");
-  }, [gestorRelatorio?.id, gestorRelatorio?.nome, gestorRelatorio?.percentualComissao, gestores.length]);
-
-  const saveGestorMutation = useMutation({
-    mutationFn: async (values: { id?: string; nome: string; percentualComissao: string }) => {
-      const response = values.id
-        ? await apiRequest("PUT", `/api/conferencia/gestores/${values.id}`, {
-            nome: values.nome,
-            percentualComissao: values.percentualComissao,
-          })
-        : await apiRequest("POST", "/api/conferencia/gestores", {
-            nome: values.nome,
-            percentualComissao: values.percentualComissao,
-            periodo,
-          });
-      const gestor = await response.json() as ConfGestor;
-
-      // Make the manager explicit for this period. This removes the ambiguity
-      // that previously left the report with a zero total when the single
-      // manager had not been selected in the period configuration.
-      await apiRequest("PUT", "/api/conferencia/repasse-config", {
-        periodo,
-        pctArena: repasseCfg?.pctArena ?? pctArena ?? "100",
-        pctGestao: repasseCfg?.pctGestao ?? "0",
-        gestaoTipo: "gestor",
-        gestaoProfessorId: repasseCfg?.gestaoProfessorId ?? null,
-        gestaoGestorId: gestor.id,
-      });
-      return gestor;
-    },
-    onSuccess: (gestor: ConfGestor) => {
-      setGestorNomeInput(gestor.nome);
-      setGestorPctInput(gestor.percentualComissao || "0");
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/gestores", periodo] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/repasse-config", periodo] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
-      qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
-      toast({ title: "Repasse Gestor atualizado", description: `${gestor.nome} · ${gestor.percentualComissao || "0"}%` });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Não foi possível atualizar o gestor",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const totalPlataforma  = allPlatformRegs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
@@ -3512,7 +3456,7 @@ function ArenaRelatorioCard({
     </Card>
     <Card className="border border-violet-200 dark:border-violet-900/60 mt-3">
       <CardHeader className="pb-2 pt-4 px-4">
-        <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="shrink-0 h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
               <Users className="h-4 w-4 text-violet-600 dark:text-violet-400" />
@@ -3521,60 +3465,12 @@ function ArenaRelatorioCard({
               <CardTitle className="text-sm font-semibold">Repasse Gestor</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {gestorRelatorio
-                  ? `${gestorRelatorio.nome} · ${gestorRelatorio.percentualComissao || "0"}% configurado`
-                  : "Informe o nome e a porcentagem do gestor"}
+                  ? "Valor atualizado pelos lançamentos e pela configuração abaixo"
+                  : "Cadastre um gestor abaixo para calcular o repasse"}
               </p>
             </div>
           </div>
-          <div className="flex items-end gap-2 flex-wrap">
-            <div>
-              <Label htmlFor="input-nome-gestor-relatorio" className="text-[10px] text-muted-foreground">Nome do gestor</Label>
-              <Input
-                id="input-nome-gestor-relatorio"
-                value={gestorNomeInput}
-                onChange={(e) => setGestorNomeInput(e.target.value)}
-                placeholder="Nome do gestor"
-                className="h-7 w-48 text-xs"
-                data-testid="input-nome-gestor-relatorio"
-              />
-            </div>
-            <div>
-              <Label htmlFor="input-pct-gestor-relatorio" className="text-[10px] text-muted-foreground">% Comissão</Label>
-              <div className="relative">
-                <Input
-                  id="input-pct-gestor-relatorio"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={gestorPctInput}
-                  onChange={(e) => setGestorPctInput(clampPercentualInput(e.target.value))}
-                  className="h-7 w-20 text-xs pr-5"
-                  data-testid="input-pct-gestor-relatorio"
-                />
-                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">%</span>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              disabled={
-                !gestorNomeInput.trim() ||
-                gestorPctInput === "" ||
-                !Number.isFinite(Number(gestorPctInput)) ||
-                Number(gestorPctInput) < 0 ||
-                Number(gestorPctInput) > 100 ||
-                saveGestorMutation.isPending
-              }
-              onClick={() => saveGestorMutation.mutate({
-                id: gestorRelatorio?.id,
-                nome: gestorNomeInput.trim(),
-                percentualComissao: gestorPctInput || "0",
-              })}
-              data-testid="button-salvar-gestor-relatorio"
-            >
-              {saveGestorMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : "Salvar"}
-            </Button>
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -3611,7 +3507,7 @@ function ArenaRelatorioCard({
         </div>
         {!gestorRelatorio && (
           <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-            Informe o gestor acima para calcular e emitir o comprovante do repasse.
+            Cadastre um gestor na configuração para calcular e emitir o comprovante do repasse.
           </p>
         )}
       </CardContent>
@@ -3752,12 +3648,14 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
   const gestorQueryKey = ["/api/conferencia/gestores", periodo];
 
   const refreshConferencia = () => {
-    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessoes"] });
-    qc.invalidateQueries({ queryKey: ["/api/conferencia/sessao"] });
-    qc.invalidateQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo] });
-    qc.invalidateQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo] });
-    qc.invalidateQueries({ queryKey: profQueryKey });
-    qc.invalidateQueries({ queryKey: gestorQueryKey });
+    void Promise.all([
+      qc.refetchQueries({ queryKey: ["/api/conferencia/sessoes"], type: "all" }),
+      qc.refetchQueries({ queryKey: ["/api/conferencia/sessao"], type: "all" }),
+      qc.refetchQueries({ queryKey: ["/api/conferencia/mensalistas-card", periodo], type: "all" }),
+      qc.refetchQueries({ queryKey: ["/api/conferencia/arena-relatorio", periodo], type: "all" }),
+      qc.refetchQueries({ queryKey: profQueryKey, type: "all" }),
+      qc.refetchQueries({ queryKey: gestorQueryKey, type: "all" }),
+    ]);
   };
 
   const { data: professores = [], isLoading } = useQuery<ConfProfessor[]>({
@@ -4106,7 +4004,7 @@ function ConfiguracaoView({ arenaId, periodo, sessaoIds = [], mesLabel = "", sin
                 onChange={(e) => setNovoGestorNome(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddGestor()}
                 data-testid="input-novo-gestor-nome"
-              />
+            />
             </div>
             <div className="w-36">
               <p className="text-xs font-medium text-muted-foreground mb-1.5">% Comissão</p>
