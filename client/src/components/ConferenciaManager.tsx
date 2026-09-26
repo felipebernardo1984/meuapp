@@ -198,6 +198,11 @@ function fmtVal(v: string | null | undefined): string {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function calcularRepasseArena(valor: string | null | undefined, percentual: number): number {
+  const total = parseFloat(valor || "0") || 0;
+  return Math.round(total * percentual / 100 * 100) / 100;
+}
+
 function clampPercentualInput(value: string): string {
   if (value === "") return "";
   const n = Number(value);
@@ -1075,10 +1080,9 @@ function exportArenaRelatorioSimples(
     .reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalGeral = totalPlataforma + totalMensalistas;
-  const valorArenaPlataforma = Array.from(byPlat.values()).flatMap((p) => p.regs)
-    .reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const valorArenaMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const valorArena = valorArenaPlataforma + valorArenaMensalistas;
+  const valorArenaPlataforma = calcularRepasseArena(String(totalPlataforma), pctArena);
+  const valorArenaMensalistas = calcularRepasseArena(String(totalMensalistas), pctArena);
+  const valorArena = calcularRepasseArena(String(totalGeral), pctArena);
 
   if (totalGeral === 0) return;
 
@@ -1100,7 +1104,7 @@ function exportArenaRelatorioSimples(
     const receita    = regs.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
     const chks       = regs.reduce((s, r) => s + (r.checkins ?? 1), 0);
     const visitantes = new Set(regs.map((r) => r.nomePlataforma)).size;
-    const vArena     = regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
+    const vArena     = calcularRepasseArena(String(receita), pctArena);
     const periodo    = fmtPeriod(periodoInicio, periodoFim);
 
      const repasseSection = `<div class="plat-repasse">
@@ -1139,7 +1143,7 @@ function exportArenaRelatorioSimples(
         <span class="mens-nome">${r.nomePlataforma}</span>
         <span class="mens-mes">${mes}</span>
         <span class="mens-val">${fmt(parseFloat(r.valor || "0"))}</span>
-        <span class="mens-val" style="color:#2563eb">Arena: ${fmt(parseFloat(r.valorArena || "0"))}</span>
+        <span class="mens-val" style="color:#2563eb">Arena: ${fmt(calcularRepasseArena(r.valor, pctArena))}</span>
       </div>`;
     }).join("");
 
@@ -1311,10 +1315,9 @@ function exportArenaRelatorio(
     .reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalGeral = totalPlataforma + totalMensalistas;
-  const valorArenaPlataforma = Array.from(byPlat.values()).flatMap((p) => p.regs)
-    .reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const valorArenaMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const valorArena = valorArenaPlataforma + valorArenaMensalistas;
+  const valorArenaPlataforma = calcularRepasseArena(String(totalPlataforma), pctArena);
+  const valorArenaMensalistas = calcularRepasseArena(String(totalMensalistas), pctArena);
+  const valorArena = calcularRepasseArena(String(totalGeral), pctArena);
 
   if (totalGeral === 0) return;
 
@@ -1341,7 +1344,7 @@ function exportArenaRelatorio(
     <div class="section">
       <div class="section-header">
         <span class="section-platform">${label.toUpperCase()}</span>
-        <span class="section-meta">${alunos} visitante${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · Receita: ${fmt(receita)} · Arena: ${fmt(regs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0))}</span>
+        <span class="section-meta">${alunos} visitante${alunos !== 1 ? "s" : ""} · ${chks} check-in${chks !== 1 ? "s" : ""} · Receita: ${fmt(receita)} · Arena: ${fmt(calcularRepasseArena(String(receita), pctArena))}</span>
       </div>
       <table>
         <colgroup>
@@ -1368,7 +1371,7 @@ function exportArenaRelatorio(
   // Mensalistas block
   const mensalistaRows = [...allMensalistas]
     .sort((a, b) => a.nomePlataforma.localeCompare(b.nomePlataforma, "pt-BR"))
-    .map((r) => `<tr><td class="col-nome">${r.nomePlataforma}</td><td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td><td class="col-center">${fmt(parseFloat(r.valorArena || "0"))}</td></tr>`)
+    .map((r) => `<tr><td class="col-nome">${r.nomePlataforma}</td><td class="col-center">${fmt(parseFloat(r.valor || "0"))}</td><td class="col-center">${fmt(calcularRepasseArena(r.valor, pctArena))}</td></tr>`)
     .join("");
   const mensalistasBlock = allMensalistas.length === 0 ? "" : `
   <div class="mensalista-block">
@@ -3335,9 +3338,7 @@ function ArenaRelatorioCard({
   const totalMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valor || "0"), 0);
   const totalGeral       = totalPlataforma + totalMensalistas;
   const pct              = parseFloat(pctArena) || 0;
-  const valorArenaPlataforma = allPlatformRegs.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const valorArenaMensalistas = allMensalistas.reduce((s, r) => s + parseFloat(r.valorArena || "0"), 0);
-  const valorArena       = valorArenaPlataforma + valorArenaMensalistas;
+  const valorArena       = calcularRepasseArena(String(totalGeral), pct);
   const pctGestorAtual = parseFloat(gestorRelatorio?.percentualComissao || "0") || 0;
   const gestorMensalistaPertence = (r: Registro) => {
     if (!gestorRelatorio) return false;
