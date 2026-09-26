@@ -1101,7 +1101,39 @@ export function registerConferenciaRoutes(app: Express): void {
         periodo: periodo ?? null,
       })
       .returning();
-    if (periodo) await recalcularMensalistasDoPeriodo(arenaId, periodo);
+    if (periodo) {
+      const [config] = await db
+        .select()
+        .from(conferenciaRepasseConfig)
+        .where(and(
+          eq(conferenciaRepasseConfig.arenaId, arenaId),
+          eq(conferenciaRepasseConfig.periodo, periodo),
+        ));
+
+      // The first manager created in the lower configuration section becomes
+      // the period recipient when the period is using manager distribution.
+      // Keep an explicit recipient untouched.
+      if (config) {
+        if (config.gestaoTipo === "gestor" && !config.gestaoGestorId) {
+          await db
+            .update(conferenciaRepasseConfig)
+            .set({ gestaoGestorId: gestor.id })
+            .where(eq(conferenciaRepasseConfig.id, config.id));
+        }
+      } else {
+        await db.insert(conferenciaRepasseConfig).values({
+          arenaId,
+          periodo,
+          pctArena: "100",
+          pctGestao: "0",
+          gestaoTipo: "gestor",
+          gestaoProfessorId: null,
+          gestaoGestorId: gestor.id,
+        });
+      }
+
+      await recalcularMensalistasDoPeriodo(arenaId, periodo);
+    }
     res.json(gestor);
   });
 
@@ -1150,6 +1182,12 @@ export function registerConferenciaRoutes(app: Express): void {
     if (!arenaId || req.session.userType !== "gestor") {
       return res.status(403).json({ message: "Acesso negado" });
     }
+    const [gestorAntes] = await db
+      .select({ id: conferenciaGestores.id, periodo: conferenciaGestores.periodo })
+      .from(conferenciaGestores)
+      .where(and(eq(conferenciaGestores.id, req.params.id), eq(conferenciaGestores.arenaId, arenaId)));
+    if (!gestorAntes) return res.status(404).json({ message: "Gestor não encontrado" });
+
     const [gestor] = await db
       .delete(conferenciaGestores)
       .where(and(eq(conferenciaGestores.id, req.params.id), eq(conferenciaGestores.arenaId, arenaId)))
@@ -1162,6 +1200,7 @@ export function registerConferenciaRoutes(app: Express): void {
         eq(conferenciaRepasseConfig.arenaId, arenaId),
         eq(conferenciaRepasseConfig.gestaoGestorId, req.params.id),
       ));
+    if (gestorAntes.periodo) await recalcularMensalistasDoPeriodo(arenaId, gestorAntes.periodo);
     res.json({ ok: true });
   });
 
